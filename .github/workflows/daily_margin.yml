@@ -1,0 +1,39 @@
+name: Daily Margin Fetch
+
+on:
+  schedule:
+    - cron: '30 14 * * 1-5'  # 14:30 UTC = 8:00 PM IST, Mon-Fri
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install chromium
+          python -m playwright install-deps chromium
+      
+      - name: Fetch today's margin data
+        run: |
+          python main.py $(date +%Y-%m-%d)
+      
+      - name: Commit and push data
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/
+          git diff --staged --quiet || git commit -m "data: daily margin $(date +%Y-%m-%d)"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

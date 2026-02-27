@@ -11,6 +11,8 @@ from datetime import datetime
 import db
 from scraper import scrape_margin, normalize_row, parse_pct
 
+SYMBOLS_TO_STORE = {"NATURALGAS", "NATGASMINI"}
+
 
 def main():
     if len(sys.argv) < 2:
@@ -49,6 +51,10 @@ def main():
     for raw_row in raw_rows:
         normalized = normalize_row(raw_row, date_str)
         if normalized is None:
+            skipped += 1
+            continue
+
+        if normalized.get("symbol") not in SYMBOLS_TO_STORE:
             skipped += 1
             continue
 

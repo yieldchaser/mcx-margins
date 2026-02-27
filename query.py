@@ -95,6 +95,7 @@ def export_excel():
                 annualized_volatility,
                 created_at
             FROM margins
+            WHERE symbol IN ('NATURALGAS', 'NATGASMINI')
             ORDER BY date DESC, symbol ASC, expiry ASC
         """)
         rows = [dict(row) for row in cursor.fetchall()]
