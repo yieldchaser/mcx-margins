@@ -158,3 +158,134 @@ cd /workspace/56d40feb-509a-4ae5-8e49-e7e07078677d/sessions/agent_6aa4f2a7-c83b-
 ```
 
 Use attempt_completion to report the result once the file is written and pushed successfully.
+
+---
+
+## Code Audit — 7-Question Analysis
+
+### Q1: Akamai Bypass in `scraper.py` — ✅ Complete and Functional
+
+Uses a **multi-layered Playwright stealth approach**:
+
+1. **Homepage-first navigation** (lines 104–112): visits `https://www.mcxccl.com/` first to acquire Akamai session cookies before hitting the data page.
+2. **Stealth JS injection** (lines 41–47, applied via `add_init_script`): removes `navigator.webdriver`, fakes `window.chrome`, sets realistic `languages` and `hardwareConcurrency`.
+3. **Realistic browser context** (lines 73–83): Windows Chrome 120 user-agent, 1920×1080 viewport, `en-US` locale, `Asia/Kolkata` timezone, full `sec-ch-ua` headers.
+4. **Launch args** (lines 22–29): `--disable-blink-features=AutomationControlled` suppresses the automation flag.
+5. **API response interception** (lines 89–101): intercepts the `POST /backpage.aspx/GetDailyMargin` JSON response directly — no DOM scraping.
+6. **Correct dual-format date handling**: fills `#txtDate` as `DD/MM/YYYY` (display) and `cph_InnerContainerRight_C001_txtDate_hid_val` as `YYYYMMDD` (what the API reads).
+
+---
+
+### Q2: Filtering in `main.py` — ✅ Only NATURALGAS and NATGASMINI
+
+Exact filter logic (`main.py` lines 14, 57–59):
+
+```python
+SYMBOLS_TO_STORE = {"NATURALGAS", "NATGASMINI"}
+
+if normalized.get("symbol") not in SYMBOLS_TO_STORE:
+    skipped += 1
+    continue
+```
+
+Identical filter exists in `backfill.py` lines 14 and 35–36. All other symbols are silently skipped before any DB write.
+
+---
+
+### Q3: Backfill Safety in `backfill.py` — ✅ Safe to Stop and Resume
+
+Exact skip logic (`backfill.py` lines 63–71):
+
+```python
+existing_dates = set(db.get_all_dates())
+print(f"[backfill] Found {len(existing_dates)} dates already in DB")
+all_weekdays = generate_weekdays(start_date, today)
+missing_dates = [d for d in all_weekdays if d not in existing_dates]
+print(f"[backfill] Dates to fetch: {len(missing_dates)} (skipping {len(all_weekdays) - len(missing_dates)} already in DB)")
+if not missing_dates:
+    print("[backfill] All dates already in DB. Nothing to do.")
+    return
+```
+
+Additionally, `db.upsert_margin()` uses `ON CONFLICT(date, symbol, expiry, file_id) DO UPDATE SET ...`, so partial re-runs never create duplicates.
+
+---
+
+### Q4: DB Tracking in Git — ✅ `data/margins.db` IS tracked (not in `.gitignore`)
+
+Complete `.gitignore` contents:
+
+```
+__pycache__/
+*.pyc
+*.pyo
+.env
+exports/
+.DS_Store
+debug_*.py
+```
+
+`data/`, `*.db`, and `margins.db` are **not listed**. The DB is intentionally tracked — the GitHub Actions workflow commits it back with `git add data/` after each daily fetch.
+
+---
+
+### Q5: GitHub Actions Workflow — ✅ All Four Items Present
+
+**Cron schedule** (`.github/workflows/daily_margin.yml` line 5):
+```yaml
+- cron: '30 14 * * 1-5'  # 14:30 UTC = 8:00 PM IST, Mon-Fri
+```
+✅ Correct.
+
+**Install Playwright + Chromium** (lines 22–25):
+```yaml
+pip install -r requirements.txt
+python -m playwright install chromium
+python -m playwright install-deps chromium
+```
+✅ Both the Python package and the browser binary + system deps are installed.
+
+**Run main.py** (lines 28–29):
+```yaml
+python main.py $(date +%Y-%m-%d)
+```
+✅ Correct.
+
+**Commit and push DB** (lines 31–39):
+```yaml
+git config user.email "github-actions[bot]@users.noreply.github.com"
+git config user.name "github-actions[bot]"
+git add data/
+git diff --staged --quiet || git commit -m "data: daily margin $(date +%Y-%m-%d)"
+git push
+```
+✅ Uses `contents: write` permission, guards against empty commits, uses built-in `GITHUB_TOKEN`.
+
+---
+
+### Q6: Recommendation for Backfill — Option B: Local Terminal
+
+**`python3 backfill.py 2022-01-01` is the correct choice.**
+
+GitHub Actions has a **6-hour job timeout**. A ~1,084-date backfill at 30–60 seconds per date requires **9–18 hours** of continuous runtime — the workflow would be killed partway through, and since it only commits at the end of the job, all progress would be lost.
+
+`backfill.py` is specifically designed for long runs: it checks existing dates at startup, skips them, and writes to the DB continuously. Stop at any point with Ctrl+C, re-run the same command, and it resumes exactly where it left off. After completion, a single `git add data/margins.db && git commit && git push` uploads the full history.
+
+---
+
+### Q7: GO/NO-GO Assessment — ✅ GO
+
+| Item | Status |
+|---|---|
+| Akamai bypass (homepage-first + stealth JS + realistic fingerprint) | ✅ |
+| Symbol filter (NATURALGAS + NATGASMINI only) in both `main.py` and `backfill.py` | ✅ |
+| Backfill resume safety (skips existing dates; upsert prevents duplicates) | ✅ |
+| `data/margins.db` tracked in git (not in `.gitignore`) | ✅ |
+| GitHub Actions: correct cron (14:30 UTC Mon-Fri) | ✅ |
+| GitHub Actions: installs Playwright + Chromium | ✅ |
+| GitHub Actions: runs `main.py` with today's date | ✅ |
+| GitHub Actions: commits and pushes updated DB | ✅ |
+| `requirements.txt` has all needed packages | ✅ |
+| DB schema has `UNIQUE` constraint + upsert | ✅ |
+
+**The repo is fully committed and ready. The daily automation is correctly wired. The only remaining task is the historical backfill, which must be run locally (not via GitHub Actions) due to the 6-hour job timeout constraint.**
