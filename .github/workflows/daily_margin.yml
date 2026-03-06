@@ -2,7 +2,7 @@ name: Daily Margin Fetch
 
 on:
   schedule:
-    - cron: '30 14 * * 1-5'  # 14:30 UTC = 8:00 PM IST, Mon-Fri
+    - cron: '30 1,13 * * *'  # 1:30 and 13:30 UTC = 7:00 AM and 7:00 PM IST, daily
   workflow_dispatch:
 
 jobs:
@@ -24,16 +24,18 @@ jobs:
           python -m playwright install chromium
           python -m playwright install-deps chromium
       
-      - name: Fetch today's margin data
+      - name: Fetch margin data (last 3 days to catch late updates)
         run: |
-          python main.py $(date +%Y-%m-%d)
+          python main.py $(date -d "2 days ago" +%Y-%m-%d) || true
+          python main.py $(date -d "yesterday" +%Y-%m-%d) || true
+          python main.py $(date +%Y-%m-%d) || true
       
       - name: Commit and push data
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add data/
-          git diff --staged --quiet || git commit -m "data: daily margin $(date +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "data: daily margin update"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
