@@ -33,6 +33,11 @@ jobs:
       - name: Export dashboard JSON
         run: python export_json.py
 
+      - name: Check margin change and send alert
+        env:
+          ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
+        run: python alert.py
+
       - name: Commit DB + dashboard data
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -287,7 +287,21 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   <div id="tab-overview" class="tab-content active">
     <!-- Section: Current Snapshot Table -->
     <div class="card mb-4">
-      <div class="card-title">Current Margin Snapshot — NATURALGAS</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="card-title has-tooltip" data-tooltip-key="Current Margin Snapshot" style="margin-bottom:0;">
+          Current Margin Snapshot — <span id="snapshotSymbolLabel">NaturalGas</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="snap-toggle active-snap" data-sym="NATURALGAS"
+            style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
+            NATURALGAS
+          </button>
+          <button class="snap-toggle" data-sym="NATGASMINI"
+            style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">
+            NATGASMINI
+          </button>
+        </div>
+      </div>
       <div style="overflow-x:auto;">
         <table class="data-table" id="snapshotTable">
           <thead><tr>
@@ -302,11 +316,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
     <!-- Mini forward curve + panic signals -->
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Forward Curve — Today</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Forward Curve">Forward Curve — Today</div>
         <div class="chart-container"><canvas id="miniForwardCurve"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Panic Spread Signals</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Panic Spread">Panic Spread Signals</div>
         <div style="overflow-x:auto;">
           <table class="data-table" id="panicTable">
             <thead><tr>
@@ -321,16 +335,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
   <div id="tab-termstructure" class="tab-content">
     <div class="card mb-4">
-      <div class="card-title">Forward Margin Curve — All Active Expiries</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve — All Active Expiries">Forward Margin Curve — All Active Expiries</div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Volatility Term Structure</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Volatility Term Structure">Volatility Term Structure</div>
         <div class="chart-container"><canvas id="chartVolCurve"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Margin Spread: NATURALGAS vs NATGASMINI</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Margin Spread">Margin Spread: NATURALGAS vs NATGASMINI</div>
         <div class="chart-container"><canvas id="chartSpread"></canvas></div>
       </div>
     </div>
@@ -354,19 +368,25 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
           <button class="range-btn" data-months="36">3Y</button>
           <button class="range-btn" data-months="0">All</button>
         </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+          <input type="checkbox" id="showPrice" style="accent-color:var(--accent-green);width:14px;height:14px;cursor:pointer;">
+          <label for="showPrice" class="has-tooltip" data-tooltip-key="Henry Hub" style="font-size:12px;color:var(--text-muted);cursor:pointer;">
+            Overlay Henry Hub Price (NGW00)
+          </label>
+        </div>
       </div>
     </div>
     <div class="card mb-4">
-      <div class="card-title">Initial Margin % Over Time (Front Month)</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Initial Margin % Over Time">Initial Margin % Over Time (Front Month)</div>
       <div class="chart-container" style="height:340px;"><canvas id="chartHistMargin"></canvas></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Daily Volatility Over Time</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Daily Volatility Over Time">Daily Volatility Over Time</div>
         <div class="chart-container"><canvas id="chartHistVol"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Margin vs Volatility (Scatter)</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Margin vs Volatility">Margin vs Volatility (Scatter)</div>
         <div class="chart-container"><canvas id="chartScatter"></canvas></div>
       </div>
     </div>
@@ -375,16 +395,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   <div id="tab-seasonality" class="tab-content">
     <div class="grid-2 mb-4">
       <div class="card">
-        <div class="card-title">Average Margin by Month (NATURALGAS, All Years)</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Month">Average Margin by Month (NATURALGAS, All Years)</div>
         <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Average Margin by Year (2010–2026)</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Year">Average Margin by Year (2010–2026)</div>
         <div class="chart-container"><canvas id="chartSeasonYear"></canvas></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Monthly Margin Heatmap — Year × Month (NATURALGAS)</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Monthly Margin Heatmap">Monthly Margin Heatmap — Year × Month (NATURALGAS)</div>
       <div id="heatmapContainer" style="overflow-x:auto;overflow-y:auto;max-height:500px;margin-top:8px;border:1px solid var(--border);border-radius:6px;position:relative;"></div>
       <div style="display:flex;gap:24px;margin-top:12px;font-size:11px;color:var(--text-muted);align-items:center;">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -399,11 +419,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   <div id="tab-analytics" class="tab-content">
     <div class="grid-2 mb-4">
       <div class="card">
-        <div class="card-title">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
+        <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
         <div class="chart-container"><canvas id="chartDTE"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Lag Correlation: Margin % vs Daily Volatility</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Lag Correlation">Lag Correlation: Margin % vs Daily Volatility</div>
         <div class="chart-container"><canvas id="chartLagCorr"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
           Correlation is strongest at lag=0 (simultaneous). Relationship weakens beyond 10 days — MCX responds to current vol, not future conditions.
@@ -411,7 +431,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
       <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
         Predicted = 0.886 × Current Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
@@ -419,11 +439,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
     </div>
     <div class="grid-2" style="margin-top:16px;">
       <div class="card">
-        <div class="card-title">5-Day Rolling Average vs Spot Margin</div>
+        <div class="card-title has-tooltip" data-tooltip-key="5-Day Rolling">5-Day Rolling Average vs Spot Margin</div>
         <div class="chart-container"><canvas id="chartMomentum"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Historical Percentile Rank Over Time</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time</div>
         <div class="chart-container"><canvas id="chartPercentile"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
       </div>
@@ -581,28 +601,52 @@ async function renderOverview() {
   try {
     const [current, fwd] = await Promise.all([loadJSON('current'), loadJSON('forward_curve')]);
 
-    // Snapshot table — NATURALGAS
-    const ng = current.NATURALGAS || [];
-    // Deduplicate — one row per unique expiry
-    const seen = new Set();
-    const deduped = ng.filter(c => { if (seen.has(c.expiry)) return false; seen.add(c.expiry); return true; });
+    // Snapshot table — NATURALGAS / NATGASMINI toggle
+    let activeSnapSym = 'NATURALGAS';
 
-    const tbody = document.getElementById('snapshotBody');
-    tbody.innerHTML = deduped.map(c => `
-      <tr>
-        <td><strong>${c.expiry}</strong></td>
-        <td>${dteBadge(c.dte)}</td>
-        <td>${c.initial_margin_pct.toFixed(2)}%</td>
-        <td>${c.elm_pct.toFixed(2)}%</td>
-        <td>${c.tender_margin_pct > 0
-          ? `<strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>`
-          : '0.00%'}</td>
-        <td><strong>${c.total_margin_pct.toFixed(2)}%</strong></td>
-        <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
-        <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
-        <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
-      </tr>
-    `).join('');
+    function renderSnapshotTable(sym) {
+      const rows = (current[sym] || []);
+      document.getElementById('snapshotSymbolLabel').textContent =
+        sym === 'NATURALGAS' ? 'NaturalGas' : 'NatGasMini';
+      const seen = new Set();
+      const deduped = rows.filter(c => {
+        if (seen.has(c.expiry)) return false;
+        seen.add(c.expiry);
+        return true;
+      });
+      document.getElementById('snapshotBody').innerHTML = deduped.map(c => `
+        <tr>
+          <td><strong>${c.expiry}</strong></td>
+          <td>${dteBadge(c.dte)}</td>
+          <td>${c.initial_margin_pct.toFixed(2)}%</td>
+          <td>${c.elm_pct.toFixed(2)}%</td>
+          <td>${c.tender_margin_pct > 0
+            ? `<strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>`
+            : '0.00%'}</td>
+          <td><strong>${c.total_margin_pct.toFixed(2)}%</strong></td>
+          <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
+          <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
+          <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    renderSnapshotTable(activeSnapSym);
+
+    document.querySelectorAll('.snap-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.snap-toggle').forEach(b => {
+          b.style.background = 'var(--surface2)';
+          b.style.color = 'var(--text-muted)';
+          b.style.border = '1px solid var(--border)';
+        });
+        btn.style.background = 'var(--accent)';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        activeSnapSym = btn.dataset.sym;
+        renderSnapshotTable(activeSnapSym);
+      });
+    });
 
     // Mini forward curve chart
     const fwdNG  = fwd.NATURALGAS  || [];
@@ -643,7 +687,13 @@ async function renderOverview() {
     });
 
     // Panic signals table
-    document.getElementById('panicBody').innerHTML = fwdNG.slice(0, 10).map(c => {
+    const seenPanic = new Set();
+    const dedupedPanic = fwdNG.filter(c => {
+      if (seenPanic.has(c.expiry)) return false;
+      seenPanic.add(c.expiry);
+      return true;
+    });
+    document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
       const predicted = PANIC_COEFF_MARGIN * c.total_margin_pct + PANIC_COEFF_VOL * (c.daily_volatility || 0);
       const diff = predicted - c.total_margin_pct;
       const signal = diff > 0
@@ -797,25 +847,77 @@ function filterByMonths(data, months) {
 async function renderHistory(months) {
   try {
     const sym = document.getElementById('histSymbol').value;
+    const showPrice = document.getElementById('showPrice')?.checked;
     const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
     const data = filterByMonths(raw, months);
 
-    const labels  = data.map(d => d.date);
+    const labels = data.map(d => d.date);
     const margins = data.map(d => d.initial_margin_pct);
-    const vols    = data.map(d => d.daily_volatility != null ? +(d.daily_volatility * 100).toFixed(4) : null);
+    const vols = data.map(d => d.daily_volatility != null ? +(d.daily_volatility * 100).toFixed(4) : null);
     const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: true };
+
+    // Fetch Henry Hub price if checkbox is on
+    let priceDataset = null;
+    if (showPrice) {
+      try {
+        const period1 = Math.floor((
+          months ? new Date(Date.now() - months * 30 * 86400000) : new Date('2010-01-01')
+        ).getTime() / 1000);
+        const period2 = Math.floor(Date.now() / 1000);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/NGW00.CME?period1=${period1}&period2=${period2}&interval=1d&events=history`;
+        const resp = await fetch(url);
+        const json = await resp.json();
+        const result = json?.chart?.result?.[0];
+        if (result) {
+          const timestamps = result.timestamp;
+          const closes = result.indicators.quote[0].close;
+          const priceMap = {};
+          timestamps.forEach((ts, i) => {
+            const d = new Date(ts * 1000).toISOString().slice(0, 10);
+            if (closes[i] != null) priceMap[d] = closes[i];
+          });
+          const aligned = labels.map(d => priceMap[d] ?? null);
+          priceDataset = {
+            label: 'Henry Hub Price ($/MMBtu)',
+            data: aligned,
+            borderColor: '#3fb950',
+            backgroundColor: 'transparent',
+            tension: 0.2, pointRadius: 0, borderWidth: 1.5,
+            borderDash: [4, 2], yAxisID: 'yPrice', spanGaps: true
+          };
+        }
+      } catch(e) { console.warn('Henry Hub fetch failed:', e); }
+    }
+
+    const marginDatasets = [{
+      label: 'Initial Margin %', data: margins,
+      borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
+      fill: true, yAxisID: 'y', ...lineDefaults
+    }];
+    if (priceDataset) marginDatasets.push(priceDataset);
+
+    const scales = {
+      x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
+      y: { title: { display: true, text: 'Margin %' }, position: 'left' }
+    };
+    if (priceDataset) {
+      scales.yPrice = {
+        title: { display: true, text: 'Henry Hub ($/MMBtu)' },
+        position: 'right', grid: { drawOnChartArea: false }
+      };
+    }
 
     if (histChartMargin) histChartMargin.destroy();
     histChartMargin = new Chart(document.getElementById('chartHistMargin'), {
       type: 'line',
-      data: { labels, datasets: [{ label: 'Initial Margin %', data: margins, borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.08)', fill: true, ...lineDefaults }] },
+      data: { labels, datasets: marginDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
-          y: { title: { display: true, text: 'Margin %' } }
-        }
+        plugins: {
+          legend: { display: !!priceDataset, position: 'top' },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales
       }
     });
 
@@ -826,10 +928,7 @@ async function renderHistory(months) {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
-          y: { title: { display: true, text: 'Daily Vol %' } }
-        }
+        scales: { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Daily Vol %' } } }
       }
     });
 
@@ -866,6 +965,7 @@ document.querySelectorAll('.range-btn').forEach(btn => {
   });
 });
 document.getElementById('histSymbol').addEventListener('change', () => renderHistory(currentHistMonths));
+document.getElementById('showPrice')?.addEventListener('change', () => renderHistory(currentHistMonths));
 
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   if (!histInited) { histInited = true; renderHistory(currentHistMonths); }
@@ -1314,6 +1414,13 @@ The 2022–2023 band is almost entirely red. Current 2026 levels are mid-range (
 🟡 <strong>NORMAL</strong> — 20–35%. Standard active market conditions. Monitor weekly.<br>
 🟠 <strong>STRESSED</strong> — 35–50%. Elevated vol. MCX may hike further. Reduce speculative exposure.<br>
 🔴 <strong>CRISIS</strong> — Above 50%. Extreme conditions (Feb 2026 spike). Serious margin call risk for underfunded accounts. Consider exiting or cutting size significantly.`
+  },
+  "Henry Hub": {
+    title: "Henry Hub Price Overlay (NGW00)",
+    body: `Overlays the <strong>Henry Hub natural gas front-month futures price</strong> (NGW00 from CME via Yahoo Finance) on the margin history chart.<br><br>
+The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin line uses the left Y-axis (%).<br><br>
+<strong>Why this matters:</strong> MCX NATURALGAS margin is heavily driven by Henry Hub price movements — when HH price spikes or crashes, MCX vol spikes and margins follow within 1–2 days. Viewing both on the same chart makes the cause-and-effect relationship immediately visible.<br><br>
+<em>Data:</em> Fetched live from Yahoo Finance public API. Requires internet. May show slight gaps on Indian market holidays.`
   }
 };
 
@@ -1332,25 +1439,33 @@ function hideTooltip() {
   ttHideTimer = setTimeout(() => ttOverlay.classList.remove('visible'), 150);
 }
 
-// Attach tooltips to card titles after a short delay (so all tabs have rendered)
-setTimeout(() => {
-  document.querySelectorAll('.card-title').forEach(el => {
-    const text = el.textContent.trim();
-    const key = Object.keys(TOOLTIPS).find(k => text.toLowerCase().includes(k.toLowerCase().slice(0,12)));
-    if (key) {
-      el.classList.add('has-tooltip');
-      el.addEventListener('mouseenter', () => showTooltip(key));
-      el.addEventListener('mouseleave', hideTooltip);
-    }
-  });
-  // Also attach to stat labels
-  document.querySelectorAll('.stat-label[data-tooltip-key]').forEach(el => {
+// ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
+function attachTooltips() {
+  document.querySelectorAll('[data-tooltip-key]').forEach(el => {
+    if (el._tooltipAttached) return; // don't double-attach
+    el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
-    el.classList.add('has-tooltip');
     el.addEventListener('mouseenter', () => showTooltip(key));
     el.addEventListener('mouseleave', hideTooltip);
+    // Touch support for mobile
+    el.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      showTooltip(key);
+      setTimeout(hideTooltip, 3000);
+    }, { passive: false });
   });
-}, 500);
+}
+
+// Run on page load (catches Overview tab)
+attachTooltips();
+
+// Re-run whenever a tab is clicked (catches lazy-loaded tabs)
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Small delay to let tab content become visible
+    setTimeout(attachTooltips, 100);
+  });
+});
 
 // Back to top
 const bttBtn = document.getElementById('backToTop');
