@@ -7,8 +7,10 @@ Output: docs/data/*.json
 
 import sqlite3
 import json
+import json as json_lib
 import math
 import statistics
+import urllib.request
 from datetime import datetime, date
 from pathlib import Path
 
@@ -436,5 +438,37 @@ def main():
     print(f"Latest data: {latest_date} | Total records: {count:,}")
 
 
+def export_hh_price():
+    """Fetch Henry Hub front-month price history from Yahoo Finance (NG=F) and save as JSON."""
+    import time
+    # 5 years of daily data
+    period1 = int(time.time()) - (5 * 365 * 24 * 3600)
+    period2 = int(time.time())
+    # NG=F = Natural Gas Continuous Contract (front month) on Yahoo Finance
+    url = (
+        f"https://query1.finance.yahoo.com/v8/finance/chart/NG%3DF"
+        f"?period1={period1}&period2={period2}&interval=1d"
+    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json_lib.loads(resp.read())
+        result = data["chart"]["result"][0]
+        timestamps = result["timestamp"]
+        closes = result["indicators"]["quote"][0]["close"]
+        prices = []
+        for ts, close in zip(timestamps, closes):
+            if close is not None:
+                date_str = date.fromtimestamp(ts).isoformat()
+                prices.append({"date": date_str, "price": round(close, 4)})
+        save("hh_price.json", {"symbol": "NG=F", "currency": "USD/MMBtu", "prices": prices})
+    except Exception as e:
+        print(f"  [WARN] HH price fetch failed: {e} - skipping hh_price.json")
+
+
 if __name__ == "__main__":
     main()
+    export_hh_price()

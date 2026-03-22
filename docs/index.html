@@ -493,6 +493,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 </style>
 
 <script>
+// Single tooltip DOM refs — declared once here, used everywhere below
+const _ttEl = document.getElementById('tooltipOverlay');
+let _ttTimer;
+
 // ═══════════════════════════════════════════════════════════════════
 // PART 1 — Tab switching + data cache + meta load + KPI population
 // ═══════════════════════════════════════════════════════════════════
@@ -856,37 +860,37 @@ async function renderHistory(months) {
     const vols = data.map(d => d.daily_volatility != null ? +(d.daily_volatility * 100).toFixed(4) : null);
     const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: true };
 
-    // Fetch Henry Hub price if checkbox is on
+    // Henry Hub price — read from locally pre-fetched JSON (avoids CORS on GitHub Pages)
     let priceDataset = null;
     if (showPrice) {
       try {
-        const period1 = Math.floor((
-          months ? new Date(Date.now() - months * 30 * 86400000) : new Date('2010-01-01')
-        ).getTime() / 1000);
-        const period2 = Math.floor(Date.now() / 1000);
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/NGW00.CME?period1=${period1}&period2=${period2}&interval=1d&events=history`;
-        const resp = await fetch(url);
-        const json = await resp.json();
-        const result = json?.chart?.result?.[0];
-        if (result) {
-          const timestamps = result.timestamp;
-          const closes = result.indicators.quote[0].close;
+        const hhData = await loadJSON('hh_price');
+        if (hhData && hhData.prices && hhData.prices.length > 0) {
+          // Build date→price lookup
           const priceMap = {};
-          timestamps.forEach((ts, i) => {
-            const d = new Date(ts * 1000).toISOString().slice(0, 10);
-            if (closes[i] != null) priceMap[d] = closes[i];
-          });
+          hhData.prices.forEach(p => { priceMap[p.date] = p.price; });
+
+          // Align to our margin date labels
           const aligned = labels.map(d => priceMap[d] ?? null);
-          priceDataset = {
-            label: 'Henry Hub Price ($/MMBtu)',
-            data: aligned,
-            borderColor: '#3fb950',
-            backgroundColor: 'transparent',
-            tension: 0.2, pointRadius: 0, borderWidth: 1.5,
-            borderDash: [4, 2], yAxisID: 'yPrice', spanGaps: true
-          };
+          const hasAny = aligned.some(v => v !== null);
+
+          if (hasAny) {
+            priceDataset = {
+              label: 'Henry Hub ($/MMBtu)',
+              data: aligned,
+              borderColor: '#3fb950',
+              backgroundColor: 'transparent',
+              tension: 0.2,
+              pointRadius: 0,
+              borderWidth: 2,
+              borderDash: [5, 3],
+              yAxisID: 'yPrice'
+            };
+          }
         }
-      } catch(e) { console.warn('Henry Hub fetch failed:', e); }
+      } catch(e) {
+        console.warn('HH price JSON load failed:', e);
+      }
     }
 
     const marginDatasets = [{
@@ -1424,19 +1428,16 @@ The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin 
   }
 };
 
-const ttOverlay = document.getElementById('tooltipOverlay');
-let ttHideTimer;
-
 function showTooltip(key) {
   const tt = TOOLTIPS[key];
-  if (!tt) return;
-  clearTimeout(ttHideTimer);
+  if (!tt || !_ttEl) return;
+  clearTimeout(_ttTimer);
   document.getElementById('ttTitle').textContent = tt.title;
   document.getElementById('ttBody').innerHTML = tt.body;
-  ttOverlay.classList.add('visible');
+  _ttEl.classList.add('visible');
 }
 function hideTooltip() {
-  ttHideTimer = setTimeout(() => ttOverlay.classList.remove('visible'), 150);
+  _ttTimer = setTimeout(() => { if (_ttEl) _ttEl.classList.remove('visible'); }, 150);
 }
 
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
