@@ -4,6 +4,32 @@ All files read: `main.py`, `scraper.py`, `db.py`, `backfill.py`, `query.py`, `re
 
 ---
 
+## 📊 Live Dashboard
+
+[**View the MCX Margin Intelligence Dashboard →**](https://yieldchaser.github.io/mcx-margins/)
+
+The dashboard auto-updates every weekday evening after MCX market close (8 PM IST). It builds upon independent scraped SQLite streams to visualize forward, structural, analytical, and historical workloads across static payloads.
+
+### 📈 Major Feature Kits
+*   **Overview Tab**: Front Month Snapshot KPIs with granular Term grids and predictive Hike/Cut Panic buffers.
+*   **Term Structure**: Composite dual-curve layers for NATURALGAS and NATGASMINI with visual margin metrics spreads.
+*   **History Charts**: Full chronological benchmarks since 2010 mapping rates directly against daily volume sets.
+*   **Seasonality Visuals**: Smooth Average Monthly/Annual loading bar datasets framed framing rich Grid thermal workloads.
+*   **Decision Analytics**: Dedicated DTE-to-Margin maps framing heavy correlational lag-offset predictive model views.
+*   **Buffer Explorer**: Continuous Multi-Column search models framing heavy static CSV bundle download loads.
+
+### ⚙️ Pipeline Implementation
+1.  **JSON Aggregation (`export_json.py`)**: Continuously bundles local full weights mirroring aggregates directly scaling inside `docs/data/`.
+2.  **SPA Client (`docs/index.html`)**: Zero-dependency delivery utilizing pure Vanilla async wrappers bundled directly with Chart.js frameworks.
+
+**Local Diagnostics Run**:
+```bash
+python export_json.py
+cd docs && python -m http.server 8080
+```
+
+---
+
 ## Question 1: What does this project do?
 
 This project is an automated daily margin data scraper for the **MCX CCL (Multi Commodity Exchange Clearing Corporation Limited)** website. It uses a headless Chromium browser (via Playwright) to navigate to `https://www.mcxccl.com/risk-management/daily-margin`, bypass Akamai bot detection by first visiting the homepage, fill in a date, click the "Show" button, and intercept the JSON API response from the `POST /backpage.aspx/GetDailyMargin` endpoint. It then filters the results to keep only two symbols — `NATURALGAS` and `NATGASMINI` — normalizes the percentage fields, and stores them in a local SQLite database at `data/margins.db`. A GitHub Actions workflow runs this automatically every weekday evening (Indian time), committing the updated database back to the repository. A query tool (`query.py`) lets you inspect the data or export it to Excel.
