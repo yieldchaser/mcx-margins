@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCX Natural Gas Margin Intelligence</title>
+<meta name="description" content="Live MCX NATURALGAS and NATGASMINI futures margin intelligence dashboard — forward curve, history, seasonality, analytics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design tokens ── */
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #388bfd;
+  --accent-orange: #fb8f44;
+  --accent-green: #3fb950;
+  --accent-red: #f85149;
+  --accent-yellow: #d29922;
+  --accent-purple: #a371f7;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; font-size: 14px; line-height: 1.5; }
+
+/* ── Header ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  height: 52px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 20px; gap: 12px;
+}
+.header-left {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 15px; letter-spacing: -0.01em;
+}
+.header-left .logo-icon { font-size: 18px; }
+.header-left .brand { color: var(--text); }
+.header-left .brand-sub { color: var(--text-muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.header-right {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-muted);
+}
+.staleness-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-muted); display: inline-block;
+  box-shadow: 0 0 6px currentColor;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* ── Stats Bar ── */
+.stats-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 0;
+  overflow-x: auto;
+}
+.stat-card {
+  flex: 1; min-width: 120px;
+  padding: 10px 20px;
+  border-right: 1px solid var(--border);
+}
+.stat-card:last-child { border-right: none; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 2px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+
+/* ── Tab Navigation ── */
+.tab-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 0;
+  overflow-x: auto; scrollbar-width: none;
+  position: sticky; top: 52px; z-index: 90;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-muted); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 12px 18px; cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ── Tab Content ── */
+.tab-content { display: none; padding: 20px; }
+.tab-content.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+}
+.card-title {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  margin-bottom: 14px; font-weight: 600;
+}
+
+/* ── Grids ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ── Chart wrapper ── */
+.chart-container { position: relative; height: 300px; }
+
+/* ── Badges ── */
+.badge-hike, .badge-cut, .badge-safe, .badge-warn, .badge-danger {
+  display: inline-block; border-radius: 4px;
+  padding: 2px 8px; font-size: 11px; font-weight: 600;
+}
+.badge-hike   { background: var(--accent-red);    color: #fff; }
+.badge-cut    { background: var(--accent-green);  color: #0d1117; }
+.badge-safe   { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+.badge-warn   { background: rgba(210,153,34,0.15);color: var(--accent-yellow); }
+.badge-danger { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+
+/* ── Data Table ── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  background: var(--surface2); padding: 9px 12px;
+  text-align: left; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); font-weight: 600;
+  position: sticky; top: 0;
+}
+.data-table td {
+  padding: 9px 12px; font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+.data-table tr:nth-child(even) td { background: rgba(33,38,45,0.5); }
+
+/* ── Utility ── */
+.mb-4 { margin-bottom: 16px; }
+.mt-4 { margin-top: 16px; }
+.text-muted { color: var(--text-muted); font-size: 12px; }
+.mono { font-family: 'SF Mono', 'Consolas', monospace; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .tab-content { padding: 12px; }
+  .stats-bar { flex-wrap: nowrap; }
+  .stat-card { min-width: 100px; padding: 8px 12px; }
+  .stat-value { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-left">
+    <span class="logo-icon">🔥</span>
+    <span class="brand">MCX Margins</span>
+    <span class="brand-sub">Natural Gas Margin Intelligence</span>
+  </div>
+  <div class="header-right">
+    <span class="staleness-dot" id="stalenessDot" title="Loading..."></span>
+    <span id="lastUpdated">Loading...</span>
+  </div>
+</header>
+
+<!-- ── Stats Bar ── -->
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="stat-label">Front Margin %</div>
+    <div class="stat-value" id="kpiFrontMargin">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">ELM %</div>
+    <div class="stat-value" id="kpiElm">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Daily Volatility</div>
+    <div class="stat-value" id="kpiDailyVol">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Ann. Volatility</div>
+    <div class="stat-value" id="kpiAnnVol">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Days to Expiry</div>
+    <div class="stat-value" id="kpiDTE">—</div>
+  </div>
+</div>
+
+<!-- ── Tab Navigation ── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="overview" id="btn-overview">Overview</button>
+  <button class="tab-btn" data-tab="termstructure" id="btn-termstructure">Term Structure</button>
+  <button class="tab-btn" data-tab="history" id="btn-history">History</button>
+  <button class="tab-btn" data-tab="seasonality" id="btn-seasonality">Seasonality</button>
+  <button class="tab-btn" data-tab="analytics" id="btn-analytics">Analytics</button>
+  <button class="tab-btn" data-tab="explorer" id="btn-explorer">Data Explorer</button>
+</nav>
+
+<!-- ── Tab Panels ── -->
+<main>
+  <div id="tab-overview" class="tab-content active">
+    <!-- Section: Current Snapshot Table -->
+    <div class="card mb-4">
+      <div class="card-title">Current Margin Snapshot — NATURALGAS</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="snapshotTable">
+          <thead><tr>
+            <th>Contract</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
+            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th>
+          </tr></thead>
+          <tbody id="snapshotBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mini forward curve + panic signals -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Forward Curve — Today</div>
+        <div class="chart-container"><canvas id="miniForwardCurve"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Panic Spread Signals</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="panicTable">
+            <thead><tr>
+              <th>Expiry</th><th>Current %</th><th>Predicted</th><th>Signal</th>
+            </tr></thead>
+            <tbody id="panicBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-termstructure" class="tab-content">
+    <div class="card mb-4">
+      <div class="card-title">Forward Margin Curve — All Active Expiries</div>
+      <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Volatility Term Structure</div>
+        <div class="chart-container"><canvas id="chartVolCurve"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Margin Spread: NATURALGAS vs NATGASMINI</div>
+        <div class="chart-container"><canvas id="chartSpread"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-history" class="tab-content">
+    <div class="card mb-4" style="padding:14px 20px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);margin-right:6px;">Symbol</label>
+          <select id="histSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
+            <option value="ng">NATURALGAS</option>
+            <option value="ngm">NATGASMINI</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="range-btn active-range" data-months="1">1M</button>
+          <button class="range-btn" data-months="3">3M</button>
+          <button class="range-btn" data-months="6">6M</button>
+          <button class="range-btn" data-months="12">1Y</button>
+          <button class="range-btn" data-months="36">3Y</button>
+          <button class="range-btn" data-months="0">All</button>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-title">Initial Margin % Over Time (Front Month)</div>
+      <div class="chart-container" style="height:340px;"><canvas id="chartHistMargin"></canvas></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Daily Volatility Over Time</div>
+        <div class="chart-container"><canvas id="chartHistVol"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Margin vs Volatility (Scatter)</div>
+        <div class="chart-container"><canvas id="chartScatter"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-seasonality" class="tab-content">
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">Average Margin by Month (NATURALGAS, All Years)</div>
+        <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Average Margin by Year (2010–2026)</div>
+        <div class="chart-container"><canvas id="chartSeasonYear"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly Margin Heatmap — Year × Month (NATURALGAS)</div>
+      <div id="heatmapContainer" style="overflow-x:auto;margin-top:8px;"></div>
+      <div style="display:flex;gap:24px;margin-top:12px;font-size:11px;color:var(--text-muted);align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:100px;height:10px;background:linear-gradient(to right,#0d4a1a,#d29922,#7f1d1d);border-radius:2px;"></div>
+          <span>Low → Mid → High Margin</span>
+        </div>
+        <span>Blank = no data</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-analytics" class="tab-content">
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
+        <div class="chart-container"><canvas id="chartDTE"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Lag Correlation: Margin % vs Daily Volatility</div>
+        <div class="chart-container"><canvas id="chartLagCorr"></canvas></div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+          Correlation is strongest at lag=0 (simultaneous). Relationship weakens beyond 10 days — MCX responds to current vol, not future conditions.
+        </p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
+      <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+        Predicted = 0.886 × Current Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
+      </p>
+    </div>
+  </div>
+
+  <div id="tab-explorer" class="tab-content">
+    <div class="card mb-4" style="padding:14px 20px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <select id="expSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
+          <option value="ng">NATURALGAS</option>
+          <option value="ngm">NATGASMINI</option>
+        </select>
+        <button id="exportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">&#11015; Download CSV</button>
+        <span style="font-size:12px;color:var(--text-muted);" id="explorerCount"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="explorerTable">
+          <thead><tr>
+            <th>Date</th><th>Expiry</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
+            <th>Tender %</th><th>Total %</th><th>Daily Vol</th><th>Ann. Vol %</th>
+          </tr></thead>
+          <tbody id="explorerBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
+        <button id="prevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
+        <span id="pageInfo" style="color:var(--text-muted);"></span>
+        <button id="nextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ── Shared styles for dynamic elements ── -->
+<style>
+.range-btn {
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 10px; font-size: 12px; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.range-btn:hover { color: var(--text); }
+.range-btn.active-range, .range-btn:focus { background: var(--accent); color: white; border-color: var(--accent); outline: none; }
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// PART 1 — Tab switching + data cache + meta load + KPI population
+// ═══════════════════════════════════════════════════════════════════
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Global data cache
+const DATA = {};
+async function loadJSON(name) {
+  if (DATA[name]) return DATA[name];
+  const r = await fetch(`data/${name}.json`);
+  if (!r.ok) throw new Error(`Failed to load ${name}.json: ${r.status}`);
+  DATA[name] = await r.json();
+  return DATA[name];
+}
+
+// Staleness badge
+function setStaleness(dateStr) {
+  const dot = document.getElementById('stalenessDot');
+  const label = document.getElementById('lastUpdated');
+  label.textContent = 'Updated: ' + dateStr;
+  const days = (Date.now() - new Date(dateStr)) / 86400000;
+  if (days < 1) { dot.style.background = '#3fb950'; dot.title = 'LIVE'; }
+  else if (days < 5) { dot.style.background = '#d29922'; dot.title = 'DELAYED'; }
+  else { dot.style.background = '#f85149'; dot.title = 'STALE'; }
+}
+
+// On page load — fetch meta + current, populate KPIs
+(async () => {
+  try {
+    const [meta, current] = await Promise.all([loadJSON('meta'), loadJSON('current')]);
+    setStaleness(meta.last_updated);
+    const ng = current.NATURALGAS || [];
+    const front = ng.find(c => c.dte >= 0) || ng[0];
+    if (front) {
+      document.getElementById('kpiFrontMargin').textContent = front.initial_margin_pct.toFixed(2) + '%';
+      document.getElementById('kpiElm').textContent         = front.elm_pct.toFixed(2) + '%';
+      document.getElementById('kpiDailyVol').textContent    = (front.daily_volatility * 100).toFixed(2) + '%';
+      document.getElementById('kpiAnnVol').textContent      = (front.annualized_volatility * 100).toFixed(1) + '%';
+      document.getElementById('kpiDTE').textContent         = front.dte + 'd';
+    }
+  } catch(e) {
+    console.error('Failed to load meta/current:', e);
+    document.getElementById('lastUpdated').textContent = 'Data unavailable';
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 2 — Overview Tab
+// ═══════════════════════════════════════════════════════════════════
+
+const PANIC_COEFF_MARGIN = 0.886;
+const PANIC_COEFF_VOL    = 43.0;
+
+function dteBadge(dte) {
+  if (dte <= 30) return `<span class="badge-danger">${dte}d</span>`;
+  if (dte <= 60) return `<span class="badge-warn">${dte}d</span>`;
+  return `<span class="badge-safe">${dte}d</span>`;
+}
+
+let overviewRendered = false;
+async function renderOverview() {
+  if (overviewRendered) return;
+  overviewRendered = true;
+  try {
+    const [current, fwd] = await Promise.all([loadJSON('current'), loadJSON('forward_curve')]);
+
+    // Snapshot table — NATURALGAS
+    const ng = current.NATURALGAS || [];
+    document.getElementById('snapshotBody').innerHTML = ng.map(c => `
+      <tr>
+        <td><strong>${c.expiry}</strong></td>
+        <td>${dteBadge(c.dte)}</td>
+        <td>${(c.initial_margin_pct ?? 0).toFixed(2)}%</td>
+        <td>${(c.elm_pct ?? 0).toFixed(2)}%</td>
+        <td>${(c.tender_margin_pct ?? 0).toFixed(2)}%</td>
+        <td><strong>${(c.total_margin_pct ?? 0).toFixed(2)}%</strong></td>
+        <td>${(c.additional_long_margin_pct ?? 0).toFixed(2)}%</td>
+        <td>${(c.additional_short_margin_pct ?? 0).toFixed(2)}%</td>
+        <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
+      </tr>
+    `).join('');
+
+    // Mini forward curve chart
+    const fwdNG  = fwd.NATURALGAS  || [];
+    const fwdNGM = fwd.NATGASMINI  || [];
+    new Chart(document.getElementById('miniForwardCurve'), {
+      type: 'line',
+      data: {
+        labels: fwdNG.map(c => c.expiry),
+        datasets: [
+          {
+            label: 'NATURALGAS',
+            data: fwdNG.map(c => c.total_margin_pct),
+            borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.08)',
+            tension: 0.3, pointRadius: 3, fill: true
+          },
+          {
+            label: 'NATGASMINI',
+            data: fwdNG.map(ng => {
+              const m = fwdNGM.find(x => x.expiry === ng.expiry);
+              return m ? m.total_margin_pct : null;
+            }),
+            borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.08)',
+            tension: 0.3, pointRadius: 3, fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 } } },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { ticks: { maxRotation: 45, font: { size: 9 }, maxTicksLimit: 8 } },
+          y: { title: { display: true, text: 'Total Margin %' } }
+        }
+      }
+    });
+
+    // Panic signals table
+    document.getElementById('panicBody').innerHTML = fwdNG.slice(0, 10).map(c => {
+      const predicted = PANIC_COEFF_MARGIN * c.total_margin_pct + PANIC_COEFF_VOL * (c.daily_volatility || 0);
+      const diff = predicted - c.total_margin_pct;
+      const signal = diff > 0
+        ? `<span class="badge-hike">&#9650; HIKE</span>`
+        : `<span class="badge-cut">&#9660; CUT</span>`;
+      return `<tr>
+        <td><strong>${c.expiry}</strong></td>
+        <td>${c.total_margin_pct.toFixed(2)}%</td>
+        <td>${predicted.toFixed(2)}%</td>
+        <td>${signal}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    console.error('Overview render error:', e);
+  }
+}
+
+// Load Chart.js then render overview immediately (it's the active tab)
+const chartScript = document.createElement('script');
+chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+chartScript.onload = () => {
+  Chart.defaults.color       = '#8b949e';
+  Chart.defaults.borderColor = '#30363d';
+  Chart.defaults.font.family = 'Inter';
+  renderOverview();
+};
+document.head.appendChild(chartScript);
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 3 — Term Structure Tab
+// ═══════════════════════════════════════════════════════════════════
+
+document.querySelector('[data-tab="termstructure"]').addEventListener('click', () => {
+  if (document.getElementById('chartFwdFull')._rendered) return;
+  document.getElementById('chartFwdFull')._rendered = true;
+  renderTermStructure();
+});
+
+async function renderTermStructure() {
+  try {
+    const fwd = await loadJSON('forward_curve');
+    const ng  = fwd.NATURALGAS  || [];
+    const ngm = fwd.NATGASMINI  || [];
+
+    new Chart(document.getElementById('chartFwdFull'), {
+      type: 'line',
+      data: {
+        labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
+        datasets: [
+          {
+            label: 'NATURALGAS Total Margin %',
+            data: ng.map(c => c.total_margin_pct),
+            borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
+            tension: 0.3, pointRadius: 4, fill: true
+          },
+          {
+            label: 'NATGASMINI Total Margin %',
+            data: ng.map(c => {
+              const m = ngm.find(x => x.expiry === c.expiry);
+              return m ? m.total_margin_pct : null;
+            }),
+            borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
+            tension: 0.3, pointRadius: 4, fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              afterLabel: (ctx) => {
+                const c = ng[ctx.dataIndex];
+                if (!c) return '';
+                return `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
+          y: { title: { display: true, text: 'Total Margin %' } }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('chartVolCurve'), {
+      type: 'line',
+      data: {
+        labels: ng.map(c => c.expiry),
+        datasets: [{
+          label: 'Ann. Volatility %',
+          data: ng.map(c => c.annualized_volatility ? +(c.annualized_volatility * 100).toFixed(2) : null),
+          borderColor: '#a371f7', backgroundColor: 'rgba(163,113,247,0.1)',
+          tension: 0.3, pointRadius: 3, fill: true
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { title: { display: true, text: 'Ann. Vol %' } }
+        }
+      }
+    });
+
+    const spreadData = ng.map(c => {
+      const m = ngm.find(x => x.expiry === c.expiry);
+      return m ? +((c.total_margin_pct - m.total_margin_pct).toFixed(3)) : null;
+    });
+    new Chart(document.getElementById('chartSpread'), {
+      type: 'bar',
+      data: {
+        labels: ng.map(c => c.expiry),
+        datasets: [{
+          label: 'NG − NGM Margin Spread %',
+          data: spreadData,
+          backgroundColor: spreadData.map(v => v != null && v >= 0 ? 'rgba(56,139,253,0.7)' : 'rgba(248,81,73,0.7)'),
+          borderRadius: 3
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { title: { display: true, text: 'Spread (%)' } }
+        }
+      }
+    });
+  } catch(e) { console.error('Term Structure render error:', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 4 — History Tab
+// ═══════════════════════════════════════════════════════════════════
+
+let histChartMargin = null, histChartVol = null, histChartScatter = null;
+let histInited = false;
+
+function filterByMonths(data, months) {
+  if (!months) return data;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return data.filter(d => new Date(d.date) >= cutoff);
+}
+
+async function renderHistory(months) {
+  try {
+    const sym = document.getElementById('histSymbol').value;
+    const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
+    const data = filterByMonths(raw, months);
+
+    const labels  = data.map(d => d.date);
+    const margins = data.map(d => d.initial_margin_pct);
+    const vols    = data.map(d => d.daily_volatility != null ? +(d.daily_volatility * 100).toFixed(4) : null);
+    const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: true };
+
+    if (histChartMargin) histChartMargin.destroy();
+    histChartMargin = new Chart(document.getElementById('chartHistMargin'), {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Initial Margin %', data: margins, borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.08)', fill: true, ...lineDefaults }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Margin %' } }
+        }
+      }
+    });
+
+    if (histChartVol) histChartVol.destroy();
+    histChartVol = new Chart(document.getElementById('chartHistVol'), {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Daily Volatility %', data: vols, borderColor: '#a371f7', backgroundColor: 'rgba(163,113,247,0.08)', fill: true, ...lineDefaults }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Daily Vol %' } }
+        }
+      }
+    });
+
+    const scatterPts = data
+      .filter(d => d.daily_volatility != null && d.initial_margin_pct != null)
+      .map(d => ({ x: +(d.daily_volatility * 100).toFixed(3), y: d.initial_margin_pct, date: d.date }));
+
+    if (histChartScatter) histChartScatter.destroy();
+    histChartScatter = new Chart(document.getElementById('chartScatter'), {
+      type: 'scatter',
+      data: { datasets: [{ label: 'Margin vs Vol', data: scatterPts, backgroundColor: 'rgba(56,139,253,0.35)', pointRadius: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `${ctx.raw.date}: Vol=${ctx.raw.x.toFixed(2)}%, Margin=${ctx.raw.y.toFixed(2)}%` } }
+        },
+        scales: {
+          x: { title: { display: true, text: 'Daily Volatility %' } },
+          y: { title: { display: true, text: 'Initial Margin %' } }
+        }
+      }
+    });
+  } catch(e) { console.error('History render error:', e); }
+}
+
+let currentHistMonths = 1;
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active-range'));
+    btn.classList.add('active-range');
+    currentHistMonths = parseInt(btn.dataset.months);
+    renderHistory(currentHistMonths);
+  });
+});
+document.getElementById('histSymbol').addEventListener('change', () => renderHistory(currentHistMonths));
+
+document.querySelector('[data-tab="history"]').addEventListener('click', () => {
+  if (!histInited) { histInited = true; renderHistory(currentHistMonths); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 5 — Seasonality Tab
+// ═══════════════════════════════════════════════════════════════════
+
+function marginToColor(val, minV, maxV) {
+  if (val == null) return 'var(--surface2)';
+  const t = Math.max(0, Math.min(1, (val - minV) / (maxV - minV)));
+  if (t < 0.5) {
+    const s = t * 2;
+    const r = Math.round(13  + s * (210 - 13));
+    const g = Math.round(74  + s * (161 - 74));
+    const b = Math.round(26  + s * (22  - 26));
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const s = (t - 0.5) * 2;
+    const r = Math.round(210 + s * (127 - 210));
+    const g = Math.round(161 + s * (29  - 161));
+    const b = Math.round(22  + s * (29  - 22));
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+let seasonRendered = false;
+async function renderSeasonality() {
+  if (seasonRendered) return;
+  seasonRendered = true;
+  try {
+    const [monthly, yearly, heatmap] = await Promise.all([
+      loadJSON('seasonal_month'), loadJSON('seasonal_year'), loadJSON('seasonal_heatmap')
+    ]);
+
+    const medMonth = monthly.reduce((s, r) => s + r.avg_initial_margin, 0) / monthly.length;
+    new Chart(document.getElementById('chartSeasonMonth'), {
+      type: 'bar',
+      data: {
+        labels: monthly.map(r => r.month),
+        datasets: [{
+          label: 'Avg Initial Margin %',
+          data: monthly.map(r => r.avg_initial_margin),
+          backgroundColor: monthly.map(r => r.avg_initial_margin >= medMonth ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              afterLabel: ctx => {
+                const r = monthly[ctx.dataIndex];
+                return `Range: ${r.min.toFixed(1)}%–${r.max.toFixed(1)}%\nSamples: ${r.count}`;
+              }
+            }
+          }
+        },
+        scales: { y: { title: { display: true, text: 'Avg Margin %' } } }
+      }
+    });
+
+    const medYear = yearly.reduce((s, r) => s + r.avg_initial_margin, 0) / yearly.length;
+    new Chart(document.getElementById('chartSeasonYear'), {
+      type: 'bar',
+      data: {
+        labels: yearly.map(r => r.year),
+        datasets: [{
+          label: 'Avg Initial Margin %',
+          data: yearly.map(r => r.avg_initial_margin),
+          backgroundColor: yearly.map(r => r.avg_initial_margin >= medYear ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { maxRotation: 45, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Avg Margin %' } }
+        }
+      }
+    });
+
+    // Heatmap
+    const { years, months, data } = heatmap;
+    let allVals = [];
+    years.forEach(y => months.forEach(m => { const v = data[y]?.[m]; if (v != null) allVals.push(v); }));
+    const minV = Math.min(...allVals), maxV = Math.max(...allVals);
+
+    let html = `<table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%;">`;
+    html += `<tr><th style="padding:4px 8px;background:var(--surface2);position:sticky;left:0;z-index:1;font-size:10px;color:var(--text-muted);">YEAR</th>`;
+    months.forEach(m => { html += `<th style="padding:4px 6px;background:var(--surface2);text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;">${m}</th>`; });
+    html += `</tr>`;
+    years.forEach(y => {
+      html += `<tr><td style="padding:4px 8px;background:var(--surface2);position:sticky;left:0;z-index:1;font-weight:700;color:var(--text-muted);font-size:10px;">${y}</td>`;
+      months.forEach(m => {
+        const v = data[y]?.[m];
+        const bg = marginToColor(v, minV, maxV);
+        const fg = v == null ? 'transparent' : (v > (minV + maxV) / 2 ? '#fff' : '#0d1117');
+        html += `<td style="padding:5px 3px;background:${bg};text-align:center;color:${fg};font-weight:600;font-size:10px;" title="${y} ${m}: ${v?.toFixed(1) ?? 'N/A'}%">${v != null ? v.toFixed(1) : ''}</td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</table>`;
+    document.getElementById('heatmapContainer').innerHTML = html;
+  } catch(e) { console.error('Seasonality render error:', e); }
+}
+
+document.querySelector('[data-tab="seasonality"]').addEventListener('click', () => renderSeasonality());
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 6 — Analytics Tab + Data Explorer
+// ═══════════════════════════════════════════════════════════════════
+
+let analyticsRendered = false;
+async function renderAnalytics() {
+  if (analyticsRendered) return;
+  analyticsRendered = true;
+  try {
+    const [dte, volCorr, fwd] = await Promise.all([
+      loadJSON('dte_curve'), loadJSON('volatility_correlation'), loadJSON('forward_curve')
+    ]);
+
+    new Chart(document.getElementById('chartDTE'), {
+      type: 'line',
+      data: {
+        labels: dte.map(d => d.dte_bin),
+        datasets: [
+          { label: 'Avg Initial Margin %', data: dte.map(d => d.avg_initial_margin), borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)', tension: 0.3, pointRadius: 5, fill: true },
+          { label: 'Avg Tender Margin %',  data: dte.map(d => d.avg_tender_margin),  borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.1)',   tension: 0.3, pointRadius: 5, fill: true }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: { callbacks: { afterLabel: ctx => `Samples: ${dte[ctx.dataIndex].count}` } }
+        },
+        scales: { y: { title: { display: true, text: 'Margin %' } } }
+      }
+    });
+
+    const lags = volCorr.lags.map(String);
+    const corrVals = lags.map(l => volCorr.NATURALGAS[l]);
+    new Chart(document.getElementById('chartLagCorr'), {
+      type: 'bar',
+      data: {
+        labels: lags.map(l => `Lag ${l}d`),
+        datasets: [{
+          label: 'Correlation Coefficient',
+          data: corrVals,
+          backgroundColor: corrVals.map(v => v >= 0.8 ? 'rgba(63,185,80,0.75)' : v >= 0.5 ? 'rgba(210,153,34,0.75)' : 'rgba(251,143,68,0.75)'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
+      }
+    });
+
+    const ng = fwd.NATURALGAS || [];
+    const curM = ng.map(c => c.total_margin_pct);
+    const predM = ng.map(c => +((0.886 * c.total_margin_pct + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
+    new Chart(document.getElementById('chartPanicFull'), {
+      type: 'line',
+      data: {
+        labels: ng.map(c => c.expiry),
+        datasets: [
+          { label: 'Current Margin %',    data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3 },
+          { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' }, tooltip: { mode: 'index' } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { title: { display: true, text: 'Margin %' } }
+        }
+      }
+    });
+  } catch(e) { console.error('Analytics render error:', e); }
+}
+
+document.querySelector('[data-tab="analytics"]').addEventListener('click', () => renderAnalytics());
+
+// ── Data Explorer ──
+let explorerData = [], explorerPage = 0;
+const PAGE_SIZE = 50;
+
+async function renderExplorer() {
+  try {
+    const sym = document.getElementById('expSymbol').value;
+    const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
+    explorerData = [...raw].reverse();
+    explorerPage = 0;
+    renderExplorerPage();
+  } catch(e) { console.error('Explorer render error:', e); }
+}
+
+function renderExplorerPage() {
+  const start = explorerPage * PAGE_SIZE;
+  const slice = explorerData.slice(start, start + PAGE_SIZE);
+  document.getElementById('explorerCount').textContent = `${explorerData.length.toLocaleString()} rows total`;
+  document.getElementById('pageInfo').textContent = `Page ${explorerPage + 1} of ${Math.ceil(explorerData.length / PAGE_SIZE)}`;
+  document.getElementById('explorerBody').innerHTML = slice.map(d => `
+    <tr>
+      <td>${d.date}</td>
+      <td>${d.expiry}</td>
+      <td>${d.dte}</td>
+      <td>${d.initial_margin_pct?.toFixed(2) ?? '—'}%</td>
+      <td>${d.elm_pct?.toFixed(2) ?? '—'}%</td>
+      <td>${d.tender_margin_pct?.toFixed(2) ?? '—'}%</td>
+      <td>${d.total_margin_pct?.toFixed(2) ?? '—'}%</td>
+      <td>${d.daily_volatility != null ? (d.daily_volatility * 100).toFixed(3) + '%' : '—'}</td>
+      <td>${d.annualized_volatility != null ? (d.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('prevPage').addEventListener('click', () => {
+  if (explorerPage > 0) { explorerPage--; renderExplorerPage(); }
+});
+document.getElementById('nextPage').addEventListener('click', () => {
+  if ((explorerPage + 1) * PAGE_SIZE < explorerData.length) { explorerPage++; renderExplorerPage(); }
+});
+document.getElementById('expSymbol').addEventListener('change', renderExplorer);
+document.getElementById('exportCSV').addEventListener('click', () => {
+  const headers = ['date','expiry','dte','initial_margin_pct','elm_pct','tender_margin_pct','total_margin_pct','daily_volatility','annualized_volatility'];
+  const csv = [headers.join(','), ...explorerData.map(d => headers.map(h => d[h] ?? '').join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = `mcx_margins_${document.getElementById('expSymbol').value}.csv`;
+  a.click();
+});
+
+document.querySelector('[data-tab="explorer"]').addEventListener('click', () => {
+  if (!explorerData.length) renderExplorer();
+});
+</script>
+</body>
+</html>

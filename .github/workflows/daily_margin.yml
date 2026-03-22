@@ -29,13 +29,16 @@ jobs:
           python main.py $(date -d "2 days ago" +%Y-%m-%d) || true
           python main.py $(date -d "yesterday" +%Y-%m-%d) || true
           python main.py $(date +%Y-%m-%d) || true
-      
-      - name: Commit and push data
+
+      - name: Export dashboard JSON
+        run: python export_json.py
+
+      - name: Commit DB + dashboard data
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add data/
-          git diff --staged --quiet || git commit -m "data: daily margin update"
+          git add data/ docs/data/
+          git diff --staged --quiet || git commit -m "data: daily margin update $(date +%Y-%m-%d)"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
