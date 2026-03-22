@@ -335,7 +335,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
   <div id="tab-termstructure" class="tab-content">
     <div class="card mb-4">
-      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve — All Active Expiries">Forward Margin Curve — All Active Expiries</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve">Forward Margin Curve — All Active Expiries</div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
     <div class="grid-2">
@@ -493,8 +493,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 </style>
 
 <script>
-// Single tooltip DOM refs — declared once here, used everywhere below
-const _ttEl = document.getElementById('tooltipOverlay');
 let _ttTimer;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1310,6 +1308,13 @@ const TOOLTIPS = {
 <strong>▼ CUT</strong> — Margin likely to ease. Capital efficiency improves.<br><br>
 <em>Accuracy:</em> Captures ~93% of simultaneous margin-vol correlation. Use as a directional risk signal, not a precise number.`
   },
+  "Forward Margin Curve": {
+    title: "Forward Margin Curve — All Active Expiries",
+    body: `Full margin term structure across every active NATURALGAS expiry today.<br><br>
+<strong>Backwardation (normal):</strong> Front-month has highest margin. Tender + near-term vol dominate. Curve slopes down left-to-right.<br>
+<strong>Contango (rare):</strong> Far-month margin exceeds front. Signals MCX pricing in future stress.<br><br>
+Hover any point to see exact expiry, DTE, and margin %. The steep drop between front and second contract is the tender margin fading.`
+  },
   "Volatility Term Structure": {
     title: "Volatility Term Structure",
     body: `MCX's annualized volatility estimate across all active expiries.<br><br>
@@ -1430,14 +1435,19 @@ The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin 
 
 function showTooltip(key) {
   const tt = TOOLTIPS[key];
-  if (!tt || !_ttEl) return;
+  if (!tt) return;
+  const el = document.getElementById('tooltipOverlay');
+  if (!el) return;
   clearTimeout(_ttTimer);
   document.getElementById('ttTitle').textContent = tt.title;
   document.getElementById('ttBody').innerHTML = tt.body;
-  _ttEl.classList.add('visible');
+  el.classList.add('visible');
 }
 function hideTooltip() {
-  _ttTimer = setTimeout(() => { if (_ttEl) _ttEl.classList.remove('visible'); }, 150);
+  _ttTimer = setTimeout(() => {
+    const el = document.getElementById('tooltipOverlay');
+    if (el) el.classList.remove('visible');
+  }, 150);
 }
 
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
