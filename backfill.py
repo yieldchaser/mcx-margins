@@ -8,8 +8,8 @@ import json
 import time
 from datetime import datetime, timedelta
 
-import db
-from scraper import scrape_margin, normalize_row, parse_pct
+import src.db as db
+from src.scraper import scrape_margin, normalize_row, parse_pct
 
 SYMBOLS_TO_STORE = {"NATURALGAS", "NATGASMINI"}
 REQUEST_DELAY = 3

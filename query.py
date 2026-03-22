@@ -10,7 +10,7 @@ Usage:
 import sys
 from pathlib import Path
 
-import db
+import src.db as db
 
 
 def print_records(records: list[dict], title: str = ""):
