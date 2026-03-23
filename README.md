@@ -38,37 +38,40 @@ The platform leverages a local highly dense SQLite buffer cached at `data/margin
 
 ## 🛠️ System Architecture (Excel → SPA Pipeline)
 
-The platform converts static spreadsheet calculations into direct automated streams inside actionable bundles:
+The platform converts static calculations into automated daily streams:
 
-### 1. Scraper Module (`scraper.py` + `main.py`)
-*   Uses a **Multi-Layered Playwright stealth browser** setup navigating homepage streams first to safely acquire session cookies bypasses triggers.
-*   Intercepts `POST /backpage.aspx/GetDailyMargin` direct API endpoints avoiding heavy DOM scraping payloads safely.
-*   Normalizes standard daily volatility offsets mapping cleanly into standalone rows immediately.
+### 1. Scraper Module (`src/scraper.py` + `main.py`)
+*   Uses a **Multi-Layered Playwright stealth browser** triggering homepage navigations first to bypass target session cookies and bot detections safely.
+*   Intercepts `POST /backpage.aspx/GetDailyMargin` API payloads directly inside browser execution, omitting heavy DOM nodes for fast scraping.
+*   Normalizes standardized volatility data points mapping seamlessly into daily offset streams.
 
-### 2. Structured Storage (`db.py`)
-*   SQLite cached buffers utilizing heavy indexes mapping continuous date composite lists avoids deduplication loads.
-*   Single table configuration supporting heavy upsert continuous conflict diagnostics scaling securely loads correctly.
+### 2. Structured Storage (`src/db.py`)
+*   Local fast **SQLite cached repository** utilizing rich composed composite framing indexes preserving strict consistency and skipping overlapping duplications securely.
 
 ### 3. Static Indexer publishes (`export_json.py`)
-Continually bundles heavy SQLite rows creating dense static caching buffers mirroring aggregates directly inside `docs/data/*.json`:
-*   Aggregates dense historical monthly averages.
-*   Creates DTE buckets offset curves.
-*   Constructs term matrix matrices benchmarks securely cleanly.
+Continually bundles aggregates drafting fully dense statically loaded caches stored natively inside `docs/data/*.json`:
+*   Assembles dense historical correlation coefficients.
+*   Resolves Cross-Origin (CORS) limits offline supporting **Henry Hub benchmark price** layering loads fallback scripts securely.
 
-### 4. SPA Client (`docs/index.html`)
-Fast Zero-Dependency layout caching pure Vanilla async requests natively benchmarking parallel structures mapped strictly inside Chart.js frameworks concurrently without React framework delay loads.
+### 4. Continuous Alerts Pipeline (`alert.py`)
+*   Queries historical margin shifts from SQLite date differentials.
+*   Auto-flags sudden absolute shifts (> thresholds) triggering rich **HTML Email Alerts via SMTP** keeping traders aligned ahead of funding timelines.
+
+### 5. SPA Client Dashboard (`docs/index.html`)
+Fast **Vanilla Javascript SPA layout with Glassmorphism overlay aesthetics**. Renders lightweight requests into parallel structural outputs using standard Chart.js concurrent plotting without React bundle wait times safely.
 
 ---
 
 ## ⚙️ Continuous Automated Wiring
 
-Defined securely scaling continuous pipelines mapping inside `.github/workflows/daily_margin.yml`:
+Defined securely inside the `.github/workflows/daily_margin.yml` Github Actions configuration:
 
-*   **Trigger Schedule**: Runs automatically @ **1:30 & 13:30 UTC** (`7:00 AM & 7:00 PM IST`) loads concurrently.
-*   **Step Setup Diagnostics**:
-    1. Triggres Chromium launchers fetches last 3 fallback buffer days Catch late updates safely.
-    2. Runs `export_json.py` aggregates full static payoads payloads directly scalable.
-    3. Triggers atomic commit updates pushing DB datasets framing static output publishing maps safely.
+*   **Trigger Schedule**: Runs automatically @ **1:30 & 13:30 UTC** (`7:00 AM & 7:00 PM IST`) loads seamlessly.
+*   **Sequential Pipeline Operations**:
+    1. **Fetch Setup Check**: Triggers Chromium fetch streams loading last 3 days to catch delayed update offsets safely.
+    2. **Static Bundling**: Runs static stream aggregates publishing directly into local SPA documentation trees.
+    3. **Threshold Guard**: Executes threshold differential algorithms sending email alerts when spikes load safely.
+    4. **Commit publishing**: Auto-streams push state differentials securely committing back incremental database commits autonomously.
 
 ---
 
@@ -83,12 +86,13 @@ python -m playwright install chromium
 python -m playwright install-deps chromium
 ```
 
-### Quick Commands
-*   **Re-run bundle export maps**: `python export_json.py`
-*   **Summary lists indices totals**: `python query.py --summary`
-*   **Excel output Diagnostics runs**: `python query.py --excel`
+### Quick CLI Helpers
+*   **Fetch Single Date updates**: `python main.py YYYY-MM-DD`
+*   **Re-run full aggregate publish**: `python export_json.py`
+*   **Console Summary metrics**: `python query.py --summary`
+*   **Direct Excel Sheet export files**: `python query.py --excel`
 
-**View local outputs cleanly**:
+**View local live dashboards safely**:
 ```bash
 python export_json.py
 cd docs && python -m http.server 8080
