@@ -170,22 +170,18 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .has-tooltip:hover::after { background: var(--accent); color: white; border-color: var(--accent); }
 
 #tooltipOverlay {
-  display: none; position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%); z-index: 9999;
-  background: rgba(22, 27, 34, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(56,139,253,0.35); border-radius: 16px;
-  padding: 28px 32px; max-width: min(480px, 90vw);
-  box-shadow: 0 0 0 1px rgba(56,139,253,0.1), 0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(56,139,253,0.15);
-  animation: tooltipIn 0.18s cubic-bezier(0.34,1.56,0.64,1);
-  pointer-events: none;
+  display: block; position: fixed; z-index: 9999;
+  background: rgba(22, 27, 34, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(88, 166, 255, 0.3); border-radius: 12px;
+  padding: 16px 20px; max-width: min(380px, 92vw);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(10px);
 }
-#tooltipOverlay.visible { display: block; }
-@keyframes tooltipIn {
-  from { opacity:0; transform:translate(-50%,-48%) scale(0.94); }
-  to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
-}
+#tooltipOverlay.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 #tooltipOverlay .tt-title {
   font-size: 13px; font-weight: 700; color: var(--accent);
   text-transform: uppercase; letter-spacing: 0.07em;
@@ -1434,7 +1430,7 @@ The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin 
   }
 };
 
-function showTooltip(key) {
+function showTooltip(key, triggerEl) {
   const tt = TOOLTIPS[key];
   if (!tt) return;
   const el = document.getElementById('tooltipOverlay');
@@ -1443,6 +1439,21 @@ function showTooltip(key) {
   document.getElementById('ttTitle').textContent = tt.title;
   document.getElementById('ttBody').innerHTML = tt.body;
   el.classList.add('visible');
+
+  requestAnimationFrame(() => {
+    const rect = triggerEl.getBoundingClientRect();
+    const ttW = el.offsetWidth;
+    const ttH = el.offsetHeight;
+    let left = rect.left + rect.width / 2 - ttW / 2;
+    let top = rect.top - ttH - 14;
+
+    if (top < 8) top = rect.bottom + 14;
+    if (left < 8) left = 8;
+    if (left + ttW > window.innerWidth - 8) left = window.innerWidth - ttW - 8;
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  });
 }
 function hideTooltip() {
   _ttTimer = setTimeout(() => {
@@ -1454,19 +1465,22 @@ function hideTooltip() {
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
 function attachTooltips() {
   document.querySelectorAll('[data-tooltip-key]').forEach(el => {
-    if (el._tooltipAttached) return; // don't double-attach
+    if (el._tooltipAttached) return; 
     el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
-    el.addEventListener('mouseenter', () => showTooltip(key));
+    el.addEventListener('mouseenter', () => showTooltip(key, el));
     el.addEventListener('mouseleave', hideTooltip);
-    // Touch support for mobile
     el.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      showTooltip(key);
-      setTimeout(hideTooltip, 3000);
-    }, { passive: false });
+      e.stopPropagation();
+      showTooltip(key, el);
+    }, { passive: true });
   });
 }
+
+document.addEventListener('touchstart', () => {
+  const el = document.getElementById('tooltipOverlay');
+  if (el && el.classList.contains('visible')) hideTooltip();
+});
 
 // Run on page load (catches Overview tab)
 attachTooltips();
