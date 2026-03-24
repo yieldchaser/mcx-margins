@@ -2,10 +2,11 @@ name: Daily Margin Fetch
 
 on:
   schedule:
-    # 03:30 UTC = 09:00 AM IST — MCX publishes daily margins before market open.
-    # fetch_today.py retries every 15 min (up to 5x) so it catches data
-    # published anywhere between 9:00 AM and 10:15 AM IST automatically.
-    - cron: '30 3 * * 1-5'  # Mon–Fri only; MCX doesn't trade on weekends
+    # 03:30 UTC = 09:00 AM IST, Mon–Fri.
+    # MCX CCL typically publishes daily margins before market open (9 AM IST).
+    # fetch_today.py retries every 15 min (up to 5×) so it self-heals if the
+    # site publishes late — covering 9:00 AM to 10:15 AM IST automatically.
+    - cron: '30 3 * * 1-5'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,26 +29,39 @@ jobs:
           python -m playwright install chromium
           python -m playwright install-deps chromium
 
-      # Tries up to 5 times, 15 min apart (covers 9:00–10:15 AM IST).
-      # Exit 0 = new data saved; exit 2 = not published yet (not a failure).
+      # ── Step 1: today's data ───────────────────────────────────────────────
+      # Waits up to 5 × 15 min = 75 min for mcxccl.com to publish.
+      # Exit 0 = new records saved.  Exit 2 = not published yet (clean skip).
       - name: Fetch today's margin data
-        id: fetch
+        id: fetch_today
         run: python fetch_today.py --retries 5 --wait 15
         continue-on-error: true
 
-      # All downstream steps only run when fresh data was actually saved.
+      # ── Step 2: gap-fill (safety net) ─────────────────────────────────────
+      # Audits the last 5 weekdays.  Fills any date that's missing in the DB —
+      # e.g. if yesterday's run failed or was skipped entirely.
+      # Runs regardless of Step 1 outcome so gaps are always caught.
+      # Exit 0 = filled ≥1 missing date.  Exit 2 = no gaps (clean skip).
+      - name: Lookback gap-fill (last 5 weekdays)
+        id: lookback
+        run: python lookback.py --days 5
+        continue-on-error: true
+
+      # ── Step 3: export — only when either step saved new data ─────────────
       - name: Export dashboard JSON
-        if: steps.fetch.outcome == 'success'
+        if: steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: python export_json.py
 
+      # ── Step 4: alert — only for genuinely fresh today's data ────────────
       - name: Check margin change and send alert
-        if: steps.fetch.outcome == 'success'
+        if: steps.fetch_today.outcome == 'success'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python alert.py
 
+      # ── Step 5: commit — only when there's something new to commit ────────
       - name: Commit and push DB + dashboard data
-        if: steps.fetch.outcome == 'success'
+        if: steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
