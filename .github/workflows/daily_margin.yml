@@ -2,7 +2,10 @@ name: Daily Margin Fetch
 
 on:
   schedule:
-    - cron: '30 1,13 * * *'  # 1:30 and 13:30 UTC = 7:00 AM and 7:00 PM IST, daily
+    # 03:30 UTC = 09:00 AM IST — MCX publishes daily margins before market open.
+    # fetch_today.py retries every 15 min (up to 5x) so it catches data
+    # published anywhere between 9:00 AM and 10:15 AM IST automatically.
+    - cron: '30 3 * * 1-5'  # Mon–Fri only; MCX doesn't trade on weekends
   workflow_dispatch:
 
 jobs:
@@ -12,33 +15,38 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           python -m playwright install chromium
           python -m playwright install-deps chromium
-      
-      - name: Fetch margin data (last 3 days to catch late updates)
-        run: |
-          python main.py $(date -d "2 days ago" +%Y-%m-%d) || true
-          python main.py $(date -d "yesterday" +%Y-%m-%d) || true
-          python main.py $(date +%Y-%m-%d) || true
 
+      # Tries up to 5 times, 15 min apart (covers 9:00–10:15 AM IST).
+      # Exit 0 = new data saved; exit 2 = not published yet (not a failure).
+      - name: Fetch today's margin data
+        id: fetch
+        run: python fetch_today.py --retries 5 --wait 15
+        continue-on-error: true
+
+      # All downstream steps only run when fresh data was actually saved.
       - name: Export dashboard JSON
+        if: steps.fetch.outcome == 'success'
         run: python export_json.py
 
       - name: Check margin change and send alert
+        if: steps.fetch.outcome == 'success'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python alert.py
 
-      - name: Commit DB + dashboard data
+      - name: Commit and push DB + dashboard data
+        if: steps.fetch.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
