@@ -1,381 +1,111 @@
 {
-  "as_of": "2026-03-23",
+  "as_of": "2026-03-25",
   "NATURALGAS": [
     {
       "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 38.62,
-      "vol_daily": 0.043692,
-      "predicted_tomorrow": 36.096,
-      "spread_vs_prev": 0.93,
+      "dte": 1,
+      "total_margin_pct": 48.35,
+      "vol_daily": 0.043313,
+      "predicted_tomorrow": 44.701,
+      "spread_vs_prev": 0.61,
       "action": "CUT"
     },
     {
       "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 37.69,
-      "vol_daily": 0.042379,
-      "predicted_tomorrow": 35.216,
-      "spread_vs_prev": -0.07,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 37.76,
-      "vol_daily": 0.042474,
-      "predicted_tomorrow": 35.282,
-      "spread_vs_prev": -0.13,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 37.89,
-      "vol_daily": 0.042661,
-      "predicted_tomorrow": 35.405,
-      "spread_vs_prev": -0.02,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 37.91,
-      "vol_daily": 0.042685,
-      "predicted_tomorrow": 35.424,
-      "spread_vs_prev": -0.37,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 38.28,
-      "vol_daily": 0.043209,
-      "predicted_tomorrow": 35.774,
-      "spread_vs_prev": -0.2,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAR2026",
-      "dte": 3,
-      "total_margin_pct": 38.48,
-      "vol_daily": 0.043497,
-      "predicted_tomorrow": 35.964,
-      "spread_vs_prev": 10.68,
+      "dte": 1,
+      "total_margin_pct": 47.74,
+      "vol_daily": 0.042438,
+      "predicted_tomorrow": 44.122,
+      "spread_vs_prev": 20.38,
       "action": "CUT"
     },
     {
       "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.8,
-      "vol_daily": 0.042532,
-      "predicted_tomorrow": 26.46,
-      "spread_vs_prev": 0.89,
+      "dte": 33,
+      "total_margin_pct": 27.36,
+      "vol_daily": 0.041905,
+      "predicted_tomorrow": 26.043,
+      "spread_vs_prev": 0.53,
       "action": "CUT"
     },
     {
       "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 26.91,
-      "vol_daily": 0.041267,
-      "predicted_tomorrow": 25.617,
-      "spread_vs_prev": -0.09,
-      "action": "CUT"
-    },
-    {
-      "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.0,
-      "vol_daily": 0.041388,
-      "predicted_tomorrow": 25.702,
-      "spread_vs_prev": -0.22,
-      "action": "CUT"
-    },
-    {
-      "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.22,
-      "vol_daily": 0.041701,
-      "predicted_tomorrow": 25.91,
-      "spread_vs_prev": 0.02,
-      "action": "CUT"
-    },
-    {
-      "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.2,
-      "vol_daily": 0.041677,
-      "predicted_tomorrow": 25.891,
-      "spread_vs_prev": -0.31,
-      "action": "CUT"
-    },
-    {
-      "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.51,
-      "vol_daily": 0.042119,
-      "predicted_tomorrow": 26.185,
-      "spread_vs_prev": -0.08,
-      "action": "CUT"
-    },
-    {
-      "expiry": "27APR2026",
-      "dte": 35,
-      "total_margin_pct": 27.59,
-      "vol_daily": 0.042226,
-      "predicted_tomorrow": 26.26,
-      "spread_vs_prev": 4.68,
+      "dte": 33,
+      "total_margin_pct": 26.83,
+      "vol_daily": 0.041146,
+      "predicted_tomorrow": 25.541,
+      "spread_vs_prev": 4.13,
       "action": "CUT"
     },
     {
       "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.91,
-      "vol_daily": 0.035496,
-      "predicted_tomorrow": 21.825,
-      "spread_vs_prev": 0.73,
+      "dte": 62,
+      "total_margin_pct": 22.7,
+      "vol_daily": 0.035185,
+      "predicted_tomorrow": 21.625,
+      "spread_vs_prev": 0.43,
       "action": "CUT"
     },
     {
       "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.18,
-      "vol_daily": 0.034424,
-      "predicted_tomorrow": 21.132,
-      "spread_vs_prev": -0.07,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.25,
-      "vol_daily": 0.034525,
-      "predicted_tomorrow": 21.198,
-      "spread_vs_prev": -0.12,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.37,
-      "vol_daily": 0.034699,
-      "predicted_tomorrow": 21.312,
-      "spread_vs_prev": -0.06,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.43,
-      "vol_daily": 0.034799,
-      "predicted_tomorrow": 21.369,
-      "spread_vs_prev": -0.2,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.63,
-      "vol_daily": 0.035086,
-      "predicted_tomorrow": 21.559,
-      "spread_vs_prev": -0.32,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26MAY2026",
-      "dte": 64,
-      "total_margin_pct": 22.95,
-      "vol_daily": 0.035553,
-      "predicted_tomorrow": 21.862,
-      "spread_vs_prev": 1.3,
+      "dte": 62,
+      "total_margin_pct": 22.27,
+      "vol_daily": 0.034554,
+      "predicted_tomorrow": 21.217,
+      "spread_vs_prev": 1.36,
       "action": "CUT"
     },
     {
       "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.65,
-      "vol_daily": 0.033645,
-      "predicted_tomorrow": 20.629,
-      "spread_vs_prev": 0.7,
+      "dte": 92,
+      "total_margin_pct": 20.91,
+      "vol_daily": 0.032558,
+      "predicted_tomorrow": 19.926,
+      "spread_vs_prev": 0.39,
       "action": "CUT"
     },
     {
       "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 20.95,
-      "vol_daily": 0.032619,
-      "predicted_tomorrow": 19.964,
-      "spread_vs_prev": -0.12,
-      "action": "CUT"
-    },
-    {
-      "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.07,
-      "vol_daily": 0.032802,
-      "predicted_tomorrow": 20.079,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.07,
-      "vol_daily": 0.032802,
-      "predicted_tomorrow": 20.079,
-      "spread_vs_prev": -0.09,
-      "action": "CUT"
-    },
-    {
-      "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.16,
-      "vol_daily": 0.032939,
-      "predicted_tomorrow": 20.164,
-      "spread_vs_prev": -0.23,
-      "action": "CUT"
-    },
-    {
-      "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.39,
-      "vol_daily": 0.033272,
-      "predicted_tomorrow": 20.382,
-      "spread_vs_prev": 0.03,
-      "action": "CUT"
-    },
-    {
-      "expiry": "25JUN2026",
-      "dte": 94,
-      "total_margin_pct": 21.36,
-      "vol_daily": 0.033226,
-      "predicted_tomorrow": 20.354,
-      "spread_vs_prev": -0.62,
+      "dte": 92,
+      "total_margin_pct": 20.52,
+      "vol_daily": 0.031984,
+      "predicted_tomorrow": 19.556,
+      "spread_vs_prev": -1.65,
       "action": "CUT"
     },
     {
       "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.98,
-      "vol_daily": 0.034132,
-      "predicted_tomorrow": 20.942,
-      "spread_vs_prev": 0.71,
+      "dte": 125,
+      "total_margin_pct": 22.17,
+      "vol_daily": 0.034409,
+      "predicted_tomorrow": 21.122,
+      "spread_vs_prev": 0.72,
       "action": "CUT"
     },
     {
       "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "28JUL2026",
-      "dte": 127,
-      "total_margin_pct": 21.27,
-      "vol_daily": 0.033091,
-      "predicted_tomorrow": 20.268,
-      "spread_vs_prev": -0.11,
+      "dte": 125,
+      "total_margin_pct": 21.45,
+      "vol_daily": 0.033362,
+      "predicted_tomorrow": 20.439,
+      "spread_vs_prev": 1.11,
       "action": "CUT"
     },
     {
       "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 21.38,
-      "vol_daily": 0.033257,
-      "predicted_tomorrow": 20.373,
-      "spread_vs_prev": 0.68,
+      "dte": 154,
+      "total_margin_pct": 20.34,
+      "vol_daily": 0.031718,
+      "predicted_tomorrow": 19.385,
+      "spread_vs_prev": 0.65,
       "action": "CUT"
     },
     {
       "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
-      "spread_vs_prev": 0.0,
-      "action": "CUT"
-    },
-    {
-      "expiry": "26AUG2026",
-      "dte": 156,
-      "total_margin_pct": 20.7,
-      "vol_daily": 0.032249,
-      "predicted_tomorrow": 19.727,
+      "dte": 154,
+      "total_margin_pct": 19.69,
+      "vol_daily": 0.030757,
+      "predicted_tomorrow": 18.768,
       "spread_vs_prev": 0.0,
       "action": "CUT"
     }
