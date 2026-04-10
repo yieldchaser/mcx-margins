@@ -266,8 +266,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   <div class="stat-card has-tooltip" data-tooltip-key="Stress Score">
     <div class="stat-label">REGIME</div>
     <div class="stat-value" id="kpiRegime" style="font-size:16px;">—</div>
-    <div style="height:4px;border-radius:2px;background:var(--surface2);margin:4px 0 2px;overflow:hidden;">
-      <div id="stressBar" style="height:100%;width:0%;border-radius:2px;transition:width 0.5s;"></div>
+    <!-- FIX 5: Full gradient bar with white notch indicator -->
+    <div style="height:4px;border-radius:2px;background:linear-gradient(to right,#22c55e,#eab308,#f97316,#ef4444);margin:4px 0 2px;position:relative;overflow:visible;">
+      <div id="stressNotch" style="position:absolute;top:-2px;width:3px;height:8px;background:white;border-radius:1px;transform:translateX(-50%);box-shadow:0 0 3px rgba(0,0,0,0.5);transition:left 0.5s;left:0%;"></div>
     </div>
     <div class="stat-sub" id="kpiRegimeSub" style="font-size:10px;">—</div>
   </div>
@@ -336,7 +337,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
   <div id="tab-termstructure" class="tab-content">
     <div class="card mb-4">
-      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve">Forward Margin Curve — All Active Expiries</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve" id="fwdCurveTitle">Forward Margin Curve — All Active Expiries [Historical cone: All-time]</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="range-btn active-range" id="coneAlltimeBtn">All-time</button>
+        <button class="range-btn" id="coneRecentBtn">Recent (5Y)</button>
+      </div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
     <div class="grid-2">
@@ -604,7 +609,7 @@ function setStaleness(dateStr) {
     // Regime — Item 8: Stress score widget
     const rEl = document.getElementById('kpiRegime');
     const rsEl = document.getElementById('kpiRegimeSub');
-    const stressBar = document.getElementById('stressBar');
+    const stressNotch = document.getElementById('stressNotch');
     try {
       const stressData = await loadJSON('stress_score');
       const sc = stressData.stress_score;
@@ -613,14 +618,21 @@ function setStaleness(dateStr) {
       const cls   = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
       rEl.textContent = `${icons[lbl]||'⚪'} ${lbl}`;
       rEl.className = 'stat-value ' + (cls[lbl]||'');
-      rsEl.textContent = `Score: ${sc} / 100`;
-      // Gradient bar
-      const pct = Math.min(100, Math.max(0, sc));
-      stressBar.style.width = pct + '%';
-      if (sc < 40) stressBar.style.background = '#3fb950';
-      else if (sc < 60) stressBar.style.background = '#d29922';
-      else if (sc < 75) stressBar.style.background = '#fb8f44';
-      else stressBar.style.background = '#f85149';
+      rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
+      // FIX 5: position the white notch on the gradient bar
+      const notchPct = Math.min(100, Math.max(0, sc));
+      if (stressNotch) stressNotch.style.left = notchPct + '%';
+      // Update Stress Score tooltip with live values
+      if (TOOLTIPS['Stress Score']) {
+        TOOLTIPS['Stress Score'].body = `Combines margin percentile rank and volatility percentile weighted equally against a trailing 5-year distribution.<br><br>
+<strong>0–40: CALM</strong> — Low cost environment.<br>
+<strong>40–60: NORMAL</strong> — Standard conditions.<br>
+<strong>60–75: MONITOR</strong> — Elevated, watch for hikes.<br>
+<strong>75–90: ELEVATED</strong> — High stress, pre-fund margin.<br>
+<strong>90+: STRESS</strong> — Extreme, historical top-decile conditions.<br><br>
+<strong>Today:</strong> Margin at P${stressData.margin_pct} (5-year trailing), Vol at P${stressData.vol_pct} → Composite score = ${sc}/100.<br>
+Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`;
+      }
     } catch(e) {
       // Fallback to margin-based
       const m = front.initial_margin_pct;
@@ -833,81 +845,137 @@ document.querySelector('[data-tab="termstructure"]').addEventListener('click', (
   renderTermStructure();
 });
 
+let fwdChart = null;
+let termCone = null;
+let termConeLookup = {};
+let termNg = [];
+let coneMode = 'alltime'; // 'alltime' | 'recent'
+
+function renderFwdCone() {
+  const ng = termNg;
+  const cone = termCone;
+  const coneLookup = termConeLookup;
+  const suffix = coneMode === 'alltime' ? '_alltime' : '_recent';
+  const label = coneMode === 'alltime' ? 'All-time' : 'Recent (5Y)';
+
+  const datasets = [
+    {
+      label: 'NATURALGAS Total Margin %',
+      data: ng.map(c => c.total_margin_pct),
+      borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
+      tension: 0.3, pointRadius: 4, fill: false, order: 1
+    },
+    {
+      label: 'NATGASMINI Total Margin %',
+      data: ng.map(c => {
+        const m = (window._termNgm || []).find(x => x.expiry === c.expiry);
+        return m ? m.total_margin_pct : null;
+      }),
+      borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
+      tension: 0.3, pointRadius: 4, fill: false, order: 2
+    }
+  ];
+
+  // FIX 3+4: Correct fill — P90 fills '+1' toward P10 dataset (next in array)
+  // Order: datasets[2]=P90, datasets[3]=P50, datasets[4]=P10
+  // P90 fill '+1' => fills to P10 (2 steps, doesn't work directly)
+  // Better: P90 fill toward P10 via stacking: P90 fill '+2'
+  // Chart.js fill: '+N' means fill toward dataset N positions ahead in the array
+  if (cone && cone.length > 0) {
+    datasets.push({
+      label: `P90 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p90${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.35)', borderDash: [4,4], pointRadius: 0,
+      tension: 0.3,
+      fill: '+2',  // fill to P10 dataset (2 ahead)
+      backgroundColor: 'rgba(99,102,241,0.15)',
+      order: 5
+    });
+    datasets.push({
+      label: `P50 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p50${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.55)', borderDash: [6,3], pointRadius: 0,
+      tension: 0.3, fill: false, order: 4
+    });
+    datasets.push({
+      label: `P10 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p10${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.35)', borderDash: [4,4], pointRadius: 0,
+      tension: 0.3, fill: false, order: 6
+    });
+  }
+
+  if (fwdChart) fwdChart.destroy();
+  fwdChart = new Chart(document.getElementById('chartFwdFull'), {
+    type: 'line',
+    data: {
+      labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
+      datasets
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 } } },
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            afterLabel: (ctx) => {
+              const c = ng[ctx.dataIndex];
+              if (!c) return '';
+              const cn = coneLookup[c.expiry];
+              let extra = `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
+              if (cn) {
+                const p10 = cn[`p10${suffix}`], p50 = cn[`p50${suffix}`], p90 = cn[`p90${suffix}`];
+                extra += `\nHistorical (${label}) — P10: ${p10}% | P50: ${p50}% | P90: ${p90}%`;
+                if (cn.hist_pct != null) extra += ` | Today is P${cn.hist_pct} (${cn.hist_pct >= 90 ? 'historically expensive' : cn.hist_pct <= 10 ? 'historically cheap' : 'near median'})`;
+              }
+              return extra;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
+        y: { title: { display: true, text: 'Total Margin %' } }
+      }
+    }
+  });
+
+  document.getElementById('fwdCurveTitle').textContent =
+    `Forward Margin Curve — All Active Expiries [Historical cone: ${label}]`;
+}
+
 async function renderTermStructure() {
   try {
     const fwd = await loadJSON('forward_curve');
     const ng  = fwd.NATURALGAS  || [];
     const ngm = fwd.NATGASMINI  || [];
+    window._termNgm = ngm;
+    termNg = ng;
 
     // Item 5: Load curve cone
     let cone = null;
     try { const cd = await loadJSON('curve_cone'); cone = cd.cone || []; } catch(e) {}
-    const coneLookup5 = {};
-    if (cone) cone.forEach(c => { coneLookup5[c.expiry] = c; });
+    termCone = cone;
+    const coneLookup = {};
+    if (cone) cone.forEach(c => { coneLookup[c.expiry] = c; });
+    termConeLookup = coneLookup;
 
-    const datasets = [
-      {
-        label: 'NATURALGAS Total Margin %',
-        data: ng.map(c => c.total_margin_pct),
-        borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
-        tension: 0.3, pointRadius: 4, fill: false, order: 1
-      },
-      {
-        label: 'NATGASMINI Total Margin %',
-        data: ng.map(c => {
-          const m = ngm.find(x => x.expiry === c.expiry);
-          return m ? m.total_margin_pct : null;
-        }),
-        borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
-        tension: 0.3, pointRadius: 4, fill: false, order: 2
-      }
-    ];
+    // FIX 3+4: Render cone with current mode; toggles re-render
+    renderFwdCone();
 
-    // Add P10/P50/P90 bands from cone
-    if (cone && cone.length > 0) {
-      datasets.push({
-        label: 'P90 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p90_alltime ?? null),
-        borderColor: 'rgba(248,81,73,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 3
-      });
-      datasets.push({
-        label: 'P50 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p50_alltime ?? null),
-        borderColor: 'rgba(210,153,34,0.5)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 4
-      });
-      datasets.push({
-        label: 'P10 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p10_alltime ?? null),
-        borderColor: 'rgba(63,185,80,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: '-1', backgroundColor: 'rgba(63,185,80,0.04)', order: 5
-      });
-    }
-
-    new Chart(document.getElementById('chartFwdFull'), {
-      type: 'line',
-      data: {
-        labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
-        datasets
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 10 } } },
-          tooltip: {
-            mode: 'index',
-            callbacks: {
-              afterLabel: (ctx) => {
-                const c = ng[ctx.dataIndex];
-                if (!c) return '';
-                const cn = coneLookup5[c.expiry];
-                let extra = `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
-                if (cn) extra += `\nHist. range — P10: ${cn.p10_alltime}% | P50: ${cn.p50_alltime}% | P90: ${cn.p90_alltime}% | Pct: P${cn.hist_pct}`;
-                return extra;
-              }
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
-          y: { title: { display: true, text: 'Total Margin %' } }
-        }
-      }
+    // Toggle buttons
+    document.getElementById('coneAlltimeBtn').addEventListener('click', function() {
+      coneMode = 'alltime';
+      this.classList.add('active-range');
+      document.getElementById('coneRecentBtn').classList.remove('active-range');
+      renderFwdCone();
+    });
+    document.getElementById('coneRecentBtn').addEventListener('click', function() {
+      coneMode = 'recent';
+      this.classList.add('active-range');
+      document.getElementById('coneAlltimeBtn').classList.remove('active-range');
+      renderFwdCone();
     });
 
     new Chart(document.getElementById('chartVolCurve'), {
@@ -1407,16 +1475,27 @@ async function renderAnalytics() {
       const mh = await loadJSON('model_health');
       if (mh) {
         document.getElementById('modelHealthCard').style.display = 'block';
+        // FIX 2: Asymmetric hit-rate color logic
+        // Green = within ±5pp of target | Amber = 5–15pp away | Red = >15pp away in either direction
+        function hitRateColor(val, target) {
+          const diff = Math.abs(val - target);
+          if (diff <= 5)  return 'green';
+          if (diff <= 15) return 'yellow';
+          return 'red';
+        }
         const metrics = [
-          {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%', good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
+          {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%',
+           good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
           {name: 'MAE', key: 'mae', unit: '%', good: () => 'neutral'},
           {name: 'RMSE', key: 'rmse', unit: '%', good: () => 'neutral'},
-          {name: '1-sigma Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%', good: v => Math.abs(v - 68) <= 5 ? 'green' : 'red'},
-          {name: '2-sigma Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%', good: v => Math.abs(v - 95) <= 5 ? 'green' : 'red'},
+          {name: '1σ Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%',
+           good: v => hitRateColor(v, 68)},
+          {name: '2σ Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%',
+           good: v => hitRateColor(v, 95)},
           {name: 'Sample Size', key: 'n', unit: '', good: () => 'neutral'}
         ];
         const colorMap = {green: 'var(--accent-green)', yellow: 'var(--accent-yellow)', red: 'var(--accent-red)', neutral: 'var(--text)'};
-        document.getElementById('modelHealthBody').innerHTML = metrics.map(m => {
+        const rows = metrics.map(m => {
           const cells = ['30d','90d','365d'].map(period => {
             const d = mh[period];
             if (!d) return '<td>—</td>';
@@ -1427,6 +1506,13 @@ async function renderAnalytics() {
           }).join('');
           return `<tr><td style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
         }).join('');
+        // Calibration note row
+        const noteRow = `<tr><td colspan="4" style="font-size:11px;color:var(--text-muted);font-style:italic;padding-top:6px;">
+          Hit rates <em>above</em> target = bands too wide (model over-conservative).
+          Hit rates <em>below</em> target = bands too narrow (unreliable).
+          Green = within ±5pp of target. Amber = 5–15pp. Red = >15pp.
+        </td></tr>`;
+        document.getElementById('modelHealthBody').innerHTML = rows + noteRow;
       }
     } catch(e) { console.warn('Model health card skipped:', e); }
 
@@ -1440,31 +1526,40 @@ async function renderAnalytics() {
     const fbLookup = {};
     if (forecastBands && forecastBands.bands) forecastBands.bands.forEach(b => { if (!fbLookup[b.expiry]) fbLookup[b.expiry] = b; });
 
+    // FIX 1: ±2σ band — datasets ordered so 2σ (wider, lighter) fills behind 1σ (narrower, darker)
+    // Dataset order in array: idx0=Current, idx1=Predicted, idx2=+2σ, idx3=-2σ, idx4=+1σ, idx5=-1σ
+    // +2σ fills to next (+1) in array → index 3 (-2σ), giving the outer band
+    // +1σ fills to next (+1) in array → index 5 (-1σ), giving the inner band
     const predDatasets = [
-      { label: 'Current Margin %', data: curM, borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
+      { label: 'Current Margin %',    data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
       { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3, order: 2 }
     ];
 
     if (forecastBands) {
+      // Push in correct order so fill '+1' works by dataset array position
       predDatasets.push({
-        label: '+1-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_1 ?? null),
-        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
-        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 3
+        label: '+2σ (outer)',
+        data: ng.map(c => fbLookup[c.expiry]?.upper_2 ?? null),
+        borderColor: 'rgba(34,197,94,0.20)', backgroundColor: 'rgba(34,197,94,0.10)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [4,4], order: 6
       });
       predDatasets.push({
-        label: '-1-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_1 ?? null),
-        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
-        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 4
+        label: '-2σ (outer)',
+        data: ng.map(c => fbLookup[c.expiry]?.lower_2 ?? null),
+        borderColor: 'rgba(34,197,94,0.20)', backgroundColor: 'rgba(34,197,94,0.10)',
+        fill: false, pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [4,4], order: 7
       });
       predDatasets.push({
-        label: '+2-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_2 ?? null),
-        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
-        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 5
+        label: '+1σ (inner)',
+        data: ng.map(c => fbLookup[c.expiry]?.upper_1 ?? null),
+        borderColor: 'rgba(34,197,94,0.45)', backgroundColor: 'rgba(34,197,94,0.22)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1.5, order: 4
       });
       predDatasets.push({
-        label: '-2-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_2 ?? null),
-        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
-        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 6
+        label: '-1σ (inner)',
+        data: ng.map(c => fbLookup[c.expiry]?.lower_1 ?? null),
+        borderColor: 'rgba(34,197,94,0.45)', backgroundColor: 'rgba(34,197,94,0.22)',
+        fill: false, pointRadius: 0, tension: 0.3, borderWidth: 1.5, order: 5
       });
     }
 
@@ -1474,7 +1569,14 @@ async function renderAnalytics() {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top', labels: { font: { size: 10 }, filter: item => !item.text.includes('sigma') || item.text.includes('+1') } },
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 10 },
+              // Show: Current, Predicted, +1σ, +2σ — hide the lower boundary mirror lines
+              filter: item => !item.text.includes('(outer)') && !item.text.includes('-1σ') && !item.text.includes('-2σ')
+            }
+          },
           tooltip: {
             mode: 'index',
             callbacks: {
@@ -1482,7 +1584,12 @@ async function renderAnalytics() {
                 if (!items.length) return '';
                 const fb = fbLookup[ng[items[0].dataIndex]?.expiry];
                 if (!fb) return '';
-                return `1-sigma: [${fb.lower_1}%, ${fb.upper_1}%]\n2-sigma: [${fb.lower_2}%, ${fb.upper_2}%]`;
+                return [
+                  `Predicted: ${fb.predicted}%`,
+                  `±1σ range: [${fb.lower_1}% – ${fb.upper_1}%]`,
+                  `±2σ range: [${fb.lower_2}% – ${fb.upper_2}%]`,
+                  `σ = rolling 30-day prediction residual std (${forecastBands.rolling_sigma?.toFixed(2)}%)`
+                ].join('\n');
               }
             }
           }
