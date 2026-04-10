@@ -238,33 +238,33 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 <!-- ── Stats Bar ── -->
 <div class="stats-bar" id="statsBar">
   <div class="stat-card">
-    <div class="stat-label">FRONT MARGIN %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %">FRONT MARGIN %</div>
     <div class="stat-value" id="kpiFrontMargin">—</div>
     <div class="stat-sub" id="kpiMarginChange">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">ELM %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="ELM %">ELM %</div>
     <div class="stat-value" id="kpiElm">—</div>
     <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Constant</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">DAILY VOL</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">DAILY VOL</div>
     <div class="stat-value" id="kpiDailyVol">—</div>
     <div class="stat-sub" id="kpiVolChange">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">ANN. VOLATILITY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">ANN. VOLATILITY</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
     <div class="stat-sub" id="kpiPercentile">—</div>
     <div class="stat-sub" id="kpiPercentileRegime" style="font-size:9px;color:var(--text-muted);margin-top:1px;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">DAYS TO EXPIRY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry">DAYS TO EXPIRY</div>
     <div class="stat-value" id="kpiDTE">—</div>
     <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Front month</div>
   </div>
-  <div class="stat-card has-tooltip" data-tooltip-key="Stress Score">
-    <div class="stat-label">REGIME</div>
+  <div class="stat-card">
+    <div class="stat-label has-tooltip" id="kpiRegimeLabel">REGIME</div>
     <div class="stat-value" id="kpiRegime" style="font-size:16px;">—</div>
     <!-- FIX 5: Full gradient bar with white notch indicator -->
     <div style="height:4px;border-radius:2px;background:linear-gradient(to right,#22c55e,#eab308,#f97316,#ef4444);margin:4px 0 2px;position:relative;overflow:visible;">
@@ -276,12 +276,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
 <!-- ── Tab Navigation ── -->
 <nav class="tab-nav">
-  <button class="tab-btn active" data-tab="overview" id="btn-overview">Overview</button>
-  <button class="tab-btn" data-tab="termstructure" id="btn-termstructure">Term Structure</button>
-  <button class="tab-btn" data-tab="history" id="btn-history">History</button>
-  <button class="tab-btn" data-tab="seasonality" id="btn-seasonality">Seasonality</button>
-  <button class="tab-btn" data-tab="analytics" id="btn-analytics">Analytics</button>
-  <button class="tab-btn" data-tab="explorer" id="btn-explorer">Data Explorer</button>
+  <button class="tab-btn active" data-tab="overview" id="btn-overview" title="Executive Summary & Live Margins">Overview</button>
+  <button class="tab-btn" data-tab="termstructure" id="btn-termstructure" title="Forward Curve & Term Structure Confidence">Term Structure</button>
+  <button class="tab-btn" data-tab="history" id="btn-history" title="Historical Baseline & Scatter Models">History</button>
+  <button class="tab-btn" data-tab="seasonality" id="btn-seasonality" title="Seasonal Patterns by Month/Year">Seasonality</button>
+  <button class="tab-btn" data-tab="analytics" id="btn-analytics" title="Predictive Signals & System Health">Analytics</button>
+  <button class="tab-btn" data-tab="explorer" id="btn-explorer" title="Raw Data Explorer & Export Tool">Data Explorer</button>
 </nav>
 
 <!-- ── Tab Panels ── -->
@@ -294,11 +294,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
           Current Margin Snapshot — <span id="snapshotSymbolLabel">NaturalGas</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="snap-toggle active-snap" data-sym="NATURALGAS"
+          <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
             style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
             NATURALGAS
           </button>
-          <button class="snap-toggle" data-sym="NATGASMINI"
+          <button class="snap-toggle" data-sym="NATGASMINI" title="Show NATGASMINI margin snapshot"
             style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">
             NATGASMINI
           </button>
@@ -343,8 +343,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
     <div class="card mb-4">
       <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve" id="fwdCurveTitle">Forward Margin Curve — All Active Expiries [Historical cone: All-time]</div>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button class="range-btn active-range" id="coneAlltimeBtn">All-time</button>
-        <button class="range-btn" id="coneRecentBtn">Recent (5Y)</button>
+        <button class="range-btn active-range" id="coneAlltimeBtn" title="Show historical percentile cone based on all data since 2010">All-time</button>
+        <button class="range-btn" id="coneRecentBtn" title="Show historical percentile cone based only on the last 5 years">Recent (5Y)</button>
       </div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
@@ -371,12 +371,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
           </select>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="range-btn active-range" data-months="1">1M</button>
-          <button class="range-btn" data-months="3">3M</button>
-          <button class="range-btn" data-months="6">6M</button>
-          <button class="range-btn" data-months="12">1Y</button>
-          <button class="range-btn" data-months="36">3Y</button>
-          <button class="range-btn" data-months="0">All</button>
+          <button class="range-btn active-range" data-months="1" title="Trailing 1 Month">1M</button>
+          <button class="range-btn" data-months="3" title="Trailing 3 Months">3M</button>
+          <button class="range-btn" data-months="6" title="Trailing 6 Months">6M</button>
+          <button class="range-btn" data-months="12" title="Trailing 1 Year">1Y</button>
+          <button class="range-btn" data-months="36" title="Trailing 3 Years">3Y</button>
+          <button class="range-btn" data-months="0" title="All available history (Since 2010)">All</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
           <input type="checkbox" id="showPrice" style="accent-color:var(--accent-green);width:14px;height:14px;cursor:pointer;">
@@ -470,7 +470,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <div style="display:flex;gap:6px;" id="deltaBucketBtns">
           <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
           <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
-          <button class="range-btn" data-bucket="91+">91+d DTE</button>
+          <button class="range-btn" data-bucket="91+" title="Distribution of day-over-day margin changes for contracts with over 90 days to expiry.">91+d DTE</button>
         </div>
       </div>
       <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
@@ -715,7 +715,18 @@ async function renderOverview() {
             : 'historically expensive territory';
           hpTitle = `${c.expiry} margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp}% of all historical readings at equivalent DTE (±15d). This is ${zone}.`;
         }
-        return `<tr>
+        
+        const dynTitle = `Term Structure: ${c.expiry}`;
+        const curMargin = c.total_margin_pct.toFixed(2);
+        const frontCur = rows.length > 0 ? rows[0].total_margin_pct.toFixed(2) : curMargin;
+        const diffToFront = (c.total_margin_pct - rows[0].total_margin_pct).toFixed(2);
+        const diffText = c.expiry !== rows[0].expiry 
+                         ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.` 
+                         : '<br><br>This is the front-month contract, carrying maximum tender pressure and near-term vol.';
+        const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
+        const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
+
+        return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${dynBody}">
           <td><strong>${c.expiry}</strong></td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
@@ -727,7 +738,7 @@ async function renderOverview() {
           <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
           <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
           <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
-          <td style="font-weight:700;color:${hpColor};" title="${hpTitle}">${hpLabel}</td>
+          <td style="font-weight:700;color:${hpColor};">${hpLabel}</td>
         </tr>`;
       }).join('');
     }
@@ -839,7 +850,9 @@ async function renderOverview() {
         rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.07);';
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
-      return `<tr style="${rowStyle}" title="${rowTitle}">
+      const dynPTitle = `Panic Signal: ${c.expiry}`;
+      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
+      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td>${predicted.toFixed(2)}%</td>
@@ -955,9 +968,18 @@ function renderFwdCone() {
               if (cn) {
                 const p10 = cn[`p10${suffix}`], p50 = cn[`p50${suffix}`], p90 = cn[`p90${suffix}`];
                 extra += `\nHistorical (${label}) — P10: ${p10}% | P50: ${p50}% | P90: ${p90}%`;
-                if (cn.hist_pct != null) extra += ` | Today is P${cn.hist_pct} (${cn.hist_pct >= 90 ? 'historically expensive' : cn.hist_pct <= 10 ? 'historically cheap' : 'near median'})`;
               }
               return extra;
+            },
+            footer: (items) => {
+              if (!items.length) return '';
+              const c = ng[items[0].dataIndex];
+              if (!c) return '';
+              const cn = coneLookup[c.expiry];
+              if (!cn || cn.hist_pct == null) return 'Historical data unavailable for this DTE.';
+              const pct = cn.hist_pct;
+              const zone = pct <= 33 ? 'HISTORICALLY CHEAP' : pct <= 66 ? 'NORMAL RANGE' : pct <= 80 ? 'ELEVATED' : 'EXPENSIVE TERRITORY';
+              return `Analysis: At P${Math.round(pct)}, this contract is considered ${zone}.`;
             }
           }
         }
@@ -1406,7 +1428,7 @@ async function renderSeasonality() {
       // Add toggle button for all years / last 5 years — inject after chart
       const toggleDiv = document.createElement('div');
       toggleDiv.style.cssText = 'display:flex;gap:6px;margin-top:8px;justify-content:center;';
-      toggleDiv.innerHTML = `<button class="range-btn active-range" id="boxAllYears">All Years</button><button class="range-btn" id="boxLast5">Last 5 Years</button>`;
+      toggleDiv.innerHTML = `<button class="range-btn active-range" id="boxAllYears" title="Average all years since 2010">All Years</button><button class="range-btn" id="boxLast5" title="Average only the trailing 5 years">Last 5 Years</button>`;
       document.getElementById('chartSeasonMonth').parentElement.parentElement.appendChild(toggleDiv);
       document.getElementById('boxAllYears').addEventListener('click', function() {
         useBoxAll = true; this.classList.add('active-range'); document.getElementById('boxLast5').classList.remove('active-range'); renderBoxPlot();
@@ -1482,7 +1504,17 @@ async function renderSeasonality() {
         const bg = marginToColor(v, minV, maxV);
         const brightness = v == null ? 0 : (v - minV) / (maxV - minV);
         const textColor = v == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
-        html += `<td title="${y} ${m}: ${v != null ? v.toFixed(1)+'%' : 'No data'}" style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;">${v != null ? v.toFixed(1) : ''}</td>`;
+        
+        let dynHTitle = `Seasonality: ${m} ${y}`;
+        let dynHBody = `Average Initial Margin: <strong>${v != null ? v.toFixed(1)+'%' : 'No data'}</strong>`;
+        if (v != null) {
+          const avg = allVals.reduce((s, val) => s + val, 0) / allVals.length;
+          const diff = v - avg;
+          dynHBody += `<br><br>This is <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-time historic average of ${avg.toFixed(1)}%.`;
+        }
+
+        html += `<td class="has-tooltip" data-dyn-title="${dynHTitle}" data-dyn-body="${dynHBody}" 
+style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
       });
       html += `</tr>`;
     });
@@ -1718,7 +1750,23 @@ async function renderAnalytics() {
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{position:'top'}, tooltip:{mode:'index',intersect:false} },
+        plugins:{ 
+          legend:{position:'top'}, 
+          tooltip:{
+            mode:'index',
+            intersect:false,
+            callbacks: {
+              footer: (items) => {
+                if (items.length < 2) return '';
+                const spot = items.find(i => i.dataset.label.includes('Daily Margin'))?.raw;
+                const avg = items.find(i => i.dataset.label.includes('5-Day'))?.raw;
+                if (!spot || !avg) return '';
+                const diff = (spot - avg).toFixed(2);
+                return `Analysis: Spot is ${Math.abs(diff)}% ${diff > 0 ? 'above' : 'below'} the short-term trend.`;
+              }
+            }
+          } 
+        },
         scales:{ x:{ticks:{maxTicksLimit:10,font:{size:10}}}, y:{title:{display:true,text:'Margin %'}} }
       }
     });
@@ -2119,17 +2167,53 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 <strong>75–90: ELEVATED</strong> — High stress, pre-fund margin.<br>
 <strong>90+: STRESS</strong> — Extreme, historical top-decile conditions.<br><br>
 Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`
+  },
+  "Front Margin %": {
+    title: "Front Margin %",
+    body: `The Initial Margin % for the nearest expiring contract.<br><br>This is the primary bellwether for market margin conditions, as front-month contracts experience the highest volatility and tender pressure.`
+  },
+  "ELM %": {
+    title: "Extreme Loss Margin %",
+    body: `Locked at <em>1.25%</em> for NATURALGAS.<br><br>This is MCX's constant structural buffer designed to protect against massive gap-down or gap-up opens.`
+  },
+  "Next Expiry": {
+    title: "Next Contract Expiry",
+    body: `Days to Expiry (DTE) for the front-month contract.<br><br>As DTE approaches 0, margin requirements spike due to physical delivery/tender period rules.`
+  },
+  "Daily Volatility": {
+    title: "MCX Daily Volatility",
+    body: `The exchange's official Exponentially Weighted Moving Average (EWMA) volatility estimate.<br><br>This is the most critical dynamic factor driving Initial Margin increases.`
+  },
+  "Regime A": {
+    title: "Regime A (Structural)",
+    body: `Normal market conditions. Margins are stable and driven by standard volatility and open interest patterns with no external stress.`
+  },
+  "Regime B": {
+    title: "Regime B (Elevated)",
+    body: `Heightened market stress. Volatility or risk factors have pushed margins above the usual baseline.`
   }
 };
 
 function showTooltip(key, triggerEl) {
+  let titleText = '';
+  let bodyText = '';
   const tt = TOOLTIPS[key];
-  if (!tt) return;
+
+  if (triggerEl && triggerEl.hasAttribute('data-dyn-title')) {
+    titleText = triggerEl.getAttribute('data-dyn-title');
+    bodyText = triggerEl.getAttribute('data-dyn-body');
+  } else if (tt) {
+    titleText = tt.title;
+    bodyText = tt.body;
+  } else {
+    return;
+  }
+
   const el = document.getElementById('tooltipOverlay');
   if (!el) return;
   clearTimeout(_ttTimer);
-  document.getElementById('ttTitle').textContent = tt.title;
-  document.getElementById('ttBody').innerHTML = tt.body;
+  document.getElementById('ttTitle').textContent = titleText;
+  document.getElementById('ttBody').innerHTML = bodyText;
   el.classList.add('visible');
 
   requestAnimationFrame(() => {
@@ -2156,7 +2240,7 @@ function hideTooltip() {
 
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
 function attachTooltips() {
-  document.querySelectorAll('[data-tooltip-key]').forEach(el => {
+  document.querySelectorAll('.has-tooltip').forEach(el => {
     if (el._tooltipAttached) return; 
     el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
