@@ -746,6 +746,7 @@ async function renderOverview() {
           <td style="font-weight:700;color:${hpColor};">${hpLabel}</td>
         </tr>`;
       }).join('');
+      attachTooltips();
     }
 
     renderSnapshotTable(activeSnapSym);
@@ -865,6 +866,7 @@ async function renderOverview() {
         <td>${signalLabel}</td>
       </tr>`;
     }).join('');
+    attachTooltips();
   } catch(e) {
     console.error('Overview render error:', e);
   }
@@ -1526,6 +1528,7 @@ style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};fon
 
     html += `</tbody></table>`;
     document.getElementById('heatmapContainer').innerHTML = html;
+    attachTooltips();
   } catch(e) { console.error('Seasonality render error:', e); }
 }
 
