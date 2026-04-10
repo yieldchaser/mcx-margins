@@ -14,6 +14,14 @@ import urllib.request
 from datetime import datetime, date
 from pathlib import Path
 
+try:
+    import numpy as np
+    from sklearn.linear_model import LogisticRegression
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    print("  [WARN] numpy/scikit-learn not available — Items 1–9 advanced stats will be skipped")
+
 DB_PATH = Path("data/margins.db")
 OUT_DIR = Path("docs/data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -68,6 +76,700 @@ def safe_corr(x, y):
         return round(num / den, 4) if den > 0 else None
     except Exception:
         return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Items 1–9: Advanced analytics helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _build_front_month_series(cur):
+    """Build date-sorted front-month NATURALGAS series with margin, vol, dte."""
+    cur.execute(
+        "SELECT DISTINCT date FROM margins WHERE symbol='NATURALGAS' ORDER BY date"
+    )
+    dates = [r[0] for r in cur.fetchall()]
+    series = []
+    for d in dates:
+        cur.execute(
+            """SELECT expiry, initial_margin_pct, total_margin_pct, elm_pct,
+                      tender_margin_pct, daily_volatility, annualized_volatility
+               FROM margins WHERE date=? AND symbol='NATURALGAS'
+               ORDER BY expiry ASC""",
+            (d,),
+        )
+        rows = cur.fetchall()
+        best, best_dte = None, 99999
+        for row in rows:
+            dte = compute_dte(row[0], d)
+            if 0 <= dte < best_dte:
+                best_dte = dte
+                best = row
+        if best and best[1] is not None and best[5] is not None:
+            series.append({
+                "date": d,
+                "year": int(d[:4]),
+                "expiry": best[0],
+                "dte": best_dte,
+                "initial_margin_pct": best[1],
+                "total_margin_pct": best[2],
+                "elm_pct": best[3],
+                "tender_margin_pct": best[4],
+                "daily_volatility": best[5],
+                "annualized_volatility": best[6],
+            })
+    return series
+
+
+def _ols_fit(x, y):
+    """Simple OLS: y = slope*x + intercept. Returns slope, intercept, r2."""
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+    n = len(x)
+    if n < 3:
+        return 0.0, 0.0, 0.0
+    mx, my = x.mean(), y.mean()
+    ss_xy = ((x - mx) * (y - my)).sum()
+    ss_xx = ((x - mx) ** 2).sum()
+    if ss_xx == 0:
+        return 0.0, my, 0.0
+    slope = ss_xy / ss_xx
+    intercept = my - slope * mx
+    ss_res = ((y - (slope * x + intercept)) ** 2).sum()
+    ss_tot = ((y - my) ** 2).sum()
+    r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+    return float(slope), float(intercept), float(r2)
+
+
+def _percentile(arr, pct):
+    """Compute percentile of sorted array."""
+    if not arr:
+        return 0.0
+    a = sorted(arr)
+    k = (len(a) - 1) * pct / 100.0
+    f = int(k)
+    c = f + 1 if f + 1 < len(a) else f
+    d = k - f
+    return a[f] + d * (a[c] - a[f])
+
+
+def _classify_regime(vol_daily_pct, year):
+    """Regime A = structural (low-vol / pre-2019), Regime B = elevated."""
+    vol_pct = vol_daily_pct * 100  # convert to percent
+    if vol_pct >= 4.5 and year >= 2019:
+        return "B"
+    return "A"
+
+
+# ── Item 3: Regime Detection ─────────────────────────────────────────────────
+def _export_regime_model(cur, fm_series):
+    """Fit per-regime OLS, tag rows, compute percentiles. Returns regime params dict."""
+    print("  [Item 3] Regime detection & model...")
+
+    a_x, a_y, b_x, b_y = [], [], [], []
+    for row in fm_series:
+        regime = _classify_regime(row["daily_volatility"], row["year"])
+        row["regime"] = regime
+        vol_pct = row["daily_volatility"] * 100
+        margin = row["initial_margin_pct"]
+        if regime == "A":
+            a_x.append(vol_pct)
+            a_y.append(margin)
+        else:
+            b_x.append(vol_pct)
+            b_y.append(margin)
+
+    slope_a, intercept_a, r2_a = _ols_fit(a_x, a_y)
+    slope_b, intercept_b, r2_b = _ols_fit(b_x, b_y)
+
+    # Residual std per regime
+    res_a = [a_y[i] - (slope_a * a_x[i] + intercept_a) for i in range(len(a_x))]
+    res_b = [b_y[i] - (slope_b * b_x[i] + intercept_b) for i in range(len(b_x))]
+    sigma_a = float(np.std(res_a)) if res_a else 0.0
+    sigma_b = float(np.std(res_b)) if res_b else 0.0
+
+    # Percentiles: all-time and within current regime
+    all_margins = [r["initial_margin_pct"] for r in fm_series]
+    latest = fm_series[-1] if fm_series else None
+    current_regime = latest["regime"] if latest else "B"
+    regime_margins = [r["initial_margin_pct"] for r in fm_series if r["regime"] == current_regime]
+
+    all_sorted = sorted(all_margins)
+    regime_sorted = sorted(regime_margins)
+    if latest:
+        m = latest["initial_margin_pct"]
+        pct_alltime = round(sum(1 for v in all_sorted if v <= m) / len(all_sorted) * 100)
+        pct_regime = round(sum(1 for v in regime_sorted if v <= m) / len(regime_sorted) * 100)
+    else:
+        pct_alltime, pct_regime = 50, 50
+
+    regime_params = {
+        "regime_a": {"slope": round(slope_a, 4), "intercept": round(intercept_a, 4),
+                     "r2": round(r2_a, 4), "n": len(a_x), "sigma": round(sigma_a, 4)},
+        "regime_b": {"slope": round(slope_b, 4), "intercept": round(intercept_b, 4),
+                     "r2": round(r2_b, 4), "n": len(b_x), "sigma": round(sigma_b, 4)},
+        "current_regime": current_regime,
+        "current_pct_alltime": pct_alltime,
+        "current_pct_regime": pct_regime,
+    }
+    save("regime_model.json", regime_params)
+    return regime_params
+
+
+# ── Item 1: Forecast Bands ───────────────────────────────────────────────────
+def _export_forecast_bands(fm_series, panic_entries, regime_params):
+    """Compute ±1σ/±2σ prediction intervals from rolling residual std."""
+    print("  [Item 1] Forecast bands...")
+
+    # Compute residuals for historical predictions
+    residuals = []
+    for i in range(len(fm_series) - 1):
+        today = fm_series[i]
+        tomorrow = fm_series[i + 1]
+        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        actual = tomorrow["initial_margin_pct"]
+        residuals.append(predicted - actual)
+
+    # Rolling 30-day std of residuals
+    window = 30
+    if len(residuals) >= window:
+        recent_residuals = residuals[-window:]
+        rolling_sigma = float(np.std(recent_residuals))
+    else:
+        rolling_sigma = float(np.std(residuals)) if residuals else 1.0
+
+    # Build forecast bands per expiry from panic_entries
+    bands = []
+    for entry in panic_entries:
+        pred = entry["predicted_tomorrow"]
+        bands.append({
+            "expiry": entry["expiry"],
+            "dte": entry["dte"],
+            "current": entry["total_margin_pct"],
+            "predicted": pred,
+            "sigma_1": round(rolling_sigma, 4),
+            "sigma_2": round(2 * rolling_sigma, 4),
+            "upper_1": round(pred + rolling_sigma, 3),
+            "lower_1": round(pred - rolling_sigma, 3),
+            "upper_2": round(pred + 2 * rolling_sigma, 3),
+            "lower_2": round(pred - 2 * rolling_sigma, 3),
+        })
+
+    save("forecast_bands.json", {
+        "rolling_sigma": round(rolling_sigma, 4),
+        "window_days": window,
+        "bands": bands,
+    })
+
+
+# ── Item 2: Model Health / Backtest Scorecard ────────────────────────────────
+def _export_model_health(fm_series):
+    """Compute directional accuracy, MAE, RMSE, interval hit rates."""
+    print("  [Item 2] Model health scorecard...")
+
+    # Build prediction vs actual pairs
+    pairs = []
+    residuals_all = []
+    for i in range(len(fm_series) - 1):
+        today = fm_series[i]
+        tomorrow = fm_series[i + 1]
+        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        actual = tomorrow["initial_margin_pct"]
+        pred_delta = predicted - today["initial_margin_pct"]
+        actual_delta = actual - today["initial_margin_pct"]
+        residual = predicted - actual
+        residuals_all.append(residual)
+        pairs.append({
+            "pred_delta": pred_delta,
+            "actual_delta": actual_delta,
+            "predicted": predicted,
+            "actual": actual,
+            "residual": residual,
+        })
+
+    # Rolling sigma for interval checks
+    def rolling_sigma_at(idx, window=30):
+        start = max(0, idx - window)
+        chunk = [p["residual"] for p in pairs[start:idx]]
+        return float(np.std(chunk)) if len(chunk) >= 5 else float(np.std(residuals_all))
+
+    def compute_metrics(recent_pairs, offset):
+        if not recent_pairs:
+            return None
+        n = len(recent_pairs)
+        dir_correct = sum(1 for p in recent_pairs
+                          if (p["pred_delta"] > 0 and p["actual_delta"] > 0) or
+                             (p["pred_delta"] < 0 and p["actual_delta"] < 0) or
+                             (abs(p["pred_delta"]) < 0.01 and abs(p["actual_delta"]) < 0.01))
+        errors = [abs(p["predicted"] - p["actual"]) for p in recent_pairs]
+        sq_errors = [e ** 2 for e in errors]
+        mae = sum(errors) / n
+        rmse = math.sqrt(sum(sq_errors) / n)
+
+        # Interval hit rates
+        hits_1s, hits_2s = 0, 0
+        for j, p in enumerate(recent_pairs):
+            idx = offset + j
+            sigma = rolling_sigma_at(idx)
+            if abs(p["residual"]) <= sigma:
+                hits_1s += 1
+            if abs(p["residual"]) <= 2 * sigma:
+                hits_2s += 1
+
+        return {
+            "directional_accuracy": round(dir_correct / n * 100, 1),
+            "mae": round(mae, 3),
+            "rmse": round(rmse, 3),
+            "interval_hit_rate_1sigma": round(hits_1s / n * 100, 1),
+            "interval_hit_rate_2sigma": round(hits_2s / n * 100, 1),
+            "n": n,
+        }
+
+    result = {}
+    for label, days in [("30d", 30), ("90d", 90), ("365d", 365)]:
+        if len(pairs) >= days:
+            offset = len(pairs) - days
+            result[label] = compute_metrics(pairs[-days:], offset)
+        elif pairs:
+            result[label] = compute_metrics(pairs, 0)
+        else:
+            result[label] = None
+
+    save("model_health.json", result)
+
+
+# ── Item 4: Delta Distribution ───────────────────────────────────────────────
+def _export_delta_distribution(fm_series):
+    """Compute daily margin change histogram by DTE bucket."""
+    print("  [Item 4] Delta distribution...")
+
+    # Compute deltas
+    deltas_by_bucket = {"0-30": [], "31-90": [], "91+": []}
+    deltas_by_quartile = {"Q1": [], "Q2": [], "Q3": [], "Q4": []}
+
+    for i in range(len(fm_series) - 1):
+        today = fm_series[i]
+        tomorrow = fm_series[i + 1]
+        delta = tomorrow["initial_margin_pct"] - today["initial_margin_pct"]
+        dte = today["dte"]
+        margin = today["initial_margin_pct"]
+
+        if dte <= 30:
+            deltas_by_bucket["0-30"].append(delta)
+        elif dte <= 90:
+            deltas_by_bucket["31-90"].append(delta)
+        else:
+            deltas_by_bucket["91+"].append(delta)
+
+        if margin < 17:
+            deltas_by_quartile["Q1"].append(delta)
+        elif margin < 22:
+            deltas_by_quartile["Q2"].append(delta)
+        elif margin < 28:
+            deltas_by_quartile["Q3"].append(delta)
+        else:
+            deltas_by_quartile["Q4"].append(delta)
+
+    def build_histogram(vals):
+        if not vals:
+            return {"bins": [], "counts": [], "percentiles": {}}
+        bins = []
+        bin_width = 0.25
+        edges = [round(-5.0 + i * bin_width, 2) for i in range(int(10.0 / bin_width) + 1)]
+        counts = [0] * (len(edges) + 1)  # +1 for overflow on each side
+        labels = ["<-5.0"]
+        for j in range(len(edges) - 1):
+            labels.append(f"{edges[j]:.2f}")
+        labels.append(">5.0")
+
+        for v in vals:
+            if v < -5.0:
+                counts[0] += 1
+            elif v >= 5.0:
+                counts[-1] += 1
+            else:
+                idx = int((v + 5.0) / bin_width) + 1
+                idx = min(idx, len(counts) - 2)
+                counts[idx] += 1
+
+        sorted_vals = sorted(vals)
+        pcts = {}
+        for p in [5, 10, 25, 50, 75, 90, 95]:
+            pcts[f"P{p}"] = round(_percentile(sorted_vals, p), 3)
+
+        return {"bins": labels, "counts": counts, "percentiles": pcts, "n": len(vals)}
+
+    histograms = {}
+    for bucket, vals in deltas_by_bucket.items():
+        histograms[bucket] = build_histogram(vals)
+
+    conditional = {}
+    for q, vals in deltas_by_quartile.items():
+        if vals:
+            sv = sorted(vals)
+            conditional[q] = {
+                "P10": round(_percentile(sv, 10), 3),
+                "P50": round(_percentile(sv, 50), 3),
+                "P90": round(_percentile(sv, 90), 3),
+                "n": len(vals),
+            }
+
+    # Determine current quartile
+    latest = fm_series[-1] if fm_series else None
+    current_q = "Q2"
+    if latest:
+        m = latest["initial_margin_pct"]
+        if m < 17: current_q = "Q1"
+        elif m < 22: current_q = "Q2"
+        elif m < 28: current_q = "Q3"
+        else: current_q = "Q4"
+
+    save("delta_distribution.json", {
+        "histograms": histograms,
+        "conditional": conditional,
+        "current_quartile": current_q,
+        "current_margin": round(latest["initial_margin_pct"], 2) if latest else 0,
+    })
+
+
+# ── Item 5: Forward Curve Confidence Cone ────────────────────────────────────
+def _export_curve_cone(cur, fwd, latest_date):
+    """Compute P10/P50/P90 at equivalent DTE for each active expiry."""
+    print("  [Item 5] Forward curve confidence cone...")
+
+    # Fetch all NATURALGAS history with DTE
+    cur.execute(
+        """SELECT date, expiry, total_margin_pct, daily_volatility
+           FROM margins WHERE symbol='NATURALGAS' AND total_margin_pct IS NOT NULL"""
+    )
+    hist_rows = cur.fetchall()
+    # Build DTE→margin mapping
+    dte_margin_all = []
+    dte_margin_recent = []  # last 5 years
+    cutoff_year = int(latest_date[:4]) - 5
+
+    for row in hist_rows:
+        d, exp, tm, dv = row
+        dte = compute_dte(exp, d)
+        if dte < 0 or dte > 400:
+            continue
+        dte_margin_all.append((dte, tm))
+        if int(d[:4]) >= cutoff_year:
+            dte_margin_recent.append((dte, tm))
+
+    def cone_at_dte(target_dte, data):
+        window = 15
+        vals = [tm for dte, tm in data if abs(dte - target_dte) <= window]
+        if len(vals) < 5:
+            vals = [tm for dte, tm in data if abs(dte - target_dte) <= 30]
+        if not vals:
+            return None, None, None, None
+        sv = sorted(vals)
+        p10 = round(_percentile(sv, 10), 2)
+        p50 = round(_percentile(sv, 50), 2)
+        p90 = round(_percentile(sv, 90), 2)
+        # Current percentile within this DTE bucket
+        return p10, p50, p90, len(sv)
+
+    ng_fwd = fwd.get("NATURALGAS", [])
+    cone = []
+    for contract in ng_fwd:
+        dte = contract["dte"]
+        current = contract["total_margin_pct"]
+        p10_all, p50_all, p90_all, n_all = cone_at_dte(dte, dte_margin_all)
+        p10_rec, p50_rec, p90_rec, n_rec = cone_at_dte(dte, dte_margin_recent)
+
+        # Compute percentile of current within all-time bucket
+        vals_at_dte = sorted([tm for d, tm in dte_margin_all if abs(d - dte) <= 15])
+        hist_pct = round(sum(1 for v in vals_at_dte if v <= current) / len(vals_at_dte) * 100) if vals_at_dte else 50
+
+        cone.append({
+            "expiry": contract["expiry"],
+            "dte": dte,
+            "current": current,
+            "p10_alltime": p10_all, "p50_alltime": p50_all, "p90_alltime": p90_all, "n_alltime": n_all,
+            "p10_recent": p10_rec, "p50_recent": p50_rec, "p90_recent": p90_rec, "n_recent": n_rec,
+            "hist_pct": hist_pct,
+        })
+
+    save("curve_cone.json", {"as_of": latest_date, "cone": cone})
+
+
+# ── Item 6: Structural vs Policy Buffer Decomposition ────────────────────────
+def _export_decomposition(fm_series, regime_params):
+    """Decompose margin into vol-implied (fair) and policy buffer."""
+    print("  [Item 6] Margin decomposition...")
+
+    rp = regime_params["regime_b"]
+    slope, intercept = rp["slope"], rp["intercept"]
+
+    # Last 365 days
+    recent = fm_series[-365:] if len(fm_series) >= 365 else fm_series
+    ts = []
+    buffers = []
+    for row in recent:
+        vol_pct = row["daily_volatility"] * 100
+        fair = slope * vol_pct + intercept
+        actual = row["initial_margin_pct"]
+        buf = actual - fair
+        buffers.append(buf)
+        ts.append({
+            "date": row["date"],
+            "actual": round(actual, 3),
+            "fair_margin": round(fair, 3),
+            "policy_buffer": round(buf, 3),
+        })
+
+    # Buffer percentile for today
+    sorted_bufs = sorted(buffers)
+    latest_buf = buffers[-1] if buffers else 0
+    buf_pct = round(sum(1 for v in sorted_bufs if v <= latest_buf) / len(sorted_bufs) * 100) if sorted_bufs else 50
+
+    save("decomposition.json", {
+        "slope": slope, "intercept": intercept,
+        "today": {
+            "actual": ts[-1]["actual"] if ts else 0,
+            "fair_margin": ts[-1]["fair_margin"] if ts else 0,
+            "policy_buffer": ts[-1]["policy_buffer"] if ts else 0,
+            "buffer_percentile": buf_pct,
+        },
+        "timeseries": ts,
+    })
+
+
+# ── Item 7: Seasonality Box Plots ────────────────────────────────────────────
+def _export_seasonality_boxplot(cur):
+    """Compute box plot stats per month (all years + last 5 years)."""
+    print("  [Item 7] Seasonality boxplots...")
+
+    cur.execute(
+        """SELECT strftime('%m', date) as mon, strftime('%Y', date) as yr,
+                  initial_margin_pct
+           FROM margins WHERE symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL"""
+    )
+    month_vals_all = {}
+    month_vals_5y = {}
+    current_year = date.today().year
+
+    for row in cur.fetchall():
+        m, yr, val = int(row[0]), int(row[1]), row[2]
+        month_vals_all.setdefault(m, []).append(val)
+        if yr >= current_year - 5:
+            month_vals_5y.setdefault(m, []).append(val)
+
+    def box_stats(vals):
+        if not vals:
+            return None
+        sv = sorted(vals)
+        n = len(sv)
+        return {
+            "min": round(sv[0], 2),
+            "p10": round(_percentile(sv, 10), 2),
+            "p25": round(_percentile(sv, 25), 2),
+            "median": round(_percentile(sv, 50), 2),
+            "p75": round(_percentile(sv, 75), 2),
+            "p90": round(_percentile(sv, 90), 2),
+            "max": round(sv[-1], 2),
+            "mean": round(sum(sv) / n, 2),
+            "std": round(float(np.std(sv)), 2),
+            "n": n,
+        }
+
+    result = {"all_years": [], "last_5_years": []}
+    for m in range(1, 13):
+        name = MONTH_NAMES[m]
+        result["all_years"].append({"month": name, "month_num": m, **(box_stats(month_vals_all.get(m, [])) or {})})
+        result["last_5_years"].append({"month": name, "month_num": m, **(box_stats(month_vals_5y.get(m, [])) or {})})
+
+    save("seasonality_boxplot.json", result)
+
+
+# ── Item 8: Stress Score ─────────────────────────────────────────────────────
+def _export_stress_score(cur, fm_series, latest_date):
+    """Compute composite 0-100 stress score from margin + vol percentiles."""
+    print("  [Item 8] Stress score...")
+
+    # Trailing 5-year data for percentile baselines
+    cutoff_year = int(latest_date[:4]) - 5
+    recent = [r for r in fm_series if r["year"] >= cutoff_year]
+
+    all_margins = sorted([r["initial_margin_pct"] for r in recent])
+    all_vols = sorted([r["daily_volatility"] * 100 for r in recent])
+
+    latest = fm_series[-1] if fm_series else None
+    if latest:
+        m = latest["initial_margin_pct"]
+        v = latest["daily_volatility"] * 100
+        margin_pct = round(sum(1 for x in all_margins if x <= m) / len(all_margins) * 100) if all_margins else 50
+        vol_pct = round(sum(1 for x in all_vols if x <= v) / len(all_vols) * 100) if all_vols else 50
+        score = round(0.5 * margin_pct + 0.5 * vol_pct)
+    else:
+        margin_pct, vol_pct, score = 50, 50, 50
+
+    if score < 40:
+        label = "CALM"
+    elif score < 60:
+        label = "NORMAL"
+    elif score < 75:
+        label = "MONITOR"
+    elif score < 90:
+        label = "ELEVATED"
+    else:
+        label = "STRESS"
+
+    stress_data = {
+        "stress_score": score,
+        "stress_label": label,
+        "margin_pct": margin_pct,
+        "vol_pct": vol_pct,
+    }
+
+    # Save standalone + patch into current.json
+    save("stress_score.json", stress_data)
+
+
+# ── Item 9: Event Probabilities (Logistic Model) ─────────────────────────────
+def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
+    """Train logistic regression for P(hike)/P(cut) and emit per-expiry probabilities."""
+    print("  [Item 9] Event probabilities...")
+
+    rp_b = regime_params["regime_b"]
+    slope_b, intercept_b = rp_b["slope"], rp_b["intercept"]
+
+    # Build training data from fm_series
+    # Features: margin, vol_pct, dte, margin_percentile, days_since_last_change, policy_buffer
+    all_margins_sorted = sorted([r["initial_margin_pct"] for r in fm_series])
+    n_total = len(all_margins_sorted)
+
+    def margin_percentile(m):
+        return sum(1 for v in all_margins_sorted if v <= m) / n_total * 100 if n_total else 50
+
+    rows_X = []
+    rows_y_hike = []
+    rows_y_cut = []
+    last_change_day = 0
+
+    for i in range(len(fm_series) - 1):
+        today = fm_series[i]
+        tomorrow = fm_series[i + 1]
+        delta = tomorrow["initial_margin_pct"] - today["initial_margin_pct"]
+
+        vol_pct = today["daily_volatility"] * 100
+        fair = slope_b * vol_pct + intercept_b
+        policy_buf = today["initial_margin_pct"] - fair
+
+        if abs(delta) > 0.1:
+            last_change_day = 0
+        else:
+            last_change_day += 1
+
+        features = [
+            today["initial_margin_pct"],
+            vol_pct,
+            min(today["dte"], 300),
+            margin_percentile(today["initial_margin_pct"]),
+            min(last_change_day, 60),
+            policy_buf,
+        ]
+        rows_X.append(features)
+        rows_y_hike.append(1 if delta > 0.5 else 0)
+        rows_y_cut.append(1 if delta < -0.5 else 0)
+
+    if len(rows_X) < 100:
+        print("  [Item 9] Not enough data for logistic model")
+        save("event_probabilities.json", {"error": "insufficient data"})
+        return
+
+    X = np.array(rows_X)
+    y_hike = np.array(rows_y_hike)
+    y_cut = np.array(rows_y_cut)
+
+    # Walk-forward: train on last 365d window, evaluate
+    eval_window = min(365, len(X) - 365)
+    if eval_window < 30:
+        eval_window = min(90, len(X) // 2)
+
+    train_end = len(X) - eval_window
+    X_train, X_test = X[:train_end], X[train_end:]
+    y_hike_train, y_hike_test = y_hike[:train_end], y_hike[train_end:]
+    y_cut_train, y_cut_test = y_cut[:train_end], y_cut[train_end:]
+
+    # Train models
+    lr_hike = LogisticRegression(max_iter=1000, C=1.0)
+    lr_cut = LogisticRegression(max_iter=1000, C=1.0)
+
+    # Ensure both classes present
+    if y_hike_train.sum() < 5 or (1 - y_hike_train).sum() < 5:
+        print("  [Item 9] Hike class imbalance too severe")
+        save("event_probabilities.json", {"error": "class imbalance"})
+        return
+
+    lr_hike.fit(X_train, y_hike_train)
+    lr_cut.fit(X_train, y_cut_train)
+
+    # Brier scores on test set
+    p_hike_test = lr_hike.predict_proba(X_test)[:, 1]
+    p_cut_test = lr_cut.predict_proba(X_test)[:, 1]
+    brier_hike = float(np.mean((p_hike_test - y_hike_test) ** 2))
+    brier_cut = float(np.mean((p_cut_test - y_cut_test) ** 2))
+
+    # Retrain on ALL data for production predictions
+    lr_hike.fit(X, y_hike)
+    lr_cut.fit(X, y_cut)
+
+    # Predict for each current expiry
+    latest = fm_series[-1]
+    latest_margin_pct_rank = margin_percentile(latest["initial_margin_pct"])
+
+    per_expiry = []
+    for entry in panic_entries:
+        vol_pct = (entry["vol_daily"] if entry["vol_daily"] else latest["daily_volatility"]) * 100
+        fair = slope_b * vol_pct + intercept_b
+        policy_buf = entry["total_margin_pct"] - fair
+        feat = np.array([[
+            entry["total_margin_pct"],
+            vol_pct,
+            min(entry["dte"], 300),
+            latest_margin_pct_rank,
+            0,  # days_since_last_change unknown per-expiry; use 0
+            policy_buf,
+        ]])
+        p_h = float(lr_hike.predict_proba(feat)[0, 1])
+        p_c = float(lr_cut.predict_proba(feat)[0, 1])
+        p_f = max(0, 1.0 - p_h - p_c)
+        # Normalize
+        total = p_h + p_c + p_f
+        if total > 0:
+            p_h, p_c, p_f = p_h / total, p_c / total, p_f / total
+
+        per_expiry.append({
+            "expiry": entry["expiry"],
+            "dte": entry["dte"],
+            "p_hike": round(p_h, 3),
+            "p_cut": round(p_c, 3),
+            "p_flat": round(p_f, 3),
+        })
+
+    # Serialize model coefficients
+    coefficients = {
+        "hike": {
+            "coef": lr_hike.coef_[0].tolist(),
+            "intercept": float(lr_hike.intercept_[0]),
+            "features": ["margin_pct", "vol_pct", "dte", "margin_percentile", "days_since_change", "policy_buffer"],
+        },
+        "cut": {
+            "coef": lr_cut.coef_[0].tolist(),
+            "intercept": float(lr_cut.intercept_[0]),
+            "features": ["margin_pct", "vol_pct", "dte", "margin_percentile", "days_since_change", "policy_buffer"],
+        },
+    }
+
+    save("event_probabilities.json", {
+        "per_expiry": per_expiry,
+        "brier_hike": round(brier_hike, 4),
+        "brier_cut": round(brier_cut, 4),
+        "n_train": len(X),
+        "coefficients": coefficients,
+    })
 
 
 def main():
@@ -431,6 +1133,20 @@ def main():
         "panic_spread.json",
         {"as_of": latest_date, "NATURALGAS": panic_entries},
     )
+
+    # ── Items 1–9 (advanced analytics) ────────────────────────────────────────
+    if HAS_SKLEARN:
+        # Build full front-month history series (date-sorted, non-null)
+        fm_series = _build_front_month_series(cur)
+        regime_params = _export_regime_model(cur, fm_series)          # Item 3 first (others depend on it)
+        _export_forecast_bands(fm_series, panic_entries, regime_params) # Item 1
+        _export_model_health(fm_series)                                  # Item 2
+        _export_delta_distribution(fm_series)                            # Item 4
+        _export_curve_cone(cur, fwd, latest_date)                        # Item 5
+        _export_decomposition(fm_series, regime_params)                  # Item 6
+        _export_seasonality_boxplot(cur)                                  # Item 7
+        _export_stress_score(cur, fm_series, latest_date)                # Item 8 — updates current.json
+        _export_event_probabilities(cur, fm_series, panic_entries, regime_params)  # Item 9
 
     conn.close()
     print()

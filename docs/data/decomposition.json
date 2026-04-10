@@ -1,0 +1,2202 @@
+{
+  "slope": 7.5459,
+  "intercept": -4.6145,
+  "today": {
+    "actual": 23.49,
+    "fair_margin": 22.801,
+    "policy_buffer": 0.689,
+    "buffer_percentile": 51
+  },
+  "timeseries": [
+    {
+      "date": "2024-11-07",
+      "actual": 19.49,
+      "fair_margin": 18.373,
+      "policy_buffer": 1.117
+    },
+    {
+      "date": "2024-11-08",
+      "actual": 19.23,
+      "fair_margin": 18.086,
+      "policy_buffer": 1.144
+    },
+    {
+      "date": "2024-11-11",
+      "actual": 18.66,
+      "fair_margin": 17.45,
+      "policy_buffer": 1.21
+    },
+    {
+      "date": "2024-11-12",
+      "actual": 23.98,
+      "fair_margin": 23.346,
+      "policy_buffer": 0.634
+    },
+    {
+      "date": "2024-11-13",
+      "actual": 23.23,
+      "fair_margin": 22.519,
+      "policy_buffer": 0.711
+    },
+    {
+      "date": "2024-11-14",
+      "actual": 22.63,
+      "fair_margin": 21.861,
+      "policy_buffer": 0.769
+    },
+    {
+      "date": "2024-11-15",
+      "actual": 23.15,
+      "fair_margin": 22.435,
+      "policy_buffer": 0.715
+    },
+    {
+      "date": "2024-11-18",
+      "actual": 22.43,
+      "fair_margin": 21.644,
+      "policy_buffer": 0.786
+    },
+    {
+      "date": "2024-11-19",
+      "actual": 22.78,
+      "fair_margin": 22.022,
+      "policy_buffer": 0.758
+    },
+    {
+      "date": "2024-11-20",
+      "actual": 22.55,
+      "fair_margin": 21.774,
+      "policy_buffer": 0.776
+    },
+    {
+      "date": "2024-11-21",
+      "actual": 23.24,
+      "fair_margin": 22.53,
+      "policy_buffer": 0.71
+    },
+    {
+      "date": "2024-11-22",
+      "actual": 23.3,
+      "fair_margin": 22.593,
+      "policy_buffer": 0.707
+    },
+    {
+      "date": "2024-11-25",
+      "actual": 24.13,
+      "fair_margin": 23.508,
+      "policy_buffer": 0.622
+    },
+    {
+      "date": "2024-11-26",
+      "actual": 20.3,
+      "fair_margin": 19.283,
+      "policy_buffer": 1.017
+    },
+    {
+      "date": "2024-11-27",
+      "actual": 19.68,
+      "fair_margin": 18.582,
+      "policy_buffer": 1.098
+    },
+    {
+      "date": "2024-11-28",
+      "actual": 21.95,
+      "fair_margin": 21.108,
+      "policy_buffer": 0.842
+    },
+    {
+      "date": "2024-11-29",
+      "actual": 21.55,
+      "fair_margin": 20.673,
+      "policy_buffer": 0.877
+    },
+    {
+      "date": "2024-12-02",
+      "actual": 21.05,
+      "fair_margin": 20.115,
+      "policy_buffer": 0.935
+    },
+    {
+      "date": "2024-12-03",
+      "actual": 21.12,
+      "fair_margin": 20.196,
+      "policy_buffer": 0.924
+    },
+    {
+      "date": "2024-12-04",
+      "actual": 22.29,
+      "fair_margin": 21.481,
+      "policy_buffer": 0.809
+    },
+    {
+      "date": "2024-12-05",
+      "actual": 21.56,
+      "fair_margin": 20.684,
+      "policy_buffer": 0.876
+    },
+    {
+      "date": "2024-12-06",
+      "actual": 20.89,
+      "fair_margin": 19.941,
+      "policy_buffer": 0.949
+    },
+    {
+      "date": "2024-12-09",
+      "actual": 20.25,
+      "fair_margin": 19.224,
+      "policy_buffer": 1.026
+    },
+    {
+      "date": "2024-12-10",
+      "actual": 20.42,
+      "fair_margin": 19.414,
+      "policy_buffer": 1.006
+    },
+    {
+      "date": "2024-12-11",
+      "actual": 19.89,
+      "fair_margin": 18.826,
+      "policy_buffer": 1.064
+    },
+    {
+      "date": "2024-12-12",
+      "actual": 22.22,
+      "fair_margin": 21.405,
+      "policy_buffer": 0.815
+    },
+    {
+      "date": "2024-12-13",
+      "actual": 22.66,
+      "fair_margin": 21.893,
+      "policy_buffer": 0.767
+    },
+    {
+      "date": "2024-12-16",
+      "actual": 24.77,
+      "fair_margin": 24.199,
+      "policy_buffer": 0.571
+    },
+    {
+      "date": "2024-12-17",
+      "actual": 24.16,
+      "fair_margin": 23.539,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2024-12-18",
+      "actual": 23.5,
+      "fair_margin": 22.812,
+      "policy_buffer": 0.688
+    },
+    {
+      "date": "2024-12-19",
+      "actual": 24.66,
+      "fair_margin": 24.08,
+      "policy_buffer": 0.58
+    },
+    {
+      "date": "2024-12-20",
+      "actual": 24.94,
+      "fair_margin": 24.386,
+      "policy_buffer": 0.554
+    },
+    {
+      "date": "2024-12-23",
+      "actual": 26.58,
+      "fair_margin": 26.167,
+      "policy_buffer": 0.413
+    },
+    {
+      "date": "2024-12-24",
+      "actual": 26.06,
+      "fair_margin": 25.607,
+      "policy_buffer": 0.453
+    },
+    {
+      "date": "2024-12-26",
+      "actual": 27.55,
+      "fair_margin": 27.213,
+      "policy_buffer": 0.337
+    },
+    {
+      "date": "2024-12-27",
+      "actual": 26.12,
+      "fair_margin": 25.663,
+      "policy_buffer": 0.457
+    },
+    {
+      "date": "2024-12-30",
+      "actual": 25.3,
+      "fair_margin": 24.776,
+      "policy_buffer": 0.524
+    },
+    {
+      "date": "2024-12-31",
+      "actual": 36.68,
+      "fair_margin": 36.799,
+      "policy_buffer": -0.119
+    },
+    {
+      "date": "2025-01-01",
+      "actual": 37.7,
+      "fair_margin": 37.844,
+      "policy_buffer": -0.144
+    },
+    {
+      "date": "2025-01-02",
+      "actual": 36.53,
+      "fair_margin": 36.647,
+      "policy_buffer": -0.117
+    },
+    {
+      "date": "2025-01-03",
+      "actual": 35.36,
+      "fair_margin": 35.443,
+      "policy_buffer": -0.083
+    },
+    {
+      "date": "2025-01-06",
+      "actual": 37.84,
+      "fair_margin": 37.991,
+      "policy_buffer": -0.151
+    },
+    {
+      "date": "2025-01-07",
+      "actual": 38.48,
+      "fair_margin": 38.635,
+      "policy_buffer": -0.155
+    },
+    {
+      "date": "2025-01-08",
+      "actual": 37.61,
+      "fair_margin": 37.75,
+      "policy_buffer": -0.14
+    },
+    {
+      "date": "2025-01-09",
+      "actual": 37.13,
+      "fair_margin": 37.257,
+      "policy_buffer": -0.127
+    },
+    {
+      "date": "2025-01-10",
+      "actual": 36.45,
+      "fair_margin": 36.557,
+      "policy_buffer": -0.107
+    },
+    {
+      "date": "2025-01-13",
+      "actual": 36.25,
+      "fair_margin": 36.356,
+      "policy_buffer": -0.106
+    },
+    {
+      "date": "2025-01-14",
+      "actual": 35.17,
+      "fair_margin": 35.243,
+      "policy_buffer": -0.073
+    },
+    {
+      "date": "2025-01-15",
+      "actual": 34.49,
+      "fair_margin": 34.537,
+      "policy_buffer": -0.047
+    },
+    {
+      "date": "2025-01-16",
+      "actual": 33.34,
+      "fair_margin": 33.341,
+      "policy_buffer": -0.001
+    },
+    {
+      "date": "2025-01-17",
+      "actual": 32.44,
+      "fair_margin": 32.399,
+      "policy_buffer": 0.041
+    },
+    {
+      "date": "2025-01-20",
+      "actual": 31.86,
+      "fair_margin": 31.794,
+      "policy_buffer": 0.066
+    },
+    {
+      "date": "2025-01-21",
+      "actual": 31.45,
+      "fair_margin": 31.361,
+      "policy_buffer": 0.089
+    },
+    {
+      "date": "2025-01-22",
+      "actual": 30.61,
+      "fair_margin": 30.472,
+      "policy_buffer": 0.138
+    },
+    {
+      "date": "2025-01-23",
+      "actual": 30.51,
+      "fair_margin": 30.366,
+      "policy_buffer": 0.144
+    },
+    {
+      "date": "2025-01-24",
+      "actual": 29.53,
+      "fair_margin": 29.325,
+      "policy_buffer": 0.205
+    },
+    {
+      "date": "2025-01-27",
+      "actual": 28.6,
+      "fair_margin": 28.338,
+      "policy_buffer": 0.262
+    },
+    {
+      "date": "2025-01-28",
+      "actual": 30.66,
+      "fair_margin": 30.529,
+      "policy_buffer": 0.131
+    },
+    {
+      "date": "2025-01-29",
+      "actual": 22.05,
+      "fair_margin": 21.218,
+      "policy_buffer": 0.832
+    },
+    {
+      "date": "2025-01-30",
+      "actual": 21.43,
+      "fair_margin": 20.537,
+      "policy_buffer": 0.893
+    },
+    {
+      "date": "2025-01-31",
+      "actual": 20.92,
+      "fair_margin": 19.965,
+      "policy_buffer": 0.955
+    },
+    {
+      "date": "2025-02-03",
+      "actual": 19.74,
+      "fair_margin": 18.656,
+      "policy_buffer": 1.084
+    },
+    {
+      "date": "2025-02-04",
+      "actual": 23.79,
+      "fair_margin": 23.132,
+      "policy_buffer": 0.658
+    },
+    {
+      "date": "2025-02-05",
+      "actual": 23.14,
+      "fair_margin": 22.425,
+      "policy_buffer": 0.715
+    },
+    {
+      "date": "2025-02-06",
+      "actual": 22.42,
+      "fair_margin": 21.623,
+      "policy_buffer": 0.797
+    },
+    {
+      "date": "2025-02-07",
+      "actual": 22.4,
+      "fair_margin": 21.612,
+      "policy_buffer": 0.788
+    },
+    {
+      "date": "2025-02-10",
+      "actual": 21.69,
+      "fair_margin": 20.819,
+      "policy_buffer": 0.871
+    },
+    {
+      "date": "2025-02-11",
+      "actual": 21.52,
+      "fair_margin": 20.639,
+      "policy_buffer": 0.881
+    },
+    {
+      "date": "2025-02-12",
+      "actual": 20.87,
+      "fair_margin": 19.919,
+      "policy_buffer": 0.951
+    },
+    {
+      "date": "2025-02-13",
+      "actual": 20.23,
+      "fair_margin": 19.2,
+      "policy_buffer": 1.03
+    },
+    {
+      "date": "2025-02-14",
+      "actual": 20.03,
+      "fair_margin": 18.984,
+      "policy_buffer": 1.046
+    },
+    {
+      "date": "2025-02-17",
+      "actual": 19.1,
+      "fair_margin": 17.935,
+      "policy_buffer": 1.165
+    },
+    {
+      "date": "2025-02-18",
+      "actual": 19.96,
+      "fair_margin": 18.899,
+      "policy_buffer": 1.061
+    },
+    {
+      "date": "2025-02-19",
+      "actual": 23.46,
+      "fair_margin": 22.77,
+      "policy_buffer": 0.69
+    },
+    {
+      "date": "2025-02-20",
+      "actual": 26.58,
+      "fair_margin": 26.167,
+      "policy_buffer": 0.413
+    },
+    {
+      "date": "2025-02-21",
+      "actual": 26.74,
+      "fair_margin": 26.333,
+      "policy_buffer": 0.407
+    },
+    {
+      "date": "2025-02-24",
+      "actual": 27.17,
+      "fair_margin": 26.798,
+      "policy_buffer": 0.372
+    },
+    {
+      "date": "2025-02-25",
+      "actual": 28.52,
+      "fair_margin": 28.252,
+      "policy_buffer": 0.268
+    },
+    {
+      "date": "2025-02-26",
+      "actual": 24.2,
+      "fair_margin": 23.579,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2025-02-27",
+      "actual": 23.49,
+      "fair_margin": 22.801,
+      "policy_buffer": 0.689
+    },
+    {
+      "date": "2025-02-28",
+      "actual": 22.75,
+      "fair_margin": 21.989,
+      "policy_buffer": 0.761
+    },
+    {
+      "date": "2025-03-03",
+      "actual": 22.4,
+      "fair_margin": 21.612,
+      "policy_buffer": 0.788
+    },
+    {
+      "date": "2025-03-04",
+      "actual": 22.98,
+      "fair_margin": 22.245,
+      "policy_buffer": 0.735
+    },
+    {
+      "date": "2025-03-05",
+      "actual": 26.43,
+      "fair_margin": 26.0,
+      "policy_buffer": 0.43
+    },
+    {
+      "date": "2025-03-06",
+      "actual": 25.56,
+      "fair_margin": 25.065,
+      "policy_buffer": 0.495
+    },
+    {
+      "date": "2025-03-07",
+      "actual": 25.34,
+      "fair_margin": 24.824,
+      "policy_buffer": 0.516
+    },
+    {
+      "date": "2025-03-10",
+      "actual": 24.67,
+      "fair_margin": 24.089,
+      "policy_buffer": 0.581
+    },
+    {
+      "date": "2025-03-11",
+      "actual": 26.43,
+      "fair_margin": 26.0,
+      "policy_buffer": 0.43
+    },
+    {
+      "date": "2025-03-12",
+      "actual": 25.63,
+      "fair_margin": 25.132,
+      "policy_buffer": 0.498
+    },
+    {
+      "date": "2025-03-13",
+      "actual": 27.62,
+      "fair_margin": 27.284,
+      "policy_buffer": 0.336
+    },
+    {
+      "date": "2025-03-14",
+      "actual": 26.72,
+      "fair_margin": 26.315,
+      "policy_buffer": 0.405
+    },
+    {
+      "date": "2025-03-17",
+      "actual": 25.95,
+      "fair_margin": 25.484,
+      "policy_buffer": 0.466
+    },
+    {
+      "date": "2025-03-18",
+      "actual": 25.23,
+      "fair_margin": 24.708,
+      "policy_buffer": 0.522
+    },
+    {
+      "date": "2025-03-19",
+      "actual": 24.48,
+      "fair_margin": 23.891,
+      "policy_buffer": 0.589
+    },
+    {
+      "date": "2025-03-20",
+      "actual": 23.89,
+      "fair_margin": 23.244,
+      "policy_buffer": 0.646
+    },
+    {
+      "date": "2025-03-21",
+      "actual": 24.43,
+      "fair_margin": 23.831,
+      "policy_buffer": 0.599
+    },
+    {
+      "date": "2025-03-24",
+      "actual": 23.64,
+      "fair_margin": 22.967,
+      "policy_buffer": 0.673
+    },
+    {
+      "date": "2025-03-25",
+      "actual": 23.07,
+      "fair_margin": 22.34,
+      "policy_buffer": 0.73
+    },
+    {
+      "date": "2025-03-26",
+      "actual": 23.02,
+      "fair_margin": 22.287,
+      "policy_buffer": 0.733
+    },
+    {
+      "date": "2025-03-27",
+      "actual": 24.82,
+      "fair_margin": 24.258,
+      "policy_buffer": 0.562
+    },
+    {
+      "date": "2025-03-28",
+      "actual": 24.1,
+      "fair_margin": 23.468,
+      "policy_buffer": 0.632
+    },
+    {
+      "date": "2025-03-31",
+      "actual": 23.82,
+      "fair_margin": 23.162,
+      "policy_buffer": 0.658
+    },
+    {
+      "date": "2025-04-01",
+      "actual": 23.1,
+      "fair_margin": 22.372,
+      "policy_buffer": 0.728
+    },
+    {
+      "date": "2025-04-02",
+      "actual": 22.88,
+      "fair_margin": 22.139,
+      "policy_buffer": 0.741
+    },
+    {
+      "date": "2025-04-03",
+      "actual": 22.4,
+      "fair_margin": 21.601,
+      "policy_buffer": 0.799
+    },
+    {
+      "date": "2025-04-04",
+      "actual": 21.86,
+      "fair_margin": 21.008,
+      "policy_buffer": 0.852
+    },
+    {
+      "date": "2025-04-07",
+      "actual": 23.96,
+      "fair_margin": 23.316,
+      "policy_buffer": 0.644
+    },
+    {
+      "date": "2025-04-08",
+      "actual": 23.5,
+      "fair_margin": 22.812,
+      "policy_buffer": 0.688
+    },
+    {
+      "date": "2025-04-09",
+      "actual": 24.79,
+      "fair_margin": 24.228,
+      "policy_buffer": 0.562
+    },
+    {
+      "date": "2025-04-10",
+      "actual": 25.44,
+      "fair_margin": 24.931,
+      "policy_buffer": 0.509
+    },
+    {
+      "date": "2025-04-11",
+      "actual": 26.15,
+      "fair_margin": 25.701,
+      "policy_buffer": 0.449
+    },
+    {
+      "date": "2025-04-14",
+      "actual": 25.31,
+      "fair_margin": 24.786,
+      "policy_buffer": 0.524
+    },
+    {
+      "date": "2025-04-15",
+      "actual": 25.31,
+      "fair_margin": 24.795,
+      "policy_buffer": 0.515
+    },
+    {
+      "date": "2025-04-16",
+      "actual": 24.85,
+      "fair_margin": 24.287,
+      "policy_buffer": 0.563
+    },
+    {
+      "date": "2025-04-17",
+      "actual": 24.45,
+      "fair_margin": 23.851,
+      "policy_buffer": 0.599
+    },
+    {
+      "date": "2025-04-21",
+      "actual": 23.66,
+      "fair_margin": 22.988,
+      "policy_buffer": 0.672
+    },
+    {
+      "date": "2025-04-22",
+      "actual": 26.05,
+      "fair_margin": 25.588,
+      "policy_buffer": 0.462
+    },
+    {
+      "date": "2025-04-23",
+      "actual": 25.28,
+      "fair_margin": 24.756,
+      "policy_buffer": 0.524
+    },
+    {
+      "date": "2025-04-24",
+      "actual": 24.62,
+      "fair_margin": 24.04,
+      "policy_buffer": 0.58
+    },
+    {
+      "date": "2025-04-25",
+      "actual": 24.76,
+      "fair_margin": 24.189,
+      "policy_buffer": 0.571
+    },
+    {
+      "date": "2025-04-28",
+      "actual": 26.22,
+      "fair_margin": 25.776,
+      "policy_buffer": 0.444
+    },
+    {
+      "date": "2025-04-29",
+      "actual": 27.77,
+      "fair_margin": 27.444,
+      "policy_buffer": 0.326
+    },
+    {
+      "date": "2025-04-30",
+      "actual": 26.87,
+      "fair_margin": 26.48,
+      "policy_buffer": 0.39
+    },
+    {
+      "date": "2025-05-01",
+      "actual": 26.24,
+      "fair_margin": 25.795,
+      "policy_buffer": 0.445
+    },
+    {
+      "date": "2025-05-02",
+      "actual": 25.99,
+      "fair_margin": 25.531,
+      "policy_buffer": 0.459
+    },
+    {
+      "date": "2025-05-05",
+      "actual": 25.78,
+      "fair_margin": 25.303,
+      "policy_buffer": 0.477
+    },
+    {
+      "date": "2025-05-06",
+      "actual": 26.03,
+      "fair_margin": 25.569,
+      "policy_buffer": 0.461
+    },
+    {
+      "date": "2025-05-07",
+      "actual": 25.56,
+      "fair_margin": 25.065,
+      "policy_buffer": 0.495
+    },
+    {
+      "date": "2025-05-08",
+      "actual": 25.71,
+      "fair_margin": 25.227,
+      "policy_buffer": 0.483
+    },
+    {
+      "date": "2025-05-09",
+      "actual": 24.89,
+      "fair_margin": 24.337,
+      "policy_buffer": 0.553
+    },
+    {
+      "date": "2025-05-12",
+      "actual": 25.43,
+      "fair_margin": 24.921,
+      "policy_buffer": 0.509
+    },
+    {
+      "date": "2025-05-13",
+      "actual": 25.43,
+      "fair_margin": 24.921,
+      "policy_buffer": 0.509
+    },
+    {
+      "date": "2025-05-14",
+      "actual": 24.6,
+      "fair_margin": 24.02,
+      "policy_buffer": 0.58
+    },
+    {
+      "date": "2025-05-15",
+      "actual": 24.48,
+      "fair_margin": 23.891,
+      "policy_buffer": 0.589
+    },
+    {
+      "date": "2025-05-16",
+      "actual": 24.02,
+      "fair_margin": 23.387,
+      "policy_buffer": 0.633
+    },
+    {
+      "date": "2025-05-19",
+      "actual": 23.55,
+      "fair_margin": 22.874,
+      "policy_buffer": 0.676
+    },
+    {
+      "date": "2025-05-20",
+      "actual": 25.01,
+      "fair_margin": 24.464,
+      "policy_buffer": 0.546
+    },
+    {
+      "date": "2025-05-21",
+      "actual": 27.83,
+      "fair_margin": 27.515,
+      "policy_buffer": 0.315
+    },
+    {
+      "date": "2025-05-22",
+      "actual": 26.92,
+      "fair_margin": 26.535,
+      "policy_buffer": 0.385
+    },
+    {
+      "date": "2025-05-23",
+      "actual": 26.62,
+      "fair_margin": 26.204,
+      "policy_buffer": 0.416
+    },
+    {
+      "date": "2025-05-26",
+      "actual": 25.75,
+      "fair_margin": 25.266,
+      "policy_buffer": 0.484
+    },
+    {
+      "date": "2025-05-27",
+      "actual": 24.96,
+      "fair_margin": 24.406,
+      "policy_buffer": 0.554
+    },
+    {
+      "date": "2025-05-28",
+      "actual": 25.08,
+      "fair_margin": 24.542,
+      "policy_buffer": 0.538
+    },
+    {
+      "date": "2025-05-29",
+      "actual": 24.9,
+      "fair_margin": 24.347,
+      "policy_buffer": 0.553
+    },
+    {
+      "date": "2025-05-30",
+      "actual": 24.31,
+      "fair_margin": 23.7,
+      "policy_buffer": 0.61
+    },
+    {
+      "date": "2025-06-02",
+      "actual": 23.58,
+      "fair_margin": 22.905,
+      "policy_buffer": 0.675
+    },
+    {
+      "date": "2025-06-03",
+      "actual": 24.83,
+      "fair_margin": 24.267,
+      "policy_buffer": 0.563
+    },
+    {
+      "date": "2025-06-04",
+      "actual": 24.16,
+      "fair_margin": 23.539,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2025-06-05",
+      "actual": 23.38,
+      "fair_margin": 22.687,
+      "policy_buffer": 0.693
+    },
+    {
+      "date": "2025-06-06",
+      "actual": 22.63,
+      "fair_margin": 21.861,
+      "policy_buffer": 0.769
+    },
+    {
+      "date": "2025-06-09",
+      "actual": 22.11,
+      "fair_margin": 21.285,
+      "policy_buffer": 0.825
+    },
+    {
+      "date": "2025-06-10",
+      "actual": 22.63,
+      "fair_margin": 21.861,
+      "policy_buffer": 0.769
+    },
+    {
+      "date": "2025-06-11",
+      "actual": 22.43,
+      "fair_margin": 21.644,
+      "policy_buffer": 0.786
+    },
+    {
+      "date": "2025-06-12",
+      "actual": 21.74,
+      "fair_margin": 20.875,
+      "policy_buffer": 0.865
+    },
+    {
+      "date": "2025-06-13",
+      "actual": 21.04,
+      "fair_margin": 20.104,
+      "policy_buffer": 0.936
+    },
+    {
+      "date": "2025-06-16",
+      "actual": 20.88,
+      "fair_margin": 19.93,
+      "policy_buffer": 0.95
+    },
+    {
+      "date": "2025-06-17",
+      "actual": 21.22,
+      "fair_margin": 20.298,
+      "policy_buffer": 0.922
+    },
+    {
+      "date": "2025-06-18",
+      "actual": 21.0,
+      "fair_margin": 20.058,
+      "policy_buffer": 0.942
+    },
+    {
+      "date": "2025-06-19",
+      "actual": 21.65,
+      "fair_margin": 20.774,
+      "policy_buffer": 0.876
+    },
+    {
+      "date": "2025-06-20",
+      "actual": 21.28,
+      "fair_margin": 20.367,
+      "policy_buffer": 0.913
+    },
+    {
+      "date": "2025-06-23",
+      "actual": 22.58,
+      "fair_margin": 21.807,
+      "policy_buffer": 0.773
+    },
+    {
+      "date": "2025-06-24",
+      "actual": 22.95,
+      "fair_margin": 22.213,
+      "policy_buffer": 0.737
+    },
+    {
+      "date": "2025-06-25",
+      "actual": 23.22,
+      "fair_margin": 22.508,
+      "policy_buffer": 0.712
+    },
+    {
+      "date": "2025-06-26",
+      "actual": 21.48,
+      "fair_margin": 20.594,
+      "policy_buffer": 0.886
+    },
+    {
+      "date": "2025-06-27",
+      "actual": 21.5,
+      "fair_margin": 20.617,
+      "policy_buffer": 0.883
+    },
+    {
+      "date": "2025-06-30",
+      "actual": 22.81,
+      "fair_margin": 22.053,
+      "policy_buffer": 0.757
+    },
+    {
+      "date": "2025-07-01",
+      "actual": 25.4,
+      "fair_margin": 24.891,
+      "policy_buffer": 0.509
+    },
+    {
+      "date": "2025-07-02",
+      "actual": 24.74,
+      "fair_margin": 24.169,
+      "policy_buffer": 0.571
+    },
+    {
+      "date": "2025-07-03",
+      "actual": 24.58,
+      "fair_margin": 24.0,
+      "policy_buffer": 0.58
+    },
+    {
+      "date": "2025-07-04",
+      "actual": 24.15,
+      "fair_margin": 23.529,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2025-07-07",
+      "actual": 23.39,
+      "fair_margin": 22.697,
+      "policy_buffer": 0.693
+    },
+    {
+      "date": "2025-07-08",
+      "actual": 22.8,
+      "fair_margin": 22.043,
+      "policy_buffer": 0.757
+    },
+    {
+      "date": "2025-07-09",
+      "actual": 22.54,
+      "fair_margin": 21.764,
+      "policy_buffer": 0.776
+    },
+    {
+      "date": "2025-07-10",
+      "actual": 23.36,
+      "fair_margin": 22.665,
+      "policy_buffer": 0.695
+    },
+    {
+      "date": "2025-07-11",
+      "actual": 23.74,
+      "fair_margin": 23.08,
+      "policy_buffer": 0.66
+    },
+    {
+      "date": "2025-07-14",
+      "actual": 22.97,
+      "fair_margin": 22.235,
+      "policy_buffer": 0.735
+    },
+    {
+      "date": "2025-07-15",
+      "actual": 23.5,
+      "fair_margin": 22.812,
+      "policy_buffer": 0.688
+    },
+    {
+      "date": "2025-07-16",
+      "actual": 22.83,
+      "fair_margin": 22.075,
+      "policy_buffer": 0.755
+    },
+    {
+      "date": "2025-07-17",
+      "actual": 22.1,
+      "fair_margin": 21.273,
+      "policy_buffer": 0.827
+    },
+    {
+      "date": "2025-07-18",
+      "actual": 21.47,
+      "fair_margin": 20.583,
+      "policy_buffer": 0.887
+    },
+    {
+      "date": "2025-07-21",
+      "actual": 20.15,
+      "fair_margin": 19.116,
+      "policy_buffer": 1.034
+    },
+    {
+      "date": "2025-07-22",
+      "actual": 22.61,
+      "fair_margin": 21.839,
+      "policy_buffer": 0.771
+    },
+    {
+      "date": "2025-07-23",
+      "actual": 21.99,
+      "fair_margin": 21.152,
+      "policy_buffer": 0.838
+    },
+    {
+      "date": "2025-07-24",
+      "actual": 22.88,
+      "fair_margin": 22.139,
+      "policy_buffer": 0.741
+    },
+    {
+      "date": "2025-07-25",
+      "actual": 22.15,
+      "fair_margin": 21.328,
+      "policy_buffer": 0.822
+    },
+    {
+      "date": "2025-07-28",
+      "actual": 21.44,
+      "fair_margin": 20.549,
+      "policy_buffer": 0.891
+    },
+    {
+      "date": "2025-07-29",
+      "actual": 20.83,
+      "fair_margin": 19.872,
+      "policy_buffer": 0.958
+    },
+    {
+      "date": "2025-07-30",
+      "actual": 20.44,
+      "fair_margin": 19.438,
+      "policy_buffer": 1.002
+    },
+    {
+      "date": "2025-07-31",
+      "actual": 19.96,
+      "fair_margin": 18.899,
+      "policy_buffer": 1.061
+    },
+    {
+      "date": "2025-08-01",
+      "actual": 19.4,
+      "fair_margin": 18.274,
+      "policy_buffer": 1.126
+    },
+    {
+      "date": "2025-08-04",
+      "actual": 18.8,
+      "fair_margin": 17.604,
+      "policy_buffer": 1.196
+    },
+    {
+      "date": "2025-08-05",
+      "actual": 20.0,
+      "fair_margin": 18.948,
+      "policy_buffer": 1.052
+    },
+    {
+      "date": "2025-08-06",
+      "actual": 20.2,
+      "fair_margin": 19.164,
+      "policy_buffer": 1.036
+    },
+    {
+      "date": "2025-08-07",
+      "actual": 19.73,
+      "fair_margin": 18.643,
+      "policy_buffer": 1.087
+    },
+    {
+      "date": "2025-08-08",
+      "actual": 19.13,
+      "fair_margin": 17.973,
+      "policy_buffer": 1.157
+    },
+    {
+      "date": "2025-08-11",
+      "actual": 19.12,
+      "fair_margin": 17.961,
+      "policy_buffer": 1.159
+    },
+    {
+      "date": "2025-08-12",
+      "actual": 18.56,
+      "fair_margin": 17.334,
+      "policy_buffer": 1.226
+    },
+    {
+      "date": "2025-08-13",
+      "actual": 19.98,
+      "fair_margin": 18.923,
+      "policy_buffer": 1.057
+    },
+    {
+      "date": "2025-08-14",
+      "actual": 19.4,
+      "fair_margin": 18.274,
+      "policy_buffer": 1.126
+    },
+    {
+      "date": "2025-08-18",
+      "actual": 18.8,
+      "fair_margin": 17.604,
+      "policy_buffer": 1.196
+    },
+    {
+      "date": "2025-08-19",
+      "actual": 18.64,
+      "fair_margin": 17.424,
+      "policy_buffer": 1.216
+    },
+    {
+      "date": "2025-08-20",
+      "actual": 20.24,
+      "fair_margin": 19.212,
+      "policy_buffer": 1.028
+    },
+    {
+      "date": "2025-08-21",
+      "actual": 19.62,
+      "fair_margin": 18.52,
+      "policy_buffer": 1.1
+    },
+    {
+      "date": "2025-08-22",
+      "actual": 19.93,
+      "fair_margin": 18.863,
+      "policy_buffer": 1.067
+    },
+    {
+      "date": "2025-08-25",
+      "actual": 20.91,
+      "fair_margin": 19.953,
+      "policy_buffer": 0.957
+    },
+    {
+      "date": "2025-08-26",
+      "actual": 20.34,
+      "fair_margin": 19.32,
+      "policy_buffer": 1.02
+    },
+    {
+      "date": "2025-08-27",
+      "actual": 18.97,
+      "fair_margin": 17.795,
+      "policy_buffer": 1.175
+    },
+    {
+      "date": "2025-08-28",
+      "actual": 19.38,
+      "fair_margin": 18.249,
+      "policy_buffer": 1.131
+    },
+    {
+      "date": "2025-08-29",
+      "actual": 19.25,
+      "fair_margin": 18.111,
+      "policy_buffer": 1.139
+    },
+    {
+      "date": "2025-09-01",
+      "actual": 18.71,
+      "fair_margin": 17.502,
+      "policy_buffer": 1.208
+    },
+    {
+      "date": "2025-09-02",
+      "actual": 18.18,
+      "fair_margin": 16.901,
+      "policy_buffer": 1.279
+    },
+    {
+      "date": "2025-09-03",
+      "actual": 17.59,
+      "fair_margin": 16.243,
+      "policy_buffer": 1.347
+    },
+    {
+      "date": "2025-09-04",
+      "actual": 17.58,
+      "fair_margin": 16.229,
+      "policy_buffer": 1.351
+    },
+    {
+      "date": "2025-09-05",
+      "actual": 17.12,
+      "fair_margin": 15.704,
+      "policy_buffer": 1.416
+    },
+    {
+      "date": "2025-09-08",
+      "actual": 16.7,
+      "fair_margin": 15.236,
+      "policy_buffer": 1.464
+    },
+    {
+      "date": "2025-09-09",
+      "actual": 16.42,
+      "fair_margin": 14.917,
+      "policy_buffer": 1.503
+    },
+    {
+      "date": "2025-09-10",
+      "actual": 15.92,
+      "fair_margin": 14.341,
+      "policy_buffer": 1.579
+    },
+    {
+      "date": "2025-09-11",
+      "actual": 15.68,
+      "fair_margin": 14.068,
+      "policy_buffer": 1.612
+    },
+    {
+      "date": "2025-09-12",
+      "actual": 15.75,
+      "fair_margin": 14.145,
+      "policy_buffer": 1.605
+    },
+    {
+      "date": "2025-09-15",
+      "actual": 15.25,
+      "fair_margin": 13.574,
+      "policy_buffer": 1.676
+    },
+    {
+      "date": "2025-09-16",
+      "actual": 15.0,
+      "fair_margin": 13.29,
+      "policy_buffer": 1.71
+    },
+    {
+      "date": "2025-09-17",
+      "actual": 15.31,
+      "fair_margin": 13.652,
+      "policy_buffer": 1.658
+    },
+    {
+      "date": "2025-09-18",
+      "actual": 14.9,
+      "fair_margin": 13.179,
+      "policy_buffer": 1.721
+    },
+    {
+      "date": "2025-09-19",
+      "actual": 16.27,
+      "fair_margin": 14.742,
+      "policy_buffer": 1.528
+    },
+    {
+      "date": "2025-09-22",
+      "actual": 16.04,
+      "fair_margin": 14.475,
+      "policy_buffer": 1.565
+    },
+    {
+      "date": "2025-09-23",
+      "actual": 15.79,
+      "fair_margin": 14.19,
+      "policy_buffer": 1.6
+    },
+    {
+      "date": "2025-09-24",
+      "actual": 15.48,
+      "fair_margin": 13.838,
+      "policy_buffer": 1.642
+    },
+    {
+      "date": "2025-09-25",
+      "actual": 15.01,
+      "fair_margin": 13.306,
+      "policy_buffer": 1.704
+    },
+    {
+      "date": "2025-09-26",
+      "actual": 13.0,
+      "fair_margin": 10.515,
+      "policy_buffer": 2.485
+    },
+    {
+      "date": "2025-09-29",
+      "actual": 13.0,
+      "fair_margin": 10.056,
+      "policy_buffer": 2.944
+    },
+    {
+      "date": "2025-09-30",
+      "actual": 13.0,
+      "fair_margin": 10.326,
+      "policy_buffer": 2.674
+    },
+    {
+      "date": "2025-10-01",
+      "actual": 13.0,
+      "fair_margin": 10.326,
+      "policy_buffer": 2.674
+    },
+    {
+      "date": "2025-10-03",
+      "actual": 13.59,
+      "fair_margin": 11.675,
+      "policy_buffer": 1.915
+    },
+    {
+      "date": "2025-10-06",
+      "actual": 14.14,
+      "fair_margin": 12.309,
+      "policy_buffer": 1.831
+    },
+    {
+      "date": "2025-10-07",
+      "actual": 13.73,
+      "fair_margin": 11.831,
+      "policy_buffer": 1.899
+    },
+    {
+      "date": "2025-10-08",
+      "actual": 13.83,
+      "fair_margin": 11.952,
+      "policy_buffer": 1.878
+    },
+    {
+      "date": "2025-10-09",
+      "actual": 14.58,
+      "fair_margin": 12.807,
+      "policy_buffer": 1.773
+    },
+    {
+      "date": "2025-10-10",
+      "actual": 14.45,
+      "fair_margin": 12.659,
+      "policy_buffer": 1.791
+    },
+    {
+      "date": "2025-10-13",
+      "actual": 16.32,
+      "fair_margin": 14.8,
+      "policy_buffer": 1.52
+    },
+    {
+      "date": "2025-10-14",
+      "actual": 15.81,
+      "fair_margin": 14.22,
+      "policy_buffer": 1.59
+    },
+    {
+      "date": "2025-10-15",
+      "actual": 15.86,
+      "fair_margin": 14.28,
+      "policy_buffer": 1.58
+    },
+    {
+      "date": "2025-10-16",
+      "actual": 15.71,
+      "fair_margin": 14.099,
+      "policy_buffer": 1.611
+    },
+    {
+      "date": "2025-10-17",
+      "actual": 15.4,
+      "fair_margin": 13.745,
+      "policy_buffer": 1.655
+    },
+    {
+      "date": "2025-10-20",
+      "actual": 15.23,
+      "fair_margin": 13.558,
+      "policy_buffer": 1.672
+    },
+    {
+      "date": "2025-10-21",
+      "actual": 23.13,
+      "fair_margin": 22.414,
+      "policy_buffer": 0.716
+    },
+    {
+      "date": "2025-10-22",
+      "actual": 22.5,
+      "fair_margin": 21.721,
+      "policy_buffer": 0.779
+    },
+    {
+      "date": "2025-10-23",
+      "actual": 21.94,
+      "fair_margin": 21.097,
+      "policy_buffer": 0.843
+    },
+    {
+      "date": "2025-10-24",
+      "actual": 21.75,
+      "fair_margin": 20.885,
+      "policy_buffer": 0.865
+    },
+    {
+      "date": "2025-10-27",
+      "actual": 22.56,
+      "fair_margin": 21.786,
+      "policy_buffer": 0.774
+    },
+    {
+      "date": "2025-10-28",
+      "actual": 24.91,
+      "fair_margin": 24.356,
+      "policy_buffer": 0.554
+    },
+    {
+      "date": "2025-10-29",
+      "actual": 16.78,
+      "fair_margin": 15.322,
+      "policy_buffer": 1.458
+    },
+    {
+      "date": "2025-10-30",
+      "actual": 15.75,
+      "fair_margin": 14.145,
+      "policy_buffer": 1.605
+    },
+    {
+      "date": "2025-10-31",
+      "actual": 15.92,
+      "fair_margin": 14.341,
+      "policy_buffer": 1.579
+    },
+    {
+      "date": "2025-11-03",
+      "actual": 17.03,
+      "fair_margin": 15.605,
+      "policy_buffer": 1.425
+    },
+    {
+      "date": "2025-11-04",
+      "actual": 17.47,
+      "fair_margin": 16.106,
+      "policy_buffer": 1.364
+    },
+    {
+      "date": "2025-11-05",
+      "actual": 17.39,
+      "fair_margin": 16.009,
+      "policy_buffer": 1.381
+    },
+    {
+      "date": "2025-11-06",
+      "actual": 17.44,
+      "fair_margin": 16.064,
+      "policy_buffer": 1.376
+    },
+    {
+      "date": "2025-11-07",
+      "actual": 16.96,
+      "fair_margin": 15.52,
+      "policy_buffer": 1.44
+    },
+    {
+      "date": "2025-11-10",
+      "actual": 16.54,
+      "fair_margin": 15.049,
+      "policy_buffer": 1.491
+    },
+    {
+      "date": "2025-11-11",
+      "actual": 16.09,
+      "fair_margin": 14.535,
+      "policy_buffer": 1.555
+    },
+    {
+      "date": "2025-11-12",
+      "actual": 17.34,
+      "fair_margin": 15.954,
+      "policy_buffer": 1.386
+    },
+    {
+      "date": "2025-11-13",
+      "actual": 16.82,
+      "fair_margin": 15.364,
+      "policy_buffer": 1.456
+    },
+    {
+      "date": "2025-11-14",
+      "actual": 17.41,
+      "fair_margin": 16.037,
+      "policy_buffer": 1.373
+    },
+    {
+      "date": "2025-11-17",
+      "actual": 17.65,
+      "fair_margin": 16.311,
+      "policy_buffer": 1.339
+    },
+    {
+      "date": "2025-11-18",
+      "actual": 17.22,
+      "fair_margin": 15.815,
+      "policy_buffer": 1.405
+    },
+    {
+      "date": "2025-11-19",
+      "actual": 17.22,
+      "fair_margin": 15.815,
+      "policy_buffer": 1.405
+    },
+    {
+      "date": "2025-11-20",
+      "actual": 18.19,
+      "fair_margin": 16.915,
+      "policy_buffer": 1.275
+    },
+    {
+      "date": "2025-11-21",
+      "actual": 17.65,
+      "fair_margin": 16.311,
+      "policy_buffer": 1.339
+    },
+    {
+      "date": "2025-11-24",
+      "actual": 18.13,
+      "fair_margin": 16.848,
+      "policy_buffer": 1.282
+    },
+    {
+      "date": "2025-11-25",
+      "actual": 15.22,
+      "fair_margin": 13.542,
+      "policy_buffer": 1.678
+    },
+    {
+      "date": "2025-11-26",
+      "actual": 16.19,
+      "fair_margin": 14.653,
+      "policy_buffer": 1.537
+    },
+    {
+      "date": "2025-11-27",
+      "actual": 16.02,
+      "fair_margin": 14.46,
+      "policy_buffer": 1.56
+    },
+    {
+      "date": "2025-11-28",
+      "actual": 15.63,
+      "fair_margin": 14.007,
+      "policy_buffer": 1.623
+    },
+    {
+      "date": "2025-12-01",
+      "actual": 15.85,
+      "fair_margin": 14.265,
+      "policy_buffer": 1.585
+    },
+    {
+      "date": "2025-12-02",
+      "actual": 15.61,
+      "fair_margin": 13.992,
+      "policy_buffer": 1.618
+    },
+    {
+      "date": "2025-12-03",
+      "actual": 15.25,
+      "fair_margin": 13.574,
+      "policy_buffer": 1.676
+    },
+    {
+      "date": "2025-12-04",
+      "actual": 15.27,
+      "fair_margin": 13.605,
+      "policy_buffer": 1.665
+    },
+    {
+      "date": "2025-12-05",
+      "actual": 14.82,
+      "fair_margin": 13.082,
+      "policy_buffer": 1.738
+    },
+    {
+      "date": "2025-12-08",
+      "actual": 19.95,
+      "fair_margin": 18.887,
+      "policy_buffer": 1.063
+    },
+    {
+      "date": "2025-12-09",
+      "actual": 23.59,
+      "fair_margin": 22.915,
+      "policy_buffer": 0.675
+    },
+    {
+      "date": "2025-12-10",
+      "actual": 25.01,
+      "fair_margin": 24.464,
+      "policy_buffer": 0.546
+    },
+    {
+      "date": "2025-12-11",
+      "actual": 24.2,
+      "fair_margin": 23.579,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2025-12-12",
+      "actual": 28.51,
+      "fair_margin": 28.243,
+      "policy_buffer": 0.267
+    },
+    {
+      "date": "2025-12-15",
+      "actual": 27.65,
+      "fair_margin": 27.32,
+      "policy_buffer": 0.33
+    },
+    {
+      "date": "2025-12-16",
+      "actual": 26.91,
+      "fair_margin": 26.525,
+      "policy_buffer": 0.385
+    },
+    {
+      "date": "2025-12-17",
+      "actual": 26.79,
+      "fair_margin": 26.397,
+      "policy_buffer": 0.393
+    },
+    {
+      "date": "2025-12-18",
+      "actual": 26.12,
+      "fair_margin": 25.663,
+      "policy_buffer": 0.457
+    },
+    {
+      "date": "2025-12-19",
+      "actual": 25.45,
+      "fair_margin": 24.94,
+      "policy_buffer": 0.51
+    },
+    {
+      "date": "2025-12-22",
+      "actual": 23.82,
+      "fair_margin": 23.162,
+      "policy_buffer": 0.658
+    },
+    {
+      "date": "2025-12-23",
+      "actual": 23.97,
+      "fair_margin": 23.326,
+      "policy_buffer": 0.644
+    },
+    {
+      "date": "2025-12-24",
+      "actual": 26.74,
+      "fair_margin": 26.333,
+      "policy_buffer": 0.407
+    },
+    {
+      "date": "2025-12-26",
+      "actual": 25.86,
+      "fair_margin": 25.39,
+      "policy_buffer": 0.47
+    },
+    {
+      "date": "2025-12-29",
+      "actual": 23.52,
+      "fair_margin": 22.843,
+      "policy_buffer": 0.677
+    },
+    {
+      "date": "2025-12-30",
+      "actual": 23.52,
+      "fair_margin": 22.843,
+      "policy_buffer": 0.677
+    },
+    {
+      "date": "2025-12-31",
+      "actual": 22.77,
+      "fair_margin": 22.011,
+      "policy_buffer": 0.759
+    },
+    {
+      "date": "2026-01-01",
+      "actual": 24.06,
+      "fair_margin": 23.428,
+      "policy_buffer": 0.632
+    },
+    {
+      "date": "2026-01-02",
+      "actual": 23.59,
+      "fair_margin": 22.915,
+      "policy_buffer": 0.675
+    },
+    {
+      "date": "2026-01-05",
+      "actual": 22.88,
+      "fair_margin": 22.139,
+      "policy_buffer": 0.741
+    },
+    {
+      "date": "2026-01-06",
+      "actual": 23.85,
+      "fair_margin": 23.203,
+      "policy_buffer": 0.647
+    },
+    {
+      "date": "2026-01-07",
+      "actual": 23.54,
+      "fair_margin": 22.863,
+      "policy_buffer": 0.677
+    },
+    {
+      "date": "2026-01-08",
+      "actual": 24.1,
+      "fair_margin": 23.468,
+      "policy_buffer": 0.632
+    },
+    {
+      "date": "2026-01-09",
+      "actual": 24.55,
+      "fair_margin": 23.96,
+      "policy_buffer": 0.59
+    },
+    {
+      "date": "2026-01-12",
+      "actual": 24.71,
+      "fair_margin": 24.139,
+      "policy_buffer": 0.571
+    },
+    {
+      "date": "2026-01-13",
+      "actual": 24.57,
+      "fair_margin": 23.981,
+      "policy_buffer": 0.589
+    },
+    {
+      "date": "2026-01-14",
+      "actual": 23.77,
+      "fair_margin": 23.111,
+      "policy_buffer": 0.659
+    },
+    {
+      "date": "2026-01-15",
+      "actual": 26.6,
+      "fair_margin": 26.186,
+      "policy_buffer": 0.414
+    },
+    {
+      "date": "2026-01-16",
+      "actual": 25.77,
+      "fair_margin": 25.285,
+      "policy_buffer": 0.485
+    },
+    {
+      "date": "2026-01-19",
+      "actual": 24.98,
+      "fair_margin": 24.435,
+      "policy_buffer": 0.545
+    },
+    {
+      "date": "2026-01-20",
+      "actual": 37.62,
+      "fair_margin": 37.763,
+      "policy_buffer": -0.143
+    },
+    {
+      "date": "2026-01-21",
+      "actual": 37.5,
+      "fair_margin": 37.636,
+      "policy_buffer": -0.136
+    },
+    {
+      "date": "2026-01-22",
+      "actual": 53.65,
+      "fair_margin": 53.562,
+      "policy_buffer": 0.088
+    },
+    {
+      "date": "2026-01-23",
+      "actual": 52.71,
+      "fair_margin": 52.669,
+      "policy_buffer": 0.041
+    },
+    {
+      "date": "2026-01-27",
+      "actual": 51.11,
+      "fair_margin": 51.133,
+      "policy_buffer": -0.023
+    },
+    {
+      "date": "2026-01-28",
+      "actual": 32.59,
+      "fair_margin": 32.552,
+      "policy_buffer": 0.038
+    },
+    {
+      "date": "2026-01-29",
+      "actual": 31.89,
+      "fair_margin": 31.817,
+      "policy_buffer": 0.073
+    },
+    {
+      "date": "2026-01-30",
+      "actual": 31.15,
+      "fair_margin": 31.044,
+      "policy_buffer": 0.106
+    },
+    {
+      "date": "2026-02-02",
+      "actual": 34.25,
+      "fair_margin": 34.289,
+      "policy_buffer": -0.039
+    },
+    {
+      "date": "2026-02-03",
+      "actual": 66.05,
+      "fair_margin": 65.033,
+      "policy_buffer": 1.017
+    },
+    {
+      "date": "2026-02-04",
+      "actual": 63.84,
+      "fair_margin": 63.038,
+      "policy_buffer": 0.802
+    },
+    {
+      "date": "2026-02-05",
+      "actual": 62.15,
+      "fair_margin": 61.488,
+      "policy_buffer": 0.662
+    },
+    {
+      "date": "2026-02-06",
+      "actual": 59.97,
+      "fair_margin": 59.486,
+      "policy_buffer": 0.484
+    },
+    {
+      "date": "2026-02-09",
+      "actual": 57.89,
+      "fair_margin": 57.555,
+      "policy_buffer": 0.335
+    },
+    {
+      "date": "2026-02-10",
+      "actual": 59.3,
+      "fair_margin": 58.865,
+      "policy_buffer": 0.435
+    },
+    {
+      "date": "2026-02-11",
+      "actual": 57.23,
+      "fair_margin": 56.934,
+      "policy_buffer": 0.296
+    },
+    {
+      "date": "2026-02-12",
+      "actual": 55.23,
+      "fair_margin": 55.06,
+      "policy_buffer": 0.17
+    },
+    {
+      "date": "2026-02-13",
+      "actual": 53.43,
+      "fair_margin": 53.356,
+      "policy_buffer": 0.074
+    },
+    {
+      "date": "2026-02-16",
+      "actual": 51.59,
+      "fair_margin": 51.591,
+      "policy_buffer": -0.001
+    },
+    {
+      "date": "2026-02-17",
+      "actual": 50.65,
+      "fair_margin": 50.687,
+      "policy_buffer": -0.037
+    },
+    {
+      "date": "2026-02-18",
+      "actual": 48.97,
+      "fair_margin": 49.068,
+      "policy_buffer": -0.098
+    },
+    {
+      "date": "2026-02-19",
+      "actual": 47.49,
+      "fair_margin": 47.621,
+      "policy_buffer": -0.131
+    },
+    {
+      "date": "2026-02-20",
+      "actual": 46.1,
+      "fair_margin": 46.268,
+      "policy_buffer": -0.168
+    },
+    {
+      "date": "2026-02-23",
+      "actual": 44.7,
+      "fair_margin": 44.879,
+      "policy_buffer": -0.179
+    },
+    {
+      "date": "2026-02-24",
+      "actual": 43.63,
+      "fair_margin": 43.826,
+      "policy_buffer": -0.196
+    },
+    {
+      "date": "2026-02-25",
+      "actual": 35.0,
+      "fair_margin": 35.064,
+      "policy_buffer": -0.064
+    },
+    {
+      "date": "2026-02-26",
+      "actual": 33.87,
+      "fair_margin": 33.891,
+      "policy_buffer": -0.021
+    },
+    {
+      "date": "2026-02-27",
+      "actual": 33.1,
+      "fair_margin": 33.085,
+      "policy_buffer": 0.015
+    },
+    {
+      "date": "2026-03-02",
+      "actual": 32.18,
+      "fair_margin": 32.121,
+      "policy_buffer": 0.059
+    },
+    {
+      "date": "2026-03-03",
+      "actual": 31.67,
+      "fair_margin": 31.59,
+      "policy_buffer": 0.08
+    },
+    {
+      "date": "2026-03-04",
+      "actual": 32.25,
+      "fair_margin": 32.198,
+      "policy_buffer": 0.052
+    },
+    {
+      "date": "2026-03-05",
+      "actual": 32.65,
+      "fair_margin": 32.621,
+      "policy_buffer": 0.029
+    },
+    {
+      "date": "2026-03-06",
+      "actual": 31.58,
+      "fair_margin": 31.496,
+      "policy_buffer": 0.084
+    },
+    {
+      "date": "2026-03-09",
+      "actual": 33.21,
+      "fair_margin": 33.206,
+      "policy_buffer": 0.004
+    },
+    {
+      "date": "2026-03-10",
+      "actual": 32.25,
+      "fair_margin": 32.198,
+      "policy_buffer": 0.052
+    },
+    {
+      "date": "2026-03-11",
+      "actual": 32.32,
+      "fair_margin": 32.276,
+      "policy_buffer": 0.044
+    },
+    {
+      "date": "2026-03-12",
+      "actual": 33.43,
+      "fair_margin": 33.438,
+      "policy_buffer": -0.008
+    },
+    {
+      "date": "2026-03-13",
+      "actual": 32.33,
+      "fair_margin": 32.283,
+      "policy_buffer": 0.047
+    },
+    {
+      "date": "2026-03-16",
+      "actual": 31.43,
+      "fair_margin": 31.338,
+      "policy_buffer": 0.092
+    },
+    {
+      "date": "2026-03-17",
+      "actual": 31.33,
+      "fair_margin": 31.235,
+      "policy_buffer": 0.095
+    },
+    {
+      "date": "2026-03-18",
+      "actual": 30.33,
+      "fair_margin": 30.171,
+      "policy_buffer": 0.159
+    },
+    {
+      "date": "2026-03-19",
+      "actual": 29.36,
+      "fair_margin": 29.149,
+      "policy_buffer": 0.211
+    },
+    {
+      "date": "2026-03-20",
+      "actual": 29.26,
+      "fair_margin": 29.039,
+      "policy_buffer": 0.221
+    },
+    {
+      "date": "2026-03-23",
+      "actual": 28.62,
+      "fair_margin": 28.355,
+      "policy_buffer": 0.265
+    },
+    {
+      "date": "2026-03-24",
+      "actual": 29.15,
+      "fair_margin": 28.92,
+      "policy_buffer": 0.23
+    },
+    {
+      "date": "2026-03-25",
+      "actual": 28.35,
+      "fair_margin": 28.069,
+      "policy_buffer": 0.281
+    },
+    {
+      "date": "2026-03-26",
+      "actual": 27.42,
+      "fair_margin": 27.069,
+      "policy_buffer": 0.351
+    },
+    {
+      "date": "2026-03-27",
+      "actual": 25.77,
+      "fair_margin": 25.285,
+      "policy_buffer": 0.485
+    },
+    {
+      "date": "2026-03-30",
+      "actual": 25.41,
+      "fair_margin": 24.901,
+      "policy_buffer": 0.509
+    },
+    {
+      "date": "2026-03-31",
+      "actual": 26.13,
+      "fair_margin": 25.682,
+      "policy_buffer": 0.448
+    },
+    {
+      "date": "2026-04-01",
+      "actual": 25.28,
+      "fair_margin": 24.756,
+      "policy_buffer": 0.524
+    },
+    {
+      "date": "2026-04-02",
+      "actual": 25.05,
+      "fair_margin": 24.504,
+      "policy_buffer": 0.546
+    },
+    {
+      "date": "2026-04-06",
+      "actual": 24.25,
+      "fair_margin": 23.64,
+      "policy_buffer": 0.61
+    },
+    {
+      "date": "2026-04-07",
+      "actual": 23.5,
+      "fair_margin": 22.812,
+      "policy_buffer": 0.688
+    },
+    {
+      "date": "2026-04-08",
+      "actual": 22.86,
+      "fair_margin": 22.118,
+      "policy_buffer": 0.742
+    },
+    {
+      "date": "2026-04-09",
+      "actual": 24.14,
+      "fair_margin": 23.519,
+      "policy_buffer": 0.621
+    },
+    {
+      "date": "2026-04-10",
+      "actual": 23.49,
+      "fair_margin": 22.801,
+      "policy_buffer": 0.689
+    }
+  ]
+}

@@ -256,16 +256,20 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
     <div class="stat-label">ANN. VOLATILITY</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
     <div class="stat-sub" id="kpiPercentile">—</div>
+    <div class="stat-sub" id="kpiPercentileRegime" style="font-size:9px;color:var(--text-muted);margin-top:1px;">—</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">DAYS TO EXPIRY</div>
     <div class="stat-value" id="kpiDTE">—</div>
     <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Front month</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card has-tooltip" data-tooltip-key="Stress Score">
     <div class="stat-label">REGIME</div>
-    <div class="stat-value" id="kpiRegime" style="font-size:18px;">—</div>
-    <div class="stat-sub" id="kpiRegimeSub">—</div>
+    <div class="stat-value" id="kpiRegime" style="font-size:16px;">—</div>
+    <div style="height:4px;border-radius:2px;background:var(--surface2);margin:4px 0 2px;overflow:hidden;">
+      <div id="stressBar" style="height:100%;width:0%;border-radius:2px;transition:width 0.5s;"></div>
+    </div>
+    <div class="stat-sub" id="kpiRegimeSub" style="font-size:10px;">—</div>
   </div>
 </div>
 
@@ -303,7 +307,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <table class="data-table" id="snapshotTable">
           <thead><tr>
             <th>Contract</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
-            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th>
+            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th><th>Hist. Pct</th>
           </tr></thead>
           <tbody id="snapshotBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
         </table>
@@ -321,7 +325,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <div style="overflow-x:auto;">
           <table class="data-table" id="panicTable">
             <thead><tr>
-              <th>Expiry</th><th>Current %</th><th>Predicted</th><th>Signal</th>
+              <th>Expiry</th><th>Current %</th><th>Predicted</th><th>Probability</th><th>Signal</th>
             </tr></thead>
             <tbody id="panicBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
           </table>
@@ -387,6 +391,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <div class="chart-container"><canvas id="chartScatter"></canvas></div>
       </div>
     </div>
+    <!-- Item 6: Decomposition -->
+    <div class="card" style="margin-top:16px;" id="decompCard">
+      <div class="card-title has-tooltip" data-tooltip-key="Margin Decomposition">Margin Decomposition: Structural vs Policy Buffer</div>
+      <div id="decompSummary" style="margin-bottom:10px;font-size:13px;color:var(--text-muted);"></div>
+      <div class="chart-container" style="height:300px;"><canvas id="chartDecomp"></canvas></div>
+    </div>
   </div>
 
   <div id="tab-seasonality" class="tab-content">
@@ -414,6 +424,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   </div>
 
   <div id="tab-analytics" class="tab-content">
+    <!-- Item 2: Model Health Scorecard -->
+    <div class="card mb-4" id="modelHealthCard" style="display:none;">
+      <div class="card-title has-tooltip" data-tooltip-key="Model Health" style="margin-bottom:12px;">Model Health — Prediction Backtest Scorecard</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="modelHealthTable">
+          <thead><tr><th>Metric</th><th>30 Day</th><th>90 Day</th><th>365 Day</th></tr></thead>
+          <tbody id="modelHealthBody"></tbody>
+        </table>
+      </div>
+    </div>
     <div class="grid-2 mb-4">
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
@@ -433,6 +453,19 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
       <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
         Predicted = 0.886 × Current Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
       </p>
+    </div>
+    <!-- Item 4: Delta Distribution Histogram -->
+    <div class="card" style="margin-top:16px;" id="deltaDistCard" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution</div>
+        <div style="display:flex;gap:6px;" id="deltaBucketBtns">
+          <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
+          <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
+          <button class="range-btn" data-bucket="91+">91+d DTE</button>
+        </div>
+      </div>
+      <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
+      <div id="deltaCondSummary" style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text-muted);"></div>
     </div>
     <div class="grid-2" style="margin-top:16px;">
       <div class="card">
@@ -568,14 +601,43 @@ function setStaleness(dateStr) {
       pEl.className = `stat-sub ${pct >= 75 ? 'up' : pct <= 25 ? 'down' : 'flat'}`;
     }
 
-    // Regime
-    const m = front.initial_margin_pct;
+    // Regime — Item 8: Stress score widget
     const rEl = document.getElementById('kpiRegime');
     const rsEl = document.getElementById('kpiRegimeSub');
-    if (m < 20)      { rEl.textContent='🟢 CALM';    rEl.className='stat-value regime-calm';     rsEl.textContent='Low cost';    rsEl.className='stat-sub down'; }
-    else if (m < 35) { rEl.textContent='🟡 NORMAL';  rEl.className='stat-value regime-elevated'; rsEl.textContent='Monitor';     rsEl.className='stat-sub flat'; }
-    else if (m < 50) { rEl.textContent='🟠 STRESSED';rEl.className='stat-value regime-stressed'; rsEl.textContent='High margin'; rsEl.className='stat-sub up'; }
-    else             { rEl.textContent='🔴 CRISIS';  rEl.className='stat-value regime-crisis';   rsEl.textContent='Extreme';     rsEl.className='stat-sub up'; }
+    const stressBar = document.getElementById('stressBar');
+    try {
+      const stressData = await loadJSON('stress_score');
+      const sc = stressData.stress_score;
+      const lbl = stressData.stress_label;
+      const icons = {CALM:'🟢', NORMAL:'🟡', MONITOR:'🟠', ELEVATED:'🔴', STRESS:'🔴'};
+      const cls   = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
+      rEl.textContent = `${icons[lbl]||'⚪'} ${lbl}`;
+      rEl.className = 'stat-value ' + (cls[lbl]||'');
+      rsEl.textContent = `Score: ${sc} / 100`;
+      // Gradient bar
+      const pct = Math.min(100, Math.max(0, sc));
+      stressBar.style.width = pct + '%';
+      if (sc < 40) stressBar.style.background = '#3fb950';
+      else if (sc < 60) stressBar.style.background = '#d29922';
+      else if (sc < 75) stressBar.style.background = '#fb8f44';
+      else stressBar.style.background = '#f85149';
+    } catch(e) {
+      // Fallback to margin-based
+      const m = front.initial_margin_pct;
+      if (m < 20) { rEl.textContent='🟢 CALM'; rEl.className='stat-value regime-calm'; rsEl.textContent='Low cost'; }
+      else if (m < 35) { rEl.textContent='🟡 NORMAL'; rEl.className='stat-value regime-elevated'; rsEl.textContent='Monitor'; }
+      else if (m < 50) { rEl.textContent='🟠 STRESSED'; rEl.className='stat-value regime-stressed'; rsEl.textContent='High margin'; }
+      else { rEl.textContent='🔴 CRISIS'; rEl.className='stat-value regime-crisis'; rsEl.textContent='Extreme'; }
+    }
+
+    // Item 3: Regime percentile display
+    try {
+      const regimeModel = await loadJSON('regime_model');
+      const prEl = document.getElementById('kpiPercentileRegime');
+      prEl.textContent = `P${regimeModel.current_pct_regime} in Regime ${regimeModel.current_regime}`;
+      const pEl2 = document.getElementById('kpiPercentile');
+      pEl2.textContent = `P${regimeModel.current_pct_alltime} all-time`;
+    } catch(e) {}
 
   } catch(e) { console.error('KPI load failed:', e); }
 })();
@@ -603,6 +665,12 @@ async function renderOverview() {
     // Snapshot table — NATURALGAS / NATGASMINI toggle
     let activeSnapSym = 'NATURALGAS';
 
+    // Item 5: Load curve cone for Hist.Pct column
+    let coneData = null;
+    try { coneData = await loadJSON('curve_cone'); } catch(e) {}
+    const coneLookup = {};
+    if (coneData && coneData.cone) coneData.cone.forEach(c => { coneLookup[c.expiry] = c.hist_pct; });
+
     function renderSnapshotTable(sym) {
       const rows = (current[sym] || []);
       document.getElementById('snapshotSymbolLabel').textContent =
@@ -613,8 +681,10 @@ async function renderOverview() {
         seen.add(c.expiry);
         return true;
       });
-      document.getElementById('snapshotBody').innerHTML = deduped.map(c => `
-        <tr>
+      document.getElementById('snapshotBody').innerHTML = deduped.map(c => {
+        const hp = coneLookup[c.expiry];
+        const hpColor = hp >= 75 ? 'var(--accent-red)' : hp >= 50 ? 'var(--accent-yellow)' : 'var(--accent-green)';
+        return `<tr>
           <td><strong>${c.expiry}</strong></td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
@@ -626,8 +696,9 @@ async function renderOverview() {
           <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
           <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
           <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
-        </tr>
-      `).join('');
+          <td style="font-weight:600;color:${hp != null ? hpColor : 'var(--text-muted)'};">${hp != null ? 'P'+hp : '—'}</td>
+        </tr>`;
+      }).join('');
     }
 
     renderSnapshotTable(activeSnapSym);
@@ -692,17 +763,48 @@ async function renderOverview() {
       seenPanic.add(c.expiry);
       return true;
     });
+    // Item 9: Load event probabilities
+    let eventProbs = null;
+    try { eventProbs = await loadJSON('event_probabilities'); } catch(e) {}
+    const epLookup = {};
+    if (eventProbs && eventProbs.per_expiry) {
+      const seenEp = new Set();
+      eventProbs.per_expiry.forEach(ep => {
+        if (!seenEp.has(ep.expiry)) { seenEp.add(ep.expiry); epLookup[ep.expiry] = ep; }
+      });
+    }
+
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
       const predicted = PANIC_COEFF_MARGIN * c.total_margin_pct + PANIC_COEFF_VOL * (c.daily_volatility || 0);
       const diff = predicted - c.total_margin_pct;
-      const signal = diff > 0
-        ? `<span class="badge-hike">&#9650; HIKE</span>`
-        : `<span class="badge-cut">&#9660; CUT</span>`;
-      return `<tr>
+      const ep = epLookup[c.expiry];
+      let probCell = '—';
+      let signalLabel = '';
+      if (ep) {
+        const pH = Math.round(ep.p_hike * 100);
+        const pF = Math.round(ep.p_flat * 100);
+        const pC = Math.round(ep.p_cut * 100);
+        probCell = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;min-width:80px;" title="Cut ${pC}% | Flat ${pF}% | Hike ${pH}%">
+          <div style="width:${pC}%;background:var(--accent-green);"></div>
+          <div style="width:${pF}%;background:var(--text-muted);opacity:0.4;"></div>
+          <div style="width:${pH}%;background:var(--accent-red);"></div>
+        </div>`;
+        const dominant = Math.max(ep.p_hike, ep.p_cut, ep.p_flat);
+        if (dominant === ep.p_hike) signalLabel = `<span class="badge-hike">&#9650; HIKE ${pH}%</span>`;
+        else if (dominant === ep.p_cut) signalLabel = `<span class="badge-cut">&#9660; CUT ${pC}%</span>`;
+        else signalLabel = `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">→ FLAT ${pF}%</span>`;
+      } else {
+        signalLabel = diff > 0
+          ? `<span class="badge-hike">&#9650; HIKE</span>`
+          : `<span class="badge-cut">&#9660; CUT</span>`;
+      }
+      const rowGlow = ep && ep.p_hike > 0.65 ? 'box-shadow:inset 0 0 12px rgba(210,153,34,0.15);' : '';
+      return `<tr style="${rowGlow}">
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td>${predicted.toFixed(2)}%</td>
-        <td>${signal}</td>
+        <td>${probCell}</td>
+        <td>${signalLabel}</td>
       </tr>`;
     }).join('');
   } catch(e) {
@@ -737,39 +839,66 @@ async function renderTermStructure() {
     const ng  = fwd.NATURALGAS  || [];
     const ngm = fwd.NATGASMINI  || [];
 
+    // Item 5: Load curve cone
+    let cone = null;
+    try { const cd = await loadJSON('curve_cone'); cone = cd.cone || []; } catch(e) {}
+    const coneLookup5 = {};
+    if (cone) cone.forEach(c => { coneLookup5[c.expiry] = c; });
+
+    const datasets = [
+      {
+        label: 'NATURALGAS Total Margin %',
+        data: ng.map(c => c.total_margin_pct),
+        borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
+        tension: 0.3, pointRadius: 4, fill: false, order: 1
+      },
+      {
+        label: 'NATGASMINI Total Margin %',
+        data: ng.map(c => {
+          const m = ngm.find(x => x.expiry === c.expiry);
+          return m ? m.total_margin_pct : null;
+        }),
+        borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
+        tension: 0.3, pointRadius: 4, fill: false, order: 2
+      }
+    ];
+
+    // Add P10/P50/P90 bands from cone
+    if (cone && cone.length > 0) {
+      datasets.push({
+        label: 'P90 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p90_alltime ?? null),
+        borderColor: 'rgba(248,81,73,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 3
+      });
+      datasets.push({
+        label: 'P50 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p50_alltime ?? null),
+        borderColor: 'rgba(210,153,34,0.5)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 4
+      });
+      datasets.push({
+        label: 'P10 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p10_alltime ?? null),
+        borderColor: 'rgba(63,185,80,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: '-1', backgroundColor: 'rgba(63,185,80,0.04)', order: 5
+      });
+    }
+
     new Chart(document.getElementById('chartFwdFull'), {
       type: 'line',
       data: {
         labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
-        datasets: [
-          {
-            label: 'NATURALGAS Total Margin %',
-            data: ng.map(c => c.total_margin_pct),
-            borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
-            tension: 0.3, pointRadius: 4, fill: true
-          },
-          {
-            label: 'NATGASMINI Total Margin %',
-            data: ng.map(c => {
-              const m = ngm.find(x => x.expiry === c.expiry);
-              return m ? m.total_margin_pct : null;
-            }),
-            borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
-            tension: 0.3, pointRadius: 4, fill: true
-          }
-        ]
+        datasets
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top' },
+          legend: { position: 'top', labels: { font: { size: 10 } } },
           tooltip: {
             mode: 'index',
             callbacks: {
               afterLabel: (ctx) => {
                 const c = ng[ctx.dataIndex];
                 if (!c) return '';
-                return `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
+                const cn = coneLookup5[c.expiry];
+                let extra = `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
+                if (cn) extra += `\nHist. range — P10: ${cn.p10_alltime}% | P50: ${cn.p50_alltime}% | P90: ${cn.p90_alltime}% | Pct: P${cn.hist_pct}`;
+                return extra;
               }
             }
           }
@@ -931,19 +1060,54 @@ async function renderHistory(months) {
       }
     });
 
-    const scatterPts = data
-      .filter(d => d.daily_volatility != null && d.initial_margin_pct != null)
-      .map(d => ({ x: +(d.daily_volatility * 100).toFixed(3), y: d.initial_margin_pct, date: d.date }));
+    // Item 3: Scatter with regime coloring + regression lines
+    let regimeModel = null;
+    try { regimeModel = await loadJSON('regime_model'); } catch(e) {}
+
+    const scatterA = [], scatterB = [];
+    data.filter(d => d.daily_volatility != null && d.initial_margin_pct != null).forEach(d => {
+      const pt = { x: +(d.daily_volatility * 100).toFixed(3), y: d.initial_margin_pct, date: d.date };
+      const vol = d.daily_volatility * 100;
+      const yr = parseInt(d.date.substring(0,4));
+      if (vol >= 4.5 && yr >= 2019) scatterB.push(pt);
+      else scatterA.push(pt);
+    });
+
+    const scatterDatasets = [
+      { label: 'Regime A (Structural)', data: scatterA, backgroundColor: 'rgba(56,139,253,0.35)', pointRadius: 2 },
+      { label: 'Regime B (Elevated)', data: scatterB, backgroundColor: 'rgba(251,143,68,0.45)', pointRadius: 2 }
+    ];
+
+    // Add regression lines if regime_model loaded
+    if (regimeModel) {
+      const ra = regimeModel.regime_a;
+      const rb = regimeModel.regime_b;
+      // Generate line points across vol range
+      const allVolPts = [...scatterA, ...scatterB].map(p => p.x);
+      if (allVolPts.length > 0) {
+        const minV = Math.min(...allVolPts), maxV = Math.max(...allVolPts);
+        const lineA = [{x: minV, y: ra.slope*minV + ra.intercept}, {x: Math.min(maxV, 6), y: ra.slope*Math.min(maxV,6) + ra.intercept}];
+        const lineB = [{x: Math.max(minV, 3), y: rb.slope*Math.max(minV,3) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}];
+        scatterDatasets.push({
+          label: `Regime A OLS (R2=${ra.r2.toFixed(2)})`, data: lineA, type: 'line',
+          borderColor: 'rgba(56,139,253,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false
+        });
+        scatterDatasets.push({
+          label: `Regime B OLS (R2=${rb.r2.toFixed(2)})`, data: lineB, type: 'line',
+          borderColor: 'rgba(251,143,68,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false
+        });
+      }
+    }
 
     if (histChartScatter) histChartScatter.destroy();
     histChartScatter = new Chart(document.getElementById('chartScatter'), {
       type: 'scatter',
-      data: { datasets: [{ label: 'Margin vs Vol', data: scatterPts, backgroundColor: 'rgba(56,139,253,0.35)', pointRadius: 2 }] },
+      data: { datasets: scatterDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => `${ctx.raw.date}: Vol=${ctx.raw.x.toFixed(2)}%, Margin=${ctx.raw.y.toFixed(2)}%` } }
+          legend: { display: true, position: 'top', labels: { font: { size: 10 } } },
+          tooltip: { callbacks: { label: ctx => ctx.raw.date ? `${ctx.raw.date}: Vol=${ctx.raw.x.toFixed(2)}%, Margin=${ctx.raw.y.toFixed(2)}%` : '' } }
         },
         scales: {
           x: { title: { display: true, text: 'Daily Volatility %' } },
@@ -951,6 +1115,38 @@ async function renderHistory(months) {
         }
       }
     });
+
+    // Item 6: Decomposition chart
+    try {
+      const decomp = await loadJSON('decomposition');
+      if (decomp && decomp.timeseries && decomp.timeseries.length > 0) {
+        const ts = decomp.timeseries;
+        const t = decomp.today;
+        document.getElementById('decompSummary').innerHTML =
+          `Today: <strong>${t.actual}%</strong> = ${t.fair_margin}% structural (vol-implied) + <span style="color:${t.policy_buffer >= 0 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">${t.policy_buffer > 0 ? '+' : ''}${t.policy_buffer}%</span> policy buffer (P${t.buffer_percentile} historically)`;
+        new Chart(document.getElementById('chartDecomp'), {
+          type: 'line',
+          data: {
+            labels: ts.map(r => r.date),
+            datasets: [
+              { label: 'Structural (Vol-Implied)', data: ts.map(r => r.fair_margin), borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.15)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 2 },
+              { label: 'Actual Margin', data: ts.map(r => r.actual), borderColor: '#e6edf3', backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 1 },
+              { label: 'Policy Buffer', data: ts.map(r => r.policy_buffer), borderColor: '#d29922', backgroundColor: ts.map(r => r.policy_buffer >= 0 ? 'rgba(210,153,34,0.2)' : 'rgba(248,81,73,0.2)'), fill: 'origin', tension: 0.2, pointRadius: 0, borderWidth: 1, yAxisID: 'y2', order: 3 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } },
+            scales: {
+              x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } },
+              y: { title: { display: true, text: 'Margin %' }, position: 'left' },
+              y2: { title: { display: true, text: 'Buffer %' }, position: 'right', grid: { drawOnChartArea: false } }
+            }
+          }
+        });
+      }
+    } catch(e) { console.warn('Decomposition chart skipped:', e); }
+
   } catch(e) { console.error('History render error:', e); }
 }
 
@@ -1001,34 +1197,100 @@ async function renderSeasonality() {
       loadJSON('seasonal_month'), loadJSON('seasonal_year'), loadJSON('seasonal_heatmap')
     ]);
 
-    const medMonth = monthly.reduce((s, r) => s + r.avg_initial_margin, 0) / monthly.length;
-    new Chart(document.getElementById('chartSeasonMonth'), {
-      type: 'bar',
-      data: {
-        labels: monthly.map(r => r.month),
-        datasets: [{
-          label: 'Avg Initial Margin %',
-          data: monthly.map(r => r.avg_initial_margin),
-          backgroundColor: monthly.map(r => r.avg_initial_margin >= medMonth ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)'),
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              afterLabel: ctx => {
-                const r = monthly[ctx.dataIndex];
-                return `Range: ${r.min.toFixed(1)}%–${r.max.toFixed(1)}%\nSamples: ${r.count}`;
+    // Item 7: Box plot (using floating bars for IQR + whiskers)
+    let boxData = null;
+    try { boxData = await loadJSON('seasonality_boxplot'); } catch(e) {}
+
+    let useBoxAll = true;
+    let boxChart = null;
+    const currentMonth = new Date().getMonth() + 1; // 1-indexed
+
+    function renderBoxPlot() {
+      const src = useBoxAll ? (boxData?.all_years || []) : (boxData?.last_5_years || []);
+      if (!src.length) return;
+      if (boxChart) boxChart.destroy();
+
+      // Floating bars for IQR (p25 to p75)
+      const iqrData = src.map(r => r.p25 != null ? [r.p25, r.p75] : null);
+      // Whisker bars (p10 to p90) — thin
+      const whiskerData = src.map(r => r.p10 != null ? [r.p10, r.p90] : null);
+      const medianData = src.map(r => r.median ?? null);
+      const meanData = src.map(r => r.mean ?? null);
+
+      const bgColors = src.map((r, i) => {
+        if (r.month_num === currentMonth) return 'rgba(56,139,253,0.6)';
+        return 'rgba(163,113,247,0.5)';
+      });
+
+      boxChart = new Chart(document.getElementById('chartSeasonMonth'), {
+        type: 'bar',
+        data: {
+          labels: src.map(r => r.month),
+          datasets: [
+            { label: 'P10–P90 (Whiskers)', data: whiskerData, backgroundColor: 'rgba(139,148,158,0.18)', borderRadius: 2, barPercentage: 0.3 },
+            { label: 'IQR (P25–P75)', data: iqrData, backgroundColor: bgColors, borderRadius: 4, barPercentage: 0.6 },
+            { label: 'Median', data: medianData, type: 'line', borderColor: '#e6edf3', backgroundColor: '#e6edf3', pointRadius: 5, pointStyle: 'dash', borderWidth: 0, showLine: false, order: 0 },
+            { label: 'Mean', data: meanData, type: 'line', borderColor: '#d29922', backgroundColor: '#d29922', pointRadius: 4, pointStyle: 'triangle', borderWidth: 0, showLine: false, order: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 10 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const r = src[ctx.dataIndex];
+                  if (!r || r.median == null) return '';
+                  return [
+                    `${r.month} — Median: ${r.median}% | Mean: ${r.mean}%`,
+                    `IQR: ${r.p25}%–${r.p75}% | Range: ${r.p10}%–${r.p90}%`,
+                    `Full: ${r.min}%–${r.max}% | n=${r.n}`,
+                    r.month_num === currentMonth ? '← Current month' : ''
+                  ].filter(Boolean);
+                }
               }
             }
-          }
+          },
+          scales: { y: { title: { display: true, text: 'Margin %' } } }
+        }
+      });
+    }
+
+    if (boxData) {
+      renderBoxPlot();
+      // Add toggle button for all years / last 5 years — inject after chart
+      const toggleDiv = document.createElement('div');
+      toggleDiv.style.cssText = 'display:flex;gap:6px;margin-top:8px;justify-content:center;';
+      toggleDiv.innerHTML = `<button class="range-btn active-range" id="boxAllYears">All Years</button><button class="range-btn" id="boxLast5">Last 5 Years</button>`;
+      document.getElementById('chartSeasonMonth').parentElement.parentElement.appendChild(toggleDiv);
+      document.getElementById('boxAllYears').addEventListener('click', function() {
+        useBoxAll = true; this.classList.add('active-range'); document.getElementById('boxLast5').classList.remove('active-range'); renderBoxPlot();
+      });
+      document.getElementById('boxLast5').addEventListener('click', function() {
+        useBoxAll = false; this.classList.add('active-range'); document.getElementById('boxAllYears').classList.remove('active-range'); renderBoxPlot();
+      });
+    } else {
+      // Fallback to original bar chart
+      const medMonth = monthly.reduce((s, r) => s + r.avg_initial_margin, 0) / monthly.length;
+      new Chart(document.getElementById('chartSeasonMonth'), {
+        type: 'bar',
+        data: {
+          labels: monthly.map(r => r.month),
+          datasets: [{
+            label: 'Avg Initial Margin %',
+            data: monthly.map(r => r.avg_initial_margin),
+            backgroundColor: monthly.map(r => r.avg_initial_margin >= medMonth ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)'),
+            borderRadius: 4
+          }]
         },
-        scales: { y: { title: { display: true, text: 'Avg Margin %' } } }
-      }
-    });
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { title: { display: true, text: 'Avg Margin %' } } }
+        }
+      });
+    }
 
     const medYear = yearly.reduce((s, r) => s + r.avg_initial_margin, 0) / yearly.length;
     new Chart(document.getElementById('chartSeasonYear'), {
@@ -1140,21 +1402,91 @@ async function renderAnalytics() {
       }
     });
 
+    // Item 2: Model Health card
+    try {
+      const mh = await loadJSON('model_health');
+      if (mh) {
+        document.getElementById('modelHealthCard').style.display = 'block';
+        const metrics = [
+          {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%', good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
+          {name: 'MAE', key: 'mae', unit: '%', good: () => 'neutral'},
+          {name: 'RMSE', key: 'rmse', unit: '%', good: () => 'neutral'},
+          {name: '1-sigma Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%', good: v => Math.abs(v - 68) <= 5 ? 'green' : 'red'},
+          {name: '2-sigma Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%', good: v => Math.abs(v - 95) <= 5 ? 'green' : 'red'},
+          {name: 'Sample Size', key: 'n', unit: '', good: () => 'neutral'}
+        ];
+        const colorMap = {green: 'var(--accent-green)', yellow: 'var(--accent-yellow)', red: 'var(--accent-red)', neutral: 'var(--text)'};
+        document.getElementById('modelHealthBody').innerHTML = metrics.map(m => {
+          const cells = ['30d','90d','365d'].map(period => {
+            const d = mh[period];
+            if (!d) return '<td>—</td>';
+            const val = d[m.key];
+            if (val == null) return '<td>—</td>';
+            const c = colorMap[m.good(val)];
+            return `<td style="color:${c};font-weight:600;">${typeof val === 'number' ? val.toFixed(1) : val}${m.unit}</td>`;
+          }).join('');
+          return `<tr><td style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
+        }).join('');
+      }
+    } catch(e) { console.warn('Model health card skipped:', e); }
+
+    // Item 1: Prediction chart with forecast bands
     const ng = fwd.NATURALGAS || [];
     const curM = ng.map(c => c.total_margin_pct);
     const predM = ng.map(c => +((0.886 * c.total_margin_pct + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
+
+    let forecastBands = null;
+    try { forecastBands = await loadJSON('forecast_bands'); } catch(e) {}
+    const fbLookup = {};
+    if (forecastBands && forecastBands.bands) forecastBands.bands.forEach(b => { if (!fbLookup[b.expiry]) fbLookup[b.expiry] = b; });
+
+    const predDatasets = [
+      { label: 'Current Margin %', data: curM, borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
+      { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3, order: 2 }
+    ];
+
+    if (forecastBands) {
+      predDatasets.push({
+        label: '+1-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_1 ?? null),
+        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 3
+      });
+      predDatasets.push({
+        label: '-1-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_1 ?? null),
+        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
+        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 4
+      });
+      predDatasets.push({
+        label: '+2-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_2 ?? null),
+        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 5
+      });
+      predDatasets.push({
+        label: '-2-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_2 ?? null),
+        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
+        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 6
+      });
+    }
+
     new Chart(document.getElementById('chartPanicFull'), {
       type: 'line',
-      data: {
-        labels: ng.map(c => c.expiry),
-        datasets: [
-          { label: 'Current Margin %',    data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3 },
-          { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3 }
-        ]
-      },
+      data: { labels: ng.map(c => c.expiry), datasets: predDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' }, tooltip: { mode: 'index' } },
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 10 }, filter: item => !item.text.includes('sigma') || item.text.includes('+1') } },
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              afterBody: (items) => {
+                if (!items.length) return '';
+                const fb = fbLookup[ng[items[0].dataIndex]?.expiry];
+                if (!fb) return '';
+                return `1-sigma: [${fb.lower_1}%, ${fb.upper_1}%]\n2-sigma: [${fb.lower_2}%, ${fb.upper_2}%]`;
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
           y: { title: { display: true, text: 'Margin %' } }
@@ -1220,6 +1552,70 @@ async function renderAnalytics() {
         }
       }
     });
+    // Item 4: Delta Distribution Histogram
+    try {
+      const dd = await loadJSON('delta_distribution');
+      if (dd && dd.histograms) {
+        let deltaChart = null;
+        function renderDeltaHist(bucket) {
+          const h = dd.histograms[bucket];
+          if (!h || !h.bins) return;
+          if (deltaChart) deltaChart.destroy();
+          const colors = h.bins.map((_, i) => {
+            const midVal = -5 + i * 0.25;
+            return midVal < 0 ? 'rgba(63,185,80,0.6)' : midVal > 0 ? 'rgba(248,81,73,0.6)' : 'rgba(210,153,34,0.6)';
+          });
+          deltaChart = new Chart(document.getElementById('chartDeltaDist'), {
+            type: 'bar',
+            data: {
+              labels: h.bins.filter((_, i) => i % 4 === 0 || i === h.bins.length - 1).length ? h.bins : h.bins,
+              datasets: [{
+                label: 'Frequency', data: h.counts,
+                backgroundColor: colors, borderRadius: 1
+              }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    title: ctx => `Delta: ${h.bins[ctx[0].dataIndex]}%`,
+                    label: ctx => `Count: ${ctx.raw}`
+                  }
+                }
+              },
+              scales: {
+                x: { ticks: { maxTicksLimit: 15, font: { size: 9 }, maxRotation: 45 }, title: { display: true, text: 'Daily Margin Change (%)' } },
+                y: { title: { display: true, text: 'Frequency' } }
+              }
+            }
+          });
+        }
+        renderDeltaHist('0-30');
+
+        document.querySelectorAll('#deltaBucketBtns .range-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#deltaBucketBtns .range-btn').forEach(b => b.classList.remove('active-range'));
+            btn.classList.add('active-range');
+            renderDeltaHist(btn.dataset.bucket);
+          });
+        });
+
+        // Conditional summary
+        const cq = dd.current_quartile;
+        const cond = dd.conditional[cq];
+        if (cond) {
+          document.getElementById('deltaCondSummary').innerHTML =
+            `Based on current margin (<strong>${dd.current_margin}%, ${cq}</strong>), historical next-day range: ` +
+            `<span style="color:var(--accent-red);">Bear P10: ${cond.P10 > 0 ? '+' : ''}${cond.P10}%</span> | ` +
+            `<span>Median P50: ${cond.P50 > 0 ? '+' : ''}${cond.P50}%</span> | ` +
+            `<span style="color:var(--accent-green);">Bull P90: ${cond.P90 > 0 ? '+' : ''}${cond.P90}%</span> ` +
+            `<span style="font-size:11px;color:var(--text-muted);">(n=${cond.n})</span>`;
+        }
+      }
+    } catch(e) { console.warn('Delta distribution skipped:', e); }
+
   } catch(e) { console.error('Analytics render error:', e); }
 }
 
@@ -1427,6 +1823,37 @@ The 2022–2023 band is almost entirely red. Current 2026 levels are mid-range (
 The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin line uses the left Y-axis (%).<br><br>
 <strong>Why this matters:</strong> MCX NATURALGAS margin is heavily driven by Henry Hub price movements — when HH price spikes or crashes, MCX vol spikes and margins follow within 1–2 days. Viewing both on the same chart makes the cause-and-effect relationship immediately visible.<br><br>
 <em>Data:</em> Fetched live from Yahoo Finance public API. Requires internet. May show slight gaps on Indian market holidays.`
+  },
+  "Model Health": {
+    title: "Model Health — Prediction Backtest Scorecard",
+    body: `These metrics measure how well the prediction model has performed historically.<br><br>
+<strong>Directional Accuracy >60%</strong> indicates the model has genuine edge at predicting whether margin goes up or down.<br>
+<strong>Interval Hit Rate near 68%/95%</strong> confirms the uncertainty bands are calibrated, not cosmetic.<br><br>
+<strong>MAE</strong> = Mean Absolute Error of level predictions. Lower is better.<br>
+<strong>RMSE</strong> = Root Mean Squared Error — penalizes large misses more heavily.`
+  },
+  "Delta Distribution": {
+    title: "Margin Change Distribution",
+    body: `Each bar shows how frequently daily margin changed by that amount historically.<br><br>
+Toggle DTE buckets to see how the distribution shifts near expiry (0–30d is wider/noisier) vs far-dated contracts (91+d is tighter).<br><br>
+The conditional summary below shows P10/P50/P90 of next-day changes given your <strong>current margin quartile</strong> — answering "from here, what's the likely range of tomorrow's move?"<br><br>
+Green bars = margin decreased. Red bars = margin increased.`
+  },
+  "Margin Decomposition": {
+    title: "Margin Decomposition: Structural vs Policy Buffer",
+    body: `Structural margin is what the model predicts purely from current volatility using the Regime B OLS regression.<br><br>
+<strong>Policy buffer</strong> is the excess MCX has charged beyond that — positive values indicate extra caution, negative values are rare and signal potential underpricing.<br><br>
+Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. The white line = actual margin charged.`
+  },
+  "Stress Score": {
+    title: "Composite Stress Score",
+    body: `Combines margin percentile rank and volatility percentile weighted equally against a trailing 5-year distribution.<br><br>
+<strong>0–40: CALM</strong> — Low cost environment.<br>
+<strong>40–60: NORMAL</strong> — Standard conditions.<br>
+<strong>60–75: MONITOR</strong> — Elevated, watch for hikes.<br>
+<strong>75–90: ELEVATED</strong> — High stress, pre-fund margin.<br>
+<strong>90+: STRESS</strong> — Extreme, historical top-decile conditions.<br><br>
+Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`
   }
 };
 
