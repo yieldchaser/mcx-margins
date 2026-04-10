@@ -1431,6 +1431,9 @@ async function renderSeasonality() {
                     lines.push('\u2190 Current month');
                   }
                   return lines.filter(Boolean);
+                },
+                footer: () => {
+                  return 'Box: Interior 50% (IQR) | Whisker: 10%-90% range | Notch/Dash: Median | Triangle: Mean';
                 }
               }
             }
@@ -2079,12 +2082,12 @@ A sudden spike here is almost always a leading indicator of a margin hike within
 <strong>Outliers above trendline</strong> = days MCX charged discretionary extra margin (tender spikes, special margin events). These are rare but operationally significant — margin calls that exceeded what vol alone predicted.`
   },
   "Average Margin by Month": {
-    title: "Seasonal Pattern — Monthly Averages",
-    body: `Average initial margin % by calendar month across all years (2010–present).<br><br>
-<strong>Green bars</strong> = below-median months — cheaper to hold positions.<br>
-<strong>Red bars</strong> = above-median months — capital-intensive.<br><br>
-<em>Key pattern:</em> JAN–MAR expensive (winter demand uncertainty). APR–OCT cheaper. NOV–DEC escalate again.<br><br>
-<strong>Practical use:</strong> Entering a 3-month position in APR vs DEC changes your average margin cost dramatically — and therefore your capital efficiency and risk of margin calls.`
+    title: "Seasonal Pattern — Monthly Box Plots",
+    body: `Statistical dispersion of initial margin % by calendar month (2010–present).<br><br>
+<strong>IQR (Inner Quartile Range)</strong>: The central 50% of readings (P25 to P75). Shows the "normal" seasonal range.<br>
+<strong>Whiskers</strong>: The 10th and 90th percentiles. Readings outside this range are considered extreme outliers.<br>
+<strong>White Dash ( - )</strong>: The median value. 50% of days were above/below.<br>
+<strong>Gold Triangle ( ▲ )</strong>: The arithmetic mean. Divergence from median indicates skewed distributions.`
   },
   "Average Margin by Year": {
     title: "Year-over-Year Margin Evolution",
