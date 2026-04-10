@@ -169,6 +169,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .has-tooltip:hover::after { background: var(--accent); color: white; border-color: var(--accent); }
 
+/* Prevent structural breaks when applying tooltip wrapper to table rows or cells */
+tr.has-tooltip { display: table-row; }
+td.has-tooltip { display: table-cell; }
+tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
+
 #tooltipOverlay {
   display: block; position: fixed; z-index: 9999;
   background: rgba(22, 27, 34, 0.95);
