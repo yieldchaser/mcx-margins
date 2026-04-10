@@ -229,7 +229,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
         actual = tomorrow["initial_margin_pct"]
         residuals.append(predicted - actual)
 
-    # Rolling 30-day std of residuals
+    # Rolling 30-day std of residuals (global fallback)
     window = 30
     if len(residuals) >= window:
         recent_residuals = residuals[-window:]
@@ -237,26 +237,59 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     else:
         rolling_sigma = float(np.std(residuals)) if residuals else 1.0
 
+    # FIX 15: DTE-bucketed residual std — near expiries get tighter sigma, far expiries wider
+    residuals_by_dte = {"0-30": [], "31-90": [], "91+": []}
+    for i in range(len(fm_series) - 1):
+        today = fm_series[i]
+        tomorrow = fm_series[i + 1]
+        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        actual = tomorrow["initial_margin_pct"]
+        residual = predicted - actual
+        dte = today["dte"]
+        if dte <= 30:
+            residuals_by_dte["0-30"].append(residual)
+        elif dte <= 90:
+            residuals_by_dte["31-90"].append(residual)
+        else:
+            residuals_by_dte["91+"].append(residual)
+
+    sigma_by_bucket = {}
+    for bucket, res in residuals_by_dte.items():
+        # Use last 90 observations per bucket for sigma
+        recent = res[-90:] if len(res) > 90 else res
+        sigma_by_bucket[bucket] = float(np.std(recent)) if len(recent) >= 5 else rolling_sigma
+
     # Build forecast bands per expiry from panic_entries
     bands = []
     for entry in panic_entries:
         pred = entry["predicted_tomorrow"]
+        dte = entry["dte"]
+        # FIX 15: DTE-bucketed sigma — near expiries tighter, far expiries wider
+        if dte <= 30:
+            sigma = sigma_by_bucket["0-30"]
+        elif dte <= 90:
+            sigma = sigma_by_bucket["31-90"]
+        else:
+            sigma = sigma_by_bucket["91+"]
+        if sigma == 0:
+            sigma = rolling_sigma  # fallback to global
         bands.append({
             "expiry": entry["expiry"],
-            "dte": entry["dte"],
+            "dte": dte,
             "current": entry["total_margin_pct"],
             "predicted": pred,
-            "sigma_1": round(rolling_sigma, 4),
-            "sigma_2": round(2 * rolling_sigma, 4),
-            "upper_1": round(pred + rolling_sigma, 3),
-            "lower_1": round(pred - rolling_sigma, 3),
-            "upper_2": round(pred + 2 * rolling_sigma, 3),
-            "lower_2": round(pred - 2 * rolling_sigma, 3),
+            "sigma_1": round(sigma, 4),
+            "sigma_2": round(2 * sigma, 4),
+            "upper_1": round(pred + sigma, 3),
+            "lower_1": round(pred - sigma, 3),
+            "upper_2": round(pred + 2 * sigma, 3),
+            "lower_2": round(pred - 2 * sigma, 3),
         })
 
     save("forecast_bands.json", {
         "rolling_sigma": round(rolling_sigma, 4),
         "window_days": window,
+        "sigma_by_dte_bucket": {k: round(v, 4) for k, v in sigma_by_bucket.items()},
         "bands": bands,
     })
 
@@ -538,23 +571,46 @@ def _export_decomposition(fm_series, regime_params):
 
 # ── Item 7: Seasonality Box Plots ────────────────────────────────────────────
 def _export_seasonality_boxplot(cur):
-    """Compute box plot stats per month (all years + last 5 years)."""
-    print("  [Item 7] Seasonality boxplots...")
+    """Compute box plot stats per month using FRONT-MONTH margin per date.
+
+    FIX 9: Previously aggregated ALL expiry rows, which included tender-period
+    contracts (100% margin) and far-out contracts (near-0%), making the min/max
+    meaningless. Now we select the single front-month contract per date
+    (lowest DTE >= 0) to represent daily margin conditions accurately.
+    """
+    print("  [Item 7] Seasonality boxplots (front-month per date)...")
 
     cur.execute(
-        """SELECT strftime('%m', date) as mon, strftime('%Y', date) as yr,
-                  initial_margin_pct
-           FROM margins WHERE symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL"""
+        """SELECT DISTINCT date FROM margins WHERE symbol='NATURALGAS' ORDER BY date"""
     )
+    all_dates = [r[0] for r in cur.fetchall()]
+
     month_vals_all = {}
     month_vals_5y = {}
     current_year = date.today().year
 
-    for row in cur.fetchall():
-        m, yr, val = int(row[0]), int(row[1]), row[2]
-        month_vals_all.setdefault(m, []).append(val)
+    for d in all_dates:
+        yr = int(d[:4])
+        mon = int(d[5:7])
+        cur.execute(
+            """SELECT expiry, initial_margin_pct FROM margins
+               WHERE date=? AND symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL""",
+            (d,)
+        )
+        rows = cur.fetchall()
+        # Pick front-month: smallest DTE >= 0
+        best_val = None
+        best_dte = 99999
+        for row in rows:
+            dte = compute_dte(row[0], d)
+            if 0 <= dte < best_dte:
+                best_dte = dte
+                best_val = row[1]
+        if best_val is None:
+            continue
+        month_vals_all.setdefault(mon, []).append(best_val)
         if yr >= current_year - 5:
-            month_vals_5y.setdefault(m, []).append(val)
+            month_vals_5y.setdefault(mon, []).append(best_val)
 
     def box_stats(vals):
         if not vals:
