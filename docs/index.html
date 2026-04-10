@@ -1104,9 +1104,20 @@ async function renderHistory(months) {
     const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
     const data = filterByMonths(raw, months);
 
-    const labels = data.map(d => d.date);
-    const margins = data.map(d => d.initial_margin_pct);
-    const vols = data.map(d => d.daily_volatility > 0 ? +(d.daily_volatility * 100).toFixed(4) : null);
+    let labels = data.map(d => d.date);
+    let margins = data.map(d => d.initial_margin_pct);
+    let vols = data.map(d => d.daily_volatility > 0 ? +(d.daily_volatility * 100).toFixed(4) : null);
+
+    // If 'All' is selected (months == 0), trim leading nulls so x-axis snaps to data start
+    if (months === 0) {
+      const firstDataIdx = vols.findIndex(v => v !== null);
+      if (firstDataIdx > 0) {
+        labels = labels.slice(firstDataIdx);
+        margins = margins.slice(firstDataIdx);
+        vols = vols.slice(firstDataIdx);
+      }
+    }
+
     const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: false };
 
     // Henry Hub price — read from locally pre-fetched JSON (avoids CORS on GitHub Pages)
@@ -2202,7 +2213,7 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   }
 };
 
-function showTooltip(key, triggerEl) {
+function showTooltip(key, triggerEl, event) {
   let titleText = '';
   let bodyText = '';
   const tt = TOOLTIPS[key];
@@ -2224,21 +2235,27 @@ function showTooltip(key, triggerEl) {
   document.getElementById('ttBody').innerHTML = bodyText;
   el.classList.add('visible');
 
-  requestAnimationFrame(() => {
-    const rect = triggerEl.getBoundingClientRect();
+  const updatePos = (e) => {
     const ttW = el.offsetWidth;
     const ttH = el.offsetHeight;
-    let left = rect.left + rect.width / 2 - ttW / 2;
-    let top = rect.top - ttH - 14;
+    
+    // Position 15px below and right of cursor
+    let left = e.clientX + 15;
+    let top = e.clientY + 15;
 
-    if (top < 8) top = rect.bottom + 14;
-    if (left < 8) left = 8;
-    if (left + ttW > window.innerWidth - 8) left = window.innerWidth - ttW - 8;
+    // Boundary detection
+    if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
+    if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
 
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-  });
+  };
+
+  if (event) updatePos(event);
 }
+
 function hideTooltip() {
   _ttTimer = setTimeout(() => {
     const el = document.getElementById('tooltipOverlay');
@@ -2252,7 +2269,22 @@ function attachTooltips() {
     if (el._tooltipAttached) return; 
     el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
-    el.addEventListener('mouseenter', () => showTooltip(key, el));
+    el.addEventListener('mouseenter', (e) => showTooltip(key, el, e));
+    el.addEventListener('mousemove', (e) => {
+      const overlay = document.getElementById('tooltipOverlay');
+      if (overlay && overlay.classList.contains('visible')) {
+        const ttW = overlay.offsetWidth;
+        const ttH = overlay.offsetHeight;
+        let left = e.clientX + 15;
+        let top = e.clientY + 15;
+        if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
+        if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+        overlay.style.left = `${left}px`;
+        overlay.style.top = `${top}px`;
+      }
+    });
     el.addEventListener('mouseleave', hideTooltip);
     el.addEventListener('touchstart', (e) => {
       e.stopPropagation();
