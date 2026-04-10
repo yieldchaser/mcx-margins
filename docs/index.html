@@ -1777,7 +1777,7 @@ async function renderAnalytics() {
           let predDelta = null;
           let predDeltaIdx = null;
           try {
-            const fb = await loadJSON('forecast_bands');
+            const fb = forecastBands;
             if (fb && fb.bands && fb.bands.length > 0) {
               predDelta = +(fb.bands[0].predicted - fb.bands[0].current).toFixed(2);
               // Find nearest bin
