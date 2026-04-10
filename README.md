@@ -14,14 +14,38 @@ The standalone layout translates scraped SQLite streams into structural JSON agg
 
 ### 📈 Major Feature Sets
 
-*   **Overview Hub**: Front Month snapshot lists framed caching live ELM rates, structural volume aggregates, and predictive Hike/Cut Panic buffers.
-*   **Term Structure**: Complete dual-axis loading curves comparing `NATURALGAS` vs `NATGASMINI` margin weights directly scaling spreads cleanly.
-*   **Historical Trends**: Rich Chronological diagnostic sets spanning benchmarks since 2010 comparing absolute margin load values against daily steps.
-*   **Seasonality Check**: Standard average Monthly/Annual load benchmarks framed inside rich Thermal Grid diagnostic lists cleanly.
-*   **Analytics Layer**: DTE-to-Margin offsets framed framing heavy correlational lag predictors benchmarking Tomorrow’s projected weights safely.
-*   **Raw Data Explorer**: Multi-column list filtering scaling continuous searches capable of direct Spreadsheet local downloading.
+*   **Overview Hub**: Front Month snapshot with historical percentile rank, dual-percentile regime detection, probability-weighted Hike/Cut/Flat signals, and predictive Panic Spread signals.
+*   **Term Structure**: Complete dual-axis loading curves comparing `NATURALGAS` vs `NATGASMINI` margin weights + P10/P50/P90 confidence cones at equivalent DTE.
+*   **Historical Trends**: Rich margin + volatility time series (2010–present) with regime-colored scatter plot, dual OLS regression lines per regime, and margin decomposition (structural vs policy buffer).
+*   **Seasonality Check**: Monthly box plots (P10–P90 whiskers, P25–P75 IQR, median/mean markers) with all-years and last-5-years toggles.
+*   **Analytics Layer**: 
+    - **Model Health** scorecard: directional accuracy, MAE, RMSE, interval hit rates (30d/90d/365d).
+    - **Prediction intervals**: ±1σ/±2σ bands on the forecast model from rolling residual std.
+    - **DTE vs Margin** and **Lag Correlation** trend analysis.
+    - **Delta Distribution**: daily margin change histograms by DTE bucket + conditional P10/P50/P90 by current margin quartile.
+*   **Regime Detection**: Two-regime OLS model (Regime A: low-vol/pre-2019; Regime B: elevated/2019+) with per-regime coefficients, percentile ranks, and visual classification.
+*   **Stress Score**: Composite 0–100 indicator combining margin + volatility percentiles (5-year trailing) with gradient visualization.
+*   **Raw Data Explorer**: Multi-column list filtering with direct CSV export.
 
 ---
+
+## 📊 Advanced Analytics (Items 1–9)
+
+All statistical enhancements use **numpy + scikit-learn** for robust modeling:
+
+| Feature | JSON Output | Tab | Use Case |
+|---------|-------------|-----|----------|
+| **Forecast Bands** | `forecast_bands.json` | Analytics | View ±1σ/±2σ confidence intervals on tomorrow’s predicted margin |
+| **Model Health** | `model_health.json` | Analytics | Check backtest metrics (directional accuracy, hit rates) over 30d/90d/365d windows |
+| **Regime Detection** | `regime_model.json` | All | Color-coded regime classification + per-regime OLS regression |
+| **Delta Distribution** | `delta_distribution.json` | Analytics | Histogram of daily margin changes by DTE bucket + conditional stats |
+| **Confidence Cone** | `curve_cone.json` | Term Structure | P10/P50/P90 historical ranges at equivalent DTE per expiry |
+| **Decomposition** | `decomposition.json` | History | Structural (vol-implied) margin vs MCX’s policy buffer over time |
+| **Box Plots** | `seasonality_boxplot.json` | Seasonality | Monthly dispersion stats (full range + IQR + median) |
+| **Stress Score** | `stress_score.json` | Header | Composite 0–100 regime indicator (CALM → STRESS) |
+| **Event Probabilities** | `event_probabilities.json` | Overview | Logistic regression P(hike)/P(cut)/P(flat) per expiry + Brier scores |
+
+
 
 ## 🚀 Current Database Context
 
@@ -50,7 +74,8 @@ The platform converts static calculations into automated daily streams:
 
 ### 3. Static Indexer publishes (`export_json.py`)
 Continually bundles aggregates drafting fully dense statically loaded caches stored natively inside `docs/data/*.json`:
-*   Assembles dense historical correlation coefficients.
+*   Baseline exports: meta, current, history (NG/NGM), forward curve, DTE/seasonality curves, panic spread, volatility correlation, Henry Hub price.
+*   **Advanced analytics** (9 new): forecast bands (±1σ/±2σ), model health scorecard, regime detection & OLS models, delta distribution histograms, forward curve confidence cone, margin decomposition, seasonality box plots, composite stress score, event probabilities (logistic).
 *   Resolves Cross-Origin (CORS) limits offline supporting **Henry Hub benchmark price** layering loads fallback scripts securely.
 
 ### 4. Continuous Alerts Pipeline (`alert.py`)
