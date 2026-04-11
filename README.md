@@ -26,6 +26,45 @@ The standalone layout translates scraped SQLite streams into structural JSON agg
 
 ---
 
+## 📈 Dashboard Components: Charts & Tables Guide
+
+The dashboard is structured into six analytical tabs, each hosting specialized visualization components and dynamic tables. 
+
+### 1. Overview Tab
+*   **Current Margin Snapshot Table**: The command center. Displays all active expiries for a selected symbol (`NATURALGAS` or `NATGASMINI`), detailing Days-To-Expiry (DTE), Initial %, ELM %, Tender %, Total %, and Annualized Volatility. Crucially, it calculates a **Historical Percentile (Hist. Pct)**, benchmarking today's margin against all historical precedents at the exact same DTE range to pinpoint if current funding costs are historically cheap or expensive.
+*   **Forward Curve — Today**: A rapid-assessment line chart plotting the term structure of margin requirements for both the primary and mini contracts.
+*   **Panic Spread Signals Table**: A predictive intelligence matrix. Utilizing a logistic regression model, it outputs probabilities across three explicit tomorrow-states: Margin Cut, Flat, or Margin Hike.
+
+### 2. Term Structure Tab
+*   **Forward Margin Curve (with Confidence Cones)**: Plots the full spine of active expiries against historical confidence cones (P10 to P90 bounds), toggleable between "All-time" and "Recent (5Y)" lookback windows. This visually highlights anomalies where spot margins violently breach standard term structure contango/backwardation models.
+*   **Volatility Term Structure**: Maps implied annualized structural volatility across the forward curve.
+*   **Margin Spread (NATURALGAS vs NATGASMINI)**: Tracks the basis spread directly between the large and mini contracts to highlight liquidity divergences or exchange pricing inefficiencies.
+
+### 3. History Tab
+*   **Initial Margin % Over Time**: A longitudinal line chart mapping front-month margin requirements from 2010 to Present. Supports dynamic timeframe toggling (1M through All-time) and an overlay of underlying Henry Hub (Spot) Prices.
+*   **Daily Volatility Over Time**: The sister chart to margin history, demonstrating how structural volatility regimes trigger exchange margin interventions.
+*   **Margin vs Volatility (Scatter)**: Maps the base relationship between daily volatility (X) and margin requirement (Y). Visualizes the structural relationship and the exchange's linear reactivity models.
+*   **Margin Decomposition**: A stacked area chart diagnosing what portion of the current margin is fundamentally driven by "Structural Volatility" versus discretionary "Exchange Policy Buffers".
+
+### 4. Seasonality Tab
+*   **Average Margin by Month**: Bar chart exposing structural calendar biases (e.g., winter vs summer funding profiles) dating back to 2010.
+*   **Average Margin by Year**: Macro-year aggregations highlighting multi-year structural margin inflation or deflation vectors.
+*   **Monthly Margin Heatmap**: An institutional Year × Month gradient matrix table. Identifies localized seasonal clusters, historical anomalies, and exact time-of-year funding peaks.
+
+### 5. Analytics Tab
+*   **Model Health Scorecard**: A transparent backtest audit table evaluating the accuracy of the proprietary predictive models across 30-day, 90-day, and 365-day rolling windows.
+*   **DTE vs Margin Scatter**: Demonstrates the nonlinear degradation (or acceleration) of margin requirements as physical settlement approaches.
+*   **Lag Correlation**: Analyzes the specific time lag (between T+0 to T+10) coupling sudden volatility shifts to MCX regulatory margin responses.
+*   **Margin Prediction Model (Panic Spread Full View)**: Plots Current vs Predicted bounds across the active forward array to identify broad over/under-pricing.
+*   **Margin Change Distribution Histogram**: Segments historically realized Day-over-Day margin shifts into precise Days-To-Expiry groups (e.g., 0-30d vs 91+d), mapping the probability of extreme jump-risk tail events.
+*   **5-Day Rolling Average vs Spot Margin**: Tracks short-term momentum crossover against spot margins.
+*   **Historical Percentile Rank Over Time**: An All-Time Historical Percentile time-series mapping relative stress across the historical sample period.
+
+### 6. Data Explorer Tab
+*   **Raw Data Explorer Table**: A fully paginated, sortable environment rendering the underlying SQL outputs with specific day-by-day telemetry. Supports seamless unpaginated CSV dumps for offline quant modeling.
+
+---
+
 ## 🔬 Advanced Analytics Architecture
 
 All statistical enhancements are built natively in the data engineering layer utilizing **numpy + scikit-learn** to ensure heavy mathematical operations are computed once synchronously at build time, rather than taxing the client browser.
