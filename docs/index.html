@@ -827,8 +827,10 @@ async function renderOverview() {
       const diff = predicted - c.total_margin_pct;
       const ep = epLookup[c.expiry];
       let probCell = '—';
-      // Signal direction always comes from diff (same model as Predicted column)
-      // Logistic probability for that direction is shown as the percentage
+      // Signal: logistic model dominant direction + its probability
+      // Predicted: linear level forecast (these two can legitimately disagree)
+      const linearDir = diff > 0 ? 'HIKE' : 'CUT';
+      let signalLabel;
       if (ep) {
         const pH = Math.round(ep.p_hike * 100);
         const pF = Math.round(ep.p_flat * 100);
@@ -838,17 +840,20 @@ async function renderOverview() {
           <div style="width:${pF}%;background:var(--text-muted);opacity:0.4;"></div>
           <div style="width:${pH}%;background:var(--accent-red);"></div>
         </div>`;
-      }
-      // Signal: direction from linear model (diff), probability from logistic model
-      let signalLabel;
-      if (diff > 0) {
-        const prob = ep ? ` ${Math.round(ep.p_hike * 100)}%` : '';
-        signalLabel = `<span class="badge-hike">&#9650; HIKE${prob}</span>`;
+        // Logistic dominant class drives the signal label
+        const dominant = Math.max(ep.p_hike, ep.p_cut, ep.p_flat);
+        if (dominant === ep.p_hike)      signalLabel = `<span class="badge-hike">&#9650; HIKE ${pH}%</span>`;
+        else if (dominant === ep.p_cut)  signalLabel = `<span class="badge-cut">&#9660; CUT ${pC}%</span>`;
+        else                             signalLabel = `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">&#8594; FLAT ${pF}%</span>`;
       } else {
-        const prob = ep ? ` ${Math.round(ep.p_cut * 100)}%` : '';
-        signalLabel = `<span class="badge-cut">&#9660; CUT${prob}</span>`;
+        signalLabel = diff > 0
+          ? `<span class="badge-hike">&#9650; HIKE</span>`
+          : `<span class="badge-cut">&#9660; CUT</span>`;
       }
-      // FIX 7: border-left + background tint; escalates amber→red at >80%
+      // Row severity: escalating border-left based on logistic p_hike
+      const logisticDir = ep ? (ep.p_hike > ep.p_cut ? 'HIKE' : 'CUT') : linearDir;
+      const conflict = ep && linearDir !== logisticDir;
+      const predictedStyle = conflict ? 'color:var(--accent-yellow);' : '';
       let rowStyle = '';
       let rowTitle = '';
       if (ep && ep.p_hike > 0.80) {
@@ -860,10 +865,11 @@ async function renderOverview() {
       }
       const dynPTitle = `Panic Signal: ${c.expiry}`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
-      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">
+      if (conflict) dynPBody += `<br><br><span style="color:#d29922;">⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
+      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">`
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
-        <td>${predicted.toFixed(2)}%</td>
+        <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
         <td>${probCell}</td>
         <td>${signalLabel}</td>
       </tr>`;
@@ -2035,11 +2041,11 @@ const TOOLTIPS = {
   },
   "Panic Spread": {
     title: "Panic Spread Signal Model",
-    body: `A predictive signal built from MCX's margin structure and volatility.<br><br>
-<strong>Formula:</strong> Predicted Tomorrow = <em>0.886 × Current Margin + 43.0 × Daily Vol</em><br><br>
-<strong>▲ HIKE</strong> — MCX likely to raise margin tomorrow. Pre-fund your account tonight.<br>
-<strong>▼ CUT</strong> — Margin likely to ease. Capital efficiency improves.<br><br>
-<em>Accuracy:</em> Captures ~93% of simultaneous margin-vol correlation. Use as a directional risk signal, not a precise number.`
+    body: `Two complementary models — read them together, not as one.<br><br>
+<strong>Predicted %</strong> — Linear level forecast: <em>0.886 × Current + 43.0 × Daily Vol</em>. Shows the expected margin level tomorrow. In normal markets this is almost always slightly below current (the formula is a mean-reversion dampener).<br><br>
+<strong>Probability bar</strong> — Logistic model trained on 6 features (margin, vol, DTE, percentile rank, days since last change, policy buffer). More sensitive to structural positioning than the linear formula.<br><br>
+<strong>Signal badge</strong> — Driven by the logistic model's dominant class. <span style="color:#f85149;">▲ HIKE X%</span> = logistic assigns X% probability. <span style="color:#3fb950;">▼ CUT X%</span> likewise.<br><br>
+<strong style="color:#d29922;">Amber Predicted cell</strong> = the two models disagree on direction. The linear formula predicts a mild numeric cut while the logistic model's multi-feature analysis favours a hike — treat that contract with extra caution.`
   },
   "Forward Margin Curve": {
     title: "Forward Margin Curve — All Active Expiries",
@@ -2126,12 +2132,13 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
   },
   "Margin Prediction Model": {
     title: "Panic Spread — Full Forward Curve",
-    body: `Applies the prediction model to every active expiry simultaneously.<br><br>
+    body: `Applies the linear prediction model to every active expiry simultaneously.<br><br>
 <strong>Blue solid</strong> = Today's actual margin per expiry.<br>
-<strong>Orange dashed</strong> = Predicted margin for tomorrow.<br><br>
-Dashed above solid = expect hike for those expiries.<br>
-Dashed below solid = expect cut or stability.<br><br>
-<em>How to use:</em> If your expiry shows predicted significantly above current, pre-fund your margin account 24 hours in advance. MCX updates margins after market close.`
+<strong>Orange dashed</strong> = Predicted level for tomorrow: <em>0.886 × Current + 43.0 × Daily Vol</em>.<br>
+<strong>Green shaded band</strong> = ±1σ prediction interval (rolling 30-day residual std).<br>
+<strong>Lighter outer band</strong> = ±2σ interval.<br><br>
+<em>Note:</em> In normal markets the orange line sits slightly below the blue — the formula is a mean-reversion dampener (0.886 &lt; 1). It rarely predicts a hike unless daily vol spikes above ~6%. Use the <strong>Panic Spread Signals table</strong> on the Overview tab for direction probability — the logistic model there uses more features and is the better directional signal.<br><br>
+<em>The bands matter:</em> A wide ±1σ range means the model's level forecast has high historical error — treat the point prediction with more scepticism.`
   },
   "5-Day Rolling": {
     title: "Margin Momentum — Spot vs 5-Day Average",
