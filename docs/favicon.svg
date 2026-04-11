@@ -1,10 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
   <defs>
-    <linearGradient id="flame-grad" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1f6feb;stop-opacity:1" />
+    <linearGradient id="gas-flame" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1f6feb" />
+      <stop offset="50%" stop-color="#58a6ff" />
+      <stop offset="100%" stop-color="#c1e3ff" />
+    </linearGradient>
+    <linearGradient id="gas-inner" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0969da" />
+      <stop offset="100%" stop-color="#1f6feb" />
     </linearGradient>
   </defs>
-  <path d="M16 2C16 2 8 12 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 12 16 2 16 2Z" fill="url(#flame-grad)" />
-  <path d="M16 10C16 10 11 16 11 20C11 22.7614 13.2386 25 16 25C18.7614 25 21 22.7614 21 20C21 16 16 10 16 10Z" fill="#ffffff" fill-opacity="0.3" />
+  <path d="M7 11C7 11 3 15 3 17.5C3 19.4 4.6 21 6.5 21C8.4 21 10 19.4 10 17.5C10 15 7 11 7 11Z" fill="url(#gas-flame)"/>
+  <path d="M17 11C17 11 21 15 21 17.5C21 19.4 19.4 21 17.5 21C15.6 21 14 19.4 14 17.5C14 15 17 11 17 11Z" fill="url(#gas-flame)"/>
+  <path d="M12 2C12 2 6 10 6 15C6 18.3 8.7 21 12 21C15.3 21 18 18.3 18 15C18 10 12 2 12 2Z" fill="url(#gas-flame)"/>
+  <path d="M12 9C12 9 9 13.5 9 16C9 17.7 10.3 19 12 19C13.7 19 15 17.7 15 16C15 13.5 12 9 12 9Z" fill="url(#gas-inner)"/>
 </svg>
