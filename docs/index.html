@@ -866,7 +866,7 @@ async function renderOverview() {
       const dynPTitle = `Panic Signal: ${c.expiry}`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
       if (conflict) dynPBody += `<br><br><span style="color:#d29922;">⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
-      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">`
+      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
