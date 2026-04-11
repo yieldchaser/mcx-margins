@@ -1794,12 +1794,13 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
   },
   "Margin Prediction Model": {
     title: "Panic Spread — Full Forward Curve",
-    body: `Applies the prediction model to every active expiry simultaneously.<br><br>
+    body: `Applies the linear prediction model to every active expiry simultaneously.<br><br>
 <strong>Blue solid</strong> = Today's actual margin per expiry.<br>
-<strong>Orange dashed</strong> = Predicted margin for tomorrow.<br><br>
-Dashed above solid = expect hike for those expiries.<br>
-Dashed below solid = expect cut or stability.<br><br>
-<em>How to use:</em> If your expiry shows predicted significantly above current, pre-fund your margin account 24 hours in advance. MCX updates margins after market close.`
+<strong>Orange dashed</strong> = Predicted level for tomorrow: <em>0.886 × Current + 43.0 × Daily Vol</em>.<br>
+<strong>Green shaded band</strong> = ±1σ prediction interval (rolling 30-day residual std).<br>
+<strong>Lighter outer band</strong> = ±2σ interval.<br><br>
+<em>Note:</em> In normal markets the orange line sits slightly below the blue — the formula is a mean-reversion dampener (0.886 &lt; 1). It rarely predicts a hike unless daily vol spikes above ~6%. Use the <strong>Panic Spread Signals table</strong> on the Overview tab for direction probability — the logistic model there uses more features and is the better directional signal.<br><br>
+<em>The bands matter:</em> A wide ±1σ range means the model's level forecast has high historical error — treat the point prediction with more scepticism.`
   },
   "5-Day Rolling": {
     title: "Margin Momentum — Spot vs 5-Day Average",
