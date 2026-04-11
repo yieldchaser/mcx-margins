@@ -1,4 +1,4 @@
-# MCX Margin Intelligence — Natural Gas Futures Dashboard
+# Blue Margin — NG Margin Intelligence
 
 An institutional-grade, automated intelligence platform that extracts daily margin levels and volatility indexes from the MCX CCL. Designed for quantitative analysis of forward curves, historical volume offsets, and 16+ years of backfilled seasonal loading sets.
 
