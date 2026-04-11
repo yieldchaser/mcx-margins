@@ -169,6 +169,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .has-tooltip:hover::after { background: var(--accent); color: white; border-color: var(--accent); }
 
+/* Prevent structural breaks when applying tooltip wrapper to table rows or cells */
+tr.has-tooltip { display: table-row; }
+td.has-tooltip { display: table-cell; }
+tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
+
 #tooltipOverlay {
   display: block; position: fixed; z-index: 9999;
   background: rgba(22, 27, 34, 0.95);
@@ -238,36 +243,37 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 <!-- ── Stats Bar ── -->
 <div class="stats-bar" id="statsBar">
   <div class="stat-card">
-    <div class="stat-label">FRONT MARGIN %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %">FRONT MARGIN %</div>
     <div class="stat-value" id="kpiFrontMargin">—</div>
     <div class="stat-sub" id="kpiMarginChange">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">ELM %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="ELM %">ELM %</div>
     <div class="stat-value" id="kpiElm">—</div>
     <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Constant</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">DAILY VOL</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">DAILY VOL</div>
     <div class="stat-value" id="kpiDailyVol">—</div>
     <div class="stat-sub" id="kpiVolChange">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">ANN. VOLATILITY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">ANN. VOLATILITY</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
     <div class="stat-sub" id="kpiPercentile">—</div>
     <div class="stat-sub" id="kpiPercentileRegime" style="font-size:9px;color:var(--text-muted);margin-top:1px;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">DAYS TO EXPIRY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry">DAYS TO EXPIRY</div>
     <div class="stat-value" id="kpiDTE">—</div>
     <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Front month</div>
   </div>
-  <div class="stat-card has-tooltip" data-tooltip-key="Stress Score">
-    <div class="stat-label">REGIME</div>
+  <div class="stat-card">
+    <div class="stat-label has-tooltip" data-tooltip-key="Stress Score" id="kpiRegimeLabel">REGIME</div>
     <div class="stat-value" id="kpiRegime" style="font-size:16px;">—</div>
-    <div style="height:4px;border-radius:2px;background:var(--surface2);margin:4px 0 2px;overflow:hidden;">
-      <div id="stressBar" style="height:100%;width:0%;border-radius:2px;transition:width 0.5s;"></div>
+    <!-- FIX 5: Full gradient bar with white notch indicator -->
+    <div style="height:4px;border-radius:2px;background:linear-gradient(to right,#22c55e,#eab308,#f97316,#ef4444);margin:4px 0 2px;position:relative;overflow:visible;">
+      <div id="stressNotch" style="position:absolute;top:-2px;width:3px;height:8px;background:white;border-radius:1px;transform:translateX(-50%);box-shadow:0 0 3px rgba(0,0,0,0.5);transition:left 0.5s;left:0%;"></div>
     </div>
     <div class="stat-sub" id="kpiRegimeSub" style="font-size:10px;">—</div>
   </div>
@@ -275,12 +281,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
 <!-- ── Tab Navigation ── -->
 <nav class="tab-nav">
-  <button class="tab-btn active" data-tab="overview" id="btn-overview">Overview</button>
-  <button class="tab-btn" data-tab="termstructure" id="btn-termstructure">Term Structure</button>
-  <button class="tab-btn" data-tab="history" id="btn-history">History</button>
-  <button class="tab-btn" data-tab="seasonality" id="btn-seasonality">Seasonality</button>
-  <button class="tab-btn" data-tab="analytics" id="btn-analytics">Analytics</button>
-  <button class="tab-btn" data-tab="explorer" id="btn-explorer">Data Explorer</button>
+  <button class="tab-btn active" data-tab="overview" id="btn-overview" title="Executive Summary & Live Margins">Overview</button>
+  <button class="tab-btn" data-tab="termstructure" id="btn-termstructure" title="Forward Curve & Term Structure Confidence">Term Structure</button>
+  <button class="tab-btn" data-tab="history" id="btn-history" title="Historical Baseline & Scatter Models">History</button>
+  <button class="tab-btn" data-tab="seasonality" id="btn-seasonality" title="Seasonal Patterns by Month/Year">Seasonality</button>
+  <button class="tab-btn" data-tab="analytics" id="btn-analytics" title="Predictive Signals & System Health">Analytics</button>
+  <button class="tab-btn" data-tab="explorer" id="btn-explorer" title="Raw Data Explorer & Export Tool">Data Explorer</button>
 </nav>
 
 <!-- ── Tab Panels ── -->
@@ -293,11 +299,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
           Current Margin Snapshot — <span id="snapshotSymbolLabel">NaturalGas</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="snap-toggle active-snap" data-sym="NATURALGAS"
+          <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
             style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
             NATURALGAS
           </button>
-          <button class="snap-toggle" data-sym="NATGASMINI"
+          <button class="snap-toggle" data-sym="NATGASMINI" title="Show NATGASMINI margin snapshot"
             style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">
             NATGASMINI
           </button>
@@ -307,7 +313,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <table class="data-table" id="snapshotTable">
           <thead><tr>
             <th>Contract</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
-            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th><th>Hist. Pct</th>
+            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th><th title="Percentile rank of today's margin vs all historical observations at the same days-to-expiry (±15 days). Green = historically cheap. Amber = elevated. Red = historically expensive. P50 = median.">Hist. Pct</th>
           </tr></thead>
           <tbody id="snapshotBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
         </table>
@@ -325,7 +331,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <div style="overflow-x:auto;">
           <table class="data-table" id="panicTable">
             <thead><tr>
-              <th>Expiry</th><th>Current %</th><th>Predicted</th><th>Probability</th><th>Signal</th>
+              <th title="Contract expiry date being evaluated.">Expiry</th>
+              <th title="Today's total margin requirement for this expiry.">Current %</th>
+              <th title="Model's point estimate for tomorrow's margin. Formula: 0.886 × current_margin + 43.0 × daily_vol.">Predicted</th>
+              <th title="Logistic model probabilities of three outcomes tomorrow: margin cut (&gt;0.5% decrease), flat (±0.5%), or hike (&gt;0.5% increase). Trained on historical data. Bar = green(cut) | grey(flat) | red(hike).">Probability</th>
+              <th title="Dominant outcome by probability. Amber row glow = P(hike) &gt;65%. Red row glow = P(hike) &gt;80%.">Signal</th>
             </tr></thead>
             <tbody id="panicBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
           </table>
@@ -336,7 +346,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
   <div id="tab-termstructure" class="tab-content">
     <div class="card mb-4">
-      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve">Forward Margin Curve — All Active Expiries</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Forward Margin Curve" id="fwdCurveTitle">Forward Margin Curve — All Active Expiries [Historical cone: All-time]</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="range-btn active-range" id="coneAlltimeBtn" title="Show historical percentile cone based on all data since 2010">All-time</button>
+        <button class="range-btn" id="coneRecentBtn" title="Show historical percentile cone based only on the last 5 years">Recent (5Y)</button>
+      </div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
     <div class="grid-2">
@@ -362,12 +376,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
           </select>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="range-btn active-range" data-months="1">1M</button>
-          <button class="range-btn" data-months="3">3M</button>
-          <button class="range-btn" data-months="6">6M</button>
-          <button class="range-btn" data-months="12">1Y</button>
-          <button class="range-btn" data-months="36">3Y</button>
-          <button class="range-btn" data-months="0">All</button>
+          <button class="range-btn active-range" data-months="1" title="Trailing 1 Month">1M</button>
+          <button class="range-btn" data-months="3" title="Trailing 3 Months">3M</button>
+          <button class="range-btn" data-months="6" title="Trailing 6 Months">6M</button>
+          <button class="range-btn" data-months="12" title="Trailing 1 Year">1Y</button>
+          <button class="range-btn" data-months="36" title="Trailing 3 Years">3Y</button>
+          <button class="range-btn" data-months="0" title="All available history (Since 2010)">All</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
           <input type="checkbox" id="showPrice" style="accent-color:var(--accent-green);width:14px;height:14px;cursor:pointer;">
@@ -461,7 +475,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
         <div style="display:flex;gap:6px;" id="deltaBucketBtns">
           <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
           <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
-          <button class="range-btn" data-bucket="91+">91+d DTE</button>
+          <button class="range-btn" data-bucket="91+" title="Distribution of day-over-day margin changes for contracts with over 90 days to expiry.">91+d DTE</button>
         </div>
       </div>
       <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
@@ -604,7 +618,7 @@ function setStaleness(dateStr) {
     // Regime — Item 8: Stress score widget
     const rEl = document.getElementById('kpiRegime');
     const rsEl = document.getElementById('kpiRegimeSub');
-    const stressBar = document.getElementById('stressBar');
+    const stressNotch = document.getElementById('stressNotch');
     try {
       const stressData = await loadJSON('stress_score');
       const sc = stressData.stress_score;
@@ -613,14 +627,21 @@ function setStaleness(dateStr) {
       const cls   = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
       rEl.textContent = `${icons[lbl]||'⚪'} ${lbl}`;
       rEl.className = 'stat-value ' + (cls[lbl]||'');
-      rsEl.textContent = `Score: ${sc} / 100`;
-      // Gradient bar
-      const pct = Math.min(100, Math.max(0, sc));
-      stressBar.style.width = pct + '%';
-      if (sc < 40) stressBar.style.background = '#3fb950';
-      else if (sc < 60) stressBar.style.background = '#d29922';
-      else if (sc < 75) stressBar.style.background = '#fb8f44';
-      else stressBar.style.background = '#f85149';
+      rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
+      // FIX 5: position the white notch on the gradient bar
+      const notchPct = Math.min(100, Math.max(0, sc));
+      if (stressNotch) stressNotch.style.left = notchPct + '%';
+      // Update Stress Score tooltip with live values
+      if (TOOLTIPS['Stress Score']) {
+        TOOLTIPS['Stress Score'].body = `Combines margin percentile rank and volatility percentile weighted equally against a trailing 5-year distribution.<br><br>
+<strong>0–40: CALM</strong> — Low cost environment.<br>
+<strong>40–60: NORMAL</strong> — Standard conditions.<br>
+<strong>60–75: MONITOR</strong> — Elevated, watch for hikes.<br>
+<strong>75–90: ELEVATED</strong> — High stress, pre-fund margin.<br>
+<strong>90+: STRESS</strong> — Extreme, historical top-decile conditions.<br><br>
+<strong>Today:</strong> Margin at P${stressData.margin_pct} (5-year trailing), Vol at P${stressData.vol_pct} → Composite score = ${sc}/100.<br>
+Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`;
+      }
     } catch(e) {
       // Fallback to margin-based
       const m = front.initial_margin_pct;
@@ -683,8 +704,34 @@ async function renderOverview() {
       });
       document.getElementById('snapshotBody').innerHTML = deduped.map(c => {
         const hp = coneLookup[c.expiry];
-        const hpColor = hp >= 75 ? 'var(--accent-red)' : hp >= 50 ? 'var(--accent-yellow)' : 'var(--accent-green)';
-        return `<tr>
+        // FIX 6: Correct 4-tier color thresholds
+        let hpColor = 'var(--text-muted)';
+        let hpLabel = '—';
+        let hpTitle = 'No historical comparison data for this DTE.';
+        if (hp != null) {
+          hpLabel = 'P' + hp;
+          if (hp <= 33)      hpColor = '#22c55e';
+          else if (hp <= 66) hpColor = 'var(--text)';
+          else if (hp <= 80) hpColor = '#f59e0b';
+          else               hpColor = '#ef4444';
+          const zone = hp <= 33 ? 'historically cheap territory'
+            : hp <= 66 ? 'the normal historical range'
+            : hp <= 80 ? 'elevated territory (watch for hikes)'
+            : 'historically expensive territory';
+          hpTitle = `${c.expiry} margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp}% of all historical readings at equivalent DTE (±15d). This is ${zone}.`;
+        }
+        
+        const dynTitle = `Term Structure: ${c.expiry}`;
+        const curMargin = c.total_margin_pct.toFixed(2);
+        const frontCur = rows.length > 0 ? rows[0].total_margin_pct.toFixed(2) : curMargin;
+        const diffToFront = (c.total_margin_pct - rows[0].total_margin_pct).toFixed(2);
+        const diffText = c.expiry !== rows[0].expiry 
+                         ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.` 
+                         : '<br><br>This is the front-month contract, carrying maximum tender pressure and near-term vol.';
+        const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
+        const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
+
+        return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${dynBody}">
           <td><strong>${c.expiry}</strong></td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
@@ -696,9 +743,10 @@ async function renderOverview() {
           <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
           <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
           <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
-          <td style="font-weight:600;color:${hp != null ? hpColor : 'var(--text-muted)'};">${hp != null ? 'P'+hp : '—'}</td>
+          <td style="font-weight:700;color:${hpColor};">${hpLabel}</td>
         </tr>`;
       }).join('');
+      attachTooltips();
     }
 
     renderSnapshotTable(activeSnapSym);
@@ -802,12 +850,23 @@ async function renderOverview() {
           ? `<span class="badge-hike">&#9650; HIKE</span>`
           : `<span class="badge-cut">&#9660; CUT</span>`;
       }
-      // Highlight Predicted cell amber when linear and logistic disagree on direction
+      // Row severity: escalating border-left based on logistic p_hike
       const logisticDir = ep ? (ep.p_hike > ep.p_cut ? 'HIKE' : 'CUT') : linearDir;
       const conflict = ep && linearDir !== logisticDir;
       const predictedStyle = conflict ? 'color:var(--accent-yellow);' : '';
-      const rowGlow = ep && ep.p_hike > 0.65 ? 'box-shadow:inset 0 0 12px rgba(210,153,34,0.15);' : '';
-      return `<tr style="${rowGlow}">
+      let rowStyle = '';
+      let rowTitle = '';
+      if (ep && ep.p_hike > 0.80) {
+        rowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,0.09);';
+        rowTitle = `High hike alert: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
+      } else if (ep && ep.p_hike > 0.65) {
+        rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.07);';
+        rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
+      }
+      const dynPTitle = `Panic Signal: ${c.expiry}`;
+      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
+      if (conflict) dynPBody += `<br><br><span style="color:#d29922;">⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
+      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">`
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
@@ -815,6 +874,7 @@ async function renderOverview() {
         <td>${signalLabel}</td>
       </tr>`;
     }).join('');
+    attachTooltips();
   } catch(e) {
     console.error('Overview render error:', e);
   }
@@ -841,81 +901,146 @@ document.querySelector('[data-tab="termstructure"]').addEventListener('click', (
   renderTermStructure();
 });
 
+let fwdChart = null;
+let termCone = null;
+let termConeLookup = {};
+let termNg = [];
+let coneMode = 'alltime'; // 'alltime' | 'recent'
+
+function renderFwdCone() {
+  const ng = termNg;
+  const cone = termCone;
+  const coneLookup = termConeLookup;
+  const suffix = coneMode === 'alltime' ? '_alltime' : '_recent';
+  const label = coneMode === 'alltime' ? 'All-time' : 'Recent (5Y)';
+
+  const datasets = [
+    {
+      label: 'NATURALGAS Total Margin %',
+      data: ng.map(c => c.total_margin_pct),
+      borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
+      tension: 0.3, pointRadius: 4, fill: false, order: 1
+    },
+    {
+      label: 'NATGASMINI Total Margin %',
+      data: ng.map(c => {
+        const m = (window._termNgm || []).find(x => x.expiry === c.expiry);
+        return m ? m.total_margin_pct : null;
+      }),
+      borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
+      tension: 0.3, pointRadius: 4, fill: false, order: 2
+    }
+  ];
+
+  // FIX 3+4: Correct fill — P90 fills '+1' toward P10 dataset (next in array)
+  // Order: datasets[2]=P90, datasets[3]=P50, datasets[4]=P10
+  // P90 fill '+1' => fills to P10 (2 steps, doesn't work directly)
+  // Better: P90 fill toward P10 via stacking: P90 fill '+2'
+  // Chart.js fill: '+N' means fill toward dataset N positions ahead in the array
+  if (cone && cone.length > 0) {
+    datasets.push({
+      label: `P90 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p90${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.35)', borderDash: [4,4], pointRadius: 0,
+      tension: 0.3,
+      fill: '+2',  // fill to P10 dataset (2 ahead)
+      backgroundColor: 'rgba(99,102,241,0.15)',
+      order: 5
+    });
+    datasets.push({
+      label: `P50 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p50${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.55)', borderDash: [6,3], pointRadius: 0,
+      tension: 0.3, fill: false, order: 4
+    });
+    datasets.push({
+      label: `P10 (${label})`,
+      data: ng.map(c => coneLookup[c.expiry]?.[`p10${suffix}`] ?? null),
+      borderColor: 'rgba(99,102,241,0.35)', borderDash: [4,4], pointRadius: 0,
+      tension: 0.3, fill: false, order: 6
+    });
+  }
+
+  if (fwdChart) fwdChart.destroy();
+  fwdChart = new Chart(document.getElementById('chartFwdFull'), {
+    type: 'line',
+    data: {
+      labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
+      datasets
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 } } },
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            afterLabel: (ctx) => {
+              const c = ng[ctx.dataIndex];
+              if (!c) return '';
+              const cn = coneLookup[c.expiry];
+              let extra = `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
+              if (cn) {
+                const p10 = cn[`p10${suffix}`], p50 = cn[`p50${suffix}`], p90 = cn[`p90${suffix}`];
+                extra += `\nHistorical (${label}) — P10: ${p10}% | P50: ${p50}% | P90: ${p90}%`;
+              }
+              return extra;
+            },
+            footer: (items) => {
+              if (!items.length) return '';
+              const c = ng[items[0].dataIndex];
+              if (!c) return '';
+              const cn = coneLookup[c.expiry];
+              if (!cn || cn.hist_pct == null) return 'Historical data unavailable for this DTE.';
+              const pct = cn.hist_pct;
+              const zone = pct <= 33 ? 'HISTORICALLY CHEAP' : pct <= 66 ? 'NORMAL RANGE' : pct <= 80 ? 'ELEVATED' : 'EXPENSIVE TERRITORY';
+              return `Analysis: At P${Math.round(pct)}, this contract is considered ${zone}.`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
+        y: { title: { display: true, text: 'Total Margin %' } }
+      }
+    }
+  });
+
+  document.getElementById('fwdCurveTitle').textContent =
+    `Forward Margin Curve — All Active Expiries [Historical cone: ${label}]`;
+}
+
 async function renderTermStructure() {
   try {
     const fwd = await loadJSON('forward_curve');
     const ng  = fwd.NATURALGAS  || [];
     const ngm = fwd.NATGASMINI  || [];
+    window._termNgm = ngm;
+    termNg = ng;
 
     // Item 5: Load curve cone
     let cone = null;
     try { const cd = await loadJSON('curve_cone'); cone = cd.cone || []; } catch(e) {}
-    const coneLookup5 = {};
-    if (cone) cone.forEach(c => { coneLookup5[c.expiry] = c; });
+    termCone = cone;
+    const coneLookup = {};
+    if (cone) cone.forEach(c => { coneLookup[c.expiry] = c; });
+    termConeLookup = coneLookup;
 
-    const datasets = [
-      {
-        label: 'NATURALGAS Total Margin %',
-        data: ng.map(c => c.total_margin_pct),
-        borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
-        tension: 0.3, pointRadius: 4, fill: false, order: 1
-      },
-      {
-        label: 'NATGASMINI Total Margin %',
-        data: ng.map(c => {
-          const m = ngm.find(x => x.expiry === c.expiry);
-          return m ? m.total_margin_pct : null;
-        }),
-        borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.1)',
-        tension: 0.3, pointRadius: 4, fill: false, order: 2
-      }
-    ];
+    // FIX 3+4: Render cone with current mode; toggles re-render
+    renderFwdCone();
 
-    // Add P10/P50/P90 bands from cone
-    if (cone && cone.length > 0) {
-      datasets.push({
-        label: 'P90 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p90_alltime ?? null),
-        borderColor: 'rgba(248,81,73,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 3
-      });
-      datasets.push({
-        label: 'P50 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p50_alltime ?? null),
-        borderColor: 'rgba(210,153,34,0.5)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false, order: 4
-      });
-      datasets.push({
-        label: 'P10 (All-time)', data: ng.map(c => coneLookup5[c.expiry]?.p10_alltime ?? null),
-        borderColor: 'rgba(63,185,80,0.4)', borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: '-1', backgroundColor: 'rgba(63,185,80,0.04)', order: 5
-      });
-    }
-
-    new Chart(document.getElementById('chartFwdFull'), {
-      type: 'line',
-      data: {
-        labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
-        datasets
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 10 } } },
-          tooltip: {
-            mode: 'index',
-            callbacks: {
-              afterLabel: (ctx) => {
-                const c = ng[ctx.dataIndex];
-                if (!c) return '';
-                const cn = coneLookup5[c.expiry];
-                let extra = `DTE: ${c.dte} | Daily Vol: ${c.daily_volatility != null ? (c.daily_volatility * 100).toFixed(2) + '%' : '—'}`;
-                if (cn) extra += `\nHist. range — P10: ${cn.p10_alltime}% | P50: ${cn.p50_alltime}% | P90: ${cn.p90_alltime}% | Pct: P${cn.hist_pct}`;
-                return extra;
-              }
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
-          y: { title: { display: true, text: 'Total Margin %' } }
-        }
-      }
+    // Toggle buttons
+    document.getElementById('coneAlltimeBtn').addEventListener('click', function() {
+      coneMode = 'alltime';
+      this.classList.add('active-range');
+      document.getElementById('coneRecentBtn').classList.remove('active-range');
+      renderFwdCone();
+    });
+    document.getElementById('coneRecentBtn').addEventListener('click', function() {
+      coneMode = 'recent';
+      this.classList.add('active-range');
+      document.getElementById('coneAlltimeBtn').classList.remove('active-range');
+      renderFwdCone();
     });
 
     new Chart(document.getElementById('chartVolCurve'), {
@@ -987,10 +1112,21 @@ async function renderHistory(months) {
     const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
     const data = filterByMonths(raw, months);
 
-    const labels = data.map(d => d.date);
-    const margins = data.map(d => d.initial_margin_pct);
-    const vols = data.map(d => d.daily_volatility != null ? +(d.daily_volatility * 100).toFixed(4) : null);
-    const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: true };
+    let labels = data.map(d => d.date);
+    let margins = data.map(d => d.initial_margin_pct);
+    let vols = data.map(d => d.daily_volatility > 0 ? +(d.daily_volatility * 100).toFixed(4) : null);
+
+    // If 'All' is selected (months == 0), trim leading nulls so x-axis snaps to data start
+    if (months === 0) {
+      const firstDataIdx = vols.findIndex(v => v !== null);
+      if (firstDataIdx > 0) {
+        labels = labels.slice(firstDataIdx);
+        margins = margins.slice(firstDataIdx);
+        vols = vols.slice(firstDataIdx);
+      }
+    }
+
+    const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: false };
 
     // Henry Hub price — read from locally pre-fetched JSON (avoids CORS on GitHub Pages)
     let priceDataset = null;
@@ -1072,12 +1208,13 @@ async function renderHistory(months) {
     let regimeModel = null;
     try { regimeModel = await loadJSON('regime_model'); } catch(e) {}
 
+    // FIX 14: Use ALL historical data (raw, not time-filtered) for scatter so Regime A low-vol is always visible
     const scatterA = [], scatterB = [];
-    data.filter(d => d.daily_volatility != null && d.initial_margin_pct != null).forEach(d => {
+    raw.filter(d => d.daily_volatility != null && d.initial_margin_pct != null).forEach(d => {
       const pt = { x: +(d.daily_volatility * 100).toFixed(3), y: d.initial_margin_pct, date: d.date };
-      const vol = d.daily_volatility * 100;
       const yr = parseInt(d.date.substring(0,4));
-      if (vol >= 4.5 && yr >= 2019) scatterB.push(pt);
+      // Regime B = post-2019 AND high vol; everything else = Regime A
+      if (yr >= 2019 && pt.x >= 3.5) scatterB.push(pt);
       else scatterA.push(pt);
     });
 
@@ -1097,11 +1234,11 @@ async function renderHistory(months) {
         const lineA = [{x: minV, y: ra.slope*minV + ra.intercept}, {x: Math.min(maxV, 6), y: ra.slope*Math.min(maxV,6) + ra.intercept}];
         const lineB = [{x: Math.max(minV, 3), y: rb.slope*Math.max(minV,3) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}];
         scatterDatasets.push({
-          label: `Regime A OLS (R2=${ra.r2.toFixed(2)})`, data: lineA, type: 'line',
+          label: `Regime A OLS (R²=${ra.r2.toFixed(3)})`, data: lineA, type: 'line',
           borderColor: 'rgba(56,139,253,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false
         });
         scatterDatasets.push({
-          label: `Regime B OLS (R2=${rb.r2.toFixed(2)})`, data: lineB, type: 'line',
+          label: `Regime B OLS (R²=${rb.r2.toFixed(3)})`, data: lineB, type: 'line',
           borderColor: 'rgba(251,143,68,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false
         });
       }
@@ -1226,9 +1363,44 @@ async function renderSeasonality() {
       const meanData = src.map(r => r.mean ?? null);
 
       const bgColors = src.map((r, i) => {
-        if (r.month_num === currentMonth) return 'rgba(56,139,253,0.6)';
-        return 'rgba(163,113,247,0.5)';
+        if (r.month_num === currentMonth) return 'rgba(99,102,241,0.80)'; // FIX 10: bright highlight
+        return 'rgba(99,102,241,0.38)';
       });
+      const borderColors = src.map(r =>
+        r.month_num === currentMonth ? 'rgba(99,102,241,1)' : 'transparent'
+      );
+
+      // FIX 10: "▲ Now" afterDraw plugin
+      const nowLabelPlugin = {
+        id: 'nowLabel',
+        afterDraw(chart) {
+          const idx = src.findIndex(r => r.month_num === currentMonth);
+          if (idx < 0) return;
+          const meta = chart.getDatasetMeta(1); // IQR dataset
+          const bar = meta.data[idx];
+          if (!bar) return;
+          const ctx2 = chart.ctx;
+          ctx2.save();
+          ctx2.font = 'bold 11px Inter,sans-serif';
+          ctx2.fillStyle = '#818cf8';
+          ctx2.textAlign = 'center';
+          ctx2.fillText('▲ Now', bar.x, bar.y - 8);
+          ctx2.restore();
+        }
+      };
+
+      // Determine front-month context for current month tooltip
+      let frontMarginForMonth = null;
+      let currentMonthMedian = null;
+      const curMonRow = src.find(r => r.month_num === currentMonth);
+      if (curMonRow) currentMonthMedian = curMonRow.median;
+      try {
+        const curJSON = DATA['current'];
+        if (curJSON && curJSON.NATURALGAS) {
+          const fc = curJSON.NATURALGAS.filter(c => c.dte >= 0).sort((a,b) => a.dte-b.dte)[0];
+          if (fc) frontMarginForMonth = fc.initial_margin_pct;
+        }
+      } catch(e) {}
 
       boxChart = new Chart(document.getElementById('chartSeasonMonth'), {
         type: 'bar',
@@ -1236,7 +1408,7 @@ async function renderSeasonality() {
           labels: src.map(r => r.month),
           datasets: [
             { label: 'P10–P90 (Whiskers)', data: whiskerData, backgroundColor: 'rgba(139,148,158,0.18)', borderRadius: 2, barPercentage: 0.3 },
-            { label: 'IQR (P25–P75)', data: iqrData, backgroundColor: bgColors, borderRadius: 4, barPercentage: 0.6 },
+            { label: 'IQR (P25–P75)', data: iqrData, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 2, borderRadius: 4, barPercentage: 0.6 },
             { label: 'Median', data: medianData, type: 'line', borderColor: '#e6edf3', backgroundColor: '#e6edf3', pointRadius: 5, pointStyle: 'dash', borderWidth: 0, showLine: false, order: 0 },
             { label: 'Mean', data: meanData, type: 'line', borderColor: '#d29922', backgroundColor: '#d29922', pointRadius: 4, pointStyle: 'triangle', borderWidth: 0, showLine: false, order: 0 }
           ]
@@ -1250,18 +1422,33 @@ async function renderSeasonality() {
                 label: ctx => {
                   const r = src[ctx.dataIndex];
                   if (!r || r.median == null) return '';
-                  return [
-                    `${r.month} — Median: ${r.median}% | Mean: ${r.mean}%`,
-                    `IQR: ${r.p25}%–${r.p75}% | Range: ${r.p10}%–${r.p90}%`,
-                    `Full: ${r.min}%–${r.max}% | n=${r.n}`,
-                    r.month_num === currentMonth ? '← Current month' : ''
-                  ].filter(Boolean);
+                  const minMaxLine = (r.min > 1 && r.max < 80)
+                    ? `Full: ${r.min}%\u2013${r.max}% | n=${r.n} days`
+                    : `P10\u2013P90 range: ${r.p10}%\u2013${r.p90}% | n=${r.n} days`;
+                  const lines = [
+                    `${r.month} \u2014 Median: ${r.median}% | Mean: ${r.mean}%`,
+                    `IQR: ${r.p25}%\u2013${r.p75}% | Whiskers: ${r.p10}%\u2013${r.p90}%`,
+                    minMaxLine,
+                  ];
+                  // FIX 10: Enhanced current-month tooltip
+                  if (r.month_num === currentMonth && frontMarginForMonth != null) {
+                    const rel = frontMarginForMonth > r.median + r.std * 0.5 ? 'above' :
+                                frontMarginForMonth < r.median - r.std * 0.5 ? 'below' : 'near';
+                    lines.push(`\u2190 Current month \u2014 Today's front-month: ${frontMarginForMonth.toFixed(1)}% (${rel} seasonal median of ${r.median}%)`);
+                  } else if (r.month_num === currentMonth) {
+                    lines.push('\u2190 Current month');
+                  }
+                  return lines.filter(Boolean);
+                },
+                footer: () => {
+                  return 'Box: Interior 50% (IQR) | Whisker: 10%-90% range | Notch/Dash: Median | Triangle: Mean';
                 }
               }
             }
           },
           scales: { y: { title: { display: true, text: 'Margin %' } } }
-        }
+        },
+        plugins: [nowLabelPlugin]
       });
     }
 
@@ -1270,7 +1457,7 @@ async function renderSeasonality() {
       // Add toggle button for all years / last 5 years — inject after chart
       const toggleDiv = document.createElement('div');
       toggleDiv.style.cssText = 'display:flex;gap:6px;margin-top:8px;justify-content:center;';
-      toggleDiv.innerHTML = `<button class="range-btn active-range" id="boxAllYears">All Years</button><button class="range-btn" id="boxLast5">Last 5 Years</button>`;
+      toggleDiv.innerHTML = `<button class="range-btn active-range" id="boxAllYears" title="Average all years since 2010">All Years</button><button class="range-btn" id="boxLast5" title="Average only the trailing 5 years">Last 5 Years</button>`;
       document.getElementById('chartSeasonMonth').parentElement.parentElement.appendChild(toggleDiv);
       document.getElementById('boxAllYears').addEventListener('click', function() {
         useBoxAll = true; this.classList.add('active-range'); document.getElementById('boxLast5').classList.remove('active-range'); renderBoxPlot();
@@ -1346,13 +1533,24 @@ async function renderSeasonality() {
         const bg = marginToColor(v, minV, maxV);
         const brightness = v == null ? 0 : (v - minV) / (maxV - minV);
         const textColor = v == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
-        html += `<td title="${y} ${m}: ${v != null ? v.toFixed(1)+'%' : 'No data'}" style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;">${v != null ? v.toFixed(1) : ''}</td>`;
+        
+        let dynHTitle = `Seasonality: ${m} ${y}`;
+        let dynHBody = `Average Initial Margin: <strong>${v != null ? v.toFixed(1)+'%' : 'No data'}</strong>`;
+        if (v != null) {
+          const avg = allVals.reduce((s, val) => s + val, 0) / allVals.length;
+          const diff = v - avg;
+          dynHBody += `<br><br>This is <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-time historic average of ${avg.toFixed(1)}%.`;
+        }
+
+        html += `<td class="has-tooltip" data-dyn-title="${dynHTitle}" data-dyn-body="${dynHBody}" 
+style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
       });
       html += `</tr>`;
     });
 
     html += `</tbody></table>`;
     document.getElementById('heatmapContainer').innerHTML = html;
+    attachTooltips();
   } catch(e) { console.error('Seasonality render error:', e); }
 }
 
@@ -1415,16 +1613,35 @@ async function renderAnalytics() {
       const mh = await loadJSON('model_health');
       if (mh) {
         document.getElementById('modelHealthCard').style.display = 'block';
+        // FIX 2: Asymmetric hit-rate color logic
+        // Green = within ±5pp of target | Amber = 5–15pp away | Red = >15pp away in either direction
+        function hitRateColor(val, target) {
+          const diff = Math.abs(val - target);
+          if (diff <= 5)  return 'green';
+          if (diff <= 15) return 'yellow';
+          return 'red';
+        }
+        const metricTitles = {
+          directional_accuracy: '% of days where the model correctly predicted whether margin would go up or down. Random guessing = 50%. Edge begins above ~55%. Strong edge above 60%.',
+          mae: 'Mean Absolute Error — average size of prediction error in percentage points. Lower = more accurate level forecasts. MAE of 3% means predictions are off by ~3pp on average.',
+          rmse: 'Root Mean Squared Error — like MAE but penalizes large errors more heavily. A much higher RMSE vs MAE indicates occasional large misses dominate the error profile.',
+          interval_hit_rate_1sigma: '% of actual next-day margins that fell inside the ±1σ prediction band. Theoretical target: 68% (normal distribution). Above 68% = bands too wide (over-conservative). Below 68% = bands dangerously narrow.',
+          interval_hit_rate_2sigma: '% of actuals inside the ±2σ band. Theoretical target: 95%. Values well above 95% indicate excessive conservatism in the uncertainty estimate.',
+          n: 'Number of trading days used to compute each window metrics. 30d and 90d windows have small samples — treat those metrics as directional signals, not statistically robust estimates.'
+        };
         const metrics = [
-          {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%', good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
+          {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%',
+           good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
           {name: 'MAE', key: 'mae', unit: '%', good: () => 'neutral'},
           {name: 'RMSE', key: 'rmse', unit: '%', good: () => 'neutral'},
-          {name: '1-sigma Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%', good: v => Math.abs(v - 68) <= 5 ? 'green' : 'red'},
-          {name: '2-sigma Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%', good: v => Math.abs(v - 95) <= 5 ? 'green' : 'red'},
+          {name: '1σ Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%',
+           good: v => hitRateColor(v, 68)},
+          {name: '2σ Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%',
+           good: v => hitRateColor(v, 95)},
           {name: 'Sample Size', key: 'n', unit: '', good: () => 'neutral'}
         ];
         const colorMap = {green: 'var(--accent-green)', yellow: 'var(--accent-yellow)', red: 'var(--accent-red)', neutral: 'var(--text)'};
-        document.getElementById('modelHealthBody').innerHTML = metrics.map(m => {
+        const rows = metrics.map(m => {
           const cells = ['30d','90d','365d'].map(period => {
             const d = mh[period];
             if (!d) return '<td>—</td>';
@@ -1433,8 +1650,17 @@ async function renderAnalytics() {
             const c = colorMap[m.good(val)];
             return `<td style="color:${c};font-weight:600;">${typeof val === 'number' ? val.toFixed(1) : val}${m.unit}</td>`;
           }).join('');
-          return `<tr><td style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
+          const tip = metricTitles[m.key] || '';
+          return `<tr><td class="has-tooltip" data-dyn-title="${m.name}" data-dyn-body="${tip}" style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
         }).join('');
+        // Calibration note row
+        const noteRow = `<tr><td colspan="4" style="font-size:11px;color:var(--text-muted);font-style:italic;padding-top:6px;">
+          Hit rates <em>above</em> target = bands too wide (model over-conservative).
+          Hit rates <em>below</em> target = bands too narrow (unreliable).
+          Green = within ±5pp of target. Amber = 5–15pp. Red = >15pp.
+        </td></tr>`;
+        document.getElementById('modelHealthBody').innerHTML = rows + noteRow;
+        attachTooltips();
       }
     } catch(e) { console.warn('Model health card skipped:', e); }
 
@@ -1448,31 +1674,40 @@ async function renderAnalytics() {
     const fbLookup = {};
     if (forecastBands && forecastBands.bands) forecastBands.bands.forEach(b => { if (!fbLookup[b.expiry]) fbLookup[b.expiry] = b; });
 
+    // FIX 1: ±2σ band — datasets ordered so 2σ (wider, lighter) fills behind 1σ (narrower, darker)
+    // Dataset order in array: idx0=Current, idx1=Predicted, idx2=+2σ, idx3=-2σ, idx4=+1σ, idx5=-1σ
+    // +2σ fills to next (+1) in array → index 3 (-2σ), giving the outer band
+    // +1σ fills to next (+1) in array → index 5 (-1σ), giving the inner band
     const predDatasets = [
-      { label: 'Current Margin %', data: curM, borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
+      { label: 'Current Margin %',    data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
       { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3, order: 2 }
     ];
 
     if (forecastBands) {
+      // Push in correct order so fill '+1' works by dataset array position
       predDatasets.push({
-        label: '+1-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_1 ?? null),
-        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
-        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 3
+        label: '+2σ (outer)',
+        data: ng.map(c => fbLookup[c.expiry]?.upper_2 ?? null),
+        borderColor: 'rgba(34,197,94,0.20)', backgroundColor: 'rgba(34,197,94,0.10)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [4,4], order: 6
       });
       predDatasets.push({
-        label: '-1-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_1 ?? null),
-        borderColor: 'rgba(63,185,80,0.3)', backgroundColor: 'rgba(63,185,80,0.08)',
-        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, order: 4
+        label: '-2σ (outer)',
+        data: ng.map(c => fbLookup[c.expiry]?.lower_2 ?? null),
+        borderColor: 'rgba(34,197,94,0.20)', backgroundColor: 'rgba(34,197,94,0.10)',
+        fill: false, pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [4,4], order: 7
       });
       predDatasets.push({
-        label: '+2-sigma', data: ng.map(c => fbLookup[c.expiry]?.upper_2 ?? null),
-        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
-        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 5
+        label: '+1σ (inner)',
+        data: ng.map(c => fbLookup[c.expiry]?.upper_1 ?? null),
+        borderColor: 'rgba(34,197,94,0.45)', backgroundColor: 'rgba(34,197,94,0.22)',
+        fill: '+1', pointRadius: 0, tension: 0.3, borderWidth: 1.5, order: 4
       });
       predDatasets.push({
-        label: '-2-sigma', data: ng.map(c => fbLookup[c.expiry]?.lower_2 ?? null),
-        borderColor: 'rgba(63,185,80,0.15)', backgroundColor: 'rgba(63,185,80,0.03)',
-        fill: '-1', pointRadius: 0, tension: 0.3, borderWidth: 1, borderDash: [2,4], order: 6
+        label: '-1σ (inner)',
+        data: ng.map(c => fbLookup[c.expiry]?.lower_1 ?? null),
+        borderColor: 'rgba(34,197,94,0.45)', backgroundColor: 'rgba(34,197,94,0.22)',
+        fill: false, pointRadius: 0, tension: 0.3, borderWidth: 1.5, order: 5
       });
     }
 
@@ -1482,7 +1717,14 @@ async function renderAnalytics() {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top', labels: { font: { size: 10 }, filter: item => !item.text.includes('sigma') || item.text.includes('+1') } },
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 10 },
+              // Show: Current, Predicted, +1σ, +2σ — hide the lower boundary mirror lines
+              filter: item => !item.text.includes('(outer)') && !item.text.includes('-1σ') && !item.text.includes('-2σ')
+            }
+          },
           tooltip: {
             mode: 'index',
             callbacks: {
@@ -1490,13 +1732,29 @@ async function renderAnalytics() {
                 if (!items.length) return '';
                 const fb = fbLookup[ng[items[0].dataIndex]?.expiry];
                 if (!fb) return '';
-                return `1-sigma: [${fb.lower_1}%, ${fb.upper_1}%]\n2-sigma: [${fb.lower_2}%, ${fb.upper_2}%]`;
+                return [
+                  `Predicted: ${fb.predicted}%`,
+                  `±1σ range: [${fb.lower_1}% – ${fb.upper_1}%]`,
+                  `±2σ range: [${fb.lower_2}% – ${fb.upper_2}%]`,
+                  `σ = rolling 30-day prediction residual std (${forecastBands.rolling_sigma?.toFixed(2)}%)`
+                ].join('\n');
               }
             }
           }
         },
         scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          // FIX 13: Deduplicate x-axis — show only unique expiry labels
+          x: {
+            ticks: {
+              font: { size: 10 }, maxRotation: 45,
+              callback: function(val, i) {
+                const label = this.getLabelForValue(val);
+                if (i === 0) return label;
+                const prev = this.getLabelForValue(this.chart.data.labels[i-1]);
+                return label === prev ? '' : label;
+              }
+            }
+          },
           y: { title: { display: true, text: 'Margin %' } }
         }
       }
@@ -1523,7 +1781,23 @@ async function renderAnalytics() {
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{position:'top'}, tooltip:{mode:'index',intersect:false} },
+        plugins:{ 
+          legend:{position:'top'}, 
+          tooltip:{
+            mode:'index',
+            intersect:false,
+            callbacks: {
+              footer: (items) => {
+                if (items.length < 2) return '';
+                const spot = items.find(i => i.dataset.label.includes('Daily Margin'))?.raw;
+                const avg = items.find(i => i.dataset.label.includes('5-Day'))?.raw;
+                if (!spot || !avg) return '';
+                const diff = (spot - avg).toFixed(2);
+                return `Analysis: Spot is ${Math.abs(diff)}% ${diff > 0 ? 'above' : 'below'} the short-term trend.`;
+              }
+            }
+          } 
+        },
         scales:{ x:{ticks:{maxTicksLimit:10,font:{size:10}}}, y:{title:{display:true,text:'Margin %'}} }
       }
     });
@@ -1573,23 +1847,85 @@ async function renderAnalytics() {
             const midVal = -5 + i * 0.25;
             return midVal < 0 ? 'rgba(63,185,80,0.6)' : midVal > 0 ? 'rgba(248,81,73,0.6)' : 'rgba(210,153,34,0.6)';
           });
+          // FIX 8: Compute predicted delta and max frequency for vertical lines
+          const maxCount = Math.max(...h.counts);
+          // Zero line at delta=0: find the bin index closest to 0
+          const zeroIdx = h.bins.reduce((best, b, i) =>
+            Math.abs(parseFloat(b)) < Math.abs(parseFloat(h.bins[best])) ? i : best, 0);
+          // Predicted delta: from forecast_bands front-month (predicted - current)
+          let predDelta = null;
+          let predDeltaIdx = null;
+          try {
+            const fb = forecastBands;
+            if (fb && fb.bands && fb.bands.length > 0) {
+              predDelta = +(fb.bands[0].predicted - fb.bands[0].current).toFixed(2);
+              // Find nearest bin
+              predDeltaIdx = h.bins.reduce((best, b, i) =>
+                Math.abs(parseFloat(b) - predDelta) < Math.abs(parseFloat(h.bins[best]) - predDelta) ? i : best, 0);
+            }
+          } catch(e) {}
+
+          // Build extra line datasets for vertical reference lines using sparse arrays trick
+          const zeroLineData = h.bins.map((_, i) => i === zeroIdx ? maxCount : null);
+          const extraDatasets = [
+            {
+              label: 'Δ=0 (neutral)',
+              data: zeroLineData,
+              type: 'line',
+              borderColor: 'rgba(255,255,255,0.5)',
+              borderWidth: 1.5,
+              borderDash: [4,4],
+              pointRadius: 0,
+              fill: false,
+              order: 0,
+              spanGaps: false
+            }
+          ];
+          if (predDeltaIdx !== null) {
+            const predLineData = h.bins.map((_, i) => i === predDeltaIdx ? maxCount : null);
+            extraDatasets.push({
+              label: `Model: ${predDelta > 0 ? '+' : ''}${predDelta}%`,
+              data: predLineData,
+              type: 'line',
+              borderColor: '#f97316',
+              borderWidth: 2,
+              borderDash: [6,3],
+              pointRadius: 0,
+              fill: false,
+              order: 0,
+              spanGaps: false
+            });
+          }
+
+          if (deltaChart) deltaChart.destroy();
           deltaChart = new Chart(document.getElementById('chartDeltaDist'), {
             type: 'bar',
             data: {
-              labels: h.bins.filter((_, i) => i % 4 === 0 || i === h.bins.length - 1).length ? h.bins : h.bins,
-              datasets: [{
-                label: 'Frequency', data: h.counts,
-                backgroundColor: colors, borderRadius: 1
-              }]
+              labels: h.bins,
+              datasets: [
+                { label: 'Frequency', data: h.counts, backgroundColor: colors, borderRadius: 1, order: 1 },
+                ...extraDatasets
+              ]
             },
             options: {
               responsive: true, maintainAspectRatio: false,
               plugins: {
-                legend: { display: false },
+                legend: { display: true, labels: { font: { size: 10 }, filter: item => item.text !== 'Frequency' } },
                 tooltip: {
                   callbacks: {
                     title: ctx => `Delta: ${h.bins[ctx[0].dataIndex]}%`,
-                    label: ctx => `Count: ${ctx.raw}`
+                    label: ctx => {
+                      if (ctx.dataset.label === 'Frequency') {
+                        const total = h.counts.reduce((s,v) => s+v, 0);
+                        const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                        return `Count: ${ctx.raw} (${pct}% of observations)`;
+                      }
+                      if (ctx.dataset.label?.startsWith('Model:'))
+                        return `Today's model predicts ${predDelta > 0 ? '+' : ''}${predDelta}% change for front-month.`;
+                      if (ctx.dataset.label?.startsWith('Δ=0'))
+                        return 'Zero line: changes to the left = cut, right = hike.';
+                      return '';
+                    }
                   }
                 }
               },
@@ -1620,6 +1956,7 @@ async function renderAnalytics() {
             `<span>Median P50: ${cond.P50 > 0 ? '+' : ''}${cond.P50}%</span> | ` +
             `<span style="color:var(--accent-green);">Bull P90: ${cond.P90 > 0 ? '+' : ''}${cond.P90}%</span> ` +
             `<span style="font-size:11px;color:var(--text-muted);">(n=${cond.n})</span>`;
+          attachTooltips();
         }
       }
     } catch(e) { console.warn('Delta distribution skipped:', e); }
@@ -1661,6 +1998,7 @@ function renderExplorerPage() {
       <td>${d.annualized_volatility != null ? (d.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
     </tr>
   `).join('');
+  attachTooltips();
 }
 
 document.getElementById('prevPage').addEventListener('click', () => {
@@ -1752,12 +2090,12 @@ A sudden spike here is almost always a leading indicator of a margin hike within
 <strong>Outliers above trendline</strong> = days MCX charged discretionary extra margin (tender spikes, special margin events). These are rare but operationally significant — margin calls that exceeded what vol alone predicted.`
   },
   "Average Margin by Month": {
-    title: "Seasonal Pattern — Monthly Averages",
-    body: `Average initial margin % by calendar month across all years (2010–present).<br><br>
-<strong>Green bars</strong> = below-median months — cheaper to hold positions.<br>
-<strong>Red bars</strong> = above-median months — capital-intensive.<br><br>
-<em>Key pattern:</em> JAN–MAR expensive (winter demand uncertainty). APR–OCT cheaper. NOV–DEC escalate again.<br><br>
-<strong>Practical use:</strong> Entering a 3-month position in APR vs DEC changes your average margin cost dramatically — and therefore your capital efficiency and risk of margin calls.`
+    title: "Seasonal Pattern — Monthly Box Plots",
+    body: `Statistical dispersion of initial margin % by calendar month (2010–present).<br><br>
+<strong>IQR (Inner Quartile Range)</strong>: The central 50% of readings (P25 to P75). Shows the "normal" seasonal range.<br>
+<strong>Whiskers</strong>: The 10th and 90th percentiles. Readings outside this range are considered extreme outliers.<br>
+<strong>White Dash ( - )</strong>: The median value. 50% of days were above/below.<br>
+<strong>Gold Triangle ( ▲ )</strong>: The arithmetic mean. Divergence from median indicates skewed distributions.`
   },
   "Average Margin by Year": {
     title: "Year-over-Year Margin Evolution",
@@ -1863,34 +2201,76 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 <strong>75–90: ELEVATED</strong> — High stress, pre-fund margin.<br>
 <strong>90+: STRESS</strong> — Extreme, historical top-decile conditions.<br><br>
 Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`
+  },
+  "Front Margin %": {
+    title: "Front Margin %",
+    body: `The Initial Margin % for the nearest expiring contract.<br><br>This is the primary bellwether for market margin conditions, as front-month contracts experience the highest volatility and tender pressure.`
+  },
+  "ELM %": {
+    title: "Extreme Loss Margin %",
+    body: `Locked at <em>1.25%</em> for NATURALGAS.<br><br>This is MCX's constant structural buffer designed to protect against massive gap-down or gap-up opens.`
+  },
+  "Next Expiry": {
+    title: "Next Contract Expiry",
+    body: `Days to Expiry (DTE) for the front-month contract.<br><br>As DTE approaches 0, margin requirements spike due to physical delivery/tender period rules.`
+  },
+  "Daily Volatility": {
+    title: "MCX Daily Volatility",
+    body: `The exchange's official Exponentially Weighted Moving Average (EWMA) volatility estimate.<br><br>This is the most critical dynamic factor driving Initial Margin increases.`
+  },
+  "Regime A": {
+    title: "Regime A (Structural)",
+    body: `Normal market conditions. Margins are stable and driven by standard volatility and open interest patterns with no external stress.`
+  },
+  "Regime B": {
+    title: "Regime B (Elevated)",
+    body: `Heightened market stress. Volatility or risk factors have pushed margins above the usual baseline.`
   }
 };
 
-function showTooltip(key, triggerEl) {
+function showTooltip(key, triggerEl, event) {
+  let titleText = '';
+  let bodyText = '';
   const tt = TOOLTIPS[key];
-  if (!tt) return;
+
+  if (triggerEl && triggerEl.hasAttribute('data-dyn-title')) {
+    titleText = triggerEl.getAttribute('data-dyn-title');
+    bodyText = triggerEl.getAttribute('data-dyn-body');
+  } else if (tt) {
+    titleText = tt.title;
+    bodyText = tt.body;
+  } else {
+    return;
+  }
+
   const el = document.getElementById('tooltipOverlay');
   if (!el) return;
   clearTimeout(_ttTimer);
-  document.getElementById('ttTitle').textContent = tt.title;
-  document.getElementById('ttBody').innerHTML = tt.body;
+  document.getElementById('ttTitle').textContent = titleText;
+  document.getElementById('ttBody').innerHTML = bodyText;
   el.classList.add('visible');
 
-  requestAnimationFrame(() => {
-    const rect = triggerEl.getBoundingClientRect();
+  const updatePos = (e) => {
     const ttW = el.offsetWidth;
     const ttH = el.offsetHeight;
-    let left = rect.left + rect.width / 2 - ttW / 2;
-    let top = rect.top - ttH - 14;
+    
+    // Position 15px below and right of cursor
+    let left = e.clientX + 15;
+    let top = e.clientY + 15;
 
-    if (top < 8) top = rect.bottom + 14;
-    if (left < 8) left = 8;
-    if (left + ttW > window.innerWidth - 8) left = window.innerWidth - ttW - 8;
+    // Boundary detection
+    if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
+    if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
 
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-  });
+  };
+
+  if (event) updatePos(event);
 }
+
 function hideTooltip() {
   _ttTimer = setTimeout(() => {
     const el = document.getElementById('tooltipOverlay');
@@ -1900,11 +2280,26 @@ function hideTooltip() {
 
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
 function attachTooltips() {
-  document.querySelectorAll('[data-tooltip-key]').forEach(el => {
+  document.querySelectorAll('.has-tooltip').forEach(el => {
     if (el._tooltipAttached) return; 
     el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
-    el.addEventListener('mouseenter', () => showTooltip(key, el));
+    el.addEventListener('mouseenter', (e) => showTooltip(key, el, e));
+    el.addEventListener('mousemove', (e) => {
+      const overlay = document.getElementById('tooltipOverlay');
+      if (overlay && overlay.classList.contains('visible')) {
+        const ttW = overlay.offsetWidth;
+        const ttH = overlay.offsetHeight;
+        let left = e.clientX + 15;
+        let top = e.clientY + 15;
+        if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
+        if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+        overlay.style.left = `${left}px`;
+        overlay.style.top = `${top}px`;
+      }
+    });
     el.addEventListener('mouseleave', hideTooltip);
     el.addEventListener('touchstart', (e) => {
       e.stopPropagation();
