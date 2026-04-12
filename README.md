@@ -1,4 +1,4 @@
-# Blue Margin — NG Margin Intelligence
+# Blue Margin
 
 An institutional-grade, automated intelligence platform that extracts daily margin levels and volatility indexes from the MCX CCL. Designed for quantitative analysis of forward curves, historical volume offsets, and 16+ years of backfilled seasonal loading sets.
 
