@@ -842,6 +842,7 @@ const MEASURE = {
 
 let _dragStart = null, _dragEnd = null, _dragChart = null;
 window.addEventListener('mousedown', e => {
+  if (typeof Chart === 'undefined') return;
   const canvas = e.target;
   if (!canvas || canvas.tagName !== 'CANVAS') return;
   const chart = Chart.getChart(canvas);
@@ -858,7 +859,7 @@ window.addEventListener('mousedown', e => {
 });
 
 window.addEventListener('mousemove', e => {
-  if (!_dragStart || !_dragChart) return;
+  if (typeof Chart === 'undefined' || !_dragStart || !_dragChart) return;
   const rect = _dragChart.canvas.getBoundingClientRect();
   const x = Math.max(_dragChart.chartArea.left, Math.min(e.clientX - rect.left, _dragChart.chartArea.right));
   _dragEnd = { x, idx: _dragChart.scales.x.getValueForPixel(x) };
@@ -866,6 +867,7 @@ window.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mouseup', e => {
+  if (typeof Chart === 'undefined') { _dragStart = _dragChart = _dragEnd = null; return; }
   if (!_dragStart || !_dragChart || !_dragEnd) { _dragStart = _dragChart = _dragEnd = null; return; }
   
   const i1 = Math.min(_dragStart.idx, _dragEnd.idx);
@@ -897,56 +899,6 @@ window.addEventListener('mouseup', e => {
   Chart.instances.forEach(c => c.draw()); // clear bands on all charts
 });
 
-Chart.register({
-  id: 'highFidelity',
-  beforeDraw(chart) {
-    if (_dragChart === chart && _dragStart && _dragEnd) {
-      const { ctx, chartArea: { top, bottom, left, right } } = chart;
-      const x1 = _dragStart.x, x2 = _dragEnd.x;
-      ctx.save();
-      ctx.fillStyle = 'rgba(56, 139, 253, 0.15)';
-      ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
-      ctx.strokeStyle = 'rgba(56, 139, 253, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
-      ctx.restore();
-    }
-  },
-  afterDraw(chart) {
-    if (chart.config.type !== 'line') return;
-    const active = chart.getActiveElements();
-    if (active.length > 0) {
-      const { ctx, chartArea: { top, bottom, left, right } } = chart;
-      const point = active[0].element;
-      
-      // 1. Crosshair
-      ctx.save();
-      ctx.beginPath();
-      ctx.setLineDash([4, 4]);
-      ctx.moveTo(point.x, top);
-      ctx.lineTo(point.x, bottom);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.stroke();
-      
-      // 2. Pulse Dot
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = chart.data.datasets[active[0].datasetIndex].borderColor;
-      ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = chart.data.datasets[active[0].datasetIndex].borderColor;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-});
 
 // ═══════════════════════════════════════════════════════════════════
 // PART 1 — Tab switching + data cache + meta load + KPI population
@@ -1296,6 +1248,50 @@ chartScript.onload = () => {
   Chart.defaults.color       = '#8b949e';
   Chart.defaults.borderColor = '#30363d';
   Chart.defaults.font.family = 'Inter';
+
+  // ── High-Fidelity Chart.js Plugin ──
+  Chart.register({
+    id: 'highFidelity',
+    beforeDraw(chart) {
+      if (_dragChart === chart && _dragStart && _dragEnd) {
+        const { ctx, chartArea: { top, bottom, left, right } } = chart;
+        const x1 = _dragStart.x, x2 = _dragEnd.x;
+        ctx.save();
+        ctx.fillStyle = 'rgba(56, 139, 253, 0.15)';
+        ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
+        ctx.strokeStyle = 'rgba(56, 139, 253, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
+        ctx.restore();
+      }
+    },
+    afterDraw(chart) {
+      if (chart.config.type !== 'line') return;
+      const active = chart.getActiveElements();
+      if (active.length > 0) {
+        const { ctx, chartArea: { top, bottom, left, right } } = chart;
+        const point = active[0].element;
+        // Crosshair
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(point.x, top);
+        ctx.lineTo(point.x, bottom);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.stroke();
+        // Pulse Dot
+        const ds = chart.data.datasets[active[0].datasetIndex];
+        ctx.beginPath(); ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = ds.borderColor; ctx.fill();
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = ds.borderColor; ctx.lineWidth = 1; ctx.stroke();
+        ctx.restore();
+      }
+    }
+  });
+
   renderOverview();
 };
 document.head.appendChild(chartScript);
