@@ -1739,6 +1739,7 @@ const LC_METRIC = {
 const LC_HH_START = '2010-01-01'; // full history available — NG=F fetched from 2009-01-01
 
 let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial', _lcInited = false;
+let _lcTenderState = { idx: -1, labels: [], axisMode: 'date' }; // shared plugin state, updated every render
 let _lcFullRows = [], _lcRC = null;
 
 // Build contract dropdown from contract_index.json — auto-ingests new contracts
@@ -1925,14 +1926,18 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
     } catch(e) { console.warn('LC: HH overlay failed:', e); }
   }
 
-  // Tender zone highlight — first index where DTE drops to/below 30
-  const tenderIdx = rows.findIndex(r => r.dte <= 30);
+  // Update shared tender state so plugin reads correct values on every render (incl. zoom-only)
+  _lcTenderState.idx      = rows.findIndex(r => r.dte <= 30);
+  _lcTenderState.labels   = labels;
+  _lcTenderState.axisMode = _lcAxisMode;
+
   const lcTenderPlugin = {
     id: 'lcTender',
     beforeDatasetsDraw(chart) {
-      if (tenderIdx < 0) return;
+      if (_lcTenderState.idx < 0) return;
       const { ctx, chartArea: { left, right, top, bottom }, scales: sc } = chart;
-      const x0 = sc.x.getPixelForValue(tenderIdx);
+      const tenderLabel = _lcTenderState.axisMode === 'dte' ? 30 : _lcTenderState.labels[_lcTenderState.idx];
+      const x0 = sc.x.getPixelForValue(tenderLabel);
       if (x0 >= right || x0 < left) return;
       ctx.save();
       ctx.fillStyle = 'rgba(239,68,68,0.07)';
