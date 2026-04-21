@@ -538,6 +538,9 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
 <script>
 let _ttTimer;
 
+// Escape double quotes so HTML content is safe inside data-attr="..."
+function escAttr(s) { return s ? s.replace(/"/g, '&quot;') : ''; }
+
 // ═══════════════════════════════════════════════════════════════════
 // PART 1 — Tab switching + data cache + meta load + KPI population
 // ═══════════════════════════════════════════════════════════════════
@@ -727,10 +730,10 @@ async function renderOverview() {
         const diffText = c.expiry !== rows[0].expiry 
                          ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.` 
                          : '<br><br>This is the front-month contract, carrying maximum tender pressure and near-term vol.';
-        const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
+        const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style='color:var(--accent-red)'>${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
         const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
 
-        return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${dynBody}">
+        return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
           <td><strong>${c.expiry}</strong></td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
@@ -865,7 +868,7 @@ async function renderOverview() {
       const dynPTitle = `Panic Signal: ${c.expiry}`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
       if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
-      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${dynPBody}" style="${rowStyle}">
+      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
         <td><strong>${c.expiry}</strong></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
@@ -1541,7 +1544,7 @@ async function renderSeasonality() {
           dynHBody += `<br><br>This is <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-time historic average of ${avg.toFixed(1)}%.`;
         }
 
-        html += `<td class="has-tooltip" data-dyn-title="${dynHTitle}" data-dyn-body="${dynHBody}" 
+        html += `<td class="has-tooltip" data-dyn-title="${dynHTitle}" data-dyn-body="${escAttr(dynHBody)}" 
 style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
       });
       html += `</tr>`;
@@ -1650,7 +1653,7 @@ async function renderAnalytics() {
             return `<td style="color:${c};font-weight:600;">${typeof val === 'number' ? val.toFixed(1) : val}${m.unit}</td>`;
           }).join('');
           const tip = metricTitles[m.key] || '';
-          return `<tr><td class="has-tooltip" data-dyn-title="${m.name}" data-dyn-body="${tip}" style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
+          return `<tr><td class="has-tooltip" data-dyn-title="${m.name}" data-dyn-body="${escAttr(tip)}" style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
         }).join('');
         // Calibration note row
         const noteRow = `<tr><td colspan="4" style="font-size:11px;color:var(--text-muted);font-style:italic;padding-top:6px;">
