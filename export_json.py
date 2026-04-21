@@ -978,12 +978,19 @@ def main():
     save("contract_index.json", _cidx)
 
     # ── seasonal_month.json ───────────────────────────────────────────────────
+    # Use inner GROUP BY (date, expiry) to deduplicate — margins has 3 rows per (date,symbol,expiry).
+    # Outer aggregation then gives correct counts and averages.
     cur.execute(
         """
         SELECT strftime('%m', date) as mon,
                AVG(initial_margin_pct), AVG(total_margin_pct), COUNT(*),
                MIN(initial_margin_pct), MAX(initial_margin_pct)
-        FROM margins WHERE symbol='NATURALGAS'
+        FROM (
+            SELECT strftime('%m', date) as date, expiry,
+                   initial_margin_pct, total_margin_pct
+            FROM margins WHERE symbol='NATURALGAS'
+            GROUP BY date, expiry
+        )
         GROUP BY mon ORDER BY mon
         """,
     )
@@ -1003,11 +1010,15 @@ def main():
         )
     save("seasonal_month.json", seasonal_month)
 
-    # Standard deviation per month (requires fetching raw vals)
+    # Standard deviation per month — deduplicated (date, expiry) raw values
     cur.execute(
         """
         SELECT strftime('%m', date) as mon, initial_margin_pct
-        FROM margins WHERE symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL
+        FROM (
+            SELECT strftime('%m', date) as date, expiry, initial_margin_pct
+            FROM margins WHERE symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL
+            GROUP BY date, expiry
+        )
         ORDER BY mon
         """,
     )
@@ -1027,7 +1038,12 @@ def main():
         SELECT strftime('%Y', date) as yr,
                AVG(initial_margin_pct), AVG(total_margin_pct), COUNT(*),
                MIN(initial_margin_pct), MAX(initial_margin_pct)
-        FROM margins WHERE symbol='NATURALGAS'
+        FROM (
+            SELECT strftime('%Y', date) as date, expiry,
+                   initial_margin_pct, total_margin_pct
+            FROM margins WHERE symbol='NATURALGAS'
+            GROUP BY date, expiry
+        )
         GROUP BY yr ORDER BY yr
         """,
     )
@@ -1098,8 +1114,12 @@ def main():
         return "181+"
 
     dte_data: dict = {}
+    seen_dte: set = set()  # dedup (date, expiry) — margins has 3 rows per pair
     for row in cur.fetchall():
         d, exp, im, tm = row[0], row[1], row[2], row[3]
+        if (d, exp) in seen_dte:
+            continue
+        seen_dte.add((d, exp))
         dte = compute_dte(exp, d)
         if dte < 0 or im is None:
             continue
