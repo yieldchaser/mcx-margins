@@ -248,8 +248,9 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
 .lc-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
 .lc-stat-value { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .lc-stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
-#lcStats { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 16px; }
+#lcStats { grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px; }
 @media (max-width: 900px) { #lcStats { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (max-width: 480px) { #lcStats { grid-template-columns: repeat(2, 1fr) !important; } }
 @media (max-width: 480px) { #lcStats { grid-template-columns: repeat(2, 1fr) !important; } }
 
 /* ── Horizon Presets ── */
@@ -560,9 +561,14 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <button id="lcSymNG"  class="lc-sym-btn lc-sym-active" title="NATURALGAS lifecycle">NATURALGAS</button>
           <button id="lcSymNGM" class="lc-sym-btn"               title="NATGASMINI lifecycle">NATGASMINI</button>
         </div>
-        <select id="lcContractSelect" title="Select any tracked contract" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-size:13px;font-family:'Inter',sans-serif;min-width:195px;flex-shrink:0;">
-          <option value="">&#x2014; Select contract &#x2014;</option>
-        </select>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <select id="lcYearSelect" title="Select year" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-size:13px;font-family:'Inter',sans-serif;min-width:90px;">
+            <option value="">Year</option>
+          </select>
+          <select id="lcMonthSelect" title="Select contract month" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-size:13px;font-family:'Inter',sans-serif;min-width:130px;">
+            <option value="">&#x2014; Month &#x2014;</option>
+          </select>
+        </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date">&#x1F4C5; Date</button>
           <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)">&#x23F1; DTE &#x2193;</button>
@@ -1731,44 +1737,57 @@ let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial',
 let _lcFullRows = [], _lcRC = null;
 
 // Build contract dropdown from contract_index.json — auto-ingests new contracts
+// LC Dropdown state
+let _lcAllEntries = [];
+
 async function buildLCDropdown() {
   const idx = await loadJSON('contract_index');
-  const entries = idx[_lcSym] || [];          // [{expiry, obs, first_date, last_date}]
-  // Group by calendar year
-  const byYear = {};
-  entries.forEach(e => {
-    const dyr = _contractDeliveryYear(e.expiry).toString();  // group by delivery year
-    if (!byYear[dyr]) byYear[dyr] = [];
-    byYear[dyr].push(e);
+  _lcAllEntries = idx[_lcSym] || [];
+
+  // Populate Year selector (delivery years, newest first)
+  const years = [...new Set(_lcAllEntries.map(e => _contractDeliveryYear(e.expiry).toString()))]
+    .sort((a, b) => +b - +a);
+  const yrSel = document.getElementById('lcYearSelect');
+  yrSel.innerHTML = '<option value="">Year</option>';
+  years.forEach(y => {
+    const o = document.createElement('option'); o.value = y; o.textContent = y;
+    yrSel.appendChild(o);
   });
-  const sel = document.getElementById('lcContractSelect');
-  sel.innerHTML = '<option value="">\u2014 Select contract \u2014</option>';
-  // Delivery years newest-first; within year sort by actual expiry date newest-first
-  Object.keys(byYear).sort((a,b) => +b - +a).forEach(dyr => {
-    const exps = byYear[dyr].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
-    const og = document.createElement('optgroup'); og.label = dyr;
-    exps.forEach(e => {
-      const o = document.createElement('option'); o.value = e.expiry;
-      o.textContent = _contractLabel(e.expiry) + '  \u00b7  ' + e.obs + ' obs';
-      og.appendChild(o);
-    });
-    sel.appendChild(og);
-  });
-  // Auto-select nearest future expiry; fallback to nearest past expiry
+
+  // Auto-select the year of the nearest future (or most recent past) expiry
   const now = Date.now();
   let bfe = null, bfd = Infinity, bpe = null, bpd = -Infinity;
-  entries.forEach(e => {
+  _lcAllEntries.forEach(e => {
     const d = _expiryDate(e.expiry) - now;
     if (d >= 0 && d < bfd) { bfd = d; bfe = e.expiry; }
     if (d <  0 && d > bpd) { bpd = d; bpe = e.expiry; }
   });
   const autoExp = bfe || bpe;
-  if (autoExp) { sel.value = autoExp; renderLifecycle(); }
+  if (autoExp) {
+    yrSel.value = _contractDeliveryYear(autoExp).toString();
+    _lcPopulateMonths(yrSel.value, autoExp);
+  }
+}
+
+function _lcPopulateMonths(year, autoSelectExpiry) {
+  const mSel = document.getElementById('lcMonthSelect');
+  mSel.innerHTML = '<option value="">\u2014 Month \u2014</option>';
+  if (!year) { renderLifecycle(); return; }
+  // Filter entries for chosen year, sort by expiry date newest-first
+  const inYear = _lcAllEntries
+    .filter(e => _contractDeliveryYear(e.expiry).toString() === year)
+    .sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+  inYear.forEach(e => {
+    const o = document.createElement('option'); o.value = e.expiry;
+    o.textContent = _contractLabel(e.expiry); // e.g. 'JAN 2026'
+    mSel.appendChild(o);
+  });
+  if (autoSelectExpiry) { mSel.value = autoSelectExpiry; renderLifecycle(); }
 }
 
 // Render lifecycle chart for selected contract
 async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
-  const expiry  = document.getElementById('lcContractSelect').value;
+  const expiry  = document.getElementById('lcMonthSelect').value;
   const emptyEl = document.getElementById('lcEmptyState');
   const statsEl = document.getElementById('lcStats');
   const rangeEl = document.getElementById('lcRangeWrapper');
@@ -1993,7 +2012,6 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   }
   const corrColor = corrVal !== '\u2014' && Math.abs(+corrVal) >= 0.5 ? '#d29922' : 'var(--text-muted)';
   statsEl.innerHTML =
-    '<div class="lc-stat"><div class="lc-stat-label">Observations</div><div class="lc-stat-value" style="color:var(--accent);">' + rows.length + '</div><div class="lc-stat-sub">data points captured</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">Peak</div><div class="lc-stat-value" style="color:#ef4444;">' + peakVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + peakDate + '</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">Trough</div><div class="lc-stat-value" style="color:#22c55e;">' + troughVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + troughDate + '</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">Hikes \u25b2</div><div class="lc-stat-value" style="color:#ef4444;">' + hikeCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp increases</div></div>' +
@@ -2007,7 +2025,10 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   if (!_lcInited) { _lcInited = true; buildLCDropdown(); }
 });
-document.getElementById('lcContractSelect').addEventListener('change', () => renderLifecycle());
+document.getElementById('lcYearSelect').addEventListener('change', function() {
+  _lcPopulateMonths(this.value, null);
+});
+document.getElementById('lcMonthSelect').addEventListener('change', () => renderLifecycle());
 
 // Horizon Presets for Lifecycle
 document.querySelectorAll('#lcPresets .horizon-btn').forEach(btn => {
