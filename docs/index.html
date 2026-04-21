@@ -223,6 +223,34 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
   #tooltipOverlay { padding:20px; max-width:92vw; }
   .data-table th, .data-table td { padding:8px; font-size:11px; }
 }
+
+/* ── Contract Lifecycle Explorer ── */
+.lc-sym-btn {
+  background: var(--surface2); color: var(--text-muted);
+  border: none; padding: 5px 13px; font-size: 12px;
+  font-family: 'Inter', sans-serif; cursor: pointer; font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.lc-sym-btn:hover { color: var(--text); }
+.lc-sym-active { background: var(--accent) !important; color: white !important; }
+.lc-ctrl {
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 10px; font-size: 12px; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.lc-ctrl:hover { color: var(--text); }
+.lc-ctrl.lc-active { background: var(--accent); color: white; border-color: var(--accent); }
+.lc-stat {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 14px;
+}
+.lc-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+.lc-stat-value { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.lc-stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+#lcStats { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 16px; }
+@media (max-width: 900px) { #lcStats { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (max-width: 480px) { #lcStats { grid-template-columns: repeat(2, 1fr) !important; } }
 </style>
 </head>
 <body>
@@ -410,6 +438,49 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       <div id="decompSummary" style="margin-bottom:10px;font-size:13px;color:var(--text-muted);"></div>
       <div class="chart-container" style="height:300px;"><canvas id="chartDecomp"></canvas></div>
     </div>
+
+    <!-- ── Contract Lifecycle Explorer ── -->
+    <div class="card" style="margin-top:16px;" id="lifecycleCard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+        <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Explorer" style="margin-bottom:0;">Contract Lifecycle Explorer</div>
+        <div style="font-size:11px;color:var(--text-muted);padding-top:2px;">Full margin journey · self-updating · 196+ contracts</div>
+      </div>
+      <!-- Controls -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);margin-bottom:14px;">
+        <div style="display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;flex-shrink:0;">
+          <button id="lcSymNG"  class="lc-sym-btn lc-sym-active" title="NATURALGAS lifecycle">NATURALGAS</button>
+          <button id="lcSymNGM" class="lc-sym-btn"               title="NATGASMINI lifecycle">NATGASMINI</button>
+        </div>
+        <select id="lcContractSelect" title="Select any tracked contract" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-size:13px;font-family:'Inter',sans-serif;min-width:195px;flex-shrink:0;">
+          <option value="">&#x2014; Select contract &#x2014;</option>
+        </select>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date">&#x1F4C5; Date</button>
+          <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)">&#x23F1; DTE &#x2193;</button>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="lc-ctrl lc-active lc-metric-btn" data-metric="initial" title="Initial Margin %">Initial %</button>
+          <button class="lc-ctrl lc-metric-btn"           data-metric="total"   title="Total Margin %">Total %</button>
+          <button class="lc-ctrl lc-metric-btn"           data-metric="vol"     title="Daily Volatility %">Daily Vol</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+          <input type="checkbox" id="lcShowHH" style="accent-color:#fb8f44;width:14px;height:14px;">
+          <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
+        </label>
+      </div>
+      <!-- Chart with empty-state overlay -->
+      <div style="position:relative;">
+        <div id="lcEmptyState" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;background:var(--surface);border-radius:6px;border:1px dashed var(--border);text-align:center;gap:6px;padding:24px;pointer-events:none;">
+          <div style="font-size:34px;line-height:1;opacity:0.28;">&#x1F4C8;</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-muted);">Select a contract above to explore its lifecycle</div>
+          <div style="font-size:11px;color:var(--text-muted);opacity:0.65;">196+ contracts tracked &#x00B7; new ones auto-appear from daily updates</div>
+        </div>
+        <div class="chart-container" style="height:360px;"><canvas id="chartLifecycle"></canvas></div>
+      </div>
+      <!-- Stats strip -->
+      <div id="lcStats" style="display:none;"></div>
+    </div>
+
   </div>
 
   <div id="tab-seasonality" class="tab-content">
@@ -1314,6 +1385,323 @@ document.querySelector('[data-tab="history"]').addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// PART 4.5 — Contract Lifecycle Explorer
+// Self-sustaining: reads existing history JSON, auto-ingests new
+// contracts from daily updates — zero new data files required.
+// ═══════════════════════════════════════════════════════════════════
+
+// Month-name → 0-based index for expiry string parsing
+const _MON = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+// Parse MCX expiry "27APR2026" → JS Date
+function _expiryDate(exp) {
+  return new Date(+exp.slice(5), _MON[exp.slice(2,5)], +exp.slice(0,2));
+}
+// Pearson r (returns null if insufficient data)
+function _pearsonR(xs, ys) {
+  const n = xs.length; if (n < 3) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my), 0);
+  const den = Math.sqrt(xs.reduce((s,x)=>s+(x-mx)**2,0) * ys.reduce((s,y)=>s+(y-my)**2,0));
+  return den === 0 ? null : +(num/den).toFixed(2);
+}
+// Hex color (#388bfd) → rgba(r,g,b,a) string
+function _hexRgba(hex, a) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+
+// Metric definitions — fn extracts numeric value from a history row
+const LC_METRIC = {
+  initial: { label:'Initial Margin %', color:'#388bfd', fn: r => r.initial_margin_pct },
+  total:   { label:'Total Margin %',   color:'#a371f7', fn: r => r.total_margin_pct   },
+  vol:     { label:'Daily Vol %',      color:'#fb8f44', fn: r => r.daily_volatility > 0 ? +(r.daily_volatility*100).toFixed(4) : null }
+};
+const LC_HH_START = '2021-04-22'; // earliest available HH price data
+
+let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial', _lcInited = false;
+
+// Build contract dropdown from loaded JSON — auto-ingests any new contracts
+async function buildLCDropdown() {
+  const raw = await loadJSON(_lcSym === 'ng' ? 'history_ng' : 'history_ngm');
+  // Count observations per contract expiry
+  const tally = {};
+  raw.forEach(r => { tally[r.expiry] = (tally[r.expiry] || 0) + 1; });
+  // Group by calendar year
+  const byYear = {};
+  Object.keys(tally).forEach(exp => {
+    const yr = exp.slice(5); // last 4 chars of "27APR2026" = "2026"
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(exp);
+  });
+  const sel = document.getElementById('lcContractSelect');
+  sel.innerHTML = '<option value="">\u2014 Select contract \u2014</option>';
+  // Years newest-first; within year sort by actual expiry date newest-first
+  Object.keys(byYear).sort((a,b) => +b - +a).forEach(yr => {
+    const exps = byYear[yr].sort((a,b) => _expiryDate(b) - _expiryDate(a));
+    const og = document.createElement('optgroup'); og.label = yr;
+    exps.forEach(exp => {
+      const o = document.createElement('option'); o.value = exp;
+      o.textContent = exp + '  \u00b7  ' + tally[exp] + ' obs';
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  // Auto-select nearest future expiry; fallback to nearest past expiry
+  const now = Date.now();
+  let bfe = null, bfd = Infinity, bpe = null, bpd = -Infinity;
+  Object.keys(tally).forEach(exp => {
+    const d = _expiryDate(exp) - now;
+    if (d >= 0 && d < bfd) { bfd = d; bfe = exp; }
+    if (d <  0 && d > bpd) { bpd = d; bpe = exp; }
+  });
+  const autoExp = bfe || bpe;
+  if (autoExp) { sel.value = autoExp; renderLifecycle(); }
+}
+
+// Render lifecycle chart for selected contract
+async function renderLifecycle() {
+  const expiry  = document.getElementById('lcContractSelect').value;
+  const emptyEl = document.getElementById('lcEmptyState');
+  const statsEl = document.getElementById('lcStats');
+
+  if (!expiry) {
+    emptyEl.innerHTML = '<div style="font-size:34px;line-height:1;opacity:0.28;">&#x1F4C8;</div><div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:8px;">Select a contract above</div><div style="font-size:11px;color:var(--text-muted);opacity:0.65;margin-top:4px;">Explore full margin history from first observation to expiry</div>';
+    emptyEl.style.display = 'flex';
+    statsEl.style.display  = 'none';
+    if (_lcChart) { _lcChart.destroy(); _lcChart = null; }
+    return;
+  }
+
+  const raw  = await loadJSON(_lcSym === 'ng' ? 'history_ng' : 'history_ngm');
+  const rows = raw.filter(r => r.expiry === expiry).sort((a,b) => a.date < b.date ? -1 : 1);
+
+  if (rows.length < 2) {
+    emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + rows.length + '</strong> observation for <strong>' + expiry + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
+    emptyEl.style.display = 'flex';
+    statsEl.style.display  = 'none';
+    if (_lcChart) { _lcChart.destroy(); _lcChart = null; }
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  const ms     = LC_METRIC[_lcMetric];
+  const labels = _lcAxisMode === 'date' ? rows.map(r => r.date) : rows.map(r => r.dte);
+  const yVals  = rows.map(ms.fn);
+  const thr    = _lcMetric === 'vol' ? 0.1 : 0.5;
+
+  // Change-event arrays — same length as rows, null where no significant change
+  const hikeData = rows.map((r,i) => {
+    if (i === 0) return null;
+    const p = ms.fn(rows[i-1]), c = ms.fn(r);
+    return (p != null && c != null && (c-p) >= thr) ? c : null;
+  });
+  const cutData = rows.map((r,i) => {
+    if (i === 0) return null;
+    const p = ms.fn(rows[i-1]), c = ms.fn(r);
+    return (p != null && c != null && (c-p) <= -thr) ? c : null;
+  });
+  const hikeCount = hikeData.filter(v => v !== null).length;
+  const cutCount  = cutData.filter(v => v !== null).length;
+
+  // Primary dataset
+  const datasets = [{
+    label: ms.label, data: yVals,
+    borderColor: ms.color, backgroundColor: _hexRgba(ms.color, 0.12),
+    fill: true, tension: 0.25,
+    pointRadius: rows.length <= 40 ? 3 : 0, pointHoverRadius: 5,
+    borderWidth: 2, yAxisID: 'y', spanGaps: false
+  }];
+
+  // Hike markers (red upward triangles)
+  if (hikeCount > 0) datasets.push({
+    label: '\u25b2 Hikes (' + hikeCount + ')',
+    data: hikeData, showLine: false,
+    backgroundColor: '#ef4444', borderColor: 'rgba(255,255,255,0.8)', borderWidth: 1.5,
+    pointRadius: hikeData.map(v => v !== null ? 8 : 0),
+    pointHoverRadius: hikeData.map(v => v !== null ? 10 : 0),
+    pointStyle: 'triangle', yAxisID: 'y'
+  });
+  // Cut markers (green downward triangles)
+  if (cutCount > 0) datasets.push({
+    label: '\u25bc Cuts (' + cutCount + ')',
+    data: cutData, showLine: false,
+    backgroundColor: '#22c55e', borderColor: 'rgba(255,255,255,0.8)', borderWidth: 1.5,
+    pointRadius: cutData.map(v => v !== null ? 8 : 0),
+    pointHoverRadius: cutData.map(v => v !== null ? 10 : 0),
+    pointStyle: 'triangle', rotation: 180, yAxisID: 'y'
+  });
+
+  // HH overlay eligibility
+  const hhCheck   = document.getElementById('lcShowHH');
+  const hhLabelEl = document.getElementById('lcHHLabel');
+  const contractMaxDate = rows[rows.length-1]?.date || '';
+  const hhEligible = contractMaxDate >= LC_HH_START && _lcMetric !== 'vol';
+  hhCheck.disabled  = !hhEligible;
+  hhLabelEl.style.opacity = hhEligible ? '1' : '0.4';
+  hhLabelEl.title = hhEligible ? '' : 'HH data from Apr 2021 onwards \u00b7 not applicable for Vol metric';
+
+  const scales = {
+    x: {
+      title: { display: true, text: _lcAxisMode === 'dte' ? 'Days to Expiry' : 'Date', color: '#8b949e', font: { size: 10 } },
+      ticks: { maxTicksLimit: 16, font: { size: 10 }, maxRotation: 45 }
+    },
+    y: { title: { display: true, text: ms.label, color: '#8b949e' }, position: 'left' }
+  };
+
+  // Optionally load and align HH price data
+  let hhPairs = null;
+  if (hhCheck.checked && hhEligible) {
+    try {
+      const hhData = await loadJSON('hh_price');
+      const pm = {}; hhData.prices.forEach(p => { pm[p.date] = p.price; });
+      const aligned = rows.map(r => pm[r.date] ?? null);
+      if (aligned.some(v => v !== null)) {
+        hhPairs = rows.map((r,i) => ({ m: ms.fn(r), h: aligned[i] })).filter(p => p.m != null && p.h != null);
+        datasets.push({
+          label: 'HH Price ($/MMBtu)',
+          data: aligned, borderColor: '#fb8f44', backgroundColor: 'transparent',
+          tension: 0.25, pointRadius: 0, borderWidth: 2, borderDash: [5,3],
+          yAxisID: 'yHH', spanGaps: true
+        });
+        scales.yHH = {
+          title: { display: true, text: 'HH ($/MMBtu)', color: '#fb8f44' },
+          position: 'right', grid: { drawOnChartArea: false }
+        };
+      }
+    } catch(e) { console.warn('LC: HH overlay failed:', e); }
+  }
+
+  // Tender zone highlight — first index where DTE drops to/below 30
+  const tenderIdx = rows.findIndex(r => r.dte <= 30);
+  const lcTenderPlugin = {
+    id: 'lcTender',
+    beforeDatasetsDraw(chart) {
+      if (tenderIdx < 0) return;
+      const { ctx, chartArea: { left, right, top, bottom }, scales: sc } = chart;
+      const x0 = sc.x.getPixelForValue(tenderIdx);
+      if (x0 >= right || x0 < left) return;
+      ctx.save();
+      ctx.fillStyle = 'rgba(239,68,68,0.07)';
+      ctx.fillRect(x0, top, right - x0, bottom - top);
+      ctx.strokeStyle = 'rgba(239,68,68,0.3)';
+      ctx.setLineDash([4,3]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x0,top); ctx.lineTo(x0,bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(239,68,68,0.6)';
+      ctx.fillText('\u25c4 Tender Zone', x0 + 5, top + 13);
+      ctx.restore();
+    }
+  };
+
+  if (_lcChart) { _lcChart.destroy(); _lcChart = null; }
+  _lcChart = new Chart(document.getElementById('chartLifecycle'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500, easing: 'easeInOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            title: ctx => {
+              const i = ctx[0]?.dataIndex ?? 0, r = rows[i];
+              if (!r) return '';
+              return _lcAxisMode === 'dte'
+                ? expiry + '  \u00b7  DTE: ' + r.dte + 'd  \u00b7  ' + r.date
+                : expiry + '  \u00b7  ' + r.date + '  \u00b7  DTE: ' + r.dte + 'd';
+            },
+            afterBody: ctx => {
+              const i = ctx[0]?.dataIndex ?? 0, r = rows[i]; if (!r) return [];
+              const lines = [];
+              if (r.tender_margin_pct > 0) lines.push('Tender: ' + r.tender_margin_pct.toFixed(2) + '%');
+              if (i > 0) {
+                const p = ms.fn(rows[i-1]), c = ms.fn(r);
+                if (p != null && c != null && Math.abs(c-p) >= 0.01)
+                  lines.push('\u0394: ' + (c-p > 0 ? '+' : '') + (c-p).toFixed(2) + '%');
+              }
+              return lines;
+            }
+          }
+        }
+      },
+      scales
+    },
+    plugins: [lcTenderPlugin]
+  });
+
+  // Stats strip — 6 summary tiles
+  const vals = yVals.filter(v => v != null);
+  if (!vals.length) { statsEl.style.display = 'none'; return; }
+  const peakVal   = Math.max(...vals), troughVal = Math.min(...vals);
+  const peakIdx   = yVals.indexOf(peakVal), troughIdx = yVals.indexOf(troughVal);
+  const peakDate   = rows[peakIdx]?.date   || '\u2014';
+  const troughDate = rows[troughIdx]?.date || '\u2014';
+  let corrVal = '\u2014', corrSub = 'Enable HH overlay to compute';
+  if (hhPairs && hhPairs.length >= 3) {
+    const rv = _pearsonR(hhPairs.map(p=>p.m), hhPairs.map(p=>p.h));
+    if (rv !== null) { corrVal = rv.toFixed(2); corrSub = 'Pearson vs HH (n=' + hhPairs.length + ')'; }
+  }
+  const corrColor = corrVal !== '\u2014' && Math.abs(+corrVal) >= 0.5 ? '#d29922' : 'var(--text-muted)';
+  statsEl.innerHTML =
+    '<div class="lc-stat"><div class="lc-stat-label">Observations</div><div class="lc-stat-value" style="color:var(--accent);">' + rows.length + '</div><div class="lc-stat-sub">data points captured</div></div>' +
+    '<div class="lc-stat"><div class="lc-stat-label">Peak</div><div class="lc-stat-value" style="color:#ef4444;">' + peakVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + peakDate + '</div></div>' +
+    '<div class="lc-stat"><div class="lc-stat-label">Trough</div><div class="lc-stat-value" style="color:#22c55e;">' + troughVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + troughDate + '</div></div>' +
+    '<div class="lc-stat"><div class="lc-stat-label">Hikes \u25b2</div><div class="lc-stat-value" style="color:#ef4444;">' + hikeCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp increases</div></div>' +
+    '<div class="lc-stat"><div class="lc-stat-label">Cuts \u25bc</div><div class="lc-stat-value" style="color:#22c55e;">' + cutCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp decreases</div></div>' +
+    '<div class="lc-stat"><div class="lc-stat-label">HH Correlation</div><div class="lc-stat-value" style="color:' + corrColor + ';">' + corrVal + '</div><div class="lc-stat-sub">' + corrSub + '</div></div>';
+  statsEl.style.display = 'grid';
+  attachTooltips();
+}
+
+// ── Wire all lifecycle controls ──
+document.querySelector('[data-tab="history"]').addEventListener('click', () => {
+  if (!_lcInited) { _lcInited = true; buildLCDropdown(); }
+});
+document.getElementById('lcContractSelect').addEventListener('change', renderLifecycle);
+document.getElementById('lcAxisDate').addEventListener('click', () => {
+  if (_lcAxisMode === 'date') return;
+  _lcAxisMode = 'date';
+  document.getElementById('lcAxisDate').classList.add('lc-active');
+  document.getElementById('lcAxisDTE').classList.remove('lc-active');
+  renderLifecycle();
+});
+document.getElementById('lcAxisDTE').addEventListener('click', () => {
+  if (_lcAxisMode === 'dte') return;
+  _lcAxisMode = 'dte';
+  document.getElementById('lcAxisDTE').classList.add('lc-active');
+  document.getElementById('lcAxisDate').classList.remove('lc-active');
+  renderLifecycle();
+});
+document.querySelectorAll('.lc-metric-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (_lcMetric === btn.dataset.metric) return;
+    _lcMetric = btn.dataset.metric;
+    document.querySelectorAll('.lc-metric-btn').forEach(b => b.classList.remove('lc-active'));
+    btn.classList.add('lc-active');
+    renderLifecycle();
+  });
+});
+document.getElementById('lcSymNG').addEventListener('click', () => {
+  if (_lcSym === 'ng') return;
+  _lcSym = 'ng';
+  document.getElementById('lcSymNG').classList.add('lc-sym-active');
+  document.getElementById('lcSymNGM').classList.remove('lc-sym-active');
+  buildLCDropdown();
+});
+document.getElementById('lcSymNGM').addEventListener('click', () => {
+  if (_lcSym === 'ngm') return;
+  _lcSym = 'ngm';
+  document.getElementById('lcSymNGM').classList.add('lc-sym-active');
+  document.getElementById('lcSymNG').classList.remove('lc-sym-active');
+  buildLCDropdown();
+});
+document.getElementById('lcShowHH').addEventListener('change', renderLifecycle);
+
+// ═══════════════════════════════════════════════════════════════════
 // PART 5 — Seasonality Tab
 // ═══════════════════════════════════════════════════════════════════
 
@@ -2193,6 +2581,16 @@ Green bars = margin decreased. Red bars = margin increased.`
     body: `Structural margin is what the model predicts purely from current volatility using the Regime B OLS regression.<br><br>
 <strong>Policy buffer</strong> is the excess MCX has charged beyond that — positive values indicate extra caution, negative values are rare and signal potential underpricing.<br><br>
 Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. The white line = actual margin charged.`
+  },
+  "Contract Lifecycle Explorer": {
+    title: "Contract Lifecycle Explorer",
+    body: `Tracks the <strong>complete margin history</strong> of any individual MCX contract — from first data capture through to its expiry date.<br><br>
+<strong>X-axis: Date</strong> — calendar timeline from first observation to last.<br>
+<strong>X-axis: DTE ↓</strong> — days-to-expiry countdown (far-out → expiry). Ideal for comparing two contracts at the same lifecycle stage regardless of when they traded.<br><br>
+<strong>Tender Zone</strong> (red shaded band) — DTE ≤ 30. Progressive physical-delivery margin applies here; this is where spikes are most likely.<br><br>
+<strong>▲ Hike markers</strong> — days where margin increased ≥ 0.5pp.<br>
+<strong>▼ Cut markers</strong> — days where margin decreased ≥ 0.5pp.<br><br>
+<em>Self-sustaining:</em> Every new contract captured by the daily 8 PM IST update script automatically appears in this dropdown — no code changes required.`
   },
   "Stress Score": {
     title: "Composite Stress Score",
