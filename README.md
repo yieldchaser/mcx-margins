@@ -14,6 +14,7 @@ The standalone layout translates scraped SQLite streams into structural JSON agg
 
 ### 🚀 Major Feature Sets
 
+*   **High-Fidelity Interaction Engine**: Implements institutional-grade visual tracking including synchronized vertical crosshairs, pulsing data-point highlights, and an **Interactive Measurement Tool** (drag-to-measure) for instant delta and duration calculations across any line chart.
 *   **Contextual Tooltip Engine**: A custom "glassmorphism" overlay system provides personalized, context-rich tooltips across the dashboard. Table rows recalculate term structure deviations on the fly, and charts provide English-language analytical deductions (e.g., classifying a contract as 'historically cheap' or 'expensive' upon hover).
 *   **Overview Hub**: Live front-month metrics, composite conditional Regime detection (Structural vs Elevated states), and a 0–100 weighted Stress Score index to signal funding risk.
 *   **Analytics Layer**:
@@ -41,6 +42,7 @@ The dashboard is structured into six analytical tabs, each hosting specialized v
 *   **Margin Spread (NATURALGAS vs NATGASMINI)**: Tracks the basis spread directly between the large and mini contracts to highlight liquidity divergences or exchange pricing inefficiencies.
 
 ### 3. History Tab
+*   **Triple-Layer Independent Zoom**: Features three decoupled viewports for Margin, Volatility, and Decomposition analysis. Each chart is equipped with its own dedicated double-thumb range slider, allowing you to slice time-series data independently for deeper comparative study.
 *   **Initial Margin % Over Time**: A longitudinal line chart mapping front-month margin requirements from 2010 to Present. Supports dynamic timeframe toggling (1M through All-time) and an overlay of underlying Henry Hub (Spot) Prices.
 *   **Daily Volatility Over Time**: The sister chart to margin history, demonstrating how structural volatility regimes trigger exchange margin interventions.
 *   **Margin vs Volatility (Scatter)**: Maps the base relationship between daily volatility (X) and margin requirement (Y). Visualizes the structural relationship and the exchange's linear reactivity models.
