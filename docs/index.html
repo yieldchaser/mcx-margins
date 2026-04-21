@@ -1633,7 +1633,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
         _histFullRaw.filter(d => d.daily_volatility != null && d.initial_margin_pct != null).forEach(d => {
           const pt = { x: +(d.daily_volatility * 100).toFixed(3), y: d.initial_margin_pct, date: d.date };
           const yr = parseInt(d.date.substring(0,4));
-          if (yr >= 2019 && pt.x >= 3.5) scatterB.push(pt);
+          if (yr >= 2019 && pt.x >= 4.5) scatterB.push(pt);  // matches Python _classify_regime: vol>=4.5% AND year>=2019
           else scatterA.push(pt);
         });
         const datasets = [
@@ -1646,7 +1646,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
           if (allVolPts.length > 0) {
             const minV = Math.min(...allVolPts), maxV = Math.max(...allVolPts);
             datasets.push({ label: `Regime A OLS`, data: [{x: minV, y: ra.slope*minV + ra.intercept}, {x: Math.min(maxV, 6), y: ra.slope*Math.min(maxV,6) + ra.intercept}], type: 'line', borderColor: 'rgba(56,139,253,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
-            datasets.push({ label: `Regime B OLS`, data: [{x: Math.max(minV, 3), y: rb.slope*Math.max(minV,3) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}], type: 'line', borderColor: 'rgba(251,143,68,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
+            datasets.push({ label: `Regime B OLS`, data: [{x: Math.max(minV, 4.5), y: rb.slope*Math.max(minV,4.5) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}], type: 'line', borderColor: 'rgba(251,143,68,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
           }
         }
         if (histChartScatter) histChartScatter.destroy();
