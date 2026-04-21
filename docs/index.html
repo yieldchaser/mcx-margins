@@ -1094,10 +1094,10 @@ async function renderOverview() {
             : hp <= 66 ? 'the normal historical range'
             : hp <= 80 ? 'elevated territory (watch for hikes)'
             : 'historically expensive territory';
-          hpTitle = `${c.expiry} margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp}% of all historical readings at equivalent DTE (±15d). This is ${zone}.`;
+          hpTitle = `${_contractLabel(c.expiry)} (${c.expiry}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp}% of all historical readings at equivalent DTE (±15d). This is ${zone}.`;
         }
         
-        const dynTitle = `Term Structure: ${c.expiry}`;
+        const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${c.expiry})`;
         const curMargin = c.total_margin_pct.toFixed(2);
         const frontCur = rows.length > 0 ? rows[0].total_margin_pct.toFixed(2) : curMargin;
         const diffToFront = (c.total_margin_pct - rows[0].total_margin_pct).toFixed(2);
@@ -1108,7 +1108,7 @@ async function renderOverview() {
         const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
 
         return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
-          <td><strong>${c.expiry}</strong></td>
+          <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
           <td>${c.elm_pct.toFixed(2)}%</td>
@@ -1148,7 +1148,7 @@ async function renderOverview() {
     new Chart(document.getElementById('miniForwardCurve'), {
       type: 'line',
       data: {
-        labels: fwdNG.map(c => c.expiry),
+        labels: fwdNG.map(c => _expLabel(c.expiry)),
         datasets: [
           {
             label: 'NATURALGAS',
@@ -1239,11 +1239,11 @@ async function renderOverview() {
         rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.07);';
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
-      const dynPTitle = `Panic Signal: ${c.expiry}`;
+      const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${c.expiry})`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
       if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
       return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
-        <td><strong>${c.expiry}</strong></td>
+        <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
         <td>${probCell}</td>
@@ -1385,7 +1385,7 @@ function renderFwdCone() {
   fwdChart = new Chart(document.getElementById('chartFwdFull'), {
     type: 'line',
     data: {
-      labels: ng.map(c => `${c.expiry} (${c.dte}d)`),
+      labels: ng.map(c => `${_expLabel(c.expiry)} (${c.dte}d)`),
       datasets
     },
     options: {
@@ -1466,7 +1466,7 @@ async function renderTermStructure() {
     new Chart(document.getElementById('chartVolCurve'), {
       type: 'line',
       data: {
-        labels: ng.map(c => c.expiry),
+        labels: ng.map(c => _expLabel(c.expiry)),
         datasets: [{
           label: 'Ann. Volatility %',
           data: ng.map(c => c.annualized_volatility ? +(c.annualized_volatility * 100).toFixed(2) : null),
@@ -1491,7 +1491,7 @@ async function renderTermStructure() {
     new Chart(document.getElementById('chartSpread'), {
       type: 'bar',
       data: {
-        labels: ng.map(c => c.expiry),
+        labels: ng.map(c => _expLabel(c.expiry)),
         datasets: [{
           label: 'NG − NGM Margin Spread %',
           data: spreadData,
@@ -1723,6 +1723,10 @@ function _contractDeliveryYear(expiry) {
   const mon3 = expiry.slice(2, 5);
   const yr   = parseInt(expiry.slice(5), 10);
   return _LC_MONTHS_3.indexOf(mon3) === 11 ? yr + 1 : yr; // Dec rolls to next year
+}
+// Compact chart-axis label: "27APR2026" → "May '26"
+function _expLabel(expiry) {
+  return _contractLabel(expiry).replace(' 20', " '");
 }
 
 
@@ -2506,7 +2510,7 @@ async function renderAnalytics() {
 
     new Chart(document.getElementById('chartPanicFull'), {
       type: 'line',
-      data: { labels: ng.map(c => c.expiry), datasets: predDatasets },
+      data: { labels: ng.map(c => _expLabel(c.expiry)), datasets: predDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -2781,7 +2785,7 @@ function renderExplorerPage() {
   document.getElementById('explorerBody').innerHTML = slice.map(d => `
     <tr>
       <td>${d.date}</td>
-      <td>${d.expiry}</td>
+      <td><span style="font-weight:600;">${_contractLabel(d.expiry)}</span><div style="font-size:10px;color:var(--text-muted);">${d.expiry}</div></td>
       <td>${d.dte}</td>
       <td>${d.initial_margin_pct?.toFixed(2) ?? '—'}%</td>
       <td>${d.elm_pct?.toFixed(2) ?? '—'}%</td>
