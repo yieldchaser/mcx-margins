@@ -1410,6 +1410,26 @@ function _hexRgba(hex, a) {
   return 'rgba('+r+','+g+','+b+','+a+')';
 }
 
+// MCX NG naming: contract expires ~26th of month M, delivers month M+1
+// e.g. "26MAR2026" = April 2026 contract  |  "28DEC2025" = January 2026 contract
+const _LC_MONTHS_3 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const _LC_MONTHS_DISP = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _contractLabel(expiry) {
+  // expiry = "27APR2026"  →  parse month+year, add 1 month
+  const mon3 = expiry.slice(2, 5);                     // "APR"
+  const yr   = parseInt(expiry.slice(5), 10);           // 2026
+  const mi   = _LC_MONTHS_3.indexOf(mon3);              // 3
+  const dmi  = (mi + 1) % 12;                           // 4 = MAY
+  const dyr  = mi === 11 ? yr + 1 : yr;                 // roll Jan if Dec
+  return _LC_MONTHS_DISP[dmi] + ' ' + dyr;              // "May 2026"
+}
+function _contractDeliveryYear(expiry) {
+  const mon3 = expiry.slice(2, 5);
+  const yr   = parseInt(expiry.slice(5), 10);
+  return _LC_MONTHS_3.indexOf(mon3) === 11 ? yr + 1 : yr; // Dec rolls to next year
+}
+
+
 // Metric definitions — fn extracts numeric value from a history row
 const LC_METRIC = {
   initial: { label:'Initial Margin %', color:'#388bfd', fn: r => r.initial_margin_pct },
@@ -1427,19 +1447,19 @@ async function buildLCDropdown() {
   // Group by calendar year
   const byYear = {};
   entries.forEach(e => {
-    const yr = e.expiry.slice(5);              // last 4 chars of "27APR2026" = "2026"
-    if (!byYear[yr]) byYear[yr] = [];
-    byYear[yr].push(e);
+    const dyr = _contractDeliveryYear(e.expiry).toString();  // group by delivery year
+    if (!byYear[dyr]) byYear[dyr] = [];
+    byYear[dyr].push(e);
   });
   const sel = document.getElementById('lcContractSelect');
   sel.innerHTML = '<option value="">\u2014 Select contract \u2014</option>';
-  // Years newest-first; within year sort by actual expiry date newest-first
-  Object.keys(byYear).sort((a,b) => +b - +a).forEach(yr => {
-    const exps = byYear[yr].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
-    const og = document.createElement('optgroup'); og.label = yr;
+  // Delivery years newest-first; within year sort by actual expiry date newest-first
+  Object.keys(byYear).sort((a,b) => +b - +a).forEach(dyr => {
+    const exps = byYear[dyr].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+    const og = document.createElement('optgroup'); og.label = dyr;
     exps.forEach(e => {
       const o = document.createElement('option'); o.value = e.expiry;
-      o.textContent = e.expiry + '  \u00b7  ' + e.obs + ' obs';
+      o.textContent = _contractLabel(e.expiry) + '  \u00b7  ' + e.obs + ' obs';
       og.appendChild(o);
     });
     sel.appendChild(og);
@@ -1475,7 +1495,8 @@ async function renderLifecycle() {
   const rows = (contractData ? contractData.rows : []).sort((a,b) => a.date < b.date ? -1 : 1);
 
   if (rows.length < 2) {
-    emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + rows.length + '</strong> observation for <strong>' + expiry + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
+    const lbl = _contractLabel(expiry);
+    emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + rows.length + '</strong> observation for <strong>' + lbl + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
     emptyEl.style.display = 'flex';
     statsEl.style.display  = 'none';
     if (_lcChart) { _lcChart.destroy(); _lcChart = null; }
@@ -1609,9 +1630,10 @@ async function renderLifecycle() {
             title: ctx => {
               const i = ctx[0]?.dataIndex ?? 0, r = rows[i];
               if (!r) return '';
+              const lbl = _contractLabel(expiry);
               return _lcAxisMode === 'dte'
-                ? expiry + '  \u00b7  DTE: ' + r.dte + 'd  \u00b7  ' + r.date
-                : expiry + '  \u00b7  ' + r.date + '  \u00b7  DTE: ' + r.dte + 'd';
+                ? lbl + '  \u00b7  DTE: ' + r.dte + 'd  \u00b7  ' + r.date
+                : lbl + '  \u00b7  ' + r.date + '  \u00b7  DTE: ' + r.dte + 'd';
             },
             afterBody: ctx => {
               const i = ctx[0]?.dataIndex ?? 0, r = rows[i]; if (!r) return [];
