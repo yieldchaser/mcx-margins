@@ -582,7 +582,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <button class="lc-ctrl lc-metric-btn"           data-metric="vol"     title="Daily Volatility %">Daily Vol</button>
         </div>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-          <input type="checkbox" id="lcShowHH" style="accent-color:#fb8f44;width:14px;height:14px;">
+          <input type="checkbox" id="lcShowHH" style="accent-color:#3fb950;width:14px;height:14px;">
           <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
         </label>
         <!-- Horizon presets — right-aligned in the controls row -->
@@ -1941,12 +1941,12 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
         hhPairs = rows.map((r,i) => ({ m: ms.fn(r), h: aligned[i] })).filter(p => p.m != null && p.h != null);
         datasets.push({
           label: 'HH Price ($/MMBtu)',
-          data: aligned, borderColor: '#fb8f44', backgroundColor: 'transparent',
+          data: aligned, borderColor: '#3fb950', backgroundColor: 'transparent',
           tension: 0.25, pointRadius: 0, borderWidth: 2, borderDash: [5,3],
           yAxisID: 'yHH', spanGaps: true
         });
         scales.yHH = {
-          title: { display: true, text: 'HH ($/MMBtu)', color: '#fb8f44' },
+          title: { display: true, text: 'HH ($/MMBtu)', color: '#3fb950' },
           position: 'right', grid: { drawOnChartArea: false }
         };
       }
