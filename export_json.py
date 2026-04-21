@@ -514,6 +514,12 @@ def _export_curve_cone(cur, fwd, latest_date):
         vals_at_dte = sorted([tm for d, tm in dte_margin_all if abs(d - dte) <= 15])
         hist_pct = round(sum(1 for v in vals_at_dte if v <= current) / len(vals_at_dte) * 100) if vals_at_dte else 50
 
+        # Trailing 5Y percentile — no hardcoded year, uses rolling dte_margin_recent
+        vals_at_dte_rec = sorted([tm for d, tm in dte_margin_recent if abs(d - dte) <= 15])
+        if not vals_at_dte_rec:
+            vals_at_dte_rec = sorted([tm for d, tm in dte_margin_recent if abs(d - dte) <= 30])
+        hist_pct_recent = round(sum(1 for v in vals_at_dte_rec if v <= current) / len(vals_at_dte_rec) * 100) if vals_at_dte_rec else hist_pct
+
         cone.append({
             "expiry": contract["expiry"],
             "dte": dte,
@@ -521,6 +527,7 @@ def _export_curve_cone(cur, fwd, latest_date):
             "p10_alltime": p10_all, "p50_alltime": p50_all, "p90_alltime": p90_all, "n_alltime": n_all,
             "p10_recent": p10_rec, "p50_recent": p50_rec, "p90_recent": p90_rec, "n_recent": n_rec,
             "hist_pct": hist_pct,
+            "hist_pct_recent": hist_pct_recent,
         })
 
     save("curve_cone.json", {"as_of": latest_date, "cone": cone})
@@ -1086,7 +1093,10 @@ def main():
         },
     )
 
-    # ── dte_curve.json ────────────────────────────────────────────────────────
+    # ── dte_curve.json — all-time + trailing 5Y ───────────────────────────────
+    from datetime import datetime as _dt, timedelta as _td
+    _cutoff_5y = (_dt.strptime(max_date, "%Y-%m-%d") - _td(days=5 * 365)).strftime("%Y-%m-%d")
+
     cur.execute(
         "SELECT date, expiry, initial_margin_pct, tender_margin_pct FROM margins WHERE symbol='NATURALGAS'",
     )
@@ -1097,23 +1107,17 @@ def main():
     }
 
     def get_bin(dte):
-        if dte <= 7:
-            return "0-7"
-        elif dte <= 14:
-            return "8-14"
-        elif dte <= 30:
-            return "15-30"
-        elif dte <= 60:
-            return "31-60"
-        elif dte <= 90:
-            return "61-90"
-        elif dte <= 120:
-            return "91-120"
-        elif dte <= 180:
-            return "121-180"
+        if dte <= 7:     return "0-7"
+        elif dte <= 14:  return "8-14"
+        elif dte <= 30:  return "15-30"
+        elif dte <= 60:  return "31-60"
+        elif dte <= 90:  return "61-90"
+        elif dte <= 120: return "91-120"
+        elif dte <= 180: return "121-180"
         return "181+"
 
     dte_data: dict = {}
+    dte_data_5y: dict = {}
     seen_dte: set = set()  # dedup (date, expiry) — margins has 3 rows per pair
     for row in cur.fetchall():
         d, exp, im, tm = row[0], row[1], row[2], row[3]
@@ -1128,22 +1132,31 @@ def main():
         dte_data[b]["im"].append(im)
         if tm is not None:
             dte_data[b]["tm"].append(tm)
+        # Trailing 5Y — cutoff derived from max_date, no hardcoded year
+        if d >= _cutoff_5y:
+            dte_data_5y.setdefault(b, {"im": [], "tm": []})
+            dte_data_5y[b]["im"].append(im)
+            if tm is not None:
+                dte_data_5y[b]["tm"].append(tm)
 
     dte_curve = []
     for b in bin_order:
         if b in dte_data and dte_data[b]["im"]:
+            d5 = dte_data_5y.get(b, {"im": [], "tm": []})
             dte_curve.append(
                 {
                     "dte_bin": b,
                     "dte_mid": bin_mid[b],
                     "avg_initial_margin": round(statistics.mean(dte_data[b]["im"]), 3),
-                    "avg_tender_margin": round(
-                        statistics.mean(dte_data[b]["tm"]), 3
-                    ) if dte_data[b]["tm"] else 0.0,
+                    "avg_tender_margin": round(statistics.mean(dte_data[b]["tm"]), 3) if dte_data[b]["tm"] else 0.0,
                     "count": len(dte_data[b]["im"]),
+                    "avg_initial_5y": round(statistics.mean(d5["im"]), 3) if d5["im"] else None,
+                    "avg_tender_5y": round(statistics.mean(d5["tm"]), 3) if d5["tm"] else None,
+                    "count_5y": len(d5["im"]),
                 }
             )
     save("dte_curve.json", dte_curve)
+
 
     # ── forward_curve.json ────────────────────────────────────────────────────
     cur.execute(

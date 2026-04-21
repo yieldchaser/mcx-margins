@@ -1088,7 +1088,7 @@ async function renderOverview() {
     let coneData = null;
     try { coneData = await loadJSON('curve_cone'); } catch(e) {}
     const coneLookup = {};
-    if (coneData && coneData.cone) coneData.cone.forEach(c => { coneLookup[c.expiry] = c.hist_pct; });
+    if (coneData && coneData.cone) coneData.cone.forEach(c => { coneLookup[c.expiry] = c; });
 
     function renderSnapshotTable(sym) {
       const rows = (current[sym] || []);
@@ -1101,22 +1101,26 @@ async function renderOverview() {
         return true;
       });
       document.getElementById('snapshotBody').innerHTML = deduped.map(c => {
-        const hp = coneLookup[c.expiry];
-        // FIX 6: Correct 4-tier color thresholds
+        const cn = coneLookup[c.expiry];
+        // Use trailing 5Y percentile as the primary signal (fallback to all-time)
+        const hp5y  = cn ? (cn.hist_pct_recent != null ? cn.hist_pct_recent : cn.hist_pct) : null;
+        const hpAll = cn ? cn.hist_pct : null;
+        // FIX: Color based on recent 5Y rank, not all-time
         let hpColor = 'var(--text-muted)';
         let hpLabel = '—';
         let hpTitle = 'No historical comparison data for this DTE.';
-        if (hp != null) {
-          hpLabel = 'P' + hp;
-          if (hp <= 33)      hpColor = '#22c55e';
-          else if (hp <= 66) hpColor = 'var(--text)';
-          else if (hp <= 80) hpColor = '#f59e0b';
-          else               hpColor = '#ef4444';
-          const zone = hp <= 33 ? 'historically cheap territory'
-            : hp <= 66 ? 'the normal historical range'
-            : hp <= 80 ? 'elevated territory (watch for hikes)'
-            : 'historically expensive territory';
-          hpTitle = `${_contractLabel(c.expiry)} (${c.expiry}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp}% of all historical readings at equivalent DTE (±15d). This is ${zone}.`;
+        if (hp5y != null) {
+          hpLabel = 'P' + hp5y + ' <span style="font-size:9px;opacity:0.7">(5Y)</span>';
+          if (hp5y <= 33)      hpColor = '#22c55e';
+          else if (hp5y <= 66) hpColor = 'var(--text)';
+          else if (hp5y <= 80) hpColor = '#f59e0b';
+          else                 hpColor = '#ef4444';
+          const zone = hp5y <= 33 ? 'historically cheap territory (trailing 5Y)'
+            : hp5y <= 66 ? 'the normal range (trailing 5Y)'
+            : hp5y <= 80 ? 'elevated territory — watch for hikes (trailing 5Y)'
+            : 'historically expensive territory (trailing 5Y)';
+          hpTitle = `${_contractLabel(c.expiry)} (${c.expiry}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp5y}% of 5-year trailing readings at equivalent DTE (±15d). This is ${zone}.` +
+            (hpAll != null ? ` All-time rank: P${hpAll}.` : '');
         }
         
         const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${c.expiry})`;
@@ -2397,19 +2401,28 @@ async function renderAnalytics() {
       data: {
         labels: dte.map(d => d.dte_bin),
         datasets: [
-          { label: 'Avg Initial Margin %', data: dte.map(d => d.avg_initial_margin), borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)', tension: 0.3, pointRadius: 5, fill: true },
-          { label: 'Avg Tender Margin %',  data: dte.map(d => d.avg_tender_margin),  borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.1)',   tension: 0.3, pointRadius: 5, fill: true }
+          { label: 'Initial Margin % (All-time avg)', data: dte.map(d => d.avg_initial_margin),  borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.08)', tension: 0.3, pointRadius: 5, fill: true },
+          { label: 'Tender Margin % (All-time avg)',  data: dte.map(d => d.avg_tender_margin),   borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.08)',   tension: 0.3, pointRadius: 5, fill: true },
+          { label: 'Initial Margin % (Trailing 5Y)', data: dte.map(d => d.avg_initial_5y),      borderColor: '#388bfd', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, fill: false, borderDash: [5,3], borderWidth: 2 },
+          { label: 'Tender Margin % (Trailing 5Y)',  data: dte.map(d => d.avg_tender_5y),       borderColor: '#f85149', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, fill: false, borderDash: [5,3], borderWidth: 2 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top' },
-          tooltip: { callbacks: { afterLabel: ctx => `Samples: ${dte[ctx.dataIndex].count}` } }
+          legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 20, usePointStyle: true } },
+          tooltip: { callbacks: {
+            afterLabel: ctx => {
+              const d = dte[ctx.dataIndex];
+              if (ctx.datasetIndex <= 1) return `Samples (all-time): ${d.count}`;
+              return `Samples (5Y): ${d.count_5y}`;
+            }
+          }}
         },
         scales: { y: { title: { display: true, text: 'Margin %' } } }
       }
     });
+
 
     const lags = volCorr.lags.map(String);
     const corrVals = lags.map(l => volCorr.NATURALGAS[l]);
