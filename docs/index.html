@@ -1567,29 +1567,37 @@ async function renderHistory(chartName, startIdx, endIdx) {
 
     // 2. Vol Chart
     if (chartName === 'Vol') {
-      _histVolRC.setLabels(labels[0], labels[labels.length-1]);
       let vols = data.map(d => d.daily_volatility > 0 ? +(d.daily_volatility * 100).toFixed(4) : null);
+      // Snap x-axis: trim leading nulls so chart starts at first real data point
+      const firstVolIdx = vols.findIndex(v => v !== null);
+      const volLabels = firstVolIdx > 0 ? labels.slice(firstVolIdx) : labels;
+      const volData   = firstVolIdx > 0 ? vols.slice(firstVolIdx)   : vols;
+      _histVolRC.setLabels(volLabels[0], volLabels[volLabels.length - 1]);
       if (histChartVol) histChartVol.destroy();
-      histChartVol = new Chart(document.getElementById('chartHistVol'), { type: 'line', data: { labels, datasets: [{ label: 'Daily Volatility %', data: vols, borderColor: '#a371f7', backgroundColor: 'rgba(163,113,247,0.08)', fill: true, ...lineDefaults }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Daily Vol %' } } } } });
+      histChartVol = new Chart(document.getElementById('chartHistVol'), { type: 'line', data: { labels: volLabels, datasets: [{ label: 'Daily Volatility %', data: volData, borderColor: '#a371f7', backgroundColor: 'rgba(163,113,247,0.08)', fill: true, ...lineDefaults }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Daily Vol %' } } } } });
     }
 
     // 3. Decomp Chart
     if (chartName === 'Decomp') {
-      _histDecompRC.setLabels(labels[0], labels[labels.length-1]);
       try {
         const decomp = await loadJSON('decomposition');
         if (decomp && decomp.timeseries) {
           const tsMap = {}; decomp.timeseries.forEach(r => tsMap[r.date] = r);
           const aligned = labels.map(l => tsMap[l] || {fair_margin:null, actual:null, policy_buffer:null});
+          // Snap x-axis: trim leading rows where all fields are null
+          const firstDecompIdx = aligned.findIndex(r => r.fair_margin !== null || r.actual !== null);
+          const decompLabels  = firstDecompIdx > 0 ? labels.slice(firstDecompIdx)  : labels;
+          const decompAligned = firstDecompIdx > 0 ? aligned.slice(firstDecompIdx) : aligned;
+          _histDecompRC.setLabels(decompLabels[0], decompLabels[decompLabels.length - 1]);
           if (histChartDecomp) histChartDecomp.destroy();
           histChartDecomp = new Chart(document.getElementById('chartDecomp'), {
             type: 'line',
             data: {
-              labels,
+              labels: decompLabels,
               datasets: [
-                { label: 'Structural', data: aligned.map(r => r.fair_margin), borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.15)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 2 },
-                { label: 'Actual', data: aligned.map(r => r.actual), borderColor: '#e6edf3', backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 1 },
-                { label: 'Policy Buffer', data: aligned.map(r => r.policy_buffer), borderColor: '#d29922', backgroundColor: aligned.map(r => (r.policy_buffer||0) >= 0 ? 'rgba(210,153,34,0.2)' : 'rgba(248,81,73,0.2)'), fill: 'origin', tension: 0.2, pointRadius: 0, borderWidth: 1, yAxisID: 'y2', order: 3 }
+                { label: 'Structural', data: decompAligned.map(r => r.fair_margin), borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.15)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 2 },
+                { label: 'Actual', data: decompAligned.map(r => r.actual), borderColor: '#e6edf3', backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, borderWidth: 1.5, order: 1 },
+                { label: 'Policy Buffer', data: decompAligned.map(r => r.policy_buffer), borderColor: '#d29922', backgroundColor: decompAligned.map(r => (r.policy_buffer||0) >= 0 ? 'rgba(210,153,34,0.2)' : 'rgba(248,81,73,0.2)'), fill: 'origin', tension: 0.2, pointRadius: 0, borderWidth: 1, yAxisID: 'y2', order: 3 }
               ]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { title: { display: true, text: 'Margin %' }, position: 'left' }, y2: { title: { display: true, text: 'Buffer %' }, position: 'right', grid: { drawOnChartArea: false } } } }
@@ -1751,7 +1759,7 @@ async function buildLCDropdown() {
 }
 
 // Render lifecycle chart for selected contract
-async function renderLifecycle(startIdx, endIdx) {
+async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   const expiry  = document.getElementById('lcContractSelect').value;
   const emptyEl = document.getElementById('lcEmptyState');
   const statsEl = document.getElementById('lcStats');
@@ -1782,8 +1790,9 @@ async function renderLifecycle(startIdx, endIdx) {
     }
     
     // Init Range Slider
-    _lcRC = new RangeController('lcSlider', 0, _lcFullRows.length - 1, 0, _lcFullRows.length - 1, (s, e) => renderLifecycle(s, e));
+    _lcRC = new RangeController('lcSlider', 0, _lcFullRows.length - 1, 0, _lcFullRows.length - 1, (s, e) => renderLifecycle(s, e, true));
     startIdx = 0; endIdx = _lcFullRows.length - 1;
+    isZoomOnly = false; // new contract always does full build
     
     // Clear preset actives
     document.querySelectorAll('#lcPresets .horizon-btn').forEach(b => b.classList.toggle('active', b.dataset.range === 'all'));
@@ -1907,13 +1916,27 @@ async function renderLifecycle(startIdx, endIdx) {
     }
   };
 
+  // PERFORMANCE: zoom-only -> update in-place, no destroy/recreate
+  if (isZoomOnly && _lcChart) {
+    _lcChart.data.labels = labels;
+    for (let i = 0; i < datasets.length; i++) {
+      if (_lcChart.data.datasets[i]) {
+        _lcChart.data.datasets[i].data = datasets[i].data;
+        _lcChart.data.datasets[i].label = datasets[i].label;
+        if (datasets[i].pointRadius !== undefined) _lcChart.data.datasets[i].pointRadius = datasets[i].pointRadius;
+        if (datasets[i].pointHoverRadius !== undefined) _lcChart.data.datasets[i].pointHoverRadius = datasets[i].pointHoverRadius;
+      } else { _lcChart.data.datasets.push(datasets[i]); }
+    }
+    _lcChart.data.datasets.splice(datasets.length);
+    _lcChart.update('none');
+  } else {
   if (_lcChart) { _lcChart.destroy(); _lcChart = null; }
   _lcChart = new Chart(document.getElementById('chartLifecycle'), {
     type: 'line',
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      animation: { duration: 500, easing: 'easeInOutQuart' },
+      animation: { duration: 300, easing: 'easeInOutQuart' },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 } },
@@ -1946,6 +1969,7 @@ async function renderLifecycle(startIdx, endIdx) {
     },
     plugins: [lcTenderPlugin]
   });
+  } // end isZoomOnly else
 
   // Stats strip — 6 summary tiles
   const vals = yVals.filter(v => v != null);
@@ -1968,7 +1992,7 @@ async function renderLifecycle(startIdx, endIdx) {
     '<div class="lc-stat"><div class="lc-stat-label">Cuts \u25bc</div><div class="lc-stat-value" style="color:#22c55e;">' + cutCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp decreases</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">HH Correlation</div><div class="lc-stat-value" style="color:' + corrColor + ';">' + corrVal + '</div><div class="lc-stat-sub">' + corrSub + '</div></div>';
   statsEl.style.display = 'grid';
-  attachTooltips();
+  if (!isZoomOnly) attachTooltips();
 }
 
 // ── Wire all lifecycle controls ──
@@ -1980,7 +2004,7 @@ document.getElementById('lcContractSelect').addEventListener('change', () => ren
 // Horizon Presets for Lifecycle
 document.querySelectorAll('#lcPresets .horizon-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    if (!_lcFullRows.length || btn.classList.contains('active')) return;
+    if (!_lcFullRows.length) return; // no contract loaded
     document.querySelectorAll('#lcPresets .horizon-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
@@ -2000,8 +2024,11 @@ document.querySelectorAll('#lcPresets .horizon-btn').forEach(btn => {
       if (idx >= 0) s = idx;
     }
 
-    _lcRC.setRange(s, e);
-    renderLifecycle(s, e);
+    _lcRC.inStart.value = s;
+    _lcRC.inEnd.value = e;
+    _lcRC.updateUI();
+    _lcRC.setLabels(_lcFullRows[s].date, _lcFullRows[e].date);
+    renderLifecycle(s, e, true);
   });
 });
 
