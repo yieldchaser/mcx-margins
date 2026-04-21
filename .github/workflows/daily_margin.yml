@@ -47,9 +47,9 @@ jobs:
         run: python lookback.py --days 5
         continue-on-error: true
 
-      # ── Step 3: export — only when either step saved new data ─────────────
+      # ── Step 3: export — always on manual trigger; conditional on scheduled ──
       - name: Export dashboard JSON
-        if: steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
+        if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: python export_json.py
 
       # ── Step 4: alert — only for genuinely fresh today's data ────────────
@@ -59,9 +59,9 @@ jobs:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python alert.py
 
-      # ── Step 5: commit — only when there's something new to commit ────────
+      # ── Step 5: commit — always on manual trigger; conditional on scheduled ──
       - name: Commit and push DB + dashboard data
-        if: steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
+        if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
