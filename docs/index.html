@@ -702,7 +702,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="chart-container"><canvas id="chartMomentum"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
         <div class="chart-container"><canvas id="chartPercentile"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
       </div>
@@ -2625,35 +2625,60 @@ async function renderAnalytics() {
       }
     });
 
-    // Percentile Rank Over Time (last 365 days)
+    // Percentile Rank Over Time (last 365 days) — all-time vs trailing 5Y
     const allM = sortedHist.map(d=>d.initial_margin_pct).filter(Boolean);
+    const fiveYrCutoff = sortedHist.length > 1825 ? sortedHist.length - 1825 : 0;
+    const allM5Y = sortedHist.slice(fiveYrCutoff).map(d=>d.initial_margin_pct).filter(Boolean);
     const last365 = sortedHist.slice(-365);
-    const pctData = last365.map(d => {
+    const pctDataAlltime = last365.map(d => {
       const rank = allM.filter(x=>x<=d.initial_margin_pct).length;
       return Math.round((rank/allM.length)*100);
+    });
+    const pctData5Y = last365.map(d => {
+      const rank = allM5Y.filter(x=>x<=d.initial_margin_pct).length;
+      return Math.round((rank/allM5Y.length)*100);
     });
 
     new Chart(document.getElementById('chartPercentile'), {
       type: 'line',
       data: {
         labels: last365.map(d=>d.date),
-        datasets: [{
-          label: 'Percentile Rank',
-          data: pctData,
-          segment: { borderColor: ctx => { const v=pctData[ctx.p1DataIndex]; return v>=75?'#f85149':v>=50?'#d29922':'#3fb950'; } },
-          backgroundColor:'rgba(56,139,253,0.05)',
-          tension:0.2, pointRadius:0, borderWidth:2, fill:true
-        }]
+        datasets: [
+          {
+            label: 'All-time (since 2010)',
+            data: pctDataAlltime,
+            borderColor: 'rgba(139,148,158,0.45)',
+            backgroundColor: 'transparent',
+            tension: 0.2, pointRadius: 0, borderWidth: 1.5,
+            borderDash: [4, 3], fill: false
+          },
+          {
+            label: 'Trailing 5Y (actionable)',
+            data: pctData5Y,
+            segment: { borderColor: ctx => { const v=pctData5Y[ctx.p1DataIndex]; return v>=75?'#f85149':v>=50?'#d29922':'#3fb950'; } },
+            backgroundColor: 'rgba(56,139,253,0.05)',
+            tension: 0.2, pointRadius: 0, borderWidth: 2.5, fill: true
+          }
+        ]
       },
       options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          tooltip:{ callbacks:{ label: ctx => { const v=ctx.raw; return `P${v} — ${v>=90?'EXTREME':v>=75?'HIGH':v>=50?'ELEVATED':v>=25?'NORMAL':'LOW'}`; } } }
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { font: { size: 10 }, boxWidth: 20 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.raw;
+                const label = ctx.dataset.label.startsWith('All') ? 'All-time' : '5Y';
+                const zone = v>=90?'EXTREME':v>=75?'HIGH':v>=50?'ELEVATED':v>=25?'NORMAL':'LOW';
+                return `${label}: P${v} — ${zone}`;
+              }
+            }
+          }
         },
-        scales:{
-          x:{ticks:{maxTicksLimit:10,font:{size:10}}},
-          y:{min:0,max:100,title:{display:true,text:'Percentile'},ticks:{callback:v=>`P${v}`}}
+        scales: {
+          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } },
+          y: { min: 0, max: 100, title: { display: true, text: 'Percentile' }, ticks: { callback: v=>`P${v}` } }
         }
       }
     });
@@ -2972,12 +2997,15 @@ When blue is <em>below</em> yellow: Margins are easing. Capital efficiency impro
 <strong>Rule of thumb:</strong> If spot is more than 3 percentage points above the 5-day average, pre-fund your account before the next MCX update cycle.`
   },
   "Historical Percentile": {
-    title: "Historical Percentile Rank Over Time",
-    body: `Where does each day's margin sit relative to all historical readings since 2010?<br><br>
-<strong>P90+</strong> (red) = Top 10% of all-time highs. Extreme stress. Capital requirements at historic levels.<br>
-<strong>P50–P90</strong> (yellow) = Elevated above historical average.<br>
-<strong>P0–P25</strong> (green) = Near historically cheap levels. Best time to build positions from a capital-efficiency standpoint.<br><br>
-The 2022–2023 band is almost entirely red. Current 2026 levels are mid-range (~P50–P65).`
+    title: "Historical Percentile Rank — All-time vs Trailing 5Y",
+    body: `Two percentile lines shown, because a single all-time rank is misleading across structural market regimes.<br><br>
+<strong>Gray dashed — All-time (since 2010):</strong> Where today's margin sits vs every observation since 2010. Inflated by the 2010–2018 low-vol era (margins of 6–15%) — today's "normal" 20–25% looks elevated even when it isn't exceptional by post-2019 standards.<br><br>
+<strong>Colored line — Trailing 5Y (actionable):</strong> Rank vs only the last 5 years. Compares you against the <em>same structural regime</em>. This is the number that tells you if margins are cheap or expensive <em>right now</em>, not vs 2012.<br><br>
+<strong>Color zones (5Y line):</strong><br>
+• <span style="color:#3fb950">Green &lt; P50</span> — Below 5Y median. Capital-efficient window.<br>
+• <span style="color:#d29922">Amber P50–P75</span> — Elevated vs recent normal.<br>
+• <span style="color:#f85149">Red ≥ P75</span> — High vs recent history. Pre-fund alert zone.<br><br>
+<em>Rule of thumb: if all-time is P70 but 5Y is P30, margins are historically average for the current era — no action needed. If both are red, that's genuine stress.</em>`
   },
   "Regime": {
     title: "Current Margin Regime",
