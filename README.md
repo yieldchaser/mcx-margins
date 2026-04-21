@@ -57,12 +57,12 @@ The dashboard is structured into **seven analytical tabs**, each hosting special
 
 ### 5. Analytics Tab
 *   **Model Health Scorecard**: Transparent backtest audit table evaluating predictive model accuracy across 30d / 90d / 365d rolling windows (Directional Accuracy, MAE, RMSE, 1σ and 2σ Hit Rates).
-*   **DTE vs Margin Curve**: Demonstrates the nonlinear degradation of margin requirements as physical settlement approaches, averaged across all historical contracts.
+*   **DTE vs Margin Curve**: Demonstrates the nonlinear degradation of margin requirements as physical settlement approaches. Shows two lines — **all-time average** (solid) and **trailing 5Y average** (dashed) — revealing how much the post-2022 era has shifted structural margin levels at each DTE bucket.
 *   **Lag Correlation**: Analyzes the time lag (T+0 to T+30) coupling sudden volatility shifts to MCX regulatory margin responses.
 *   **Margin Prediction Model (Panic Spread Full View)**: Plots Current vs Predicted bounds with ±1σ and ±2σ shaded bands across the active forward array.
 *   **Margin Change Distribution Histogram**: Segments historically realized day-over-day margin shifts into DTE groups (0–30d, 31–90d, 91+d), mapping the probability of extreme jump-risk tail events. Includes today's predicted delta marker.
 *   **5-Day Rolling Average vs Spot Margin**: Tracks short-term momentum crossover against spot margins (last 90 days).
-*   **Historical Percentile Rank Over Time**: All-time historical percentile time-series mapping relative stress across the last 365 days.
+*   **Historical Percentile Rank Over Time**: Dual-line chart — **all-time** (gray dashed, since 2010) and **trailing 5Y** (colored, actionable) — showing where today's margin sits vs the current structural era. Color-coded green/amber/red on the 5Y rank so routine market conditions aren't falsely flagged as elevated by historical eras with structurally different vol regimes.
 
 ### 6. Contract Lifecycle Explorer Tab
 *   **Single-Contract Deep-Dive**: Select any historical NATURALGAS or NATGASMINI contract by delivery year and month. Renders the full price-of-entry lifecycle from first trading day to expiry.
@@ -88,12 +88,12 @@ All statistical enhancements are built natively in the data engineering layer us
 | `regime_model.json` | Dual-regime OLS coefficients (Regime A vol < 4.5% or pre-2019; Regime B otherwise) |
 | `decomposition.json` | Decomposes margin into structural (vol-implied) + policy buffer components |
 | `event_probabilities.json` | Logistic regression P(hike) / P(cut) / P(flat) per active expiry |
-| `curve_cone.json` | P10/P50/P90 historical confidence bands per DTE slot for the forward curve |
+| `curve_cone.json` | P10/P50/P90 confidence bands (all-time + trailing 5Y) per DTE slot; includes `hist_pct` and `hist_pct_recent` for snapshot table color-coding |
 | `delta_distribution.json` | Histogram of day-over-day margin changes segmented by DTE bucket |
 | `seasonality_boxplot.json` | Monthly distributional stats (min/p10/p25/median/p75/p90/max) for box plots |
 | `stress_score.json` | Composite 0–100 stress score from margin + vol percentile vs trailing 5-year baseline |
 | `volatility_correlation.json` | Lag-N Pearson correlations between daily vol and margin changes (T+0 to T+30) |
-| `dte_curve.json` | Average initial and tender margin by DTE bin across all historical contracts |
+| `dte_curve.json` | Average initial and tender margin by DTE bin — all-time and trailing 5Y — to surface structural era shifts at each DTE bucket |
 
 ---
 
