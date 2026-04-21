@@ -1211,10 +1211,15 @@ def main():
 
 
 def export_hh_price():
-    """Fetch Henry Hub front-month price history from Yahoo Finance (NG=F) and save as JSON."""
+    """Fetch Henry Hub front-month price history from Yahoo Finance (NG=F) and save as JSON.
+
+    Fetches from 2009-01-01 to cover the full MCX margin history (2010-present).
+    NG=F (Natural Gas Continuous) on Yahoo Finance has data back to the 1990s.
+    ~4000 rows at daily interval is trivially small (~80 KB).
+    """
     import time
-    # 5 years of daily data
-    period1 = int(time.time()) - (5 * 365 * 24 * 3600)
+    # Full history from 2009-01-01 — covers all MCX margin data since 2010
+    period1 = int(datetime(2009, 1, 1).timestamp())
     period2 = int(time.time())
     # NG=F = Natural Gas Continuous Contract (front month) on Yahoo Finance
     url = (

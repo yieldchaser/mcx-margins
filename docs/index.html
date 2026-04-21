@@ -1416,7 +1416,7 @@ const LC_METRIC = {
   total:   { label:'Total Margin %',   color:'#a371f7', fn: r => r.total_margin_pct   },
   vol:     { label:'Daily Vol %',      color:'#fb8f44', fn: r => r.daily_volatility > 0 ? +(r.daily_volatility*100).toFixed(4) : null }
 };
-const LC_HH_START = '2021-04-22'; // earliest available HH price data
+const LC_HH_START = '2010-01-01'; // full history available — NG=F fetched from 2009-01-01
 
 let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial', _lcInited = false;
 
@@ -1538,7 +1538,7 @@ async function renderLifecycle() {
   const hhEligible = contractMaxDate >= LC_HH_START && _lcMetric !== 'vol';
   hhCheck.disabled  = !hhEligible;
   hhLabelEl.style.opacity = hhEligible ? '1' : '0.4';
-  hhLabelEl.title = hhEligible ? '' : 'HH data from Apr 2021 onwards \u00b7 not applicable for Vol metric';
+  hhLabelEl.title = hhEligible ? '' : 'HH overlay not available for Daily Vol metric (units incompatible)';
 
   const scales = {
     x: {
@@ -2555,11 +2555,11 @@ The 2022–2023 band is almost entirely red. Current 2026 levels are mid-range (
 🔴 <strong>CRISIS</strong> — Above 50%. Extreme conditions (Feb 2026 spike). Serious margin call risk for underfunded accounts. Consider exiting or cutting size significantly.`
   },
   "Henry Hub": {
-    title: "Henry Hub Price Overlay (NGW00)",
-    body: `Overlays the <strong>Henry Hub natural gas front-month futures price</strong> (NGW00 from CME via Yahoo Finance) on the margin history chart.<br><br>
+    title: "Henry Hub Price Overlay (NG=F)",
+    body: `Overlays the <strong>Henry Hub natural gas front-month futures price</strong> (NG=F — CME continuous contract via Yahoo Finance) on the margin history chart.<br><br>
 The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin line uses the left Y-axis (%).<br><br>
-<strong>Why this matters:</strong> MCX NATURALGAS margin is heavily driven by Henry Hub price movements — when HH price spikes or crashes, MCX vol spikes and margins follow within 1–2 days. Viewing both on the same chart makes the cause-and-effect relationship immediately visible.<br><br>
-<em>Data:</em> Fetched live from Yahoo Finance public API. Requires internet. May show slight gaps on Indian market holidays.`
+<strong>Why this matters:</strong> MCX NATURALGAS margin is heavily driven by Henry Hub price movements — when HH price spikes or crashes, MCX vol spikes and margins follow within 1–2 days.<br><br>
+<em>Data coverage:</em> Full history from 2010 to present. Updated with every daily export run.`
   },
   "Model Health": {
     title: "Model Health — Prediction Backtest Scorecard",
