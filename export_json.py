@@ -848,6 +848,7 @@ def main():
     # ── current.json ──────────────────────────────────────────────────────────
     latest_date = max_date  # already fetched above
     result = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
+    seen_cur: dict = {"NATURALGAS": set(), "NATGASMINI": set()}  # dedup by expiry
     cur.execute(
         """
         SELECT symbol, expiry, initial_margin_pct, elm_pct, tender_margin_pct,
@@ -862,6 +863,9 @@ def main():
     for row in cur.fetchall():
         sym = row[0]
         expiry = row[1]
+        if sym not in result or expiry in seen_cur.get(sym, set()):
+            continue
+        seen_cur[sym].add(expiry)
         dte = compute_dte(expiry, latest_date)
         entry = {
             "expiry": expiry,
@@ -878,8 +882,7 @@ def main():
             "daily_volatility": row[11],
             "annualized_volatility": row[12],
         }
-        if sym in result:
-            result[sym].append(entry)
+        result[sym].append(entry)
     # Sort by DTE ascending
     for sym in ["NATURALGAS", "NATGASMINI"]:
         result[sym].sort(key=lambda x: x["dte"])
@@ -1132,10 +1135,12 @@ def main():
         (latest_date,),
     )
     fwd: dict = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
+    seen_fwd: dict = {"NATURALGAS": set(), "NATGASMINI": set()}  # dedup by expiry
     for row in cur.fetchall():
         sym, exp, im, tm, dv, av = row
-        dte = compute_dte(exp, latest_date)
-        if sym in fwd:
+        if sym in fwd and exp not in seen_fwd[sym]:
+            seen_fwd[sym].add(exp)
+            dte = compute_dte(exp, latest_date)
             fwd[sym].append(
                 {
                     "expiry": exp,
