@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blue Margin</title>
+<title>Blue Margin — MCX NaturalGas Futures Margin Intelligence Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta name="description" content="Live MCX NATURALGAS and NATGASMINI futures margin intelligence dashboard — forward curve, history, seasonality, analytics.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -134,7 +134,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   text-align: left; font-size: 10px;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--text-muted); font-weight: 600;
-  position: sticky; top: 0;
+  position: sticky; top: 104px; /* 52px sticky header + 52px sticky tab nav */
 }
 .data-table td {
   padding: 9px 12px; font-size: 12px;
@@ -792,6 +792,7 @@ class RangeController {
     const s = parseInt(this.inStart.value);
     const e = parseInt(this.inEnd.value);
     const range = this.max - this.min;
+    if (range === 0) return; // guard: single-row data, avoid division by zero
     const lPercent = ((s - this.min) / range) * 100;
     const rPercent = ((e - this.min) / range) * 100;
 
@@ -914,13 +915,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// Global data cache
+// Global data cache (with 5-min TTL for live-data keys)
 const DATA = {};
+const DATA_TS = {};
+const TTL_LIVE = new Set(['current', 'meta', 'stress_score']);
 async function loadJSON(name) {
-  if (DATA[name]) return DATA[name];
+  const now = Date.now();
+  if (DATA[name]) {
+    if (!TTL_LIVE.has(name) || (now - (DATA_TS[name] || 0)) < 300_000)
+      return DATA[name];
+  }
   const r = await fetch(`data/${name}.json`);
   if (!r.ok) throw new Error(`Failed to load ${name}.json: ${r.status}`);
   DATA[name] = await r.json();
+  DATA_TS[name] = now;
   return DATA[name];
 }
 
@@ -2069,7 +2077,10 @@ document.getElementById('lcSymNGM').addEventListener('click', () => {
   document.getElementById('lcSymNG').classList.remove('lc-sym-active');
   buildLCDropdown();
 });
-document.getElementById('lcShowHH').addEventListener('change', () => renderLifecycle(parseInt(_lcRC.inStart.value), parseInt(_lcRC.inEnd.value)));
+document.getElementById('lcShowHH').addEventListener('change', () => {
+  if (!_lcRC) return; // no contract selected yet
+  renderLifecycle(parseInt(_lcRC.inStart.value), parseInt(_lcRC.inEnd.value));
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // PART 5 — Seasonality Tab
@@ -2602,7 +2613,7 @@ async function renderAnalytics() {
         function renderDeltaHist(bucket) {
           const h = dd.histograms[bucket];
           if (!h || !h.bins) return;
-          if (deltaChart) deltaChart.destroy();
+          if (deltaChart) { deltaChart.destroy(); deltaChart = null; }
           const colors = h.bins.map((_, i) => {
             const midVal = -5 + i * 0.25;
             return midVal < 0 ? 'rgba(63,185,80,0.6)' : midVal > 0 ? 'rgba(248,81,73,0.6)' : 'rgba(210,153,34,0.6)';
@@ -2758,7 +2769,7 @@ function renderExplorerPage() {
       <td>${d.annualized_volatility != null ? (d.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
     </tr>
   `).join('');
-  attachTooltips();
+  // Explorer rows have no .has-tooltip elements — scan not needed
 }
 
 document.getElementById('prevPage').addEventListener('click', () => {

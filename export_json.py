@@ -7,7 +7,6 @@ Output: docs/data/*.json
 
 import sqlite3
 import json
-import json as json_lib
 import math
 import statistics
 import urllib.request
