@@ -224,7 +224,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
         actual = tomorrow["initial_margin_pct"]
         residuals.append(predicted - actual)
 
@@ -241,7 +241,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
         actual = tomorrow["initial_margin_pct"]
         residual = predicted - actual
         dte = today["dte"]
@@ -275,7 +275,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
         bands.append({
             "expiry": entry["expiry"],
             "dte": dte,
-            "current": entry["total_margin_pct"],
+            "current": entry["initial_margin_pct"],
             "predicted": pred,
             "sigma_1": round(sigma, 4),
             "sigma_2": round(2 * sigma, 4),
@@ -304,7 +304,7 @@ def _export_model_health(fm_series):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["total_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
         actual = tomorrow["initial_margin_pct"]
         pred_delta = predicted - today["initial_margin_pct"]
         actual_delta = actual - today["initial_margin_pct"]
@@ -786,9 +786,9 @@ def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
     for entry in panic_entries:
         vol_pct = (entry["vol_daily"] if entry["vol_daily"] else latest["daily_volatility"]) * 100
         fair = slope_b * vol_pct + intercept_b
-        policy_buf = entry["total_margin_pct"] - fair
+        policy_buf = entry["initial_margin_pct"] - fair   # use initial, matching training
         feat = np.array([[
-            entry["total_margin_pct"],
+            entry["initial_margin_pct"],   # use initial, matching training feature
             vol_pct,
             min(entry["dte"], 300),
             latest_margin_pct_rank,
@@ -1250,23 +1250,25 @@ def main():
 
     panic_entries = []
     for i, contract in enumerate(ng_fwd):
-        tm = contract["total_margin_pct"] or 0
+        im = contract["initial_margin_pct"] or 0   # use initial consistently
+        tm = contract["total_margin_pct"] or 0      # kept for display and spread
         dv = contract["daily_volatility"] or mean_vol_20
-        predicted = tm * 0.886 + dv * 43.0
+        predicted = im * 0.886 + dv * 43.0          # formula now uses initial, not total
         spread_vs_next = (
             tm - ng_fwd[i + 1]["total_margin_pct"]
             if i + 1 < len(ng_fwd)
             else 0.0
         )
-        action = "HIKE" if predicted > tm else "CUT"
+        action = "HIKE" if predicted > im else "CUT"   # compare vs initial
         panic_entries.append(
             {
                 "expiry": contract["expiry"],
                 "dte": contract["dte"],
+                "initial_margin_pct": round(im, 3),
                 "total_margin_pct": round(tm, 3),
                 "vol_daily": round(dv, 6),
                 "predicted_tomorrow": round(predicted, 3),
-                "spread_vs_prev": round(spread_vs_next, 3),
+                "spread_vs_next": round(spread_vs_next, 3),  # renamed from spread_vs_prev
                 "action": action,
             }
         )

@@ -427,8 +427,8 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <table class="data-table" id="panicTable">
             <thead><tr>
               <th title="Contract expiry date being evaluated.">Expiry</th>
-              <th title="Today's total margin requirement for this expiry.">Current %</th>
-              <th title="Model's point estimate for tomorrow's margin. Formula: 0.886 × current_margin + 43.0 × daily_vol.">Predicted</th>
+              <th title="Today's total margin requirement (Initial + ELM + Tender). Shown for reference.">Total %</th>
+              <th title="Model's point estimate for tomorrow's INITIAL margin. Formula: 0.886 × initial_margin + 43.0 × daily_vol. Consistent with training label (initial, not total).">Predicted Init.</th>
               <th title="Logistic model probabilities of three outcomes tomorrow: margin cut (&gt;0.5% decrease), flat (±0.5%), or hike (&gt;0.5% increase). Trained on historical data. Bar = green(cut) | grey(flat) | red(hike).">Probability</th>
               <th title="Dominant outcome by probability. Amber row glow = P(hike) &gt;65%. Red row glow = P(hike) &gt;80%.">Signal</th>
             </tr></thead>
@@ -1225,8 +1225,9 @@ async function renderOverview() {
     }
 
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
-      const predicted = PANIC_COEFF_MARGIN * c.total_margin_pct + PANIC_COEFF_VOL * (c.daily_volatility || 0);
-      const diff = predicted - c.total_margin_pct;
+      const im = c.initial_margin_pct ?? c.total_margin_pct;  // graceful fallback
+      const predicted = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
+      const diff = predicted - im;
       const ep = epLookup[c.expiry];
       let probCell = '—';
       // Signal: logistic model dominant direction + its probability
@@ -1266,7 +1267,7 @@ async function renderOverview() {
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
       const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${c.expiry})`;
-      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks current term margin vs volatility deviation.<br><br><b>Point Estimate:</b> ${predicted.toFixed(2)}%<br><b>Actual Target:</b> ${c.total_margin_pct.toFixed(2)}%`;
+      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Point Estimate (Initial tomorrow):</b> ${predicted.toFixed(2)}%<br><b>Current Initial Margin:</b> ${im.toFixed(2)}%<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%`;
       if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
       return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
         <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
@@ -2502,8 +2503,8 @@ async function renderAnalytics() {
 
     // Item 1: Prediction chart with forecast bands
     const ng = fwd.NATURALGAS || [];
-    const curM = ng.map(c => c.total_margin_pct);
-    const predM = ng.map(c => +((0.886 * c.total_margin_pct + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
+    const curM  = ng.map(c => c.initial_margin_pct);  // use initial — consistent with prediction
+    const predM = ng.map(c => +((0.886 * (c.initial_margin_pct || c.total_margin_pct) + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
 
     let forecastBands = null;
     try { forecastBands = await loadJSON('forecast_bands'); } catch(e) {}
@@ -2515,8 +2516,8 @@ async function renderAnalytics() {
     // +2σ fills to next (+1) in array → index 3 (-2σ), giving the outer band
     // +1σ fills to next (+1) in array → index 5 (-1σ), giving the inner band
     const predDatasets = [
-      { label: 'Current Margin %',    data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
-      { label: 'Predicted Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3, order: 2 }
+      { label: 'Current Initial Margin %', data: curM,  borderColor: '#388bfd', pointRadius: 4, tension: 0.3, order: 1 },
+      { label: 'Predicted Initial Tomorrow %', data: predM, borderColor: '#fb8f44', borderDash: [6,3], pointRadius: 4, tension: 0.3, order: 2 }
     ];
 
     if (forecastBands) {
