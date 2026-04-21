@@ -1928,16 +1928,15 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 
   // Update shared tender state so plugin reads correct values on every render (incl. zoom-only)
   _lcTenderState.idx      = rows.findIndex(r => r.dte <= 30);
-  _lcTenderState.labels   = labels;
-  _lcTenderState.axisMode = _lcAxisMode;
+  // Category scale: getPixelForValue(n) expects 0-based array index, not label value
+  // _lcTenderState.idx is that index — works correctly in both Date and DTE axis modes
 
   const lcTenderPlugin = {
     id: 'lcTender',
     beforeDatasetsDraw(chart) {
       if (_lcTenderState.idx < 0) return;
       const { ctx, chartArea: { left, right, top, bottom }, scales: sc } = chart;
-      const tenderLabel = _lcTenderState.axisMode === 'dte' ? 30 : _lcTenderState.labels[_lcTenderState.idx];
-      const x0 = sc.x.getPixelForValue(tenderLabel);
+      const x0 = sc.x.getPixelForValue(_lcTenderState.idx);
       if (x0 >= right || x0 < left) return;
       ctx.save();
       ctx.fillStyle = 'rgba(239,68,68,0.07)';
