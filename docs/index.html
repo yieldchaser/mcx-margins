@@ -1520,28 +1520,27 @@ async function renderHistory(chartName, startIdx, endIdx) {
     const sym = document.getElementById('histSymbol').value;
     const showPrice = document.getElementById('showPrice')?.checked;
 
-    // Full Reload: Symbol changed or Prescription button clicked
+    // Full Reload: Symbol changed or Horizon preset clicked
     if (chartName === 'FullReload') {
       const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
       // Trim leading nulls for 'All' view to snap x-axis
       const firstDataIdx = raw.findIndex(v => v.initial_margin_pct !== null);
       _histFullRaw = firstDataIdx > 0 ? raw.slice(firstDataIdx) : raw;
       
-      // Init All Sliders
       const max = _histFullRaw.length - 1;
       _histMarginRC = new RangeController('sliderHistMargin', 0, max, startIdx ?? 0, max, (s, e) => renderHistory('Margin', s, e));
       _histVolRC    = new RangeController('sliderHistVol',    0, max, startIdx ?? 0, max, (s, e) => renderHistory('Vol',    s, e));
       _histDecompRC = new RangeController('sliderDecomp',   0, max, startIdx ?? 0, max, (s, e) => renderHistory('Decomp', s, e));
       
-      // Render all three
       renderHistory('Margin', startIdx ?? 0, max);
       renderHistory('Vol',    startIdx ?? 0, max);
       renderHistory('Decomp', startIdx ?? 0, max);
-      renderHistory('Scatter'); // Scatter uses full raw for relationship analysis
+      renderHistory('Scatter');
       return;
     }
 
     const data = _histFullRaw.slice(startIdx, (endIdx ?? (_histFullRaw.length - 1)) + 1);
+    if (!data.length) return;
     const labels = data.map(d => d.date);
     const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: false };
 
@@ -1599,111 +1598,12 @@ async function renderHistory(chartName, startIdx, endIdx) {
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { title: { display: true, text: 'Margin %' }, position: 'left' }, y2: { title: { display: true, text: 'Buffer %' }, position: 'right', grid: { drawOnChartArea: false } } } }
           });
-        }
-      } catch(e) {}
-    }
-
-    // 4. Scatter (Uses full data filtered by symbol, typically doesn't zoom)
-    if (chartName === 'Scatter') {
-      const raw = _histFullRaw; // Scatter always shows full historical relationship
-  try {
-    const sym = document.getElementById('histSymbol').value;
-    const showPrice = document.getElementById('showPrice')?.checked;
-    const raw = await loadJSON(sym === 'ng' ? 'history_ng' : 'history_ngm');
-    const data = filterByMonths(raw, months);
-
-    let labels = data.map(d => d.date);
-    let margins = data.map(d => d.initial_margin_pct);
-    let vols = data.map(d => d.daily_volatility > 0 ? +(d.daily_volatility * 100).toFixed(4) : null);
-
-    // If 'All' is selected (months == 0), trim leading nulls so x-axis snaps to data start
-    if (months === 0) {
-      const firstDataIdx = vols.findIndex(v => v !== null);
-      if (firstDataIdx > 0) {
-        labels = labels.slice(firstDataIdx);
-        margins = margins.slice(firstDataIdx);
-        vols = vols.slice(firstDataIdx);
-      }
-    }
-
-    const lineDefaults = { tension: 0.1, pointRadius: 0, borderWidth: 1.5, spanGaps: false };
-
-    // Henry Hub price — read from locally pre-fetched JSON (avoids CORS on GitHub Pages)
-    let priceDataset = null;
-    if (showPrice) {
-      try {
-        const hhData = await loadJSON('hh_price');
-        if (hhData && hhData.prices && hhData.prices.length > 0) {
-          // Build date→price lookup
-          const priceMap = {};
-          hhData.prices.forEach(p => { priceMap[p.date] = p.price; });
-
-          // Align to our margin date labels
-          const aligned = labels.map(d => priceMap[d] ?? null);
-          const hasAny = aligned.some(v => v !== null);
-
-          if (hasAny) {
-            priceDataset = {
-              label: 'Henry Hub ($/MMBtu)',
-              data: aligned,
-              borderColor: '#3fb950',
-              backgroundColor: 'transparent',
-              tension: 0.2,
-              pointRadius: 0,
-              borderWidth: 2,
-              borderDash: [5, 3],
-              yAxisID: 'yPrice'
-            };
+          const t = decomp.today;
+          if (t) {
+            document.getElementById('decompSummary').innerHTML = `Today: <strong>${t.actual}%</strong> = ${t.fair_margin}% structural + <span style="color:${(t.policy_buffer||0) >= 0 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">${(t.policy_buffer||0) > 0 ? '+' : ''}${t.policy_buffer}%</span> policy buffer`;
           }
         }
-      } catch(e) {
-        console.warn('HH price JSON load failed:', e);
-      }
-    }
-
-    const marginDatasets = [{
-      label: 'Initial Margin %', data: margins,
-      borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)',
-      fill: true, yAxisID: 'y', ...lineDefaults
-    }];
-    if (priceDataset) marginDatasets.push(priceDataset);
-
-    const scales = {
-      x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
-      y: { title: { display: true, text: 'Margin %' }, position: 'left' }
-    };
-    if (priceDataset) {
-      scales.yPrice = {
-        title: { display: true, text: 'Henry Hub ($/MMBtu)' },
-        position: 'right', grid: { drawOnChartArea: false }
-      };
-    }
-
-    if (histChartMargin) histChartMargin.destroy();
-    histChartMargin = new Chart(document.getElementById('chartHistMargin'), {
-      type: 'line',
-      data: { labels, datasets: marginDatasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: !!priceDataset, position: 'top' },
-          tooltip: { mode: 'index', intersect: false }
-        },
-        scales
-      }
-    });
-
-    if (histChartVol) histChartVol.destroy();
-    histChartVol = new Chart(document.getElementById('chartHistVol'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Daily Volatility %', data: vols, borderColor: '#a371f7', backgroundColor: 'rgba(163,113,247,0.08)', fill: true, ...lineDefaults }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-        scales: { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Daily Vol %' } } }
-      }
-    });
-
+      } catch(e) {}
     }
 
     // 4. Scatter
