@@ -556,7 +556,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div style="font-size:11px;color:var(--text-muted);padding-top:2px;">Full margin journey · self-updating · 196+ contracts</div>
       </div>
       <!-- Controls -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);margin-bottom:14px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);margin-bottom:10px;">
         <div style="display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;flex-shrink:0;">
           <button id="lcSymNG"  class="lc-sym-btn lc-sym-active" title="NATURALGAS lifecycle">NATURALGAS</button>
           <button id="lcSymNGM" class="lc-sym-btn"               title="NATGASMINI lifecycle">NATGASMINI</button>
@@ -582,6 +582,15 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <input type="checkbox" id="lcShowHH" style="accent-color:#fb8f44;width:14px;height:14px;">
           <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
         </label>
+        <!-- Horizon presets — right-aligned in the controls row -->
+        <div class="horizon-group" id="lcPresets" style="margin-left:auto;flex-shrink:0;">
+          <button class="horizon-btn" data-range="1w">1w</button>
+          <button class="horizon-btn" data-range="1m">1m</button>
+          <button class="horizon-btn" data-range="3m">3m</button>
+          <button class="horizon-btn" data-range="6m">6m</button>
+          <button class="horizon-btn" data-range="1y">1y</button>
+          <button class="horizon-btn active" data-range="all">All</button>
+        </div>
       </div>
       <!-- Chart with empty-state overlay -->
       <div style="position:relative;">
@@ -595,16 +604,8 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       <!-- Stats strip -->
       <div id="lcStats" style="display:none;"></div>
 
-      <!-- Range Controls -->
-      <div id="lcRangeWrapper" style="display:none; margin-top:16px;">
-        <div class="horizon-group" id="lcPresets">
-          <button class="horizon-btn" data-range="1w">1w</button>
-          <button class="horizon-btn" data-range="1m">1m</button>
-          <button class="horizon-btn" data-range="3m">3m</button>
-          <button class="horizon-btn" data-range="6m">6m</button>
-          <button class="horizon-btn" data-range="1y">1y</button>
-          <button class="horizon-btn active" data-range="all">All</button>
-        </div>
+      <!-- Range Controls (slider only — presets moved to controls row) -->
+      <div id="lcRangeWrapper" style="display:none; margin-top:12px;">
         <div class="lc-range-controls" id="lcSlider">
           <div class="range-slider-container">
             <div class="range-slider-track"></div>
