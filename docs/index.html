@@ -1414,34 +1414,32 @@ function _hexRgba(hex, a) {
 const LC_METRIC = {
   initial: { label:'Initial Margin %', color:'#388bfd', fn: r => r.initial_margin_pct },
   total:   { label:'Total Margin %',   color:'#a371f7', fn: r => r.total_margin_pct   },
-  vol:     { label:'Daily Vol %',      color:'#fb8f44', fn: r => r.daily_volatility > 0 ? +(r.daily_volatility*100).toFixed(4) : null }
+  vol:     { label:'Daily Vol %',      color:'#fb8f44', fn: r => r.daily_volatility != null && r.daily_volatility > 0 ? +r.daily_volatility.toFixed(4) : null }
 };
 const LC_HH_START = '2010-01-01'; // full history available — NG=F fetched from 2009-01-01
 
 let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial', _lcInited = false;
 
-// Build contract dropdown from loaded JSON — auto-ingests any new contracts
+// Build contract dropdown from contract_index.json — auto-ingests new contracts
 async function buildLCDropdown() {
-  const raw = await loadJSON(_lcSym === 'ng' ? 'history_ng' : 'history_ngm');
-  // Count observations per contract expiry
-  const tally = {};
-  raw.forEach(r => { tally[r.expiry] = (tally[r.expiry] || 0) + 1; });
+  const idx = await loadJSON('contract_index');
+  const entries = idx[_lcSym] || [];          // [{expiry, obs, first_date, last_date}]
   // Group by calendar year
   const byYear = {};
-  Object.keys(tally).forEach(exp => {
-    const yr = exp.slice(5); // last 4 chars of "27APR2026" = "2026"
+  entries.forEach(e => {
+    const yr = e.expiry.slice(5);              // last 4 chars of "27APR2026" = "2026"
     if (!byYear[yr]) byYear[yr] = [];
-    byYear[yr].push(exp);
+    byYear[yr].push(e);
   });
   const sel = document.getElementById('lcContractSelect');
   sel.innerHTML = '<option value="">\u2014 Select contract \u2014</option>';
   // Years newest-first; within year sort by actual expiry date newest-first
   Object.keys(byYear).sort((a,b) => +b - +a).forEach(yr => {
-    const exps = byYear[yr].sort((a,b) => _expiryDate(b) - _expiryDate(a));
+    const exps = byYear[yr].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
     const og = document.createElement('optgroup'); og.label = yr;
-    exps.forEach(exp => {
-      const o = document.createElement('option'); o.value = exp;
-      o.textContent = exp + '  \u00b7  ' + tally[exp] + ' obs';
+    exps.forEach(e => {
+      const o = document.createElement('option'); o.value = e.expiry;
+      o.textContent = e.expiry + '  \u00b7  ' + e.obs + ' obs';
       og.appendChild(o);
     });
     sel.appendChild(og);
@@ -1449,10 +1447,10 @@ async function buildLCDropdown() {
   // Auto-select nearest future expiry; fallback to nearest past expiry
   const now = Date.now();
   let bfe = null, bfd = Infinity, bpe = null, bpd = -Infinity;
-  Object.keys(tally).forEach(exp => {
-    const d = _expiryDate(exp) - now;
-    if (d >= 0 && d < bfd) { bfd = d; bfe = exp; }
-    if (d <  0 && d > bpd) { bpd = d; bpe = exp; }
+  entries.forEach(e => {
+    const d = _expiryDate(e.expiry) - now;
+    if (d >= 0 && d < bfd) { bfd = d; bfe = e.expiry; }
+    if (d <  0 && d > bpd) { bpd = d; bpe = e.expiry; }
   });
   const autoExp = bfe || bpe;
   if (autoExp) { sel.value = autoExp; renderLifecycle(); }
@@ -1472,8 +1470,9 @@ async function renderLifecycle() {
     return;
   }
 
-  const raw  = await loadJSON(_lcSym === 'ng' ? 'history_ng' : 'history_ngm');
-  const rows = raw.filter(r => r.expiry === expiry).sort((a,b) => a.date < b.date ? -1 : 1);
+  // Load per-contract file on demand (~75 KB) — not the full 34 MB history
+  const contractData = await loadJSON('contract/' + expiry);
+  const rows = (contractData ? contractData.rows : []).sort((a,b) => a.date < b.date ? -1 : 1);
 
   if (rows.length < 2) {
     emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + rows.length + '</strong> observation for <strong>' + expiry + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';

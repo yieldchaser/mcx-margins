@@ -927,6 +927,54 @@ def main():
                 )
         save(fname, series)
 
+    # ── contract_index.json + per-contract docs/data/contract/<EXPIRY>.json ───
+    # Two-tier lazy loading: index (~31 KB) loaded once for dropdown;
+    # individual contract file (~75 KB avg) fetched only when contract selected.
+    # Self-sustaining: new contracts in margins.db get their own file on next run.
+    from pathlib import Path as _Path
+    _cdir = _Path(OUT_DIR) / "contract"
+    _cdir.mkdir(parents=True, exist_ok=True)
+    _SYM_MAP = {"NATURALGAS": "ng", "NATGASMINI": "ngm"}
+    _cidx = {"ng": [], "ngm": []}
+    for _sym, _skey in _SYM_MAP.items():
+        cur.execute(
+            """
+            SELECT date, expiry, initial_margin_pct, total_margin_pct, elm_pct,
+                   tender_margin_pct, daily_volatility, annualized_volatility
+            FROM margins
+            WHERE symbol=? AND initial_margin_pct IS NOT NULL
+            ORDER BY expiry ASC, date ASC
+            """,
+            (_sym,),
+        )
+        _bexp = {}
+        for _r in cur.fetchall():
+            _exp = _r[1]
+            if _exp not in _bexp:
+                _bexp[_exp] = []
+            _dv, _av = _r[6], _r[7]
+            _bexp[_exp].append({
+                "date": _r[0],
+                "dte": compute_dte(_exp, _r[0]),
+                "initial_margin_pct": _r[2],
+                "total_margin_pct": _r[3],
+                "elm_pct": _r[4],
+                "tender_margin_pct": _r[5],
+                "daily_volatility": round(_dv * 100, 4) if _dv is not None else None,
+                "annualized_volatility": round(_av * 100, 4) if _av is not None else None,
+            })
+        for _exp, _rows in _bexp.items():
+            with open(_cdir / f"{_exp}.json", "w") as _f:
+                json.dump({"expiry": _exp, "symbol": _sym, "rows": _rows},
+                          _f, separators=(",", ":"))
+            _ds = [rr["date"] for rr in _rows]
+            _cidx[_skey].append({
+                "expiry": _exp, "obs": len(_rows),
+                "first_date": min(_ds), "last_date": max(_ds),
+            })
+        _cidx[_skey].sort(key=lambda x: x["expiry"])
+    save("contract_index.json", _cidx)
+
     # ── seasonal_month.json ───────────────────────────────────────────────────
     cur.execute(
         """
