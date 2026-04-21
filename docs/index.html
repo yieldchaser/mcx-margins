@@ -355,8 +355,8 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">ANN. VOLATILITY</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
-    <div class="stat-sub" id="kpiPercentile">—</div>
-    <div class="stat-sub" id="kpiPercentileRegime" style="font-size:9px;color:var(--text-muted);margin-top:1px;">—</div>
+    <div class="stat-sub has-tooltip" id="kpiPercentile" data-tooltip-key="Margin Percentile Rank" style="cursor:help;">—</div>
+    <div class="stat-sub has-tooltip" id="kpiPercentileRegime" data-tooltip-key="Margin Percentile Rank" style="font-size:9px;color:var(--text-muted);margin-top:1px;cursor:help;">—</div>
   </div>
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry">DAYS TO EXPIRY</div>
@@ -1037,6 +1037,25 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
       prEl.textContent = `P${regimeModel.current_pct_regime} in Regime ${regimeModel.current_regime}`;
       const pEl2 = document.getElementById('kpiPercentile');
       pEl2.textContent = `P${regimeModel.current_pct_alltime} all-time`;
+      // Update percentile tooltip with live regime context
+      if (TOOLTIPS['Margin Percentile Rank']) {
+        const ra = regimeModel.regime_a, rb = regimeModel.regime_b;
+        const curRegime = regimeModel.current_regime;
+        const otherRegime = curRegime === 'A' ? 'B' : 'A';
+        const regimeDesc = curRegime === 'A'
+          ? 'Regime A (Structural) — vol &lt; 4.5% or pre-2019. Calm, low-cost era.'
+          : 'Regime B (Elevated) — vol ≥ 4.5% &amp; 2019-present. High-stress era.';
+        const slopeA = ra ? ra.slope.toFixed(2) : '—';
+        const slopeB = rb ? rb.slope.toFixed(2) : '—';
+        TOOLTIPS['Margin Percentile Rank'].body =
+          `<strong>P${regimeModel.current_pct_alltime} all-time</strong> — today's margin is higher than ${regimeModel.current_pct_alltime}% of every front-month observation since 2010. Spans the quiet 2010–2018 era AND the volatile 2019+ era together, so this number can be misleading in isolation.<br><br>` +
+          `<strong>P${regimeModel.current_pct_regime} in Regime ${curRegime}</strong> — compared only against days in the <em>current</em> regime (${regimeDesc}). This is the like-for-like number — similar vol level, similar structural conditions.<br><br>` +
+          `<strong>Why two numbers?</strong> The two regimes have materially different vol-to-margin relationships:<br>` +
+          `Regime A slope = <strong>${slopeA} margin pts per 1% vol</strong> (${ra ? ra.n : '—'} obs)<br>` +
+          `Regime B slope = <strong>${slopeB} margin pts per 1% vol</strong> (${rb ? rb.n : '—'} obs)<br><br>` +
+          `<em>Use the all-time rank for long-run context. Use the regime rank for trading decisions — it tells you where you stand vs comparable market conditions.</em>`;
+        attachTooltips();
+      }
     } catch(e) {}
 
   } catch(e) { console.error('KPI load failed:', e); }
@@ -3005,6 +3024,10 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 <strong>▲ Hike markers</strong> — days where margin increased ≥ 0.5pp.<br>
 <strong>▼ Cut markers</strong> — days where margin decreased ≥ 0.5pp.<br><br>
 <em>Self-sustaining:</em> Every new contract captured by the daily 8 PM IST update script automatically appears in this dropdown — no code changes required.`
+  },
+  "Margin Percentile Rank": {
+    title: "Margin Percentile Rank — All-time vs Within-Regime",
+    body: `Loading regime data…`
   },
   "Stress Score": {
     title: "Composite Stress Score",
