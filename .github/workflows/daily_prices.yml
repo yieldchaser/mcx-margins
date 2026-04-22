@@ -1,0 +1,61 @@
+name: Daily Prices Fetch
+
+on:
+  schedule:
+    # 19:30 UTC = 01:00 AM IST (next day).
+    # MCX market closes at 11:30 PM IST (18:00 UTC); bhavcopy is published
+    # ~30–60 min after close.  90-min buffer keeps false-empty runs minimal.
+    # fetch_prices.py daily mode retries with MAX_LOOKBACK=3 so if today's
+    # data isn't up yet it falls back to the previous trading day automatically.
+    - cron: '30 19 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install chromium
+          python -m playwright install-deps chromium
+
+      # ── Step 1: fetch today's bhavcopy ─────────────────────────────────────
+      # fetch_prices.py with no args = daily mode with MAX_LOOKBACK=3.
+      # Exit 0 = new records saved.  Exit 1 = no data (safe to skip commit).
+      - name: Fetch today's bhavcopy
+        id: fetch_today
+        run: python fetch_prices.py
+        continue-on-error: true
+
+      # ── Step 2: 7-day gap-fill (safety net) ────────────────────────────────
+      # Covers any dates missing due to failed/skipped prior runs.
+      # Uses backfill mode which skips dates already in DB — very fast if up-to-date.
+      - name: Gap-fill last 7 trading days
+        id: gap_fill
+        run: |
+          SINCE=$(date -d '9 days ago' +%Y-%m-%d)
+          python fetch_prices.py backfill "$SINCE"
+        continue-on-error: true
+
+      # ── Step 3: commit prices DB ────────────────────────────────────────────
+      - name: Commit and push prices DB
+        if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.gap_fill.outcome == 'success'
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/prices.db
+          git diff --staged --quiet || git commit -m "data: daily price update $(date +%Y-%m-%d)"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
