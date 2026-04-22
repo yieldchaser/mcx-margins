@@ -7,6 +7,10 @@ import sys
 import json
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
+# Allow running as `python scripts/backfill.py` from repo root
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import src.db as db
 from src.scraper import scrape_margin, normalize_row, parse_pct

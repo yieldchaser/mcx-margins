@@ -34,7 +34,7 @@ jobs:
       # Exit 0 = new records saved.  Exit 2 = not published yet (clean skip).
       - name: Fetch today's margin data
         id: fetch_today
-        run: python fetch_today.py --retries 5 --wait 15
+        run: python scripts/fetch_today.py --retries 5 --wait 15
         continue-on-error: true
 
       # ── Step 2: gap-fill (safety net) ─────────────────────────────────────
@@ -44,20 +44,20 @@ jobs:
       # Exit 0 = filled ≥1 missing date.  Exit 2 = no gaps (clean skip).
       - name: Lookback gap-fill (last 5 weekdays)
         id: lookback
-        run: python lookback.py --days 5
+        run: python scripts/lookback.py --days 5
         continue-on-error: true
 
       # ── Step 3: export — always on manual trigger; conditional on scheduled ──
       - name: Export dashboard JSON
         if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
-        run: python export_json.py
+        run: python scripts/export_json.py
 
       # ── Step 4: alert — only for genuinely fresh today's data ────────────
       - name: Check margin change and send alert
         if: steps.fetch_today.outcome == 'success'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
-        run: python alert.py
+        run: python scripts/alert.py
 
       # ── Step 5: commit — always on manual trigger; conditional on scheduled ──
       - name: Commit and push DB + dashboard data

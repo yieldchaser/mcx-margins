@@ -53,7 +53,7 @@ jobs:
         id: backfill
         run: |
           SINCE=$(date -d '16 days ago' +%Y-%m-%d)
-          python fetch_prices.py backfill "$SINCE"
+          python scripts/fetch_prices.py backfill "$SINCE"
         continue-on-error: true
 
       # ── Step 2: commit prices DB ────────────────────────────────────────────

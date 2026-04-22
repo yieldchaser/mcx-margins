@@ -14,6 +14,10 @@ import sys
 import time
 import argparse
 from datetime import date
+from pathlib import Path
+
+# Allow running as `python scripts/fetch_today.py` from repo root
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import src.db as db
 from src.scraper import scrape_margin, normalize_row, parse_pct
