@@ -1046,7 +1046,7 @@ def main():
                AVG(initial_margin_pct), AVG(total_margin_pct), COUNT(*),
                MIN(initial_margin_pct), MAX(initial_margin_pct)
         FROM (
-            SELECT strftime('%Y', date) as date, expiry,
+            SELECT date, expiry,
                    initial_margin_pct, total_margin_pct
             FROM margins WHERE symbol='NATURALGAS'
             GROUP BY date, expiry
