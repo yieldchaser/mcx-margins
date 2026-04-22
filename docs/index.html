@@ -680,7 +680,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
       <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-        Predicted = 0.886 × Current Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
+        Predicted = 0.886 × Initial Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
       </p>
     </div>
     <!-- Item 4: Delta Distribution Histogram -->
@@ -2904,7 +2904,7 @@ const TOOLTIPS = {
   "Panic Spread": {
     title: "Panic Spread Signal Model",
     body: `Two complementary models — read them together, not as one.<br><br>
-<strong>Predicted %</strong> — Linear level forecast: <em>0.886 × Current + 43.0 × Daily Vol</em>. Shows the expected margin level tomorrow. In normal markets this is almost always slightly below current (the formula is a mean-reversion dampener).<br><br>
+<strong>Predicted %</strong> — Linear level forecast: <em>0.886 × Initial Margin + 43.0 × Daily Vol</em>. Shows the expected margin level tomorrow. In normal markets this is almost always slightly below current (the formula is a mean-reversion dampener).<br><br>
 <strong>Probability bar</strong> — Logistic model trained on 6 features (margin, vol, DTE, percentile rank, days since last change, policy buffer). More sensitive to structural positioning than the linear formula.<br><br>
 <strong>Signal badge</strong> — Driven by the logistic model's dominant class. <span style="color:#f85149;">▲ HIKE X%</span> = logistic assigns X% probability. <span style="color:#3fb950;">▼ CUT X%</span> likewise.<br><br>
 <strong style="color:#d29922;">Amber Predicted cell</strong> = the two models disagree on direction. The linear formula predicts a mild numeric cut while the logistic model's multi-feature analysis favours a hike — treat that contract with extra caution.`
@@ -2996,7 +2996,7 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
     title: "Panic Spread — Full Forward Curve",
     body: `Applies the linear prediction model to every active expiry simultaneously.<br><br>
 <strong>Blue solid</strong> = Today's actual margin per expiry.<br>
-<strong>Orange dashed</strong> = Predicted level for tomorrow: <em>0.886 × Current + 43.0 × Daily Vol</em>.<br>
+<strong>Orange dashed</strong> = Predicted level for tomorrow: <em>0.886 × Initial Margin + 43.0 × Daily Vol</em>.<br>
 <strong>Green shaded band</strong> = ±1σ prediction interval (rolling 30-day residual std).<br>
 <strong>Lighter outer band</strong> = ±2σ interval.<br><br>
 <em>Note:</em> In normal markets the orange line sits slightly below the blue — the formula is a mean-reversion dampener (0.886 &lt; 1). It rarely predicts a hike unless daily vol spikes above ~6%. Use the <strong>Panic Spread Signals table</strong> on the Overview tab for direction probability — the logistic model there uses more features and is the better directional signal.<br><br>
