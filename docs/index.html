@@ -381,6 +381,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
   <button class="tab-btn" data-tab="history" id="btn-history" title="Historical Baseline & Scatter Models">History</button>
   <button class="tab-btn" data-tab="seasonality" id="btn-seasonality" title="Seasonal Patterns by Month/Year">Seasonality</button>
   <button class="tab-btn" data-tab="analytics" id="btn-analytics" title="Predictive Signals & System Health">Analytics</button>
+  <button class="tab-btn" data-tab="market" id="btn-market" title="MCX Price, Volume, OI & Liquidity Intelligence">Market</button>
   <button class="tab-btn" data-tab="explorer" id="btn-explorer" title="Raw Data Explorer & Export Tool">Data Explorer</button>
 </nav>
 
@@ -415,6 +416,14 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       </div>
     </div>
 
+    <div class="card mb-4" id="marketOverviewCard" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">Market Context</div>
+        <div id="marketOverviewFreshness" style="font-size:11px;color:var(--text-muted);"></div>
+      </div>
+      <div class="grid-3" id="marketOverviewGrid"></div>
+    </div>
+
     <!-- Mini forward curve + panic signals -->
     <div class="grid-2">
       <div class="card">
@@ -445,6 +454,14 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <button class="range-btn active-range" id="coneAlltimeBtn" title="Show historical percentile cone based on all data since 2010">All-time</button>
         <button class="range-btn" id="coneRecentBtn" title="Show historical percentile cone based only on the last 5 years">Recent (5Y)</button>
+        <label class="market-intel-control" style="display:flex;align-items:center;gap:6px;margin-left:10px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="showFwdMarketPrice" style="accent-color:var(--accent-green);width:14px;height:14px;">
+          MCX Price
+        </label>
+        <label class="market-intel-control" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="showFwdLiquidity" style="accent-color:var(--accent-yellow);width:14px;height:14px;">
+          Liquidity
+        </label>
       </div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
@@ -477,6 +494,14 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
               Overlay Henry Hub Price (NGW00)
             </label>
           </div>
+          <div class="market-intel-control" style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="showMcxPrice" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;">
+            <label for="showMcxPrice" style="font-size:12px;color:var(--text-muted);cursor:pointer;">Overlay MCX Close</label>
+          </div>
+          <div class="market-intel-control" style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="showMcxFlow" style="accent-color:var(--accent-yellow);width:14px;height:14px;cursor:pointer;">
+            <label for="showMcxFlow" style="font-size:12px;color:var(--text-muted);cursor:pointer;">Volume/OI Panel</label>
+          </div>
         </div>
         <div class="horizon-group" style="margin-left:auto;">
           <button class="horizon-btn" data-months="1">1M</button>
@@ -506,6 +531,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <span class="label-end">—</span>
         </div>
       </div>
+    </div>
+    <div class="card mb-4 market-intel-control" id="marketFlowCard" style="display:none;">
+      <div class="card-title">MCX Market Flow: Volume & Open Interest</div>
+      <div class="chart-container" style="height:260px;"><canvas id="chartHistMarketFlow"></canvas></div>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -585,6 +614,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
           <input type="checkbox" id="lcShowHH" style="accent-color:#3fb950;width:14px;height:14px;">
           <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
         </label>
+        <label class="market-intel-control" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+          <input type="checkbox" id="lcShowMcx" style="accent-color:var(--accent);width:14px;height:14px;">
+          <span style="font-size:12px;color:var(--text-muted);">MCX Market</span>
+        </label>
         <!-- Horizon presets — right-aligned in the controls row -->
         <div class="horizon-group" id="lcPresets" style="margin-left:auto;flex-shrink:0;">
           <button class="horizon-btn" data-range="1w">1w</button>
@@ -663,6 +696,15 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         </table>
       </div>
     </div>
+    <div class="card mb-4 market-intel-control" id="marketSignalsCard" style="display:none;">
+      <div class="card-title" style="margin-bottom:12px;">Market-Confirmed Risk Signals</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Symbol</th><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
+          <tbody id="marketSignalsBody"></tbody>
+        </table>
+      </div>
+    </div>
     <div class="grid-2 mb-4">
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
@@ -705,6 +747,70 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
         <div class="chart-container"><canvas id="chartPercentile"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-market" class="tab-content">
+    <div class="card mb-4" style="padding:14px 20px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <select id="marketSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
+          <option value="ng">NATURALGAS</option>
+          <option value="ngm">NATGASMINI</option>
+        </select>
+        <span id="marketStatus" style="font-size:12px;color:var(--text-muted);">Loading market intelligence...</span>
+      </div>
+    </div>
+    <div class="grid-3 mb-4" id="marketKpis"></div>
+    <div class="card mb-4">
+      <div class="card-title">Current MCX Futures Snapshot</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
+          <tbody id="marketCurrentBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">Front-Month Price & Returns</div>
+        <div class="chart-container" style="height:320px;"><canvas id="chartMarketPrice"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Volume & Open Interest</div>
+        <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">Active Futures Curve</div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Explainable Market Signals</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
+            <tbody id="marketSignalBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+        <div class="card-title" style="margin-bottom:0;">Market Data Explorer</div>
+        <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Download CSV</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
+          <tbody id="marketExplorerBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
+        <button id="marketPrevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
+        <span id="marketPageInfo" style="color:var(--text-muted);"></span>
+        <button id="marketNextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
       </div>
     </div>
   </div>
@@ -926,9 +1032,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // Global data cache (with 5-min TTL for live-data keys)
+const ENABLE_MARKET_INTEL = true;
 const DATA = {};
 const DATA_TS = {};
-const TTL_LIVE = new Set(['current', 'meta', 'stress_score']);
+const TTL_LIVE = new Set(['current', 'meta', 'stress_score', 'market/meta', 'market/current']);
 async function loadJSON(name) {
   const now = Date.now();
   if (DATA[name]) {
@@ -942,6 +1049,35 @@ async function loadJSON(name) {
   return DATA[name];
 }
 
+async function loadMarketJSON(name) {
+  if (!ENABLE_MARKET_INTEL) throw new Error('Market intelligence disabled');
+  return loadJSON('market/' + name);
+}
+
+function initMarketIntelShell() {
+  if (ENABLE_MARKET_INTEL) return;
+  document.getElementById('btn-market')?.remove();
+  document.querySelectorAll('.market-intel-control').forEach(el => { el.style.display = 'none'; });
+}
+
+function fmtNum(v, digits = 2) {
+  return v == null || Number.isNaN(Number(v)) ? '-' : Number(v).toLocaleString(undefined, {maximumFractionDigits: digits});
+}
+
+function fmtPct(v, digits = 2) {
+  return v == null || Number.isNaN(Number(v)) ? '-' : `${Number(v).toFixed(digits)}%`;
+}
+
+function marketHistName(symKey) {
+  return symKey === 'ngm' ? 'history_ngm' : 'history_ng';
+}
+
+function marketSymbolName(symKey) {
+  return symKey === 'ngm' ? 'NATGASMINI' : 'NATURALGAS';
+}
+
+initMarketIntelShell();
+
 // Staleness badge
 function setStaleness(dateStr) {
   const dot = document.getElementById('stalenessDot');
@@ -951,6 +1087,40 @@ function setStaleness(dateStr) {
   if (days < 1) { dot.style.background = '#3fb950'; dot.title = 'LIVE'; }
   else if (days < 5) { dot.style.background = '#d29922'; dot.title = 'DELAYED'; }
   else { dot.style.background = '#f85149'; dot.title = 'STALE'; }
+}
+
+async function renderMarketOverviewContext() {
+  if (!ENABLE_MARKET_INTEL) return;
+  try {
+    const [meta, current, signals] = await Promise.all([
+      loadMarketJSON('meta'), loadMarketJSON('current'), loadMarketJSON('signals')
+    ]);
+    const card = document.getElementById('marketOverviewCard');
+    const grid = document.getElementById('marketOverviewGrid');
+    const fresh = meta.freshness || {};
+    const ng = (current.NATURALGAS || []).filter(r => r.dte >= 0).sort((a,b) => a.dte - b.dte)[0];
+    const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
+    if (!ng) return;
+    document.getElementById('marketOverviewFreshness').textContent =
+      `Market data: ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'}${fresh.age_days != null ? ' | age ' + fresh.age_days + 'd' : ''}`;
+    grid.innerHTML = [
+      ['Front Close', fmtNum(ng.close, 2), `${_contractLabel(ng.expiry)} | ${ng.dte}d`],
+      ['Return', fmtPct(ng.return_pct, 2), `Prev close ${fmtNum(ng.prev_close, 2)}`],
+      ['Volume Shock', fmtNum(ng.volume_z_20d, 2) + 'z', `${fmtNum(ng.volume_lots, 0)} lots`],
+      ['OI Change', fmtPct(ng.oi_change_pct, 2), `OI ${fmtNum(ng.open_interest, 0)}`],
+      ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`],
+      ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal']
+    ].map(([label, value, sub]) => `
+      <div class="card" style="background:var(--surface2);padding:14px;">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value" style="font-size:18px;">${value}</div>
+        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
+      </div>
+    `).join('');
+    card.style.display = 'block';
+  } catch(e) {
+    console.warn('Market overview skipped:', e);
+  }
 }
 
 (async () => {
@@ -1277,6 +1447,7 @@ async function renderOverview() {
         <td>${signalLabel}</td>
       </tr>`;
     }).join('');
+    renderMarketOverviewContext();
     attachTooltips();
   } catch(e) {
     console.error('Overview render error:', e);
@@ -1352,6 +1523,7 @@ let fwdChart = null;
 let termCone = null;
 let termConeLookup = {};
 let termNg = [];
+let termMarketForward = null;
 let coneMode = 'alltime'; // 'alltime' | 'recent'
 
 function renderFwdCone() {
@@ -1408,6 +1580,53 @@ function renderFwdCone() {
     });
   }
 
+  const showMarketPrice = ENABLE_MARKET_INTEL && document.getElementById('showFwdMarketPrice')?.checked;
+  const showLiquidity = ENABLE_MARKET_INTEL && document.getElementById('showFwdLiquidity')?.checked;
+  const marketCurve = termMarketForward?.NATURALGAS?.curve || [];
+  const marketLookup = {};
+  marketCurve.forEach(r => { marketLookup[r.expiry] = r; });
+  const scales = {
+    x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
+    y: { title: { display: true, text: 'Total Margin %' } }
+  };
+  if (showMarketPrice && marketCurve.length) {
+    datasets.push({
+      label: 'MCX Close',
+      data: ng.map(c => marketLookup[c.expiry]?.close ?? null),
+      borderColor: '#3fb950',
+      backgroundColor: 'transparent',
+      tension: 0.25,
+      pointRadius: 3,
+      borderWidth: 2,
+      borderDash: [5, 3],
+      yAxisID: 'yMarketPrice',
+      order: 0
+    });
+    scales.yMarketPrice = {
+      title: { display: true, text: 'MCX Close' },
+      position: 'right',
+      grid: { drawOnChartArea: false }
+    };
+  }
+  if (showLiquidity && marketCurve.length) {
+    datasets.push({
+      label: 'Liquidity Marker',
+      data: ng.map(c => c.total_margin_pct),
+      showLine: false,
+      backgroundColor: ng.map(c => {
+        const score = marketLookup[c.expiry]?.liquidity_score;
+        return score == null ? 'rgba(139,148,158,0.25)' : score < 35 ? 'rgba(248,81,73,0.75)' : score < 65 ? 'rgba(210,153,34,0.75)' : 'rgba(63,185,80,0.75)';
+      }),
+      pointRadius: ng.map(c => {
+        const score = marketLookup[c.expiry]?.liquidity_score;
+        return score == null ? 0 : Math.max(3, Math.min(10, score / 10));
+      }),
+      pointHoverRadius: 11,
+      yAxisID: 'y',
+      order: -1
+    });
+  }
+
   if (fwdChart) fwdChart.destroy();
   fwdChart = new Chart(document.getElementById('chartFwdFull'), {
     type: 'line',
@@ -1446,10 +1665,7 @@ function renderFwdCone() {
           }
         }
       },
-      scales: {
-        x: { ticks: { font: { size: 10 }, maxRotation: 60, maxTicksLimit: 12 } },
-        y: { title: { display: true, text: 'Total Margin %' } }
-      }
+      scales
     }
   });
 
@@ -1472,6 +1688,10 @@ async function renderTermStructure() {
     const coneLookup = {};
     if (cone) cone.forEach(c => { coneLookup[c.expiry] = c; });
     termConeLookup = coneLookup;
+    if (ENABLE_MARKET_INTEL) {
+      try { termMarketForward = await loadMarketJSON('forward_curve'); }
+      catch(e) { termMarketForward = null; console.warn('Term market overlay unavailable:', e); }
+    }
 
     // FIX 3+4: Render cone with current mode; toggles re-render
     renderFwdCone();
@@ -1489,6 +1709,8 @@ async function renderTermStructure() {
       document.getElementById('coneAlltimeBtn').classList.remove('active-range');
       renderFwdCone();
     });
+    document.getElementById('showFwdMarketPrice')?.addEventListener('change', renderFwdCone);
+    document.getElementById('showFwdLiquidity')?.addEventListener('change', renderFwdCone);
 
     new Chart(document.getElementById('chartVolCurve'), {
       type: 'line',
@@ -1542,7 +1764,7 @@ async function renderTermStructure() {
 // PART 4 — History Tab
 // ═══════════════════════════════════════════════════════════════════
 
-let histChartMargin = null, histChartVol = null, histChartScatter = null, histChartDecomp = null;
+let histChartMargin = null, histChartVol = null, histChartScatter = null, histChartDecomp = null, histChartMarketFlow = null;
 let histInited = false;
 let _histFullRaw = [], _histMarginRC = null, _histVolRC = null, _histDecompRC = null;
 
@@ -1573,6 +1795,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
       renderHistory('Margin', startIdx ?? 0, max);
       renderHistory('Vol',    startIdx ?? 0, max);
       renderHistory('Decomp', startIdx ?? 0, max);
+      renderHistory('MarketFlow', startIdx ?? 0, max);
       renderHistory('Scatter');
       return;
     }
@@ -1587,6 +1810,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
       _histMarginRC.setLabels(labels[0], labels[labels.length-1]);
       let margins = data.map(d => d.initial_margin_pct);
       let priceDataset = null;
+      let mcxPriceDataset = null;
       if (showPrice) {
         try {
           const hhData = await loadJSON('hh_price');
@@ -1599,12 +1823,75 @@ async function renderHistory(chartName, startIdx, endIdx) {
           }
         } catch(e) {}
       }
+      if (ENABLE_MARKET_INTEL && document.getElementById('showMcxPrice')?.checked) {
+        try {
+          const marketData = await loadMarketJSON(marketHistName(sym));
+          const pm = {};
+          (marketData.rows || []).forEach(p => { pm[p.date] = p.close; });
+          const aligned = labels.map(d => pm[d] ?? null);
+          if (aligned.some(v => v !== null)) {
+            mcxPriceDataset = {
+              label: 'MCX Front Close',
+              data: aligned,
+              borderColor: '#58a6ff',
+              backgroundColor: 'transparent',
+              tension: 0.2,
+              pointRadius: 0,
+              borderWidth: 2,
+              borderDash: [3, 3],
+              yAxisID: 'yMcxPrice'
+            };
+          }
+        } catch(e) { console.warn('MCX price overlay skipped:', e); }
+      }
       const datasets = [{ label: 'Initial Margin %', data: margins, borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)', fill: true, yAxisID: 'y', ...lineDefaults }];
       if (priceDataset) datasets.push(priceDataset);
+      if (mcxPriceDataset) datasets.push(mcxPriceDataset);
       const scales = { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Margin %' }, position: 'left' } };
       if (priceDataset) scales.yPrice = { title: { display: true, text: 'Henry Hub ($/MMBtu)' }, position: 'right', grid: { drawOnChartArea: false } };
+      if (mcxPriceDataset) scales.yMcxPrice = { title: { display: true, text: 'MCX Close' }, position: 'right', grid: { drawOnChartArea: false } };
       if (histChartMargin) histChartMargin.destroy();
-      histChartMargin = new Chart(document.getElementById('chartHistMargin'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: !!priceDataset, position: 'top' } }, scales } });
+      histChartMargin = new Chart(document.getElementById('chartHistMargin'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: !!priceDataset || !!mcxPriceDataset, position: 'top' } }, scales } });
+    }
+
+    if (chartName === 'MarketFlow') {
+      const card = document.getElementById('marketFlowCard');
+      if (!ENABLE_MARKET_INTEL || !document.getElementById('showMcxFlow')?.checked) {
+        card.style.display = 'none';
+        if (histChartMarketFlow) { histChartMarketFlow.destroy(); histChartMarketFlow = null; }
+      } else {
+        try {
+          const marketData = await loadMarketJSON(marketHistName(sym));
+          const byDate = {};
+          (marketData.rows || []).forEach(r => { byDate[r.date] = r; });
+          const aligned = labels.map(d => byDate[d] || {});
+          if (histChartMarketFlow) histChartMarketFlow.destroy();
+          histChartMarketFlow = new Chart(document.getElementById('chartHistMarketFlow'), {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: 'Volume Lots', data: aligned.map(r => r.volume_lots ?? null), backgroundColor: 'rgba(56,139,253,0.35)', borderColor: 'rgba(56,139,253,0.8)', yAxisID: 'yVol' },
+                { label: 'Open Interest', data: aligned.map(r => r.open_interest ?? null), type: 'line', borderColor: '#d29922', backgroundColor: 'transparent', pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { position: 'top' } },
+              scales: {
+                x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } },
+                yVol: { title: { display: true, text: 'Volume Lots' }, position: 'left' },
+                yOi: { title: { display: true, text: 'Open Interest' }, position: 'right', grid: { drawOnChartArea: false } }
+              }
+            }
+          });
+          card.style.display = 'block';
+        } catch(e) {
+          card.style.display = 'none';
+          console.warn('MCX flow panel skipped:', e);
+        }
+      }
     }
 
     // 2. Vol Chart
@@ -1702,6 +1989,8 @@ document.querySelectorAll('#tab-history .horizon-btn').forEach(btn => {
 
 document.getElementById('histSymbol').addEventListener('change', () => renderHistory('FullReload'));
 document.getElementById('showPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
+document.getElementById('showMcxPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
+document.getElementById('showMcxFlow')?.addEventListener('change', () => renderHistory('MarketFlow', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
 
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   if (!histInited) { histInited = true; renderHistory('FullReload'); }
@@ -1953,6 +2242,63 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
     } catch(e) { console.warn('LC: HH overlay failed:', e); }
   }
 
+  if (ENABLE_MARKET_INTEL && document.getElementById('lcShowMcx')?.checked) {
+    try {
+      const marketContract = await loadMarketJSON('contract/' + _lcSym + '/' + expiry);
+      const byDate = {};
+      (marketContract.rows || []).forEach(r => { byDate[r.date] = r; });
+      const aligned = rows.map(r => byDate[r.date] || {});
+      if (aligned.some(r => r.close != null)) {
+        datasets.push({
+          label: 'MCX Close',
+          data: aligned.map(r => r.close ?? null),
+          borderColor: '#58a6ff',
+          backgroundColor: 'transparent',
+          tension: 0.25,
+          pointRadius: 0,
+          borderWidth: 2,
+          borderDash: [3,3],
+          yAxisID: 'yMcxPrice',
+          spanGaps: true
+        });
+        scales.yMcxPrice = {
+          title: { display: true, text: 'MCX Close', color: '#58a6ff' },
+          position: 'right',
+          grid: { drawOnChartArea: false }
+        };
+      }
+      if (aligned.some(r => r.volume_lots != null)) {
+        datasets.push({
+          label: 'Volume Lots',
+          type: 'bar',
+          data: aligned.map(r => r.volume_lots ?? null),
+          backgroundColor: 'rgba(56,139,253,0.18)',
+          borderColor: 'rgba(56,139,253,0.35)',
+          yAxisID: 'yMcxVolume'
+        });
+        scales.yMcxVolume = { display: false, position: 'right' };
+      }
+      if (aligned.some(r => r.open_interest != null)) {
+        datasets.push({
+          label: 'Open Interest',
+          data: aligned.map(r => r.open_interest ?? null),
+          borderColor: '#d29922',
+          backgroundColor: 'transparent',
+          tension: 0.25,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          yAxisID: 'yMcxOi',
+          spanGaps: true
+        });
+        scales.yMcxOi = {
+          title: { display: true, text: 'OI', color: '#d29922' },
+          position: 'right',
+          grid: { drawOnChartArea: false }
+        };
+      }
+    } catch(e) { console.warn('LC: MCX market overlay failed:', e); }
+  }
+
   // Update shared tender state so plugin reads correct values on every render (incl. zoom-only)
   _lcTenderState.idx      = rows.findIndex(r => r.dte <= 30);
   // Category scale: getPixelForValue(n) expects 0-based array index, not label value
@@ -2136,6 +2482,10 @@ document.getElementById('lcSymNGM').addEventListener('click', () => {
 });
 document.getElementById('lcShowHH').addEventListener('change', () => {
   if (!_lcRC) return; // no contract selected yet
+  renderLifecycle(parseInt(_lcRC.inStart.value), parseInt(_lcRC.inEnd.value));
+});
+document.getElementById('lcShowMcx')?.addEventListener('change', () => {
+  if (!_lcRC) return;
   renderLifecycle(parseInt(_lcRC.inStart.value), parseInt(_lcRC.inEnd.value));
 });
 
@@ -2501,6 +2851,26 @@ async function renderAnalytics() {
       }
     } catch(e) { console.warn('Model health card skipped:', e); }
 
+    if (ENABLE_MARKET_INTEL) {
+      try {
+        const ms = await loadMarketJSON('signals');
+        const rows = (ms.signals || []).sort((a,b) => b.score - a.score).slice(0, 12);
+        if (rows.length) {
+          document.getElementById('marketSignalsBody').innerHTML = rows.map(s => `
+            <tr>
+              <td>${s.symbol}</td>
+              <td>${s.label}</td>
+              <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${s.severity}</span></td>
+              <td>${s.score}</td>
+              <td>${s.direction}</td>
+              <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
+            </tr>
+          `).join('');
+          document.getElementById('marketSignalsCard').style.display = 'block';
+        }
+      } catch(e) { console.warn('Market signals skipped:', e); }
+    }
+
     // Item 1: Prediction chart with forecast bands
     const ng = fwd.NATURALGAS || [];
     const curM  = ng.map(c => c.initial_margin_pct);  // use initial — consistent with prediction
@@ -2827,6 +3197,158 @@ async function renderAnalytics() {
 }
 
 document.querySelector('[data-tab="analytics"]').addEventListener('click', () => renderAnalytics());
+
+// Market Intelligence Tab
+let marketRendered = false;
+let marketExplorerData = [], marketExplorerPage = 0;
+let marketPriceChart = null, marketFlowChart = null, marketCurveChart = null;
+const MARKET_PAGE_SIZE = 50;
+
+async function renderMarketIntel(force = false) {
+  if (!ENABLE_MARKET_INTEL) return;
+  if (marketRendered && !force) return;
+  marketRendered = true;
+  const symKey = document.getElementById('marketSymbol').value;
+  const symbol = marketSymbolName(symKey);
+  try {
+    const [meta, current, hist, forward, signals] = await Promise.all([
+      loadMarketJSON('meta'),
+      loadMarketJSON('current'),
+      loadMarketJSON(marketHistName(symKey)),
+      loadMarketJSON('forward_curve'),
+      loadMarketJSON('signals')
+    ]);
+    const rows = hist.rows || [];
+    const latest = rows[rows.length - 1] || {};
+    const fresh = meta.freshness || {};
+    document.getElementById('marketStatus').textContent =
+      `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows`;
+    document.getElementById('marketKpis').innerHTML = [
+      ['Front Close', fmtNum(latest.close, 2), `${_contractLabel(latest.expiry || '')} | ${latest.dte ?? '-'}d`],
+      ['1D Return', fmtPct(latest.return_pct, 2), `5D ${fmtPct(latest.return_5d_pct, 2)}`],
+      ['Realized Vol', fmtPct(latest.rolling_realized_vol_20d, 2), '20D annualized'],
+      ['Volume Shock', `${fmtNum(latest.volume_z_20d, 2)}z`, `${fmtNum(latest.volume_lots, 0)} lots`],
+      ['Open Interest', fmtNum(latest.open_interest, 0), `Change ${fmtPct(latest.oi_change_pct, 2)}`],
+      ['Liquidity Score', fmtNum(latest.liquidity_score, 1), 'Volume + OI percentile']
+    ].map(([label, value, sub]) => `
+      <div class="card">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value" style="font-size:20px;">${value}</div>
+        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
+      </div>
+    `).join('');
+
+    const curRows = current[symbol] || [];
+    document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => `
+      <tr>
+        <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+        <td>${r.dte}</td>
+        <td>${fmtNum(r.close, 2)}</td>
+        <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
+        <td>${fmtNum(r.volume_lots, 0)}</td>
+        <td>${fmtNum(r.value_lacs, 2)}</td>
+        <td>${fmtNum(r.open_interest, 0)}</td>
+        <td>${fmtNum(r.liquidity_score, 1)}</td>
+      </tr>
+    `).join('');
+
+    const recent = rows.slice(-365);
+    if (marketPriceChart) marketPriceChart.destroy();
+    marketPriceChart = new Chart(document.getElementById('chartMarketPrice'), {
+      type: 'line',
+      data: {
+        labels: recent.map(r => r.date),
+        datasets: [
+          { label: 'Close', data: recent.map(r => r.close), borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.10)', fill: true, tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Return %', data: recent.map(r => r.return_pct), borderColor: '#3fb950', backgroundColor: 'transparent', borderDash: [4,3], tension: 0.2, pointRadius: 0, yAxisID: 'yRet' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } }, y: { title: { display: true, text: 'Close' } }, yRet: { position: 'right', title: { display: true, text: 'Return %' }, grid: { drawOnChartArea: false } } } }
+    });
+
+    if (marketFlowChart) marketFlowChart.destroy();
+    marketFlowChart = new Chart(document.getElementById('chartMarketFlow'), {
+      type: 'bar',
+      data: {
+        labels: recent.map(r => r.date),
+        datasets: [
+          { label: 'Volume Lots', data: recent.map(r => r.volume_lots), backgroundColor: 'rgba(56,139,253,0.35)', yAxisID: 'yVol' },
+          { label: 'Open Interest', data: recent.map(r => r.open_interest), type: 'line', borderColor: '#d29922', backgroundColor: 'transparent', pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } }, yVol: { title: { display: true, text: 'Volume Lots' } }, yOi: { position: 'right', title: { display: true, text: 'Open Interest' }, grid: { drawOnChartArea: false } } } }
+    });
+
+    const curve = forward[symbol]?.curve || [];
+    if (marketCurveChart) marketCurveChart.destroy();
+    marketCurveChart = new Chart(document.getElementById('chartMarketCurve'), {
+      type: 'line',
+      data: {
+        labels: curve.map(r => `${_expLabel(r.expiry)} (${r.dte}d)`),
+        datasets: [
+          { label: 'Close', data: curve.map(r => r.close), borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.10)', fill: true, tension: 0.25, pointRadius: 4 },
+          { label: 'Liquidity', data: curve.map(r => r.liquidity_score), borderColor: '#d29922', backgroundColor: 'transparent', borderDash: [4,3], tension: 0.25, pointRadius: 4, yAxisID: 'yLiq' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { title: { display: true, text: 'Close' } }, yLiq: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Liquidity' }, grid: { drawOnChartArea: false } } } }
+    });
+
+    const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
+    document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => `
+      <tr>
+        <td>${s.label}</td>
+        <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${s.severity}</span></td>
+        <td>${s.score}</td>
+        <td>${s.direction}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
+      </tr>
+    `).join('');
+
+    marketExplorerData = [...rows].reverse();
+    marketExplorerPage = 0;
+    renderMarketExplorerPage();
+  } catch(e) {
+    console.error('Market render error:', e);
+    document.getElementById('marketStatus').textContent = 'Market intelligence unavailable; margin dashboard remains active.';
+  }
+}
+
+function renderMarketExplorerPage() {
+  const start = marketExplorerPage * MARKET_PAGE_SIZE;
+  const slice = marketExplorerData.slice(start, start + MARKET_PAGE_SIZE);
+  document.getElementById('marketPageInfo').textContent = `Page ${marketExplorerPage + 1} of ${Math.max(1, Math.ceil(marketExplorerData.length / MARKET_PAGE_SIZE))}`;
+  document.getElementById('marketExplorerBody').innerHTML = slice.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+      <td>${r.dte}</td>
+      <td>${fmtNum(r.close, 2)}</td>
+      <td>${fmtPct(r.return_pct, 2)}</td>
+      <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
+      <td>${fmtNum(r.volume_lots, 0)}</td>
+      <td>${fmtNum(r.volume_z_20d, 2)}</td>
+      <td>${fmtNum(r.open_interest, 0)}</td>
+      <td>${fmtPct(r.oi_change_pct, 2)}</td>
+    </tr>
+  `).join('');
+}
+
+document.querySelector('[data-tab="market"]')?.addEventListener('click', () => renderMarketIntel());
+document.getElementById('marketSymbol')?.addEventListener('change', () => { marketRendered = false; renderMarketIntel(true); });
+document.getElementById('marketPrevPage')?.addEventListener('click', () => {
+  if (marketExplorerPage > 0) { marketExplorerPage--; renderMarketExplorerPage(); }
+});
+document.getElementById('marketNextPage')?.addEventListener('click', () => {
+  if ((marketExplorerPage + 1) * MARKET_PAGE_SIZE < marketExplorerData.length) { marketExplorerPage++; renderMarketExplorerPage(); }
+});
+document.getElementById('marketExportCSV')?.addEventListener('click', () => {
+  const headers = ['date','expiry','dte','open','high','low','close','prev_close','return_pct','rolling_realized_vol_20d','volume_lots','volume_z_20d','open_interest','oi_change_pct','liquidity_score'];
+  const csv = [headers.join(','), ...marketExplorerData.map(r => headers.map(h => r[h] ?? '').join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = `mcx_market_${document.getElementById('marketSymbol').value}.csv`;
+  a.click();
+});
 
 // ── Data Explorer ──
 let explorerData = [], explorerPage = 0;

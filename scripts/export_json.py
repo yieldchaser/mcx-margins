@@ -10,7 +10,7 @@ import json
 import math
 import statistics
 import urllib.request
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from pathlib import Path
 
 try:
@@ -22,13 +22,35 @@ except ImportError:
     print("  [WARN] numpy/scikit-learn not available — Items 1–9 advanced stats will be skipped")
 
 DB_PATH = Path("data/margins.db")
+PRICE_DB_PATH = Path("data/prices.db")
 OUT_DIR = Path("docs/data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+MARKET_SCHEMA_VERSION = "1.0.0"
+MARKET_SYMBOLS = ("NATURALGAS", "NATGASMINI")
+MARKET_SYMBOL_KEYS = {"NATURALGAS": "ng", "NATGASMINI": "ngm"}
+SOURCE_REGISTRY = {
+    "margins": {
+        "name": "MCX CCL margins",
+        "db_path": str(DB_PATH),
+        "tables": ["margins"],
+        "namespace": "root",
+        "grain": "date-symbol-expiry-file_id",
+    },
+    "market_futures": {
+        "name": "MCX futures bhavcopy",
+        "db_path": str(PRICE_DB_PATH),
+        "tables": ["prices"],
+        "namespace": "market",
+        "grain": "date-symbol-expiry",
+        "filter": "instrument='FUTCOM'",
+    },
+}
 
 
 def save(filename, data):
     path = OUT_DIR / filename
-    with open(path, "w") as f:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, default=str)
     print(f"  [OK] {filename}")
 
@@ -75,6 +97,665 @@ def safe_corr(x, y):
         return round(num / den, 4) if den > 0 else None
     except Exception:
         return None
+
+
+def _utc_now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _safe_float(value):
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        return f if math.isfinite(f) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(value):
+    f = _safe_float(value)
+    return int(f) if f is not None else None
+
+
+def _round(value, digits=4):
+    f = _safe_float(value)
+    return round(f, digits) if f is not None else None
+
+
+def _mean(values):
+    vals = [v for v in values if v is not None]
+    return sum(vals) / len(vals) if vals else None
+
+
+def _stdev(values):
+    vals = [v for v in values if v is not None]
+    return statistics.stdev(vals) if len(vals) >= 2 else None
+
+
+def _percentile_rank(values, value):
+    vals = sorted(v for v in values if v is not None)
+    if not vals or value is None:
+        return None
+    return round(100 * sum(1 for v in vals if v <= value) / len(vals), 1)
+
+
+def _zscore(value, history):
+    vals = [v for v in history if v is not None]
+    if value is None or len(vals) < 5:
+        return None
+    avg = sum(vals) / len(vals)
+    sd = statistics.stdev(vals)
+    return round((value - avg) / sd, 3) if sd > 0 else None
+
+
+def _freshness_status(latest_date):
+    if not latest_date:
+        return {"label": "MISSING", "age_days": None}
+    try:
+        age = (date.today() - date.fromisoformat(latest_date)).days
+    except ValueError:
+        return {"label": "INVALID", "age_days": None}
+    if age <= 1:
+        label = "LIVE"
+    elif age <= 5:
+        label = "DELAYED"
+    else:
+        label = "STALE"
+    return {"label": label, "age_days": age}
+
+
+def _is_market_futures_row(row):
+    symbol = str(row.get("symbol", "")).upper()
+    instrument = str(row.get("instrument", "")).upper()
+    return symbol in MARKET_SYMBOLS and instrument == "FUTCOM"
+
+
+def _market_row_from_db(row):
+    rec = dict(row)
+    symbol = str(rec.get("symbol", "")).upper()
+    if symbol == "NATGAS":
+        symbol = "NATURALGAS"
+    normalized = {
+        "date": rec.get("date"),
+        "symbol": symbol,
+        "expiry": rec.get("expiry"),
+        "instrument": rec.get("instrument"),
+        "open": _round(rec.get("open"), 4),
+        "high": _round(rec.get("high"), 4),
+        "low": _round(rec.get("low"), 4),
+        "close": _round(rec.get("close"), 4),
+        "prev_close": _round(rec.get("prev_close"), 4),
+        "volume_lots": _safe_int(rec.get("volume_lots")),
+        "volume_kgs": _round(rec.get("volume_kgs"), 3),
+        "value_lacs": _round(rec.get("value_lacs"), 3),
+        "open_interest": _safe_int(rec.get("open_interest")),
+    }
+    normalized["dte"] = compute_dte(normalized["expiry"], normalized["date"])
+    prev_close = normalized["prev_close"]
+    close = normalized["close"]
+    normalized["return_pct"] = (
+        round(((close - prev_close) / prev_close) * 100, 4)
+        if close is not None and prev_close not in (None, 0)
+        else None
+    )
+    return normalized
+
+
+def _select_front_month(rows, ref_date=None):
+    candidates = []
+    for row in rows:
+        dte = row.get("dte")
+        if dte is None and ref_date:
+            dte = compute_dte(row.get("expiry", ""), ref_date)
+        if dte is not None and dte >= 0:
+            candidates.append((dte, row.get("expiry", ""), row))
+    if not candidates:
+        return None
+    return min(candidates, key=lambda item: (item[0], item[1]))[2]
+
+
+def _enrich_market_history(rows):
+    enriched = []
+    closes, returns, volumes, open_interest = [], [], [], []
+    for idx, row in enumerate(sorted(rows, key=lambda r: r["date"])):
+        close = row.get("close")
+        volume = row.get("volume_lots")
+        oi = row.get("open_interest")
+        ret = row.get("return_pct")
+        prior_oi = open_interest[-1] if open_interest else None
+        volume_hist = volumes[-20:]
+        return_window = [v for v in returns[-19:] + [ret] if v is not None]
+        oi_change = oi - prior_oi if oi is not None and prior_oi is not None else None
+        oi_change_pct = (
+            round((oi_change / prior_oi) * 100, 3)
+            if oi_change is not None and prior_oi not in (None, 0)
+            else None
+        )
+        vol_z = _zscore(volume, volume_hist)
+        realized = _stdev(return_window)
+        volume_pct = _percentile_rank(volumes[-252:], volume)
+        oi_pct = _percentile_rank(open_interest[-252:], oi)
+        liquidity_score = None
+        if volume_pct is not None or oi_pct is not None:
+            liquidity_score = round((volume_pct or 0) * 0.6 + (oi_pct or 0) * 0.4, 1)
+        enriched_row = {
+            **row,
+            "return_pct": ret,
+            "rolling_realized_vol_20d": round(realized * math.sqrt(252), 3) if realized is not None else None,
+            "volume_z_20d": vol_z,
+            "oi_change": oi_change,
+            "oi_change_pct": oi_change_pct,
+            "liquidity_score": liquidity_score,
+        }
+        if idx >= 5 and close is not None and closes[-5] not in (None, 0):
+            enriched_row["return_5d_pct"] = round(((close - closes[-5]) / closes[-5]) * 100, 3)
+        else:
+            enriched_row["return_5d_pct"] = None
+        enriched.append(enriched_row)
+        closes.append(close)
+        returns.append(ret)
+        volumes.append(volume)
+        open_interest.append(oi)
+    return enriched
+
+
+def _signal_severity(score):
+    if score >= 75:
+        return "HIGH"
+    if score >= 45:
+        return "MEDIUM"
+    return "LOW"
+
+
+def _make_signal(symbol, signal_id, label, score, lookback, features, reason, direction="NEUTRAL"):
+    score = int(max(0, min(100, round(score))))
+    return {
+        "id": signal_id,
+        "symbol": symbol,
+        "label": label,
+        "score": score,
+        "severity": _signal_severity(score),
+        "direction": direction,
+        "lookback": lookback,
+        "features": features,
+        "reason": reason,
+    }
+
+
+def _build_market_signals(symbol, history_rows, joined_rows):
+    if not history_rows:
+        return []
+    latest = history_rows[-1]
+    signals = []
+    ret_1d = latest.get("return_pct") or 0
+    ret_5d = latest.get("return_5d_pct") or 0
+    direction = "UP" if ret_5d > 0 else "DOWN" if ret_5d < 0 else "NEUTRAL"
+    score = min(100, abs(ret_5d) * 10 + abs(ret_1d) * 12)
+    signals.append(_make_signal(
+        symbol,
+        "price_momentum",
+        "Price Momentum",
+        score,
+        "5 trading days",
+        {"return_1d_pct": _round(ret_1d, 3), "return_5d_pct": _round(ret_5d, 3)},
+        f"{symbol} front-month price is {direction.lower()} over 5 sessions with {ret_5d:.2f}% return.",
+        direction,
+    ))
+
+    vol_z = latest.get("volume_z_20d")
+    vol_score = min(100, abs(vol_z or 0) * 30)
+    vol_label = "Volume Shock" if vol_score >= 60 else "Volume Normal"
+    signals.append(_make_signal(
+        symbol,
+        "volume_shock",
+        vol_label,
+        vol_score,
+        "20 trading days",
+        {"volume_lots": latest.get("volume_lots"), "volume_z_20d": vol_z},
+        f"Latest volume is {vol_z:.2f} standard deviations from its 20-day baseline." if vol_z is not None else "Insufficient volume history for z-score.",
+        "UP" if (vol_z or 0) > 0 else "DOWN",
+    ))
+
+    oi_change_pct = latest.get("oi_change_pct")
+    oi_score = min(100, abs(oi_change_pct or 0) * 6)
+    oi_direction = "EXPANDING" if (oi_change_pct or 0) > 0 else "CONTRACTING" if (oi_change_pct or 0) < 0 else "FLAT"
+    signals.append(_make_signal(
+        symbol,
+        "open_interest_shift",
+        "Open Interest Shift",
+        oi_score,
+        "1 trading day",
+        {"open_interest": latest.get("open_interest"), "oi_change_pct": oi_change_pct},
+        f"Open interest is {oi_direction.lower()} by {oi_change_pct:.2f}% versus the prior front-month observation." if oi_change_pct is not None else "Open-interest change is unavailable.",
+        oi_direction,
+    ))
+
+    liq = latest.get("liquidity_score")
+    liq_score = 100 - liq if liq is not None else 0
+    signals.append(_make_signal(
+        symbol,
+        "liquidity_stress",
+        "Liquidity Stress",
+        liq_score,
+        "Trailing 252 observations",
+        {"liquidity_score": liq, "volume_lots": latest.get("volume_lots"), "open_interest": latest.get("open_interest")},
+        f"Liquidity score is {liq:.1f}; lower values indicate weaker volume and open-interest support." if liq is not None else "Insufficient liquidity history for scoring.",
+        "STRESS" if liq_score >= 60 else "NORMAL",
+    ))
+
+    joined = [row for row in joined_rows if row.get("symbol") == symbol]
+    if len(joined) >= 6:
+        latest_join = joined[-1]
+        prior = joined[-6]
+        margin_now = latest_join.get("initial_margin_pct")
+        margin_prior = prior.get("initial_margin_pct")
+        margin_change = (
+            margin_now - margin_prior
+            if margin_now is not None and margin_prior is not None
+            else None
+        )
+        price_return = latest_join.get("return_5d_pct")
+        if price_return is None:
+            price_now = latest_join.get("close")
+            price_prior = prior.get("close")
+            price_return = (
+                ((price_now - price_prior) / price_prior) * 100
+                if price_now is not None and price_prior not in (None, 0)
+                else None
+            )
+        divergence = abs(price_return or 0) - abs(margin_change or 0)
+        div_score = max(0, min(100, divergence * 12))
+        signals.append(_make_signal(
+            symbol,
+            "margin_market_divergence",
+            "Margin-Market Divergence",
+            div_score,
+            "5 trading days",
+            {
+                "price_return_5d_pct": _round(price_return, 3),
+                "margin_change_5d_pct": _round(margin_change, 3),
+            },
+            "Price has moved materially more than initial margin over the same window." if div_score >= 45 else "Margin and market movement are broadly aligned.",
+            "DIVERGING" if div_score >= 45 else "CONFIRMED",
+        ))
+    return signals
+
+
+def _build_margin_front_series_for_symbol(cur, symbol):
+    cur.execute("SELECT DISTINCT date FROM margins WHERE symbol=? ORDER BY date", (symbol,))
+    dates = [r[0] for r in cur.fetchall()]
+    series = []
+    for d in dates:
+        cur.execute(
+            """
+            SELECT expiry, initial_margin_pct, total_margin_pct, elm_pct,
+                   tender_margin_pct, daily_volatility, annualized_volatility
+            FROM margins WHERE date=? AND symbol=?
+            ORDER BY expiry ASC
+            """,
+            (d, symbol),
+        )
+        rows = []
+        for row in cur.fetchall():
+            rows.append({
+                "date": d,
+                "symbol": symbol,
+                "expiry": row[0],
+                "dte": compute_dte(row[0], d),
+                "initial_margin_pct": row[1],
+                "total_margin_pct": row[2],
+                "elm_pct": row[3],
+                "tender_margin_pct": row[4],
+                "daily_volatility": row[5],
+                "annualized_volatility": row[6],
+            })
+        best = _select_front_month(rows, d)
+        if best:
+            series.append(best)
+    return series
+
+
+def _market_validation(conn, latest_date, futures_rows):
+    validation = {"status": "ok", "checks": []}
+
+    def add_check(name, status, message, count=None):
+        validation["checks"].append({
+            "name": name,
+            "status": status,
+            "message": message,
+            "count": count,
+        })
+
+    dupes = conn.execute(
+        """
+        SELECT date, symbol, expiry, COUNT(*) AS n
+        FROM prices
+        WHERE symbol IN ('NATURALGAS','NATGASMINI','NATGAS')
+          AND UPPER(COALESCE(instrument,''))='FUTCOM'
+        GROUP BY date, symbol, expiry
+        HAVING COUNT(*) > 1
+        """
+    ).fetchall()
+    add_check("duplicate_futures_rows", "ok" if not dupes else "error", "No duplicate futures rows." if not dupes else "Duplicate futures rows detected.", len(dupes))
+
+    impossible = [
+        r for r in futures_rows
+        if (r.get("close") is not None and r.get("close") <= 0)
+        or (r.get("open") is not None and r.get("open") < 0)
+        or (r.get("high") is not None and r.get("high") < 0)
+        or (r.get("low") is not None and r.get("low") < 0)
+    ]
+    add_check("impossible_prices", "ok" if not impossible else "error", "All futures prices are positive where present." if not impossible else "Non-positive futures prices detected.", len(impossible))
+
+    negative_volume = [
+        r for r in futures_rows
+        if (r.get("volume_lots") is not None and r.get("volume_lots") < 0)
+        or (r.get("volume_kgs") is not None and r.get("volume_kgs") < 0)
+        or (r.get("open_interest") is not None and r.get("open_interest") < 0)
+    ]
+    add_check("negative_volume_or_oi", "ok" if not negative_volume else "error", "Volume and open interest are non-negative." if not negative_volume else "Negative volume or open interest detected.", len(negative_volume))
+
+    freshness = _freshness_status(latest_date)
+    add_check("stale_source", "ok" if freshness["label"] in ("LIVE", "DELAYED") else "warn", f"Market data freshness: {freshness['label']}.", freshness["age_days"])
+
+    for symbol in MARKET_SYMBOLS:
+        dates = sorted({r["date"] for r in futures_rows if r["symbol"] == symbol})
+        gaps = []
+        if len(dates) >= 2:
+            start, end = date.fromisoformat(dates[0]), date.fromisoformat(dates[-1])
+            seen = set(dates)
+            cur = start
+            while cur <= end:
+                if cur.weekday() < 5 and cur.isoformat() not in seen:
+                    gaps.append(cur.isoformat())
+                cur = date.fromordinal(cur.toordinal() + 1)
+        add_check(
+            f"weekday_gaps_{symbol.lower()}",
+            "ok" if len(gaps) <= 20 else "warn",
+            "Weekday gaps are within expected holiday/backfill tolerance." if len(gaps) <= 20 else "Large number of weekday gaps detected; includes exchange holidays.",
+            len(gaps),
+        )
+
+    if any(c["status"] == "error" for c in validation["checks"]):
+        validation["status"] = "error"
+    elif any(c["status"] == "warn" for c in validation["checks"]):
+        validation["status"] = "warn"
+    return validation
+
+
+def _export_market_intelligence(margin_cur):
+    outputs = []
+    market_dir = OUT_DIR / "market"
+    market_dir.mkdir(parents=True, exist_ok=True)
+    contract_root = market_dir / "contract"
+    contract_root.mkdir(parents=True, exist_ok=True)
+
+    if not PRICE_DB_PATH.exists():
+        missing = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "status": "missing",
+            "source": "market_futures",
+            "message": f"{PRICE_DB_PATH} not found; market intelligence skipped.",
+        }
+        save("market/meta.json", missing)
+        return {"status": "missing", "outputs": ["market/meta.json"], "latest_date": None}
+
+    conn = sqlite3.connect(PRICE_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = [
+            _market_row_from_db(row)
+            for row in conn.execute(
+                """
+                SELECT date, symbol, expiry, instrument, open, high, low, close,
+                       prev_close, volume_lots, volume_kgs, value_lacs, open_interest
+                FROM prices
+                WHERE symbol IN ('NATURALGAS','NATGASMINI','NATGAS')
+                  AND UPPER(COALESCE(instrument,''))='FUTCOM'
+                ORDER BY symbol, date, expiry
+                """
+            ).fetchall()
+        ]
+        rows = [r for r in rows if _is_market_futures_row(r)]
+        latest_date = max((r["date"] for r in rows), default=None)
+        min_date = min((r["date"] for r in rows), default=None)
+        validation = _market_validation(conn, latest_date, rows)
+        freshness = _freshness_status(latest_date)
+
+        symbol_counts = {}
+        for symbol in MARKET_SYMBOLS:
+            sym_rows = [r for r in rows if r["symbol"] == symbol]
+            symbol_counts[symbol] = {
+                "rows": len(sym_rows),
+                "dates": len({r["date"] for r in sym_rows}),
+                "expiries": len({r["expiry"] for r in sym_rows}),
+                "first_date": min((r["date"] for r in sym_rows), default=None),
+                "latest_date": max((r["date"] for r in sym_rows), default=None),
+            }
+
+        meta = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "source": "market_futures",
+            "status": validation["status"],
+            "generated_at": _utc_now(),
+            "latest_date": latest_date,
+            "date_range": {"from": min_date, "to": latest_date},
+            "freshness": freshness,
+            "row_count": len(rows),
+            "symbols": symbol_counts,
+            "validation": validation,
+        }
+        save("market/meta.json", meta); outputs.append("market/meta.json")
+
+        by_symbol_date = {symbol: {} for symbol in MARKET_SYMBOLS}
+        for row in rows:
+            by_symbol_date[row["symbol"]].setdefault(row["date"], []).append(row)
+
+        histories = {}
+        for symbol in MARKET_SYMBOLS:
+            front_rows = []
+            for d in sorted(by_symbol_date[symbol]):
+                best = _select_front_month(by_symbol_date[symbol][d], d)
+                if best:
+                    front_rows.append(best)
+            histories[symbol] = _enrich_market_history(front_rows)
+            key = MARKET_SYMBOL_KEYS[symbol]
+            save(f"market/history_{key}.json", {
+                "schema_version": MARKET_SCHEMA_VERSION,
+                "symbol": symbol,
+                "rows": histories[symbol],
+            })
+            outputs.append(f"market/history_{key}.json")
+
+        contract_histories = {}
+        contract_row_lookup = {}
+        for symbol in MARKET_SYMBOLS:
+            by_expiry = {}
+            for row in rows:
+                if row["symbol"] == symbol:
+                    by_expiry.setdefault(row["expiry"], []).append(row)
+            for expiry, expiry_rows in by_expiry.items():
+                enriched = _enrich_market_history(sorted(expiry_rows, key=lambda r: r["date"]))
+                contract_histories[(symbol, expiry)] = enriched
+                for enriched_row in enriched:
+                    contract_row_lookup[(symbol, expiry, enriched_row["date"])] = enriched_row
+
+        current = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date}
+        forward = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date}
+        for symbol in MARKET_SYMBOLS:
+            active = sorted(
+                [r for r in by_symbol_date[symbol].get(latest_date, []) if r["dte"] >= 0],
+                key=lambda r: r["dte"],
+            )
+            volumes = [r.get("volume_lots") for r in active]
+            ois = [r.get("open_interest") for r in active]
+            front_close = active[0]["close"] if active else None
+            curve = []
+            for idx, row in enumerate(active):
+                flow_row = contract_row_lookup.get((symbol, row["expiry"], row["date"]), {})
+                volume_pct = _percentile_rank(volumes, row.get("volume_lots"))
+                oi_pct = _percentile_rank(ois, row.get("open_interest"))
+                liquidity_score = None
+                if volume_pct is not None or oi_pct is not None:
+                    liquidity_score = round((volume_pct or 0) * 0.6 + (oi_pct or 0) * 0.4, 1)
+                entry = {
+                    **row,
+                    "rolling_realized_vol_20d": flow_row.get("rolling_realized_vol_20d"),
+                    "volume_z_20d": flow_row.get("volume_z_20d"),
+                    "oi_change": flow_row.get("oi_change"),
+                    "oi_change_pct": flow_row.get("oi_change_pct"),
+                    "spread_vs_front": _round(row["close"] - front_close, 4) if row.get("close") is not None and front_close is not None else None,
+                    "spread_vs_next": _round(active[idx + 1]["close"] - row["close"], 4) if idx + 1 < len(active) and row.get("close") is not None and active[idx + 1].get("close") is not None else None,
+                    "liquidity_score": liquidity_score,
+                }
+                curve.append(entry)
+            ranked = sorted(curve, key=lambda r: (r.get("liquidity_score") is not None, r.get("liquidity_score") or -1), reverse=True)
+            ranks = {id(row): i + 1 for i, row in enumerate(ranked)}
+            for row in curve:
+                row["liquidity_rank"] = ranks.get(id(row))
+            current[symbol] = curve
+            forward[symbol] = {
+                "curve": curve,
+                "curve_slope": _round(curve[-1]["close"] - curve[0]["close"], 4) if len(curve) >= 2 and curve[-1].get("close") is not None and curve[0].get("close") is not None else None,
+                "front_to_back_tension": _round(((curve[-1]["close"] - curve[0]["close"]) / curve[0]["close"]) * 100, 3) if len(curve) >= 2 and curve[0].get("close") not in (None, 0) and curve[-1].get("close") is not None else None,
+            }
+        save("market/current.json", current); outputs.append("market/current.json")
+        save("market/forward_curve.json", forward); outputs.append("market/forward_curve.json")
+
+        contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "ng": [], "ngm": []}
+        for symbol in MARKET_SYMBOLS:
+            key = MARKET_SYMBOL_KEYS[symbol]
+            symbol_dir = contract_root / key
+            symbol_dir.mkdir(parents=True, exist_ok=True)
+            by_expiry = {}
+            for row in rows:
+                if row["symbol"] == symbol:
+                    by_expiry.setdefault(row["expiry"], []).append(row)
+            for expiry, expiry_rows in sorted(by_expiry.items()):
+                enriched = contract_histories.get((symbol, expiry)) or _enrich_market_history(sorted(expiry_rows, key=lambda r: r["date"]))
+                out_name = f"market/contract/{key}/{expiry}.json"
+                save(out_name, {
+                    "schema_version": MARKET_SCHEMA_VERSION,
+                    "symbol": symbol,
+                    "expiry": expiry,
+                    "rows": enriched,
+                })
+                outputs.append(out_name)
+                dates = [r["date"] for r in enriched]
+                contract_index[key].append({
+                    "expiry": expiry,
+                    "obs": len(enriched),
+                    "first_date": min(dates) if dates else None,
+                    "last_date": max(dates) if dates else None,
+                })
+        save("market/contract_index.json", contract_index); outputs.append("market/contract_index.json")
+
+        joined_symbols = {}
+        flat_joined = []
+        for symbol in MARKET_SYMBOLS:
+            margin_series = _build_margin_front_series_for_symbol(margin_cur, symbol)
+            market_by_date = {row["date"]: row for row in histories[symbol]}
+            joined = []
+            for m in margin_series:
+                market = market_by_date.get(m["date"])
+                if not market:
+                    continue
+                entry = {
+                    "date": m["date"],
+                    "symbol": symbol,
+                    "margin_expiry": m["expiry"],
+                    "market_expiry": market["expiry"],
+                    "dte": m["dte"],
+                    "initial_margin_pct": m["initial_margin_pct"],
+                    "total_margin_pct": m["total_margin_pct"],
+                    "daily_volatility": m["daily_volatility"],
+                    "annualized_volatility": m["annualized_volatility"],
+                    "close": market["close"],
+                    "return_pct": market["return_pct"],
+                    "return_5d_pct": market.get("return_5d_pct"),
+                    "volume_lots": market["volume_lots"],
+                    "volume_z_20d": market.get("volume_z_20d"),
+                    "open_interest": market["open_interest"],
+                    "oi_change_pct": market.get("oi_change_pct"),
+                    "liquidity_score": market.get("liquidity_score"),
+                }
+                joined.append(entry)
+                flat_joined.append(entry)
+            joined_symbols[symbol] = joined
+        save("market/margin_joined_front.json", {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "symbols": joined_symbols,
+        })
+        outputs.append("market/margin_joined_front.json")
+
+        signals = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "as_of": latest_date,
+            "signals": [],
+        }
+        for symbol in MARKET_SYMBOLS:
+            signals["signals"].extend(_build_market_signals(symbol, histories[symbol], flat_joined))
+        save("market/signals.json", signals); outputs.append("market/signals.json")
+
+        return {
+            "status": validation["status"],
+            "outputs": outputs,
+            "latest_date": latest_date,
+            "row_count": len(rows),
+        }
+    finally:
+        conn.close()
+
+
+def export_manifest():
+    sources = {}
+    for key, source in SOURCE_REGISTRY.items():
+        source_info = dict(source)
+        db_path = Path(source["db_path"])
+        source_info["exists"] = db_path.exists()
+        if db_path.exists():
+            source_info["bytes"] = db_path.stat().st_size
+            try:
+                conn = sqlite3.connect(db_path)
+                cur = conn.cursor()
+                table = source["tables"][0]
+                cur.execute(f"SELECT COUNT(*), MIN(date), MAX(date) FROM {table}")
+                count, min_date, max_date = cur.fetchone()
+                source_info["row_count"] = count
+                source_info["date_range"] = {"from": min_date, "to": max_date}
+                source_info["freshness"] = _freshness_status(max_date)
+            except Exception as exc:
+                source_info["error"] = str(exc)
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+        sources[key] = source_info
+
+    datasets = []
+    for path in sorted(OUT_DIR.rglob("*.json")):
+        rel = path.relative_to(OUT_DIR).as_posix()
+        if rel == "manifest.json":
+            continue
+        source = "market_futures" if rel.startswith("market/") else "margins"
+        if rel == "hh_price.json":
+            source = "external_henry_hub"
+        datasets.append({
+            "path": f"data/{rel}",
+            "source": source,
+            "schema_version": MARKET_SCHEMA_VERSION if rel.startswith("market/") else "legacy",
+            "bytes": path.stat().st_size,
+            "generated_at": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        })
+
+    save("manifest.json", {
+        "schema_version": "1.0.0",
+        "generated_at": _utc_now(),
+        "sources": sources,
+        "datasets": datasets,
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1291,6 +1972,19 @@ def main():
         _export_stress_score(cur, fm_series, latest_date)                # Item 8 — updates current.json
         _export_event_probabilities(cur, fm_series, panic_entries, regime_params)  # Item 9
 
+    try:
+        print()
+        print("MCX Market Intelligence - JSON Export")
+        print("=" * 40)
+        market_status = _export_market_intelligence(cur)
+        print(
+            f"  [MARKET] status={market_status.get('status')} "
+            f"latest={market_status.get('latest_date')} "
+            f"outputs={len(market_status.get('outputs', []))}"
+        )
+    except Exception as e:
+        print(f"  [WARN] Market intelligence export failed: {e}")
+
     conn.close()
     print()
     print(f"All JSON files exported to {OUT_DIR}/")
@@ -1319,7 +2013,7 @@ def export_hh_price():
     try:
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json_lib.loads(resp.read())
+            data = json.loads(resp.read())
         result = data["chart"]["result"][0]
         timestamps = result["timestamp"]
         closes = result["indicators"]["quote"][0]["close"]
@@ -1336,3 +2030,4 @@ def export_hh_price():
 if __name__ == "__main__":
     main()
     export_hh_price()
+    export_manifest()

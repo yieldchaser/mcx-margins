@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "source": "market_futures",
+  "status": "warn",
+  "generated_at": "2026-04-22T15:33:08Z",
+  "latest_date": "2026-04-21",
+  "date_range": {
+    "from": "2007-01-01",
+    "to": "2026-04-21"
+  },
+  "freshness": {
+    "label": "LIVE",
+    "age_days": 1
+  },
+  "row_count": 20661,
+  "symbols": {
+    "NATURALGAS": {
+      "rows": 16598,
+      "dates": 4943,
+      "expiries": 237,
+      "first_date": "2007-01-01",
+      "latest_date": "2026-04-21"
+    },
+    "NATGASMINI": {
+      "rows": 4063,
+      "dates": 796,
+      "expiries": 42,
+      "first_date": "2023-03-14",
+      "latest_date": "2026-04-21"
+    }
+  },
+  "validation": {
+    "status": "warn",
+    "checks": [
+      {
+        "name": "duplicate_futures_rows",
+        "status": "ok",
+        "message": "No duplicate futures rows.",
+        "count": 0
+      },
+      {
+        "name": "impossible_prices",
+        "status": "ok",
+        "message": "All futures prices are positive where present.",
+        "count": 0
+      },
+      {
+        "name": "negative_volume_or_oi",
+        "status": "ok",
+        "message": "Volume and open interest are non-negative.",
+        "count": 0
+      },
+      {
+        "name": "stale_source",
+        "status": "ok",
+        "message": "Market data freshness: LIVE.",
+        "count": 1
+      },
+      {
+        "name": "weekday_gaps_naturalgas",
+        "status": "warn",
+        "message": "Large number of weekday gaps detected; includes exchange holidays.",
+        "count": 94
+      },
+      {
+        "name": "weekday_gaps_natgasmini",
+        "status": "ok",
+        "message": "Weekday gaps are within expected holiday/backfill tolerance.",
+        "count": 15
+      }
+    ]
+  }
+}
