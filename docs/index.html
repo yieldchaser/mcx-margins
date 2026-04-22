@@ -172,7 +172,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 /* Prevent structural breaks when applying tooltip wrapper to table rows or cells */
 tr.has-tooltip { display: table-row; }
 td.has-tooltip { display: table-cell; }
-tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
+div.card.has-tooltip { display: block; }
+.heatmap-cell.has-tooltip { display: flex; }
+tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heatmap-cell.has-tooltip::after {
+  content: none;
+  display: none;
+}
 
 #tooltipOverlay {
   display: block; position: fixed; z-index: 9999;
@@ -764,34 +769,37 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
   </div>
 
   <div id="tab-market" class="tab-content">
-    <div class="card mb-4" style="padding:14px 20px;">
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <select id="marketSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
-          <option value="ng">NATURALGAS</option>
-          <option value="ngm">NATGASMINI</option>
-        </select>
-        <span id="marketStatus" style="font-size:12px;color:var(--text-muted);">Loading market intelligence...</span>
+    <div class="card mb-4 market-toolbar-card" style="padding:14px 20px;">
+      <div class="market-toolbar">
+        <label class="market-select-wrap has-tooltip" data-tooltip-key="Market Symbol Selector">
+          <span style="font-size:12px;color:var(--text-muted);">Symbol</span>
+          <select id="marketSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
+            <option value="ng">NATURALGAS</option>
+            <option value="ngm">NATGASMINI</option>
+          </select>
+        </label>
+        <span id="marketStatus" class="has-tooltip" data-tooltip-key="Market Status Bar" style="font-size:12px;color:var(--text-muted);">Loading market intelligence...</span>
       </div>
     </div>
     <div class="grid-3 mb-4" id="marketKpis"></div>
     <div class="card mb-4">
       <div class="module-kicker">Curve & Liquidity</div>
-      <div class="card-title">Current MCX Futures Snapshot</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Current MCX Futures Snapshot">Current MCX Futures Snapshot</div>
       <div class="scope-row" style="margin-top:0;">
         <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
         <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
       </div>
-      <div style="overflow-x:auto;">
+      <div class="market-table-shell">
         <table class="data-table">
           <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
           <tbody id="marketCurrentBody"></tbody>
         </table>
       </div>
     </div>
-    <div class="grid-2 mb-4">
+    <div class="grid-2 market-grid mb-4">
       <div class="card">
         <div class="module-kicker">Price & Regime</div>
-        <div class="card-title">Front-Month Price & Returns</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Front-Month Price & Returns">Front-Month Price & Returns</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>View</strong> Price + returns</span>
@@ -800,7 +808,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       </div>
       <div class="card">
         <div class="module-kicker">Flow & Positioning</div>
-        <div class="card-title">Volume & Open Interest</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Volume & Open Interest">Volume & Open Interest</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>View</strong> Flow state</span>
@@ -808,9 +816,9 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
       </div>
     </div>
-    <div class="grid-2 mb-4">
+    <div class="grid-2 market-grid mb-4">
       <div class="card">
-        <div class="card-title">Realized Volatility & Regime</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Realized Volatility & Regime">Realized Volatility & Regime</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>Overlay</strong> Vol regime strip</span>
@@ -818,7 +826,7 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="chart-container" style="height:300px;"><canvas id="chartMarketRegime"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Price/OI Phase Map</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Price/OI Phase Map">Price/OI Phase Map</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>Lens</strong> Position state</span>
@@ -826,9 +834,9 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="chart-container" style="height:300px;"><canvas id="chartMarketPhase"></canvas></div>
       </div>
     </div>
-    <div class="grid-2 mb-4">
+    <div class="grid-2 market-grid mb-4">
       <div class="card">
-        <div class="card-title">Active Futures Curve</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Active Futures Curve">Active Futures Curve</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
@@ -836,8 +844,8 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Explainable Market Signals</div>
-        <div style="overflow-x:auto;">
+        <div class="card-title has-tooltip" data-tooltip-key="Explainable Market Signals">Explainable Market Signals</div>
+        <div class="market-table-shell">
           <table class="data-table">
             <thead><tr><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
             <tbody id="marketSignalBody"></tbody>
@@ -845,18 +853,18 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         </div>
       </div>
     </div>
-    <div class="grid-2 mb-4">
+    <div class="grid-2 market-grid mb-4">
       <div class="card">
-        <div class="card-title">Curve Evolution</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Curve Evolution">Curve Evolution</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>Lens</strong> Roll tension</span>
         </div>
-        <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurveHistory"></canvas></div>
+        <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurveHistory"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Event Windows</div>
-        <div style="overflow-x:auto;">
+        <div class="card-title has-tooltip" data-tooltip-key="Event Windows">Event Windows</div>
+        <div class="market-table-shell">
           <table class="data-table">
             <thead><tr><th>Date</th><th>Contract</th><th>Events</th><th>Price</th><th>Margin</th><th>Flow</th></tr></thead>
             <tbody id="marketEventBody"></tbody>
@@ -864,14 +872,19 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
         </div>
       </div>
     </div>
-    <div class="grid-2 mb-4">
+    <div class="grid-2 market-grid mb-4">
       <div class="card">
-        <div class="card-title">Liquidity Heatmap</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Liquidity Heatmap">Liquidity Heatmap</div>
+        <div class="heatmap-legend">
+          <span><i class="legend-dot legend-low"></i>Low stress</span>
+          <span><i class="legend-dot legend-mid"></i>Balanced</span>
+          <span><i class="legend-dot legend-high"></i>Crowded</span>
+        </div>
         <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
       </div>
       <div class="card">
-        <div class="card-title">Active-Contract Leaderboard</div>
-        <div style="overflow-x:auto;">
+        <div class="card-title has-tooltip" data-tooltip-key="Active-Contract Leaderboard">Active-Contract Leaderboard</div>
+        <div class="market-table-shell">
           <table class="data-table">
             <thead><tr><th>Contract</th><th>Liquidity</th><th>OI Flow</th><th>Realized Vol</th><th>Roll Yield</th></tr></thead>
             <tbody id="marketLeaderboardBody"></tbody>
@@ -881,22 +894,27 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="card mb-4">
       <div class="module-kicker">Margin Linkages</div>
-      <div class="card-title">Margin × PVOI Synergy Layer</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Margin x PVOI Synergy Layer">Margin x PVOI Synergy Layer</div>
       <div class="scope-row" style="margin-top:0;">
         <span class="scope-chip"><strong>Scope</strong> Front Month</span>
         <span class="scope-chip"><strong>Join</strong> Expiry-aligned only</span>
       </div>
-      <div class="grid-2 mb-4">
+      <div class="grid-2 market-grid mb-4">
         <div class="card" style="margin:0;">
-          <div class="card-title">Margin vs PVOI Regimes</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Margin vs PVOI Regimes">Margin vs PVOI Regimes</div>
           <div class="chart-container" style="height:300px;"><canvas id="chartMarketLinkage"></canvas></div>
         </div>
         <div class="card" style="margin:0;">
-          <div class="card-title">Margin-over-Liquidity Heatmap</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Margin-over-Liquidity Heatmap">Margin-over-Liquidity Heatmap</div>
+          <div class="heatmap-legend">
+            <span><i class="legend-dot legend-low"></i>Loose funding</span>
+            <span><i class="legend-dot legend-mid"></i>Neutral</span>
+            <span><i class="legend-dot legend-high"></i>Tight funding</span>
+          </div>
           <div id="marketMarginHeatmap" class="heatmap-grid"></div>
         </div>
       </div>
-      <div style="overflow-x:auto;">
+      <div class="market-table-shell">
         <table class="data-table">
           <thead><tr><th>Date</th><th>Aligned Expiry</th><th>Event</th><th>Margin Δ</th><th>Price</th><th>OI Δ</th><th>Friction</th></tr></thead>
           <tbody id="marketLinkageBody"></tbody>
@@ -905,10 +923,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
-        <div class="card-title" style="margin-bottom:0;">Market Data Explorer</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Market Data Explorer" style="margin-bottom:0;">Market Data Explorer</div>
         <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Download CSV</button>
       </div>
-      <div style="overflow-x:auto;">
+      <div class="market-table-shell">
         <table class="data-table">
           <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
           <tbody id="marketExplorerBody"></tbody>
@@ -981,13 +999,65 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
 .module-sub {
   font-size: 12px; color: var(--text-muted); margin-top: 4px;
 }
+.market-toolbar {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.market-select-wrap {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: linear-gradient(180deg, rgba(56,139,253,0.06), rgba(56,139,253,0.01));
+}
+.market-grid {
+  align-items: start;
+}
+.market-table-shell {
+  overflow-x: auto; border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+.market-kpi-card {
+  position: relative; overflow: hidden;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+.market-kpi-card::before {
+  content: "";
+  position: absolute; inset: 0 auto auto 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, rgba(56,139,253,0.75), rgba(163,113,247,0.2), transparent);
+}
+.market-kpi-card:hover {
+  border-color: rgba(56,139,253,0.55);
+  transform: translateY(-1px);
+}
+.market-table-shell .data-table th {
+  background: rgba(33, 38, 45, 0.9);
+}
+.heatmap-legend {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 8px; font-size: 11px; color: var(--text-muted);
+}
+.legend-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  display: inline-block; margin-right: 5px; vertical-align: middle;
+}
+.legend-low { background: #3fb950; }
+.legend-mid { background: #d29922; }
+.legend-high { background: #f85149; }
 .heatmap-grid {
-  display: grid; gap: 6px;
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 .heatmap-cell {
-  min-height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);
-  padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between;
-  font-size: 11px;
+  min-height: 58px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 10px; display: flex; flex-direction: column; justify-content: space-between;
+  font-size: 11px; transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.heatmap-cell:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.22);
+}
+.market-empty-state {
+  padding: 16px; border: 1px dashed var(--border); border-radius: 8px;
+  color: var(--text-muted); font-size: 12px; text-align: center;
 }
 </style>
 
@@ -3517,14 +3587,23 @@ function resetMarketIntelView(message) {
 function renderHeatmapGrid(targetId, cells, mode = 'liquidity') {
   const el = document.getElementById(targetId);
   if (!el) return;
+  if (!Array.isArray(cells) || cells.length === 0) {
+    el.innerHTML = `<div class="market-empty-state">No aligned observations are available for this heatmap yet.</div>`;
+    return;
+  }
   el.style.gridTemplateColumns = `repeat(${Math.max(1, Math.min(cells.length, 4))}, minmax(0, 1fr))`;
-  el.innerHTML = cells.map(cell => `
-    <div class="heatmap-cell" style="background:${heatColor(cell.value, mode)};">
+  el.innerHTML = cells.map(cell => {
+    const metric = cell.metric || fmtNum(cell.value, 1);
+    const modeLabel = mode === 'friction' ? 'Funding friction' : 'Liquidity score';
+    const dynBody = `${modeLabel}: <strong>${metric}</strong><br><br>${cell.sub || 'Front-curve observation.'}`;
+    return `
+    <div class="heatmap-cell has-tooltip" data-dyn-title="${cell.label}" data-dyn-body="${escAttr(dynBody)}" style="background:${heatColor(cell.value, mode)};">
       <div style="font-weight:600;color:var(--text);">${cell.label}</div>
       <div style="color:var(--text-muted);">${cell.sub || ''}</div>
-      <div style="font-size:12px;color:var(--text);">${cell.metric || fmtNum(cell.value, 1)}</div>
+      <div style="font-size:12px;color:var(--text);">${metric}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function renderMarketIntel(force = false) {
@@ -3558,26 +3637,66 @@ async function renderMarketIntel(force = false) {
     const regimePack = crossRegimes?.symbols?.[symbol] || {};
     const regimeRows = regimePack.rows || [];
     const latestAligned = [...joinedRows].reverse().find(r => r.alignment_status === 'aligned') || {};
-    document.getElementById('marketStatus').textContent =
-      `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows | ${joinedSummary.aligned_obs ?? 0} aligned front joins`;
-    document.getElementById('marketKpis').innerHTML = [
-      ['Front Close', fmtNum(latest.close, 2), `${_contractLabel(latest.expiry || '')} | ${latest.dte ?? '-'}d`],
-      ['1D Return', fmtPct(latest.return_1d_pct ?? latest.return_pct, 2), `5D ${fmtPct(latest.return_5d_pct, 2)}`],
-      ['Realized Vol', fmtPct(latest.rolling_realized_vol_20d, 2), `5D ${fmtPct(latest.rolling_realized_vol_5d, 2)}`],
-      ['OI Flow State', latest.oi_flow_state || '-', `OI ${fmtPct(latest.oi_change_pct, 2)}`],
-      ['Liquidity Score', fmtNum(latest.liquidity_score, 1), `Concentration ${fmtNum(forward[symbol]?.liquidity_concentration, 1)}`],
-      ['Funding Friction', fmtNum(latestAligned.funding_friction_score, 1), latestAligned.matched_expiry || 'No aligned join']
-    ].map(([label, value, sub]) => `
-      <div class="card">
-        <div class="stat-label">${label}</div>
-        <div class="stat-value" style="font-size:20px;">${value}</div>
-        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
+    const marketStatusText = `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows | ${joinedSummary.aligned_obs ?? 0} aligned front joins`;
+    const marketStatusEl = document.getElementById('marketStatus');
+    marketStatusEl.textContent = marketStatusText;
+    marketStatusEl.setAttribute('data-dyn-title', `${symbol} data readiness`);
+    marketStatusEl.setAttribute(
+      'data-dyn-body',
+      escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong><br>Aligned joins: <strong>${joinedSummary.aligned_obs ?? 0}</strong>`)
+    );
+    const marketKpiCards = [
+      {
+        label: 'Front Close',
+        value: fmtNum(latest.close, 2),
+        sub: `${_contractLabel(latest.expiry || '')} | ${latest.dte ?? '-'}d`,
+        tip: `Front month closes at <strong>${fmtNum(latest.close, 2)}</strong> for ${latest.expiry || '-'} with <strong>${latest.dte ?? '-'}</strong> days to expiry.`
+      },
+      {
+        label: '1D Return',
+        value: fmtPct(latest.return_1d_pct ?? latest.return_pct, 2),
+        sub: `5D ${fmtPct(latest.return_5d_pct, 2)}`,
+        tip: `Daily move is <strong>${fmtPct(latest.return_1d_pct ?? latest.return_pct, 2)}</strong>; 5-day drift is <strong>${fmtPct(latest.return_5d_pct, 2)}</strong>.`
+      },
+      {
+        label: 'Realized Vol',
+        value: fmtPct(latest.rolling_realized_vol_20d, 2),
+        sub: `5D ${fmtPct(latest.rolling_realized_vol_5d, 2)}`,
+        tip: `20-day realized vol is <strong>${fmtPct(latest.rolling_realized_vol_20d, 2)}</strong> versus 5-day <strong>${fmtPct(latest.rolling_realized_vol_5d, 2)}</strong>.`
+      },
+      {
+        label: 'OI Flow State',
+        value: latest.oi_flow_state || '-',
+        sub: `OI ${fmtPct(latest.oi_change_pct, 2)}`,
+        tip: `Positioning reads <strong>${latest.oi_flow_state || 'neutral'}</strong> with OI change at <strong>${fmtPct(latest.oi_change_pct, 2)}</strong>.`
+      },
+      {
+        label: 'Liquidity Score',
+        value: fmtNum(latest.liquidity_score, 1),
+        sub: `Concentration ${fmtNum(forward[symbol]?.liquidity_concentration, 1)}`,
+        tip: `Liquidity score is <strong>${fmtNum(latest.liquidity_score, 1)}</strong>; concentration is <strong>${fmtNum(forward[symbol]?.liquidity_concentration, 1)}</strong>. Higher concentration means liquidity is clustered in fewer expiries.`
+      },
+      {
+        label: 'Funding Friction',
+        value: fmtNum(latestAligned.funding_friction_score, 1),
+        sub: latestAligned.matched_expiry || 'No aligned join',
+        tip: `Aligned funding friction sits at <strong>${fmtNum(latestAligned.funding_friction_score, 1)}</strong> for ${latestAligned.matched_expiry || 'the latest aligned session'}.`
+      }
+    ];
+    document.getElementById('marketKpis').innerHTML = marketKpiCards.map(card => `
+      <div class="card market-kpi-card has-tooltip" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
+        <div class="stat-label">${card.label}</div>
+        <div class="stat-value" style="font-size:20px;">${card.value}</div>
+        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${card.sub}</div>
       </div>
     `).join('');
 
     const curRows = current[symbol] || [];
-    document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => `
-      <tr>
+    document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => {
+      const dynTitle = `${_contractLabel(r.expiry)} snapshot`;
+      const dynBody = `Close: <strong>${fmtNum(r.close, 2)}</strong> | Return: <strong>${fmtPct(r.return_pct, 2)}</strong><br><br>Volume: ${fmtNum(r.volume_lots, 0)} lots, OI: ${fmtNum(r.open_interest, 0)}.<br>Liquidity score: <strong>${fmtNum(r.liquidity_score, 1)}</strong>.`;
+      return `
+      <tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
         <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
         <td>${r.dte}</td>
         <td>${fmtNum(r.close, 2)}</td>
@@ -3587,7 +3706,8 @@ async function renderMarketIntel(force = false) {
         <td>${fmtNum(r.open_interest, 0)}</td>
         <td>${fmtNum(r.liquidity_score, 1)}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const recent = rows.slice(-365);
     const recentLabels = recent.map(r => r.date);
@@ -3758,18 +3878,23 @@ async function renderMarketIntel(force = false) {
     });
 
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
-    document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => `
-      <tr>
+    document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
+      const dynBody = `<strong>${s.direction}</strong> bias with score <strong>${s.score}</strong> (${s.severity}).<br><br>${s.reason}`;
+      return `
+      <tr class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
         <td>${s.label}</td>
         <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${s.severity}</span></td>
         <td>${s.score}</td>
         <td>${s.direction}</td>
         <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
-    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => `
-      <tr>
+    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => {
+      const dynBody = `Events: <strong>${(r.events || []).join(', ') || 'None'}</strong><br><br>Price ${fmtPct(r.return_1d_pct, 2)} | Margin ${fmtPct(r.margin_change_1d, 2)} | OI ${fmtPct(r.oi_change_pct, 2)}.`;
+      return `
+      <tr class="has-tooltip" data-dyn-title="${r.date} · ${r.matched_expiry || '-'}" data-dyn-body="${escAttr(dynBody)}">
         <td>${r.date}</td>
         <td>${r.matched_expiry || '-'}</td>
         <td>${(r.events || []).join(', ')}</td>
@@ -3777,7 +3902,8 @@ async function renderMarketIntel(force = false) {
         <td>${fmtPct(r.margin_change_1d, 2)}</td>
         <td>${fmtPct(r.oi_change_pct, 2)}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     renderHeatmapGrid('marketLiquidityHeatmap', curve.slice(0, 8).map(r => ({
       label: _contractLabel(r.expiry),
@@ -3789,15 +3915,18 @@ async function renderMarketIntel(force = false) {
     document.getElementById('marketLeaderboardBody').innerHTML = [...curve]
       .sort((a,b) => (b.liquidity_score ?? -1) - (a.liquidity_score ?? -1))
       .slice(0, 8)
-      .map(r => `
-        <tr>
+      .map(r => {
+        const dynBody = `Liquidity <strong>${fmtNum(r.liquidity_score, 1)}</strong> with ${r.oi_flow_state || 'neutral'} flow.<br><br>Realized vol: ${fmtPct(r.rolling_realized_vol_20d, 2)} | Roll yield: ${fmtPct(r.roll_yield_pct, 2)}.`;
+        return `
+        <tr class="has-tooltip" data-dyn-title="${_contractLabel(r.expiry)} leaderboard rank" data-dyn-body="${escAttr(dynBody)}">
           <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
           <td>${fmtNum(r.liquidity_score, 1)}</td>
           <td>${r.oi_flow_state || '-'}</td>
           <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
           <td>${fmtPct(r.roll_yield_pct, 2)}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
     const linkageRecent = joinedRows.filter(r => r.alignment_status === 'aligned').slice(-180);
     if (marketLinkageChart) marketLinkageChart.destroy();
@@ -3833,8 +3962,10 @@ async function renderMarketIntel(force = false) {
       .filter(r => (r.events || []).some(ev => ev.includes('margin') || ev.includes('oi')))
       .slice(-20)
       .reverse()
-      .map(r => `
-        <tr>
+      .map(r => {
+        const dynBody = `Margin change: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>Price return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>OI change: <strong>${fmtPct(r.oi_change_pct, 2)}</strong><br>Funding friction: <strong>${fmtNum(r.funding_friction_score, 1)}</strong>.`;
+        return `
+        <tr class="has-tooltip" data-dyn-title="${r.date} linkage context" data-dyn-body="${escAttr(dynBody)}">
           <td>${r.date}</td>
           <td>${r.matched_expiry || '-'}</td>
           <td>${(r.events || []).join(', ')}</td>
@@ -3843,11 +3974,13 @@ async function renderMarketIntel(force = false) {
           <td>${fmtPct(r.oi_change_pct, 2)}</td>
           <td>${fmtNum(r.funding_friction_score, 1)}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
     marketExplorerData = [...rows].reverse();
     marketExplorerPage = 0;
     renderMarketExplorerPage();
+    attachTooltips();
   } catch(e) {
     console.error('Market render error:', e);
     resetMarketIntelView('Market intelligence unavailable; margin dashboard remains active.');
@@ -3858,8 +3991,10 @@ function renderMarketExplorerPage() {
   const start = marketExplorerPage * MARKET_PAGE_SIZE;
   const slice = marketExplorerData.slice(start, start + MARKET_PAGE_SIZE);
   document.getElementById('marketPageInfo').textContent = `Page ${marketExplorerPage + 1} of ${Math.max(1, Math.ceil(marketExplorerData.length / MARKET_PAGE_SIZE))}`;
-  document.getElementById('marketExplorerBody').innerHTML = slice.map(r => `
-    <tr>
+  document.getElementById('marketExplorerBody').innerHTML = slice.map(r => {
+    const dynBody = `Close ${fmtNum(r.close, 2)} | Return ${fmtPct(r.return_pct, 2)} | Vol ${fmtPct(r.rolling_realized_vol_20d, 2)}<br><br>Volume ${fmtNum(r.volume_lots, 0)} lots (Z ${fmtNum(r.volume_z_20d, 2)}), OI ${fmtNum(r.open_interest, 0)} (${fmtPct(r.oi_change_pct, 2)}).`;
+    return `
+    <tr class="has-tooltip" data-dyn-title="${r.date} · ${_contractLabel(r.expiry)}" data-dyn-body="${escAttr(dynBody)}">
       <td>${r.date}</td>
       <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
       <td>${r.dte}</td>
@@ -3871,7 +4006,9 @@ function renderMarketExplorerPage() {
       <td>${fmtNum(r.open_interest, 0)}</td>
       <td>${fmtPct(r.oi_change_pct, 2)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+  attachTooltips();
 }
 
 document.querySelector('[data-tab="market"]')?.addEventListener('click', () => renderMarketIntel());
@@ -4159,6 +4296,74 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "Daily Volatility": {
     title: "MCX Daily Volatility",
     body: `The exchange's official Exponentially Weighted Moving Average (EWMA) volatility estimate.<br><br>This is the most critical dynamic factor driving Initial Margin increases.`
+  },
+  "Market Symbol Selector": {
+    title: "Market Symbol Scope",
+    body: `Switches the entire Market workspace between <strong>NATURALGAS</strong> and <strong>NATGASMINI</strong>.<br><br>All KPIs, charts, heatmaps, and event windows refresh to that symbol's own front-month and curve state.`
+  },
+  "Market Status Bar": {
+    title: "Live Market Data Status",
+    body: `Shows dataset freshness, total futures observations, and how many front-month sessions were <strong>expiry-aligned</strong> with margin data.<br><br>Aligned joins are the high-confidence subset for margin-market linkage analysis.`
+  },
+  "Current MCX Futures Snapshot": {
+    title: "Current MCX Futures Snapshot",
+    body: `Contract-by-contract snapshot of today's active curve: price, return, volume, open interest, and liquidity.<br><br>Use this table to identify where liquidity is concentrated before drilling into curve or regime charts.`
+  },
+  "Front-Month Price & Returns": {
+    title: "Front-Month Price & Returns",
+    body: `Tracks front-month close alongside daily return swings.<br><br>The level line shows trend context; the return overlay highlights shock days where directional conviction and margin pressure can diverge.`
+  },
+  "Volume & Open Interest": {
+    title: "Volume & Open Interest",
+    body: `Combines participation (<strong>volume</strong>) and positioning depth (<strong>open interest</strong>).<br><br>Volume spikes without OI follow-through often mark short-lived events; OI persistence signals structural positioning shifts.`
+  },
+  "Realized Volatility & Regime": {
+    title: "Realized Volatility & Regime",
+    body: `Color-state view of realized volatility with funding friction overlay.<br><br>When vol regime and friction climb together, risk transfer costs are rising and margin policy tends to stay tighter.`
+  },
+  "Price/OI Phase Map": {
+    title: "Price/OI Phase Map",
+    body: `Quadrant map of <strong>price return</strong> vs <strong>OI change</strong>.<br><br>Long build, short build, long unwind, and short cover states are visualized so shifts in participation quality are obvious before they appear in headline returns.`
+  },
+  "Active Futures Curve": {
+    title: "Active Futures Curve",
+    body: `Shows contract-by-contract close vs liquidity score on the same curve.<br><br>Use it to spot pricing dislocations in expiries where liquidity is thin and execution risk is higher.`
+  },
+  "Explainable Market Signals": {
+    title: "Explainable Market Signals",
+    body: `Ranked signal stack with severity and direction, each backed by a human-readable reason.<br><br>This is meant for rapid decision support: high-score/high-severity rows are the first triage candidates.`
+  },
+  "Curve Evolution": {
+    title: "Curve Evolution",
+    body: `Time-series of front-second spread, roll yield, and liquidity concentration.<br><br>It answers whether curve shape is changing because of broad repricing or because liquidity is migrating into a narrow set of expiries.`
+  },
+  "Event Windows": {
+    title: "Event Windows",
+    body: `Chronological tape of multi-factor event days with associated price, margin, and OI deltas.<br><br>Use it as a post-event audit trail to see whether shocks were momentum continuation, exhaustion, or positioning reset.`
+  },
+  "Liquidity Heatmap": {
+    title: "Liquidity Heatmap",
+    body: `Contract-level intensity map of liquidity score.<br><br>Green cells indicate easier execution depth; warmer cells indicate crowding and potential slippage risk if order size is large.`
+  },
+  "Active-Contract Leaderboard": {
+    title: "Active-Contract Leaderboard",
+    body: `Ranks contracts by liquidity and overlays flow state, realized vol, and roll yield.<br><br>Think of this as the execution priority board for selecting where to deploy size.`
+  },
+  "Margin x PVOI Synergy Layer": {
+    title: "Margin x PVOI Synergy Layer",
+    body: `Integrates margin behavior with price-volume-open-interest dynamics using aligned expiry joins only.<br><br>This section is the highest-fidelity lens for diagnosing when funding stress is policy-driven vs flow-driven.`
+  },
+  "Margin vs PVOI Regimes": {
+    title: "Margin vs PVOI Regimes",
+    body: `Overlay of initial margin, realized volatility, and friction score across aligned sessions.<br><br>When margin diverges from vol while friction rises, discretionary risk buffering is likely active.`
+  },
+  "Margin-over-Liquidity Heatmap": {
+    title: "Margin-over-Liquidity Heatmap",
+    body: `Compact funding-friction intensity map for recent aligned sessions.<br><br>Hotter cells highlight dates where carrying risk was expensive relative to available liquidity.`
+  },
+  "Market Data Explorer": {
+    title: "Market Data Explorer",
+    body: `Raw, paginated dataset for front-month history with return, realized vol, volume z-score, and OI changes.<br><br>Use this for precise validation, ad-hoc analysis, and CSV export workflows.`
   },
   "Regime A": {
     title: "Regime A (Structural)",
