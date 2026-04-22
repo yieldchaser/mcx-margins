@@ -1062,7 +1062,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
 </style>
 
 <script>
-let _ttTimer;
+let _ttTimer; let _ttMouseX = 0, _ttMouseY = 0; let _ttActiveTrigger = null;
 
 // Escape double quotes so HTML content is safe inside data-attr="..."
 function escAttr(s) { return s ? s.replace(/"/g, '&quot;') : ''; }
@@ -1439,7 +1439,7 @@ async function renderMarketOverviewContext() {
       ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`],
       ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal']
     ].map(([label, value, sub]) => {
-      const dynBody = `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}<br><br><em>Insight:</em> This front-month summary provides the immediate liquidity and price context for the ${symbol || 'Natural Gas'} market.`;
+      const dynBody = `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}<br><br><em>Insight:</em> This front-month summary provides the immediate liquidity and price context for the ${ng.symbol || 'Natural Gas'} market.`;
       return `
         <div class="card has-tooltip" data-dyn-title="Market Intel: ${label}" data-dyn-body="${escAttr(dynBody)}" style="background:var(--surface2);padding:14px;">
           <div class="stat-label">${label}</div>
@@ -4532,10 +4532,6 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
     body: `Heightened market stress. Volatility or risk factors have pushed margins above the usual baseline.`
   }
 };
-
-let _ttMouseX = 0, _ttMouseY = 0;
-let _ttActiveTrigger = null;
-let _ttTimer;
 
 function placeTooltipAnchored(triggerEl, overlay) {
   if (!overlay || !triggerEl) return;
