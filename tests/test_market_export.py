@@ -1,8 +1,10 @@
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
+import json
 import sqlite3
 import sys
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -37,6 +39,39 @@ class MarketExportTests(unittest.TestCase):
             """
         )
         return conn
+
+    def _make_price_db(self, path, rows):
+        conn = sqlite3.connect(path)
+        conn.execute(
+            """
+            CREATE TABLE prices (
+                date TEXT,
+                symbol TEXT,
+                expiry TEXT,
+                instrument TEXT,
+                open REAL,
+                high REAL,
+                low REAL,
+                close REAL,
+                prev_close REAL,
+                volume_lots INTEGER,
+                volume_kgs REAL,
+                value_lacs REAL,
+                open_interest INTEGER
+            )
+            """
+        )
+        conn.executemany(
+            """
+            INSERT INTO prices (
+                date, symbol, expiry, instrument, open, high, low, close,
+                prev_close, volume_lots, volume_kgs, value_lacs, open_interest
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.commit()
+        conn.close()
 
     def test_futures_filter_excludes_options(self):
         self.assertTrue(export_json._is_market_futures_row({
@@ -257,6 +292,76 @@ class MarketExportTests(unittest.TestCase):
         self.assertEqual(history[0]["front_second_spread"], 5.0)
         self.assertEqual(history[0]["front_back_spread"], 10.0)
         self.assertEqual(history[0]["curve_state"], "contango")
+
+    def test_causal_percentile_rank_does_not_depend_on_future_values(self):
+        self.assertEqual(
+            export_json._causal_percentile_rank([10.0, 20.0, 30.0, 40.0], 25.0, min_obs=1),
+            60.0,
+        )
+        self.assertEqual(
+            export_json._percentile_rank([10.0, 20.0, 25.0, 30.0, 40.0, 1000.0], 25.0),
+            50.0,
+        )
+        self.assertIsNone(export_json._causal_percentile_rank([], 12.0))
+
+    def test_export_market_intelligence_clears_stale_outputs_when_prices_db_missing(self):
+        conn = self._make_margin_conn()
+        with TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            out_dir = tmp_path / "out"
+            stale_file = out_dir / "market" / "current.json"
+            stale_contract = out_dir / "market" / "contract" / "ng" / "25JAN2026.json"
+            stale_contract.parent.mkdir(parents=True, exist_ok=True)
+            stale_file.write_text("{}", encoding="utf-8")
+            stale_contract.write_text("{}", encoding="utf-8")
+
+            old_out_dir = export_json.OUT_DIR
+            old_price_db = export_json.PRICE_DB_PATH
+            export_json.OUT_DIR = out_dir
+            export_json.PRICE_DB_PATH = tmp_path / "missing_prices.db"
+            try:
+                result = export_json._export_market_intelligence(conn.cursor())
+            finally:
+                export_json.OUT_DIR = old_out_dir
+                export_json.PRICE_DB_PATH = old_price_db
+
+            self.assertEqual(result["status"], "missing")
+            self.assertFalse(stale_file.exists())
+            self.assertFalse(stale_contract.exists())
+            meta = json.loads((out_dir / "market" / "meta.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["status"], "missing")
+
+    def test_export_market_intelligence_includes_contract_roll_yield(self):
+        margin_conn = self._make_margin_conn()
+        with TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            out_dir = tmp_path / "out"
+            price_db = tmp_path / "prices.db"
+            self._make_price_db(
+                price_db,
+                [
+                    ("2026-01-02", "NATURALGAS", "25JAN2026", "FUTCOM", 100.0, 101.0, 99.0, 100.0, 99.0, 1000, 1000.0, 10.0, 5000),
+                    ("2026-01-02", "NATURALGAS", "26FEB2026", "FUTCOM", 110.0, 111.0, 109.0, 110.0, 109.0, 700, 700.0, 7.0, 3500),
+                    ("2026-01-02", "NATURALGAS", "27MAR2026", "FUTCOM", 120.0, 121.0, 119.0, 120.0, 119.0, 300, 300.0, 3.0, 2000),
+                ],
+            )
+
+            old_out_dir = export_json.OUT_DIR
+            old_price_db = export_json.PRICE_DB_PATH
+            export_json.OUT_DIR = out_dir
+            export_json.PRICE_DB_PATH = price_db
+            try:
+                result = export_json._export_market_intelligence(margin_conn.cursor())
+            finally:
+                export_json.OUT_DIR = old_out_dir
+                export_json.PRICE_DB_PATH = old_price_db
+
+            self.assertEqual(result["status"], "warn")
+            current = json.loads((out_dir / "market" / "current.json").read_text(encoding="utf-8"))
+            curve = current["NATURALGAS"]
+            self.assertEqual(curve[0]["roll_yield_pct"], -10.0)
+            self.assertEqual(curve[1]["roll_yield_pct"], -9.091)
+            self.assertIsNone(curve[2]["roll_yield_pct"])
 
 
 if __name__ == "__main__":

@@ -1264,11 +1264,16 @@ function setStaleness(dateStr) {
 async function renderMarketOverviewContext() {
   if (!ENABLE_MARKET_INTEL) return;
   try {
-    const [meta, current, signals] = await Promise.all([
-      loadMarketJSON('meta'), loadMarketJSON('current'), loadMarketJSON('signals')
-    ]);
     const card = document.getElementById('marketOverviewCard');
     const grid = document.getElementById('marketOverviewGrid');
+    const meta = await loadMarketJSON('meta');
+    if (meta.status === 'missing') {
+      card.style.display = 'none';
+      return;
+    }
+    const [current, signals] = await Promise.all([
+      loadMarketJSON('current'), loadMarketJSON('signals')
+    ]);
     const fresh = meta.freshness || {};
     const ng = (current.NATURALGAS || []).filter(r => r.dte >= 0).sort((a,b) => a.dte - b.dte)[0];
     const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
@@ -3427,6 +3432,34 @@ let marketPriceChart = null, marketFlowChart = null, marketCurveChart = null;
 let marketRegimeChart = null, marketPhaseChart = null, marketCurveHistoryChart = null, marketLinkageChart = null;
 const MARKET_PAGE_SIZE = 50;
 
+function resetMarketIntelView(message) {
+  marketRendered = false;
+  [marketPriceChart, marketFlowChart, marketCurveChart, marketRegimeChart, marketPhaseChart, marketCurveHistoryChart, marketLinkageChart]
+    .forEach(chart => { if (chart) chart.destroy(); });
+  marketPriceChart = null;
+  marketFlowChart = null;
+  marketCurveChart = null;
+  marketRegimeChart = null;
+  marketPhaseChart = null;
+  marketCurveHistoryChart = null;
+  marketLinkageChart = null;
+  marketExplorerData = [];
+  marketExplorerPage = 0;
+  document.getElementById('marketStatus').textContent = message;
+  document.getElementById('marketKpis').innerHTML = '';
+  document.getElementById('marketCurrentBody').innerHTML = '';
+  document.getElementById('marketSignalBody').innerHTML = '';
+  document.getElementById('marketEventBody').innerHTML = '';
+  document.getElementById('marketLeaderboardBody').innerHTML = '';
+  document.getElementById('marketLinkageBody').innerHTML = '';
+  document.getElementById('marketExplorerBody').innerHTML = '';
+  document.getElementById('marketPageInfo').textContent = 'Page 1 of 1';
+  ['marketLiquidityHeatmap', 'marketMarginHeatmap'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
 function renderHeatmapGrid(targetId, cells, mode = 'liquidity') {
   const el = document.getElementById(targetId);
   if (!el) return;
@@ -3447,8 +3480,12 @@ async function renderMarketIntel(force = false) {
   const symKey = document.getElementById('marketSymbol').value;
   const symbol = marketSymbolName(symKey);
   try {
-    const [meta, current, hist, forward, signals, curveHistory, marginJoined, crossRegimes] = await Promise.all([
-      loadMarketJSON('meta'),
+    const meta = await loadMarketJSON('meta');
+    if (meta.status === 'missing') {
+      resetMarketIntelView(meta.message || 'Market intelligence unavailable; margin dashboard remains active.');
+      return;
+    }
+    const [current, hist, forward, signals, curveHistory, marginJoined, crossRegimes] = await Promise.all([
       loadMarketJSON('current'),
       loadMarketJSON(marketHistName(symKey)),
       loadMarketJSON('forward_curve'),
@@ -3696,7 +3733,7 @@ async function renderMarketIntel(force = false) {
     })));
 
     document.getElementById('marketLeaderboardBody').innerHTML = [...curve]
-      .sort((a,b) => (b.liquidity_score || -1) - (a.liquidity_score || -1))
+      .sort((a,b) => (b.liquidity_score ?? -1) - (a.liquidity_score ?? -1))
       .slice(0, 8)
       .map(r => `
         <tr>
@@ -3704,7 +3741,7 @@ async function renderMarketIntel(force = false) {
           <td>${fmtNum(r.liquidity_score, 1)}</td>
           <td>${r.oi_flow_state || '-'}</td>
           <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
-          <td>${fmtPct(forward[symbol]?.roll_yield_pct, 2)}</td>
+          <td>${fmtPct(r.roll_yield_pct, 2)}</td>
         </tr>
       `).join('');
 
@@ -3759,7 +3796,7 @@ async function renderMarketIntel(force = false) {
     renderMarketExplorerPage();
   } catch(e) {
     console.error('Market render error:', e);
-    document.getElementById('marketStatus').textContent = 'Market intelligence unavailable; margin dashboard remains active.';
+    resetMarketIntelView('Market intelligence unavailable; margin dashboard remains active.');
   }
 }
 

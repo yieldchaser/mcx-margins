@@ -178,18 +178,23 @@ def dates_already_in_db(conn: sqlite3.Connection) -> set[str]:
     return {r[0] for r in conn.execute("SELECT DISTINCT date FROM prices").fetchall()}
 
 def save_records(conn: sqlite3.Connection, records: list[dict]) -> int:
-    """INSERT OR IGNORE all records; return count of newly-added rows."""
+    """Upsert all records; return count of rows inserted or updated."""
     if not records:
         return 0
     placeholders = ", ".join(["?"] * len(COLUMNS))
-    sql = f"INSERT OR IGNORE INTO prices ({', '.join(COLUMNS)}) VALUES ({placeholders})"
-    added = 0
+    update_cols = [col for col in COLUMNS if col not in ("date", "symbol", "expiry")]
+    update_sql = ", ".join(f"{col}=excluded.{col}" for col in update_cols)
+    sql = (
+        f"INSERT INTO prices ({', '.join(COLUMNS)}) VALUES ({placeholders}) "
+        f"ON CONFLICT(date, symbol, expiry) DO UPDATE SET {update_sql}"
+    )
+    written = 0
     for r in records:
         values = tuple(r.get(c) for c in COLUMNS)
         conn.execute(sql, values)
-        added += conn.execute("SELECT changes()").fetchone()[0]
+        written += conn.execute("SELECT changes()").fetchone()[0]
     conn.commit()
-    return added
+    return written
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -573,7 +578,7 @@ def migrate_excel_to_sqlite(
 ):
     """
     One-time migration: import all rows from the legacy blue_margin.xlsx
-    into data/prices.db.  Safe to run repeatedly — uses INSERT OR IGNORE.
+    into data/prices.db. Safe to run repeatedly — existing keys are refreshed.
     """
     import openpyxl
     if not Path(xlsx_path).exists():
@@ -585,21 +590,21 @@ def migrate_excel_to_sqlite(
     headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     print(f"[migrate] Headers: {headers}")
     conn = db_connect(db_path)
-    batch, added_total = [], 0
+    batch, written_total = [], 0
     for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 1):
         rec = dict(zip(headers, row))
         if not rec.get("date"):
             continue
         batch.append(rec)
         if len(batch) >= 500:
-            added_total += save_records(conn, batch)
+            written_total += save_records(conn, batch)
             batch = []
             if i % 5000 == 0:
-                print(f"[migrate] … {i} rows processed, {added_total} inserted")
+                print(f"[migrate] … {i} rows processed, {written_total} rows written")
     if batch:
-        added_total += save_records(conn, batch)
+        written_total += save_records(conn, batch)
     total = conn.execute("SELECT COUNT(*) FROM prices").fetchone()[0]
-    print(f"[migrate] Done.  Inserted {added_total} rows → DB total: {total}")
+    print(f"[migrate] Done.  Wrote {written_total} rows → DB total: {total}")
     print(f"[migrate] DB: {db_path}")
     conn.close()
     wb.close()

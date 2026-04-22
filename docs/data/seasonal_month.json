@@ -1,22 +1,122 @@
 [
   {
-    "month": "NOV",
-    "month_num": 11,
-    "avg_initial_margin": 18.115,
-    "avg_total_margin": 18.428,
-    "count": 7198,
+    "month": "JAN",
+    "month_num": 1,
+    "avg_initial_margin": 21.045,
+    "avg_total_margin": 21.35,
+    "count": 1228,
+    "min": 0.023,
+    "max": 100.0,
+    "std_dev": 19.782
+  },
+  {
+    "month": "FEB",
+    "month_num": 2,
+    "avg_initial_margin": 21.393,
+    "avg_total_margin": 21.697,
+    "count": 1183,
     "min": 0.0,
     "max": 100.0,
-    "std_dev": 16.488
+    "std_dev": 20.3
+  },
+  {
+    "month": "MAR",
+    "month_num": 3,
+    "avg_initial_margin": 18.57,
+    "avg_total_margin": 18.858,
+    "count": 1302,
+    "min": 4.96,
+    "max": 100.0,
+    "std_dev": 18.202
+  },
+  {
+    "month": "APR",
+    "month_num": 4,
+    "avg_initial_margin": 15.835,
+    "avg_total_margin": 16.174,
+    "count": 1149,
+    "min": 0.015,
+    "max": 62.69,
+    "std_dev": 12.08
+  },
+  {
+    "month": "MAY",
+    "month_num": 5,
+    "avg_initial_margin": 15.12,
+    "avg_total_margin": 15.436,
+    "count": 1187,
+    "min": 5.14,
+    "max": 62.37,
+    "std_dev": 10.833
+  },
+  {
+    "month": "JUN",
+    "month_num": 6,
+    "avg_initial_margin": 16.279,
+    "avg_total_margin": 16.605,
+    "count": 1149,
+    "min": 5.19,
+    "max": 87.91,
+    "std_dev": 12.583
+  },
+  {
+    "month": "JUL",
+    "month_num": 7,
+    "avg_initial_margin": 15.791,
+    "avg_total_margin": 16.105,
+    "count": 1197,
+    "min": 4.77,
+    "max": 79.01,
+    "std_dev": 11.761
+  },
+  {
+    "month": "AUG",
+    "month_num": 8,
+    "avg_initial_margin": 14.282,
+    "avg_total_margin": 14.608,
+    "count": 1149,
+    "min": 4.64,
+    "max": 77.15,
+    "std_dev": 10.452
+  },
+  {
+    "month": "SEP",
+    "month_num": 9,
+    "avg_initial_margin": 13.225,
+    "avg_total_margin": 13.547,
+    "count": 1164,
+    "min": 4.77,
+    "max": 100.0,
+    "std_dev": 10.262
+  },
+  {
+    "month": "OCT",
+    "month_num": 10,
+    "avg_initial_margin": 14.527,
+    "avg_total_margin": 14.851,
+    "count": 1157,
+    "min": 0.0,
+    "max": 100.0,
+    "std_dev": 13.593
+  },
+  {
+    "month": "NOV",
+    "month_num": 11,
+    "avg_initial_margin": 17.271,
+    "avg_total_margin": 17.596,
+    "count": 1154,
+    "min": 5.0,
+    "max": 98.09,
+    "std_dev": 14.51
   },
   {
     "month": "DEC",
     "month_num": 12,
-    "avg_initial_margin": 15.593,
-    "avg_total_margin": 15.916,
-    "count": 6981,
+    "avg_initial_margin": 18.725,
+    "avg_total_margin": 19.048,
+    "count": 1160,
     "min": 0.0,
     "max": 100.0,
-    "std_dev": 12.478
+    "std_dev": 12.939
   }
 ]

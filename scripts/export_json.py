@@ -9,6 +9,7 @@ import sqlite3
 import json
 import math
 import statistics
+import shutil
 import urllib.request
 from datetime import datetime, date, timezone
 from pathlib import Path
@@ -53,6 +54,13 @@ def save(filename, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, default=str)
     print(f"  [OK] {filename}")
+
+
+def _remove_output_tree(relative_path):
+    path = OUT_DIR / relative_path
+    if path.exists():
+        shutil.rmtree(path)
+        print(f"  [OK] cleared {relative_path}/")
 
 
 def get_conn():
@@ -215,6 +223,18 @@ def _normalize_margin_row(row):
     }
 
 
+def _load_symbol_margin_history_rows(cur, symbol):
+    return [
+        _normalize_margin_row(row)
+        for row in _load_margin_rows(
+            cur,
+            "symbol = ? AND initial_margin_pct IS NOT NULL",
+            (symbol,),
+            "date ASC, expiry ASC",
+        )
+    ]
+
+
 def _build_margin_contract_histories(cur, symbol):
     rows = _load_margin_rows(
         cur,
@@ -302,6 +322,16 @@ def _regime_label(percentile):
     if percentile < 85:
         return "ELEVATED"
     return "STRESS"
+
+
+def _causal_percentile_rank(history, value, min_obs=5):
+    if value is None:
+        return None
+    basis = [v for v in history if v is not None]
+    basis.append(value)
+    if len(basis) < min_obs:
+        return None
+    return _percentile_rank(basis, value)
 
 
 def _freshness_status(latest_date):
@@ -742,11 +772,9 @@ def _market_validation(conn, latest_date, futures_rows):
 def _export_market_intelligence(margin_cur):
     outputs = []
     market_dir = OUT_DIR / "market"
-    market_dir.mkdir(parents=True, exist_ok=True)
-    contract_root = market_dir / "contract"
-    contract_root.mkdir(parents=True, exist_ok=True)
 
     if not PRICE_DB_PATH.exists():
+        _remove_output_tree("market")
         missing = {
             "schema_version": MARKET_SCHEMA_VERSION,
             "status": "missing",
@@ -755,6 +783,10 @@ def _export_market_intelligence(margin_cur):
         }
         save("market/meta.json", missing)
         return {"status": "missing", "outputs": ["market/meta.json"], "latest_date": None}
+
+    market_dir.mkdir(parents=True, exist_ok=True)
+    contract_root = market_dir / "contract"
+    contract_root.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(PRICE_DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -886,10 +918,18 @@ def _export_market_intelligence(margin_cur):
                     "oi_flow_state": flow_row.get("oi_flow_state"),
                     "spread_vs_front": _round(row["close"] - front_close, 4) if row.get("close") is not None and front_close is not None else None,
                     "spread_vs_next": _round(active[idx + 1]["close"] - row["close"], 4) if idx + 1 < len(active) and row.get("close") is not None and active[idx + 1].get("close") is not None else None,
+                    "roll_yield_pct": _round(((row["close"] - active[idx + 1]["close"]) / row["close"]) * 100, 3) if idx + 1 < len(active) and row.get("close") not in (None, 0) and active[idx + 1].get("close") is not None else None,
                     "liquidity_score": liquidity_score,
                 }
                 curve.append(entry)
-            ranked = sorted(curve, key=lambda r: (r.get("liquidity_score") is not None, r.get("liquidity_score") or -1), reverse=True)
+            ranked = sorted(
+                curve,
+                key=lambda r: (
+                    r.get("liquidity_score") is not None,
+                    r.get("liquidity_score") if r.get("liquidity_score") is not None else -1,
+                ),
+                reverse=True,
+            )
             ranks = {id(row): i + 1 for i, row in enumerate(ranked)}
             for row in curve:
                 row["liquidity_rank"] = ranks.get(id(row))
@@ -1099,17 +1139,17 @@ def _export_market_intelligence(margin_cur):
                 joined.append(entry)
 
             aligned = [r for r in joined if r["alignment_status"] == "aligned"]
-            margin_vals = [r["initial_margin_pct"] for r in aligned if r.get("initial_margin_pct") is not None]
-            realized_vals = [r["rolling_realized_vol_20d"] for r in aligned if r.get("rolling_realized_vol_20d") is not None]
-            liquidity_vals = [r["liquidity_score"] for r in aligned if r.get("liquidity_score") is not None]
+            margin_vals = []
+            realized_vals = []
+            liquidity_vals = []
             vol_prev = None
             margin_prev = None
             event_windows = []
             regime_rows = []
             for row in aligned:
-                margin_pct_rank = _percentile_rank(margin_vals, row.get("initial_margin_pct"))
-                vol_pct_rank = _percentile_rank(realized_vals, row.get("rolling_realized_vol_20d"))
-                liq_pct_rank = _percentile_rank(liquidity_vals, row.get("liquidity_score"))
+                margin_pct_rank = _causal_percentile_rank(margin_vals, row.get("initial_margin_pct"))
+                vol_pct_rank = _causal_percentile_rank(realized_vals, row.get("rolling_realized_vol_20d"))
+                liq_pct_rank = _causal_percentile_rank(liquidity_vals, row.get("liquidity_score"))
                 liq_inv = None if row.get("liquidity_score") is None else round(100 - row["liquidity_score"], 1)
                 if margin_pct_rank is not None or vol_pct_rank is not None or liq_inv is not None:
                     row["funding_friction_score"] = round((margin_pct_rank or 0) * 0.45 + (vol_pct_rank or 0) * 0.25 + (liq_inv or 0) * 0.30, 1)
@@ -1154,6 +1194,12 @@ def _export_market_intelligence(margin_cur):
                         "oi_change_pct": row.get("oi_change_pct"),
                         "funding_friction_score": row.get("funding_friction_score"),
                     })
+                if row.get("initial_margin_pct") is not None:
+                    margin_vals.append(row["initial_margin_pct"])
+                if row.get("rolling_realized_vol_20d") is not None:
+                    realized_vals.append(row["rolling_realized_vol_20d"])
+                if row.get("liquidity_score") is not None:
+                    liquidity_vals.append(row["liquidity_score"])
                 vol_prev = vol_regime or vol_prev
                 margin_prev = margin_regime or margin_prev
 
@@ -2083,105 +2129,71 @@ def main():
         _cidx[_skey].sort(key=lambda x: x["expiry"])
     save("contract_index.json", _cidx)
 
+    ng_margin_rows = _load_symbol_margin_history_rows(cur, "NATURALGAS")
+
     # ── seasonal_month.json ───────────────────────────────────────────────────
-    # Use inner GROUP BY (date, expiry) to deduplicate — margins has 3 rows per (date,symbol,expiry).
-    # Outer aggregation then gives correct counts and averages.
-    cur.execute(
-        """
-        SELECT strftime('%m', date) as mon,
-               AVG(initial_margin_pct), AVG(total_margin_pct), COUNT(*),
-               MIN(initial_margin_pct), MAX(initial_margin_pct)
-        FROM (
-            SELECT strftime('%m', date) as date, expiry,
-                   initial_margin_pct, total_margin_pct
-            FROM margins WHERE symbol='NATURALGAS'
-            GROUP BY date, expiry
-        )
-        GROUP BY mon ORDER BY mon
-        """,
-    )
+    seasonal_month_buckets = {}
+    for row in ng_margin_rows:
+        mon = int(row["date"][5:7])
+        bucket = seasonal_month_buckets.setdefault(mon, {"im": [], "tm": []})
+        if row.get("initial_margin_pct") is not None:
+            bucket["im"].append(row["initial_margin_pct"])
+        if row.get("total_margin_pct") is not None:
+            bucket["tm"].append(row["total_margin_pct"])
     seasonal_month = []
-    for row in cur.fetchall():
-        m = int(row[0])
+    for m in sorted(seasonal_month_buckets):
+        im_vals = seasonal_month_buckets[m]["im"]
+        tm_vals = seasonal_month_buckets[m]["tm"]
         seasonal_month.append(
             {
                 "month": MONTH_NAMES[m],
                 "month_num": m,
-                "avg_initial_margin": round(row[1], 3),
-                "avg_total_margin": round(row[2], 3),
-                "count": row[3],
-                "min": round(row[4], 3),
-                "max": round(row[5], 3),
+                "avg_initial_margin": round(statistics.mean(im_vals), 3),
+                "avg_total_margin": round(statistics.mean(tm_vals), 3) if tm_vals else None,
+                "count": len(im_vals),
+                "min": round(min(im_vals), 3),
+                "max": round(max(im_vals), 3),
+                "std_dev": round(statistics.stdev(im_vals), 3) if len(im_vals) > 1 else 0.0,
             }
         )
     save("seasonal_month.json", seasonal_month)
 
-    # Standard deviation per month — deduplicated (date, expiry) raw values
-    cur.execute(
-        """
-        SELECT strftime('%m', date) as mon, initial_margin_pct
-        FROM (
-            SELECT strftime('%m', date) as date, expiry, initial_margin_pct
-            FROM margins WHERE symbol='NATURALGAS' AND initial_margin_pct IS NOT NULL
-            GROUP BY date, expiry
-        )
-        ORDER BY mon
-        """,
-    )
-    month_vals: dict = {}
-    for row in cur.fetchall():
-        m = int(row[0])
-        month_vals.setdefault(m, []).append(row[1])
-    # Patch std_dev into seasonal_month
-    for entry in seasonal_month:
-        vals = month_vals.get(entry["month_num"], [])
-        entry["std_dev"] = round(statistics.stdev(vals), 3) if len(vals) > 1 else 0.0
-    save("seasonal_month.json", seasonal_month)  # resave with std_dev
-
     # ── seasonal_year.json ────────────────────────────────────────────────────
-    cur.execute(
-        """
-        SELECT strftime('%Y', date) as yr,
-               AVG(initial_margin_pct), AVG(total_margin_pct), COUNT(*),
-               MIN(initial_margin_pct), MAX(initial_margin_pct)
-        FROM (
-            SELECT date, expiry,
-                   initial_margin_pct, total_margin_pct
-            FROM margins WHERE symbol='NATURALGAS'
-            GROUP BY date, expiry
-        )
-        GROUP BY yr ORDER BY yr
-        """,
-    )
+    seasonal_year_buckets = {}
+    for row in ng_margin_rows:
+        yr = int(row["date"][:4])
+        bucket = seasonal_year_buckets.setdefault(yr, {"im": [], "tm": []})
+        if row.get("initial_margin_pct") is not None:
+            bucket["im"].append(row["initial_margin_pct"])
+        if row.get("total_margin_pct") is not None:
+            bucket["tm"].append(row["total_margin_pct"])
     seasonal_year = []
-    for row in cur.fetchall():
+    for yr in sorted(seasonal_year_buckets):
+        im_vals = seasonal_year_buckets[yr]["im"]
+        tm_vals = seasonal_year_buckets[yr]["tm"]
         seasonal_year.append(
             {
-                "year": int(row[0]),
-                "avg_initial_margin": round(row[1], 3),
-                "avg_total_margin": round(row[2], 3),
-                "count": row[3],
-                "min": round(row[4], 3),
-                "max": round(row[5], 3),
+                "year": yr,
+                "avg_initial_margin": round(statistics.mean(im_vals), 3),
+                "avg_total_margin": round(statistics.mean(tm_vals), 3) if tm_vals else None,
+                "count": len(im_vals),
+                "min": round(min(im_vals), 3),
+                "max": round(max(im_vals), 3),
             }
         )
     save("seasonal_year.json", seasonal_year)
 
     # ── seasonal_heatmap.json ─────────────────────────────────────────────────
-    cur.execute(
-        """
-        SELECT strftime('%Y', date) as yr, strftime('%m', date) as mon,
-               AVG(initial_margin_pct)
-        FROM margins WHERE symbol='NATURALGAS'
-        GROUP BY yr, mon
-        """,
-    )
     years_set = set()
-    heatmap_raw: dict = {}
-    for row in cur.fetchall():
-        yr, mn = row[0], int(row[1])
+    heatmap_buckets: dict = {}
+    for row in ng_margin_rows:
+        yr, mn = row["date"][:4], int(row["date"][5:7])
         years_set.add(yr)
-        heatmap_raw.setdefault(yr, {})[MONTH_NAMES[mn]] = round(row[2], 2)
+        heatmap_buckets.setdefault(yr, {}).setdefault(mn, []).append(row["initial_margin_pct"])
+    heatmap_raw = {
+        yr: {MONTH_NAMES[mn]: round(statistics.mean(vals), 2) for mn, vals in sorted(months.items())}
+        for yr, months in heatmap_buckets.items()
+    }
     save(
         "seasonal_heatmap.json",
         {
@@ -2196,9 +2208,6 @@ def main():
     from datetime import datetime as _dt, timedelta as _td
     _cutoff_5y = (_dt.strptime(max_date, "%Y-%m-%d") - _td(days=5 * 365)).strftime("%Y-%m-%d")
 
-    cur.execute(
-        "SELECT date, expiry, initial_margin_pct, tender_margin_pct FROM margins WHERE symbol='NATURALGAS'",
-    )
     bin_order = ["0-7", "8-14", "15-30", "31-60", "61-90", "91-120", "121-180", "181+"]
     bin_mid = {
         "0-7": 3, "8-14": 11, "15-30": 22, "31-60": 45,
@@ -2217,13 +2226,12 @@ def main():
 
     dte_data: dict = {}
     dte_data_5y: dict = {}
-    seen_dte: set = set()  # dedup (date, expiry) — margins has 3 rows per pair
-    for row in cur.fetchall():
-        d, exp, im, tm = row[0], row[1], row[2], row[3]
-        if (d, exp) in seen_dte:
-            continue
-        seen_dte.add((d, exp))
-        dte = compute_dte(exp, d)
+    for row in ng_margin_rows:
+        d = row["date"]
+        exp = row["expiry"]
+        im = row["initial_margin_pct"]
+        tm = row.get("tender_margin_pct")
+        dte = row["dte"]
         if dte < 0 or im is None:
             continue
         b = get_bin(dte)
