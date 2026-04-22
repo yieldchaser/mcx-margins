@@ -2403,6 +2403,7 @@ const LC_HH_START = '2010-01-01'; // full history available — NG=F fetched fro
 let _lcChart = null, _lcSym = 'ng', _lcAxisMode = 'date', _lcMetric = 'initial', _lcInited = false;
 let _lcTenderState = { idx: -1, labels: [], axisMode: 'date' }; // shared plugin state, updated every render
 let _lcFullRows = [], _lcRC = null;
+let _lcViewState = { rows: [], metricFn: null, contractLabel: '' }; // live view used by tooltip callbacks
 
 // Build contract dropdown from contract_index.json — auto-ingests new contracts
 // LC Dropdown state
@@ -2461,6 +2462,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   const rangeEl = document.getElementById('lcRangeWrapper');
 
   if (!expiry) {
+    _lcViewState = { rows: [], metricFn: null, contractLabel: '' };
     emptyEl.innerHTML = '<div style="font-size:34px;line-height:1;opacity:0.28;">&#x1F4C8;</div><div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:8px;">Select a contract above</div><div style="font-size:11px;color:var(--text-muted);opacity:0.65;margin-top:4px;">Explore full margin history from first observation to expiry</div>';
     emptyEl.style.display = 'flex';
     statsEl.style.display  = 'none';
@@ -2480,6 +2482,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
       `<span class="scope-chip"><strong>Shared Obs</strong> ${lcEntry?.shared_obs ?? '-'}</span>`;
     
     if (_lcFullRows.length < 2) {
+      _lcViewState = { rows: [], metricFn: null, contractLabel: '' };
       const lbl = _contractLabel(expiry);
       emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + _lcFullRows.length + '</strong> observation for <strong>' + lbl + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
       emptyEl.style.display = 'flex';
@@ -2510,6 +2513,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   const labels = _lcAxisMode === 'date' ? rows.map(r => r.date) : rows.map(r => r.dte);
   const yVals  = rows.map(ms.fn);
   const thr    = _lcMetric === 'vol' ? 0.1 : 0.5;
+  _lcViewState = { rows, metricFn: ms.fn, contractLabel: _contractLabel(expiry) };
 
   // Change-event arrays — same length as rows, null where no significant change
   const hikeData = rows.map((r,i) => {
@@ -2704,19 +2708,22 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
           mode: 'index', intersect: false,
           callbacks: {
             title: ctx => {
-              const i = ctx[0]?.dataIndex ?? 0, r = rows[i];
+              const viewRows = _lcViewState.rows || [];
+              const i = ctx[0]?.dataIndex ?? 0, r = viewRows[i];
               if (!r) return '';
-              const lbl = _contractLabel(expiry);
+              const lbl = _lcViewState.contractLabel || _contractLabel(expiry);
               return _lcAxisMode === 'dte'
                 ? lbl + '  \u00b7  DTE: ' + r.dte + 'd  \u00b7  ' + r.date
                 : lbl + '  \u00b7  ' + r.date + '  \u00b7  DTE: ' + r.dte + 'd';
             },
             afterBody: ctx => {
-              const i = ctx[0]?.dataIndex ?? 0, r = rows[i]; if (!r) return [];
+              const viewRows = _lcViewState.rows || [];
+              const metricFn = _lcViewState.metricFn;
+              const i = ctx[0]?.dataIndex ?? 0, r = viewRows[i]; if (!r) return [];
               const lines = [];
               if (r.tender_margin_pct > 0) lines.push('Tender: ' + r.tender_margin_pct.toFixed(2) + '%');
-              if (i > 0) {
-                const p = ms.fn(rows[i-1]), c = ms.fn(r);
+              if (i > 0 && metricFn) {
+                const p = metricFn(viewRows[i-1]), c = metricFn(r);
                 if (p != null && c != null && Math.abs(c-p) >= 0.01)
                   lines.push('\u0394: ' + (c-p > 0 ? '+' : '') + (c-p).toFixed(2) + '%');
               }
