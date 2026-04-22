@@ -1067,6 +1067,7 @@ class RangeController {
  */
 const MEASURE = {
   card: null,
+  hideTimer: null,
   init() {
     if (this.card) return;
     this.card = document.createElement('div');
@@ -1076,36 +1077,74 @@ const MEASURE = {
   },
   show(x, y, html) {
     this.init();
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
     this.card.innerHTML = html;
     this.card.style.display = 'block';
     const cardRect = this.card.getBoundingClientRect();
+    const minX = 10 + cardRect.width / 2;
+    const maxX = window.innerWidth - 10 - cardRect.width / 2;
+    const clampedX = Math.max(minX, Math.min(x, maxX));
     let top = y - cardRect.height - 10;
     // Flip to bottom if clipping top
     if (top < 10) top = y + 20;
+    top = Math.max(10, Math.min(top, window.innerHeight - cardRect.height - 10));
 
-    this.card.style.left = x + 'px';
+    this.card.style.left = clampedX + 'px';
     this.card.style.top = top + 'px';
+    this.hideTimer = setTimeout(() => this.hide(), 4500);
   },
   hide() {
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
     if (this.card) this.card.style.display = 'none';
   }
 };
 
 let _dragStart = null, _dragEnd = null, _dragChart = null;
+function clearDragState(redraw = true) {
+  _dragStart = _dragChart = _dragEnd = null;
+  if (!redraw || typeof Chart === 'undefined') return;
+  if (typeof Chart.instances?.forEach === 'function') {
+    Chart.instances.forEach(c => c.draw());
+    return;
+  }
+  Object.values(Chart.instances || {}).forEach(c => c?.draw?.());
+}
+
+function resetMeasurementState(redraw = true) {
+  MEASURE.hide();
+  clearDragState(redraw);
+}
+
 window.addEventListener('mousedown', e => {
   if (typeof Chart === 'undefined') return;
   const canvas = e.target;
-  if (!canvas || canvas.tagName !== 'CANVAS') return;
+  if (!canvas || canvas.tagName !== 'CANVAS') {
+    MEASURE.hide();
+    return;
+  }
   const chart = Chart.getChart(canvas);
-  if (!chart || chart.config.type !== 'line') return;
+  if (!chart || chart.config.type !== 'line') {
+    MEASURE.hide();
+    return;
+  }
 
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
   
   if (x >= chart.chartArea.left && x <= chart.chartArea.right && y >= chart.chartArea.top && y <= chart.chartArea.bottom) {
+    MEASURE.hide();
     _dragStart = { x, y, idx: chart.scales.x.getValueForPixel(x) };
+    _dragEnd = null;
     _dragChart = chart;
+  } else {
+    MEASURE.hide();
   }
 });
 
@@ -1118,36 +1157,50 @@ window.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mouseup', e => {
-  if (typeof Chart === 'undefined') { _dragStart = _dragChart = _dragEnd = null; return; }
-  if (!_dragStart || !_dragChart || !_dragEnd) { _dragStart = _dragChart = _dragEnd = null; return; }
+  if (typeof Chart === 'undefined') { clearDragState(false); return; }
+  if (!_dragStart || !_dragChart || !_dragEnd) { clearDragState(false); return; }
   
   const i1 = Math.min(_dragStart.idx, _dragEnd.idx);
   const i2 = Math.max(_dragStart.idx, _dragEnd.idx);
   
-  if (i1 === i2) { MEASURE.hide(); }
+  if (i1 === i2) {
+    resetMeasurementState();
+    return;
+  }
   else {
     const ds = _dragChart.data.datasets[0]; // primary dataset
     const v1 = ds.data[i1], v2 = ds.data[i2];
     if (v1 != null && v2 != null) {
       const delta = v2 - v1;
-      const pct = (delta / v1) * 100;
+      // Use abs(v1) so the percent change direction matches delta even when v1 < 0
+      // (common for return/flow series).
+      const base = Math.abs(v1);
+      const pct = base > 0 ? (delta / base) * 100 : null;
       const days = i2 - i1;
       const rect = _dragChart.canvas.getBoundingClientRect();
       const midX = rect.left + (_dragStart.x + _dragEnd.x) / 2;
       const midY = rect.top + _dragChart.chartArea.top;
       
       let html = `<div class="meas-val">${delta > 0 ? '+' : ''}${delta.toFixed(2)}%</div>`;
-      html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-red)' : 'var(--accent-green)'}">
-                ${delta > 0 ? '\u25b2' : '\u25bc'} ${Math.abs(pct).toFixed(1)}%
+      html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                ${delta >= 0 ? '\u25b2' : '\u25bc'} ${pct == null ? '-' : Math.abs(pct).toFixed(1) + '%'}
                </div>`;
-      html += `<div class="meas-sub">${days} days duration</div>`;
+      html += `<div class="meas-sub">${days} ${days === 1 ? 'day' : 'days'} duration</div>`;
       
       MEASURE.show(midX, midY, html);
+    } else {
+      MEASURE.hide();
     }
   }
   
-  _dragStart = _dragChart = _dragEnd = null;
-  Chart.instances.forEach(c => c.draw()); // clear bands on all charts
+  clearDragState(); // clear drag bands on all charts
+});
+
+window.addEventListener('scroll', () => resetMeasurementState(false), { passive: true });
+window.addEventListener('resize', () => resetMeasurementState(false));
+window.addEventListener('blur', () => resetMeasurementState(false));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') resetMeasurementState(false);
 });
 
 
@@ -1158,6 +1211,7 @@ window.addEventListener('mouseup', e => {
 // Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    resetMeasurementState(false);
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
