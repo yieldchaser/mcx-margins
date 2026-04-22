@@ -1326,6 +1326,33 @@ function fmtPct(v, digits = 2) {
   return v == null || Number.isNaN(Number(v)) ? '-' : `${Number(v).toFixed(digits)}%`;
 }
 
+function marketLiquidityBand(score) {
+  const value = Number(score);
+  if (!Number.isFinite(value)) return 'unknown';
+  if (value < 40) return 'thin';
+  if (value < 70) return 'balanced';
+  return 'deep';
+}
+
+function marketFrictionBand(score) {
+  const value = Number(score);
+  if (!Number.isFinite(value)) return 'unknown';
+  if (value < 35) return 'loose';
+  if (value < 65) return 'neutral';
+  return 'tight';
+}
+
+function marketOiFlowHint(state) {
+  const hints = {
+    long_build: 'Price up + OI up: fresh longs adding risk.',
+    short_build: 'Price down + OI up: fresh shorts pressing downside.',
+    long_unwind: 'Price down + OI down: longs reducing exposure.',
+    short_cover: 'Price up + OI down: shorts exiting into strength.',
+    neutral: 'Mixed or low-conviction positioning.'
+  };
+  return hints[state] || hints.neutral;
+}
+
 function marketHistName(symKey) {
   return symKey === 'ngm' ? 'history_ngm' : 'history_ng';
 }
@@ -1411,13 +1438,16 @@ async function renderMarketOverviewContext() {
       ['OI Change', fmtPct(ng.oi_change_pct, 2), `OI ${fmtNum(ng.open_interest, 0)}`],
       ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`],
       ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal']
-    ].map(([label, value, sub]) => `
-      <div class="card" style="background:var(--surface2);padding:14px;">
-        <div class="stat-label">${label}</div>
-        <div class="stat-value" style="font-size:18px;">${value}</div>
-        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
-      </div>
-    `).join('');
+    ].map(([label, value, sub]) => {
+      const dynBody = `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}<br><br><em>Insight:</em> This front-month summary provides the immediate liquidity and price context for the ${symbol || 'Natural Gas'} market.`;
+      return `
+        <div class="card has-tooltip" data-dyn-title="Market Intel: ${label}" data-dyn-body="${escAttr(dynBody)}" style="background:var(--surface2);padding:14px;">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value" style="font-size:18px;">${value}</div>
+          <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
+        </div>
+      `;
+    }).join('');
     card.style.display = 'block';
   } catch(e) {
     console.warn('Market overview skipped:', e);
@@ -3657,37 +3687,37 @@ async function renderMarketIntel(force = false) {
         label: 'Front Close',
         value: fmtNum(latest.close, 2),
         sub: `${_contractLabel(latest.expiry || '')} | ${latest.dte ?? '-'}d`,
-        tip: `Front month closes at <strong>${fmtNum(latest.close, 2)}</strong> for ${latest.expiry || '-'} with <strong>${latest.dte ?? '-'}</strong> days to expiry.`
+        tip: `Front month closes at <strong>${fmtNum(latest.close, 2)}</strong> for ${latest.expiry || '-'} with <strong>${latest.dte ?? '-'}</strong> days to expiry.<br><br>This is the primary liquidity hub for ${symbol}. Monitor for price shocks that often lead margin changes.`
       },
       {
         label: '1D Return',
         value: fmtPct(latest.return_1d_pct ?? latest.return_pct, 2),
         sub: `5D ${fmtPct(latest.return_5d_pct, 2)}`,
-        tip: `Daily move is <strong>${fmtPct(latest.return_1d_pct ?? latest.return_pct, 2)}</strong>; 5-day drift is <strong>${fmtPct(latest.return_5d_pct, 2)}</strong>.`
+        tip: `Daily move: <strong>${fmtPct(latest.return_1d_pct ?? latest.return_pct, 2)}</strong><br>5-day drift: <strong>${fmtPct(latest.return_5d_pct, 2)}</strong><br><br>Sustained directional moves (5D drift) are higher-confidence signals for policy adjustment than single-day noise.`
       },
       {
         label: 'Realized Vol',
         value: fmtPct(latest.rolling_realized_vol_20d, 2),
         sub: `5D ${fmtPct(latest.rolling_realized_vol_5d, 2)}`,
-        tip: `20-day realized vol is <strong>${fmtPct(latest.rolling_realized_vol_20d, 2)}</strong> versus 5-day <strong>${fmtPct(latest.rolling_realized_vol_5d, 2)}</strong>.`
+        tip: `20-day realized vol: <strong>${fmtPct(latest.rolling_realized_vol_20d, 2)}</strong><br>5-day realized vol: <strong>${fmtPct(latest.rolling_realized_vol_5d, 2)}</strong><br><br>When 5D vol exceeds 20D vol, risk is accelerating. MCX typically hikes margins when 20D vol sustained above P75 levels.`
       },
       {
         label: 'OI Flow State',
         value: latest.oi_flow_state || '-',
         sub: `OI ${fmtPct(latest.oi_change_pct, 2)}`,
-        tip: `Positioning reads <strong>${latest.oi_flow_state || 'neutral'}</strong> with OI change at <strong>${fmtPct(latest.oi_change_pct, 2)}</strong>.`
+        tip: `Current State: <strong>${latest.oi_flow_state || 'neutral'}</strong><br>OI Change: <strong>${fmtPct(latest.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(latest.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
       },
       {
         label: 'Liquidity Score',
         value: fmtNum(latest.liquidity_score, 1),
         sub: `Concentration ${fmtNum(forward[symbol]?.liquidity_concentration, 1)}`,
-        tip: `Liquidity score is <strong>${fmtNum(latest.liquidity_score, 1)}</strong>; concentration is <strong>${fmtNum(forward[symbol]?.liquidity_concentration, 1)}</strong>. Higher concentration means liquidity is clustered in fewer expiries.`
+        tip: `Liquidity score: <strong>${fmtNum(latest.liquidity_score, 1)}</strong> (${marketLiquidityBand(latest.liquidity_score)})<br>Concentration: <strong>${fmtNum(forward[symbol]?.liquidity_concentration, 1)}</strong><br><br>Higher concentration means liquidity is tightly clustered in the front month. Low concentration may signal a roll in progress.`
       },
       {
         label: 'Funding Friction',
         value: fmtNum(latestAligned.funding_friction_score, 1),
         sub: latestAligned.matched_expiry || 'No aligned join',
-        tip: `Aligned funding friction sits at <strong>${fmtNum(latestAligned.funding_friction_score, 1)}</strong> for ${latestAligned.matched_expiry || 'the latest aligned session'}.`
+        tip: `Aligned funding friction: <strong>${fmtNum(latestAligned.funding_friction_score, 1)}</strong> (${marketFrictionBand(latestAligned.funding_friction_score)})<br><br>Measures the difficulty of maintaining margin requirements against market flow. High friction (> 65) precedes defensive positioning.`
       }
     ];
     document.getElementById('marketKpis').innerHTML = marketKpiCards.map(card => `
@@ -3700,20 +3730,20 @@ async function renderMarketIntel(force = false) {
 
     const curRows = current[symbol] || [];
     document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => {
-      const dynTitle = `${_contractLabel(r.expiry)} snapshot`;
-      const dynBody = `Close: <strong>${fmtNum(r.close, 2)}</strong> | Return: <strong>${fmtPct(r.return_pct, 2)}</strong><br><br>Volume: ${fmtNum(r.volume_lots, 0)} lots, OI: ${fmtNum(r.open_interest, 0)}.<br>Liquidity score: <strong>${fmtNum(r.liquidity_score, 1)}</strong>.`;
+      const liqBand = marketLiquidityBand(r.liquidity_score);
+      const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${r.expiry})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
       return `
-      <tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
-        <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
-        <td>${r.dte}</td>
-        <td>${fmtNum(r.close, 2)}</td>
-        <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
-        <td>${fmtNum(r.volume_lots, 0)}</td>
-        <td>${fmtNum(r.value_lacs, 2)}</td>
-        <td>${fmtNum(r.open_interest, 0)}</td>
-        <td>${fmtNum(r.liquidity_score, 1)}</td>
-      </tr>
-    `;
+        <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+          <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+          <td>${r.dte}</td>
+          <td>${fmtNum(r.close, 2)}</td>
+          <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
+          <td>${fmtNum(r.volume_lots, 0)}</td>
+          <td>${fmtNum(r.value_lacs, 2)}</td>
+          <td>${fmtNum(r.open_interest, 0)}</td>
+          <td>${fmtNum(r.liquidity_score, 1)}</td>
+        </tr>
+      `;
     }).join('');
 
     const recent = rows.slice(-365);
@@ -3730,7 +3760,31 @@ async function renderMarketIntel(force = false) {
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const row = recent[items?.[0]?.dataIndex ?? 0];
+                return row ? `${row.date} · ${_contractLabel(row.expiry)}` : '';
+              },
+              afterBody: items => {
+                const row = recent[items?.[0]?.dataIndex ?? 0];
+                if (!row) return [];
+                const ret = row.return_1d_pct ?? row.return_pct;
+                const state = row.oi_flow_state || 'neutral';
+                const watch = Math.abs(Number(ret) || 0) >= 2
+                  ? 'Watch: high daily move; monitor follow-through in OI.'
+                  : 'Watch: if return expands with OI rise, trend conviction is strengthening.';
+                return [
+                  `State: ${state} (${marketOiFlowHint(state)})`,
+                  `Liquidity: ${fmtNum(row.liquidity_score, 1)} (${marketLiquidityBand(row.liquidity_score)})`,
+                  watch
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
           y: { title: { display: true, text: 'MCX Close' } },
@@ -3751,7 +3805,31 @@ async function renderMarketIntel(force = false) {
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const row = recent[items?.[0]?.dataIndex ?? 0];
+                return row ? `${row.date} · ${_contractLabel(row.expiry)}` : '';
+              },
+              afterBody: items => {
+                const row = recent[items?.[0]?.dataIndex ?? 0];
+                if (!row) return [];
+                const volZ = Number(row.volume_z_20d);
+                const flowState = row.oi_flow_state || 'neutral';
+                const watch = Number.isFinite(volZ) && volZ >= 1.5
+                  ? 'Watch: participation shock day; validate if OI confirms.'
+                  : 'Watch: rising OI with stable volume often signals stealth position build.';
+                return [
+                  `Flow: ${flowState} (${marketOiFlowHint(flowState)})`,
+                  `Volume Z-score: ${fmtNum(row.volume_z_20d, 2)}`,
+                  watch
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
           yVol: { title: { display: true, text: 'Volume Lots' } },
@@ -3792,7 +3870,30 @@ async function renderMarketIntel(force = false) {
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const row = regimeRecent[items?.[0]?.dataIndex ?? 0];
+                return row ? `${row.date} · ${_contractLabel(row.matched_expiry || row.expiry || '')}` : '';
+              },
+              afterBody: items => {
+                const row = regimeRecent[items?.[0]?.dataIndex ?? 0];
+                if (!row) return [];
+                const frictionBand = marketFrictionBand(row.funding_friction_score);
+                const watch = row.vol_regime === 'STRESS' || frictionBand === 'tight'
+                  ? 'Watch: stress/tight funding zone; keep position sizing conservative.'
+                  : 'Watch: if friction rises while vol stays flat, funding strain is building silently.';
+                return [
+                  `Vol regime: ${row.vol_regime || 'unknown'}`,
+                  `Friction: ${fmtNum(row.funding_friction_score, 1)} (${frictionBand})`,
+                  watch
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
           y: { title: { display: true, text: 'Realized Vol %' } },
@@ -3875,7 +3976,33 @@ async function renderMarketIntel(force = false) {
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const row = curveRecent[items?.[0]?.dataIndex ?? 0];
+                return row ? `${row.date} · Curve evolution` : '';
+              },
+              afterBody: items => {
+                const row = curveRecent[items?.[0]?.dataIndex ?? 0];
+                if (!row) return [];
+                const concentration = Number(row.liquidity_concentration);
+                const concentrationBand = Number.isFinite(concentration)
+                  ? (concentration >= 70 ? 'crowded' : concentration >= 45 ? 'balanced' : 'diffused')
+                  : 'unknown';
+                const watch = Number.isFinite(concentration) && concentration >= 70
+                  ? 'Watch: liquidity crowding can amplify roll slippage.'
+                  : 'Watch: widening spread with stable concentration suggests genuine repricing.';
+                return [
+                  `Front-second spread: ${fmtNum(row.front_second_spread, 2)}`,
+                  `Liquidity concentration: ${fmtNum(concentration, 1)} (${concentrationBand})`,
+                  watch
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
           y: { title: { display: true, text: 'Spread / Yield' } },
@@ -3886,7 +4013,7 @@ async function renderMarketIntel(force = false) {
 
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
-      const dynBody = `<strong>${s.direction}</strong> bias with score <strong>${s.score}</strong> (${s.severity}).<br><br>${s.reason}`;
+      const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
       return `
       <tr class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
         <td>${s.label}</td>
@@ -3899,17 +4026,17 @@ async function renderMarketIntel(force = false) {
     }).join('');
 
     document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => {
-      const dynBody = `Events: <strong>${(r.events || []).join(', ') || 'None'}</strong><br><br>Price ${fmtPct(r.return_1d_pct, 2)} | Margin ${fmtPct(r.margin_change_1d, 2)} | OI ${fmtPct(r.oi_change_pct, 2)}.`;
+      const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
       return `
-      <tr class="has-tooltip" data-dyn-title="${r.date} · ${r.matched_expiry || '-'}" data-dyn-body="${escAttr(dynBody)}">
-        <td>${r.date}</td>
-        <td>${r.matched_expiry || '-'}</td>
-        <td>${(r.events || []).join(', ')}</td>
-        <td>${fmtPct(r.return_1d_pct, 2)}</td>
-        <td>${fmtPct(r.margin_change_1d, 2)}</td>
-        <td>${fmtPct(r.oi_change_pct, 2)}</td>
-      </tr>
-    `;
+        <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
+          <td>${r.date}</td>
+          <td>${r.matched_expiry || '-'}</td>
+          <td>${(r.events || []).join(', ')}</td>
+          <td>${fmtPct(r.return_1d_pct, 2)}</td>
+          <td>${fmtPct(r.margin_change_1d, 2)}</td>
+          <td>${fmtPct(r.oi_change_pct, 2)}</td>
+        </tr>
+      `;
     }).join('');
 
     renderHeatmapGrid('marketLiquidityHeatmap', curve.slice(0, 8).map(r => ({
@@ -3923,16 +4050,17 @@ async function renderMarketIntel(force = false) {
       .sort((a,b) => (b.liquidity_score ?? -1) - (a.liquidity_score ?? -1))
       .slice(0, 8)
       .map(r => {
-        const dynBody = `Liquidity <strong>${fmtNum(r.liquidity_score, 1)}</strong> with ${r.oi_flow_state || 'neutral'} flow.<br><br>Realized vol: ${fmtPct(r.rolling_realized_vol_20d, 2)} | Roll yield: ${fmtPct(r.roll_yield_pct, 2)}.`;
+        const liqBand = marketLiquidityBand(r.liquidity_score);
+        const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong><br>Liquidity Score: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>OI State: <strong>${r.oi_flow_state || 'neutral'}</strong><br>Roll Yield: <strong>${fmtPct(r.roll_yield_pct, 2)}</strong><br><br><em>Recommendation:</em> ${liqBand === 'deep' ? 'Optimal for high-conviction sizing.' : 'Monitor execution slippage.'}`;
         return `
-        <tr class="has-tooltip" data-dyn-title="${_contractLabel(r.expiry)} leaderboard rank" data-dyn-body="${escAttr(dynBody)}">
-          <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
-          <td>${fmtNum(r.liquidity_score, 1)}</td>
-          <td>${r.oi_flow_state || '-'}</td>
-          <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
-          <td>${fmtPct(r.roll_yield_pct, 2)}</td>
-        </tr>
-      `;
+          <tr class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+            <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+            <td>${fmtNum(r.liquidity_score, 1)}</td>
+            <td>${r.oi_flow_state || '-'}</td>
+            <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
+            <td>${fmtPct(r.roll_yield_pct, 2)}</td>
+          </tr>
+        `;
       }).join('');
 
     const linkageRecent = joinedRows.filter(r => r.alignment_status === 'aligned').slice(-180);
@@ -3949,7 +4077,30 @@ async function renderMarketIntel(force = false) {
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                const row = linkageRecent[items?.[0]?.dataIndex ?? 0];
+                return row ? `${row.date} · ${row.matched_expiry || 'Aligned session'}` : '';
+              },
+              afterBody: items => {
+                const row = linkageRecent[items?.[0]?.dataIndex ?? 0];
+                if (!row) return [];
+                const frictionBand = marketFrictionBand(row.funding_friction_score);
+                const watch = frictionBand === 'tight'
+                  ? 'Watch: tight funding regime; avoid adding size into weak liquidity windows.'
+                  : 'Watch: if margin rises while friction stays loose, policy tightening is likely moderate.';
+                return [
+                  `Margin Δ1d: ${fmtPct(row.margin_change_1d, 2)} | Price Δ1d: ${fmtPct(row.return_1d_pct, 2)}`,
+                  `OI Δ1d: ${fmtPct(row.oi_change_pct, 2)} | Friction: ${fmtNum(row.funding_friction_score, 1)} (${frictionBand})`,
+                  watch
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
           y: { title: { display: true, text: 'Margin / Realized Vol' } },
@@ -3970,18 +4121,19 @@ async function renderMarketIntel(force = false) {
       .slice(-20)
       .reverse()
       .map(r => {
-        const dynBody = `Margin change: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>Price return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>OI change: <strong>${fmtPct(r.oi_change_pct, 2)}</strong><br>Funding friction: <strong>${fmtNum(r.funding_friction_score, 1)}</strong>.`;
+        const fBand = marketFrictionBand(r.funding_friction_score);
+        const dynBody = `Date: <strong>${r.date}</strong><br>Aligned Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Friction: <strong>${fmtNum(r.funding_friction_score, 1)}</strong> (${fBand})<br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
         return `
-        <tr class="has-tooltip" data-dyn-title="${r.date} linkage context" data-dyn-body="${escAttr(dynBody)}">
-          <td>${r.date}</td>
-          <td>${r.matched_expiry || '-'}</td>
-          <td>${(r.events || []).join(', ')}</td>
-          <td>${fmtPct(r.margin_change_1d, 2)}</td>
-          <td>${fmtPct(r.return_1d_pct, 2)}</td>
-          <td>${fmtPct(r.oi_change_pct, 2)}</td>
-          <td>${fmtNum(r.funding_friction_score, 1)}</td>
-        </tr>
-      `;
+          <tr class="has-tooltip" data-dyn-title="Linkage Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
+            <td>${r.date}</td>
+            <td>${r.matched_expiry || '-'}</td>
+            <td>${(r.events || []).join(', ')}</td>
+            <td>${fmtPct(r.margin_change_1d, 2)}</td>
+            <td>${fmtPct(r.return_1d_pct, 2)}</td>
+            <td>${fmtPct(r.oi_change_pct, 2)}</td>
+            <td>${fmtNum(r.funding_friction_score, 1)}</td>
+          </tr>
+        `;
       }).join('');
 
     marketExplorerData = [...rows].reverse();
@@ -3999,23 +4151,22 @@ function renderMarketExplorerPage() {
   const slice = marketExplorerData.slice(start, start + MARKET_PAGE_SIZE);
   document.getElementById('marketPageInfo').textContent = `Page ${marketExplorerPage + 1} of ${Math.max(1, Math.ceil(marketExplorerData.length / MARKET_PAGE_SIZE))}`;
   document.getElementById('marketExplorerBody').innerHTML = slice.map(r => {
-    const dynBody = `Close ${fmtNum(r.close, 2)} | Return ${fmtPct(r.return_pct, 2)} | Vol ${fmtPct(r.rolling_realized_vol_20d, 2)}<br><br>Volume ${fmtNum(r.volume_lots, 0)} lots (Z ${fmtNum(r.volume_z_20d, 2)}), OI ${fmtNum(r.open_interest, 0)} (${fmtPct(r.oi_change_pct, 2)}).`;
+    const dynBody = `Date: <strong>${r.date}</strong><br>Contract: <strong>${_contractLabel(r.expiry)}</strong><br><br>Return: <strong>${fmtPct(r.return_pct, 2)}</strong><br>Realized Vol: <strong>${fmtPct(r.rolling_realized_vol_20d, 2)}</strong><br>Vol Z-score: <strong>${fmtNum(r.volume_z_20d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
     return `
-    <tr class="has-tooltip" data-dyn-title="${r.date} · ${_contractLabel(r.expiry)}" data-dyn-body="${escAttr(dynBody)}">
-      <td>${r.date}</td>
-      <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
-      <td>${r.dte}</td>
-      <td>${fmtNum(r.close, 2)}</td>
-      <td>${fmtPct(r.return_pct, 2)}</td>
-      <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
-      <td>${fmtNum(r.volume_lots, 0)}</td>
-      <td>${fmtNum(r.volume_z_20d, 2)}</td>
-      <td>${fmtNum(r.open_interest, 0)}</td>
-      <td>${fmtPct(r.oi_change_pct, 2)}</td>
-    </tr>
-  `;
+      <tr class="has-tooltip" data-dyn-title="Data Point: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
+        <td>${r.date}</td>
+        <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+        <td>${r.dte}</td>
+        <td>${fmtNum(r.close, 2)}</td>
+        <td>${fmtPct(r.return_pct, 2)}</td>
+        <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
+        <td>${fmtNum(r.volume_lots, 0)}</td>
+        <td>${fmtNum(r.volume_z_20d, 2)}</td>
+        <td>${fmtNum(r.open_interest, 0)}</td>
+        <td>${fmtPct(r.oi_change_pct, 2)}</td>
+      </tr>
+    `;
   }).join('');
-  attachTooltips();
 }
 
 document.querySelector('[data-tab="market"]')?.addEventListener('click', () => renderMarketIntel());
@@ -4306,71 +4457,71 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   },
   "Market Symbol Selector": {
     title: "Market Symbol Scope",
-    body: `Switches the entire Market workspace between <strong>NATURALGAS</strong> and <strong>NATGASMINI</strong>.<br><br>All KPIs, charts, heatmaps, and event windows refresh to that symbol's own front-month and curve state.`
+    body: `<strong>What:</strong> Switches the full Market workspace between NATURALGAS and NATGASMINI.<br><strong>How to read:</strong> Every KPI/chart/table refreshes to the selected symbol's front month + active curve.<br><strong>Threshold zone:</strong> Compare symbols when one shows tighter friction or weaker liquidity.<br><strong>What to watch:</strong> Prefer the symbol with deeper liquidity and lower friction for larger sizing.`
   },
   "Market Status Bar": {
     title: "Live Market Data Status",
-    body: `Shows dataset freshness, total futures observations, and how many front-month sessions were <strong>expiry-aligned</strong> with margin data.<br><br>Aligned joins are the high-confidence subset for margin-market linkage analysis.`
+    body: `<strong>What:</strong> Data freshness + total futures rows + aligned joins count.<br><strong>How to read:</strong> Aligned joins are the high-confidence subset for margin-market linkage inference.<br><strong>Threshold zone:</strong> Treat low aligned-join counts as low-confidence context.<br><strong>What to watch:</strong> If freshness drifts stale, rely on structural signals more than session-level events.`
   },
   "Current MCX Futures Snapshot": {
     title: "Current MCX Futures Snapshot",
-    body: `Contract-by-contract snapshot of today's active curve: price, return, volume, open interest, and liquidity.<br><br>Use this table to identify where liquidity is concentrated before drilling into curve or regime charts.`
+    body: `<strong>What:</strong> Contract-level snapshot of close, return, volume, OI, and liquidity.<br><strong>How to read:</strong> Start here before curve/regime charts to locate where risk is actually trading.<br><strong>Threshold zone:</strong> Liquidity score < 40 = thin, 40-70 = balanced, > 70 = deep.<br><strong>What to watch:</strong> Avoid forcing size into thin contracts during high-friction sessions.`
   },
   "Front-Month Price & Returns": {
     title: "Front-Month Price & Returns",
-    body: `Tracks front-month close alongside daily return swings.<br><br>The level line shows trend context; the return overlay highlights shock days where directional conviction and margin pressure can diverge.`
+    body: `<strong>What:</strong> Front-month price trend with daily return overlay.<br><strong>How to read:</strong> Level gives trend context; return spikes identify shock sessions.<br><strong>Threshold zone:</strong> Absolute 1D return around 2%+ is a high-volatility session marker.<br><strong>What to watch:</strong> Shock days with rising OI often carry stronger continuation risk.`
   },
   "Volume & Open Interest": {
     title: "Volume & Open Interest",
-    body: `Combines participation (<strong>volume</strong>) and positioning depth (<strong>open interest</strong>).<br><br>Volume spikes without OI follow-through often mark short-lived events; OI persistence signals structural positioning shifts.`
+    body: `<strong>What:</strong> Participation (volume) plus positioning depth (open interest).<br><strong>How to read:</strong> Volume without OI follow-through is often transient; rising OI indicates position commitment.<br><strong>Threshold zone:</strong> Volume Z-score > 1.5 = participation shock; < 0 = below-normal flow.<br><strong>What to watch:</strong> Use OI flow states: long_build, short_build, long_unwind, short_cover.`
   },
   "Realized Volatility & Regime": {
     title: "Realized Volatility & Regime",
-    body: `Color-state view of realized volatility with funding friction overlay.<br><br>When vol regime and friction climb together, risk transfer costs are rising and margin policy tends to stay tighter.`
+    body: `<strong>What:</strong> Realized-vol regime with funding-friction overlay.<br><strong>How to read:</strong> Vol tells market turbulence; friction tells carrying-cost pressure.<br><strong>Threshold zone:</strong> Friction < 35 = loose, 35-65 = neutral, > 65 = tight.<br><strong>What to watch:</strong> Tight friction with elevated/stress vol is a capital-preservation setup.`
   },
   "Price/OI Phase Map": {
     title: "Price/OI Phase Map",
-    body: `Quadrant map of <strong>price return</strong> vs <strong>OI change</strong>.<br><br>Long build, short build, long unwind, and short cover states are visualized so shifts in participation quality are obvious before they appear in headline returns.`
+    body: `<strong>What:</strong> Quadrant map of price return vs OI change.<br><strong>How to read:</strong> long_build (up/up), short_build (down/up), long_unwind (down/down), short_cover (up/down).<br><strong>Threshold zone:</strong> Large |price| and |OI| moves indicate regime transitions.<br><strong>What to watch:</strong> Repeated short_build/long_build clusters usually precede broader directional phases.`
   },
   "Active Futures Curve": {
     title: "Active Futures Curve",
-    body: `Shows contract-by-contract close vs liquidity score on the same curve.<br><br>Use it to spot pricing dislocations in expiries where liquidity is thin and execution risk is higher.`
+    body: `<strong>What:</strong> Contract curve with close and liquidity overlay.<br><strong>How to read:</strong> Detect where pricing and tradability diverge across expiries.<br><strong>Threshold zone:</strong> Liquidity < 40 on outlier prices implies higher execution/slippage risk.<br><strong>What to watch:</strong> Prefer dislocations confirmed by balanced/deep liquidity before acting.`
   },
   "Explainable Market Signals": {
     title: "Explainable Market Signals",
-    body: `Ranked signal stack with severity and direction, each backed by a human-readable reason.<br><br>This is meant for rapid decision support: high-score/high-severity rows are the first triage candidates.`
+    body: `<strong>What:</strong> Ranked signal stack with severity, direction, and explicit rationale.<br><strong>How to read:</strong> Prioritize top-score HIGH rows first, then evaluate consistency with flow/regime charts.<br><strong>Threshold zone:</strong> HIGH severity + top-quartile score = immediate triage candidate.<br><strong>What to watch:</strong> If top signals conflict, trust alignment across price + OI + friction before sizing.`
   },
   "Curve Evolution": {
     title: "Curve Evolution",
-    body: `Time-series of front-second spread, roll yield, and liquidity concentration.<br><br>It answers whether curve shape is changing because of broad repricing or because liquidity is migrating into a narrow set of expiries.`
+    body: `<strong>What:</strong> Time-series of front-second spread, roll yield, and liquidity concentration.<br><strong>How to read:</strong> Separates genuine repricing from concentration-driven curve distortion.<br><strong>Threshold zone:</strong> Concentration > 70 = crowded curve risk; 45-70 = balanced.<br><strong>What to watch:</strong> Rising spread + rising concentration often signals unstable roll conditions.`
   },
   "Event Windows": {
     title: "Event Windows",
-    body: `Chronological tape of multi-factor event days with associated price, margin, and OI deltas.<br><br>Use it as a post-event audit trail to see whether shocks were momentum continuation, exhaustion, or positioning reset.`
+    body: `<strong>What:</strong> Time-ordered event tape with price/margin/OI deltas.<br><strong>How to read:</strong> Use for sequence context after signal or regime shifts.<br><strong>Threshold zone:</strong> Multiple clustered events in short windows indicate unstable market structure.<br><strong>What to watch:</strong> Distinguish continuation (same-direction follow-through) vs exhaustion reversals.`
   },
   "Liquidity Heatmap": {
     title: "Liquidity Heatmap",
-    body: `Contract-level intensity map of liquidity score.<br><br>Green cells indicate easier execution depth; warmer cells indicate crowding and potential slippage risk if order size is large.`
+    body: `<strong>What:</strong> Contract-level liquidity intensity map.<br><strong>How to read:</strong> Quickly locate where execution depth is strongest/weakest across expiries.<br><strong>Threshold zone:</strong> < 40 thin, 40-70 balanced, > 70 deep.<br><strong>What to watch:</strong> Avoid crowding into low-liquidity contracts during volatile sessions.`
   },
   "Active-Contract Leaderboard": {
     title: "Active-Contract Leaderboard",
-    body: `Ranks contracts by liquidity and overlays flow state, realized vol, and roll yield.<br><br>Think of this as the execution priority board for selecting where to deploy size.`
+    body: `<strong>What:</strong> Ranks contracts by liquidity with flow/vol/roll context.<br><strong>How to read:</strong> Treat as execution-priority board before committing capital.<br><strong>Threshold zone:</strong> Top names with deep liquidity and stable friction are preferred deployment lanes.<br><strong>What to watch:</strong> If leaderboard shifts quickly, reassess where risk is being warehoused.`
   },
   "Margin x PVOI Synergy Layer": {
     title: "Margin x PVOI Synergy Layer",
-    body: `Integrates margin behavior with price-volume-open-interest dynamics using aligned expiry joins only.<br><br>This section is the highest-fidelity lens for diagnosing when funding stress is policy-driven vs flow-driven.`
+    body: `<strong>What:</strong> Aligns margin behavior with price-volume-OI dynamics on expiry-matched sessions only.<br><strong>How to read:</strong> Highest-fidelity view for separating policy effects from flow effects.<br><strong>Threshold zone:</strong> Friction > 65 with adverse flow implies tight funding regime.<br><strong>What to watch:</strong> If margin rises while flow weakens and friction tightens, de-risking pressure is likely.`
   },
   "Margin vs PVOI Regimes": {
     title: "Margin vs PVOI Regimes",
-    body: `Overlay of initial margin, realized volatility, and friction score across aligned sessions.<br><br>When margin diverges from vol while friction rises, discretionary risk buffering is likely active.`
+    body: `<strong>What:</strong> Overlay of margin, realized vol, and friction on aligned sessions.<br><strong>How to read:</strong> Detect when margin tracks vol normally vs discretionary divergence.<br><strong>Threshold zone:</strong> Rising friction + flat/declining vol flags potential policy buffer behavior.<br><strong>What to watch:</strong> Divergence persistence matters more than one-day spikes.`
   },
   "Margin-over-Liquidity Heatmap": {
     title: "Margin-over-Liquidity Heatmap",
-    body: `Compact funding-friction intensity map for recent aligned sessions.<br><br>Hotter cells highlight dates where carrying risk was expensive relative to available liquidity.`
+    body: `<strong>What:</strong> Recent-session funding-friction intensity map.<br><strong>How to read:</strong> Combines carry cost pressure with available liquidity context.<br><strong>Threshold zone:</strong> < 35 loose, 35-65 neutral, > 65 tight funding.<br><strong>What to watch:</strong> Consecutive tight cells often precede defensive positioning behavior.`
   },
   "Market Data Explorer": {
     title: "Market Data Explorer",
-    body: `Raw, paginated dataset for front-month history with return, realized vol, volume z-score, and OI changes.<br><br>Use this for precise validation, ad-hoc analysis, and CSV export workflows.`
+    body: `<strong>What:</strong> Raw front-month panel with returns, realized vol, volume Z-score, and OI change.<br><strong>How to read:</strong> Use for exact value validation behind signals/charts.<br><strong>Threshold zone:</strong> Focus rows where |return| is high and volume Z-score > 1.5 with OI confirmation.<br><strong>What to watch:</strong> Export only the filtered windows that match your event hypothesis.`
   },
   "Regime A": {
     title: "Regime A (Structural)",
@@ -4382,7 +4533,44 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   }
 };
 
+let _ttMouseX = 0, _ttMouseY = 0;
+let _ttActiveTrigger = null;
+let _ttTimer;
+
+function placeTooltipAnchored(triggerEl, overlay) {
+  if (!overlay || !triggerEl) return;
+  const ttW = overlay.offsetWidth;
+  const ttH = overlay.offsetHeight;
+  const gap = 15;
+  const margin = 12;
+
+  // Premium Centering: follow mouse X, stay above mouse Y
+  let left = _ttMouseX - ttW / 2;
+  let top = _ttMouseY - ttH - gap;
+
+  // Viewport Collision: Flip below if no space above
+  if (top < margin) {
+    top = _ttMouseY + gap + 10;
+  }
+  
+  // Boundary constraints
+  left = Math.max(margin, Math.min(left, window.innerWidth - ttW - margin));
+  top = Math.max(margin, Math.min(top, window.innerHeight - ttH - margin));
+
+  overlay.style.left = `${left}px`;
+  overlay.style.top = `${top}px`;
+}
+
 function showTooltip(key, triggerEl, event) {
+  if (event) {
+    if (event.touches && event.touches[0]) {
+      _ttMouseX = event.touches[0].clientX;
+      _ttMouseY = event.touches[0].clientY;
+    } else {
+      _ttMouseX = event.clientX;
+      _ttMouseY = event.clientY;
+    }
+  }
   let titleText = '';
   let bodyText = '';
   const tt = TOOLTIPS[key];
@@ -4400,36 +4588,27 @@ function showTooltip(key, triggerEl, event) {
   const el = document.getElementById('tooltipOverlay');
   if (!el) return;
   clearTimeout(_ttTimer);
+  _ttActiveTrigger = triggerEl || null;
   document.getElementById('ttTitle').textContent = titleText;
   document.getElementById('ttBody').innerHTML = bodyText;
   el.classList.add('visible');
-
-  const updatePos = (e) => {
-    const ttW = el.offsetWidth;
-    const ttH = el.offsetHeight;
-    
-    // Position 15px below and right of cursor
-    let left = e.clientX + 15;
-    let top = e.clientY + 15;
-
-    // Boundary detection
-    if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
-    if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
-    if (left < 10) left = 10;
-    if (top < 10) top = 10;
-
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-  };
-
-  if (event) updatePos(event);
+  placeTooltipAnchored(triggerEl, el);
 }
 
 function hideTooltip() {
+  clearTimeout(_ttTimer);
   _ttTimer = setTimeout(() => {
     const el = document.getElementById('tooltipOverlay');
     if (el) el.classList.remove('visible');
+    _ttActiveTrigger = null;
   }, 150);
+}
+
+function hideTooltipNow() {
+  clearTimeout(_ttTimer);
+  const el = document.getElementById('tooltipOverlay');
+  if (el) el.classList.remove('visible');
+  _ttActiveTrigger = null;
 }
 
 // ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
@@ -4438,33 +4617,29 @@ function attachTooltips() {
     if (el._tooltipAttached) return; 
     el._tooltipAttached = true;
     const key = el.dataset.tooltipKey;
-    el.addEventListener('mouseenter', (e) => showTooltip(key, el, e));
+    el.addEventListener('mouseenter', (e) => {
+      _ttMouseX = e.clientX; _ttMouseY = e.clientY;
+      showTooltip(key, el, e);
+    });
     el.addEventListener('mousemove', (e) => {
+      _ttMouseX = e.clientX; _ttMouseY = e.clientY;
       const overlay = document.getElementById('tooltipOverlay');
       if (overlay && overlay.classList.contains('visible')) {
-        const ttW = overlay.offsetWidth;
-        const ttH = overlay.offsetHeight;
-        let left = e.clientX + 15;
-        let top = e.clientY + 15;
-        if (left + ttW > window.innerWidth - 10) left = e.clientX - ttW - 15;
-        if (top + ttH > window.innerHeight - 10) top = e.clientY - ttH - 15;
-        if (left < 10) left = 10;
-        if (top < 10) top = 10;
-        overlay.style.left = `${left}px`;
-        overlay.style.top = `${top}px`;
+        placeTooltipAnchored(el, overlay);
       }
     });
     el.addEventListener('mouseleave', hideTooltip);
     el.addEventListener('touchstart', (e) => {
-      e.stopPropagation();
-      showTooltip(key, el);
+      const touch = e.touches[0];
+      if (touch) { _ttMouseX = touch.clientX; _ttMouseY = touch.clientY; }
+      showTooltip(key, el, e);
     }, { passive: true });
   });
 }
 
 document.addEventListener('touchstart', () => {
   const el = document.getElementById('tooltipOverlay');
-  if (el && el.classList.contains('visible')) hideTooltip();
+  if (el && el.classList.contains('visible')) hideTooltipNow();
 });
 
 // Run on page load (catches Overview tab)
@@ -4473,10 +4648,23 @@ attachTooltips();
 // Re-run whenever a tab is clicked (catches lazy-loaded tabs)
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    hideTooltipNow();
     // Small delay to let tab content become visible
     setTimeout(attachTooltips, 100);
   });
 });
+
+window.addEventListener('resize', () => {
+  const el = document.getElementById('tooltipOverlay');
+  if (el && el.classList.contains('visible') && _ttActiveTrigger) {
+    placeTooltipAnchored(_ttActiveTrigger, el);
+  }
+});
+
+window.addEventListener('scroll', () => {
+  const el = document.getElementById('tooltipOverlay');
+  if (el && el.classList.contains('visible')) hideTooltipNow();
+}, { passive: true });
 
 // Back to top
 const bttBtn = document.getElementById('backToTop');
