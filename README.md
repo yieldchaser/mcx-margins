@@ -1,178 +1,222 @@
 # Blue Margin
 
-An institutional-grade, automated intelligence platform that extracts daily margin levels and volatility indexes from the MCX CCL. Designed for quantitative analysis of forward curves, historical regime detection, and 16+ years of backfilled seasonal loading sets.
+Blue Margin is a static, GitHub Pages-hosted intelligence dashboard for MCX natural gas margins and futures market data.
 
-[![View Dashboard](https://img.shields.io/badge/View-Live--Dashboard-3fb950?style=for-the-badge&logo=github)](https://yieldchaser.github.io/mcx-margins/)
-[![Daily Update](https://img.shields.io/badge/Daily--Update-Automated-388bfd?style=for-the-badge&logo=githubactions)](https://github.com/yieldchaser/mcx-margins/actions)
+It scrapes:
 
----
+- MCX CCL daily margin files into `data/margins.db`
+- MCX futures bhavcopy price, volume, and open-interest data into `data/prices.db`
 
-## ⚡ Live Dashboard
+It then exports precomputed JSON to `docs/data/` so the dashboard in `docs/index.html` can render everything client-side with no backend.
 
-The standalone layout translates scraped SQLite streams into structural JSON aggregates rendered instantly on the client side via Vanilla JS and Chart.js, without the bloat of frontend web frameworks.
+[![Live Dashboard](https://img.shields.io/badge/live-dashboard-3fb950?style=for-the-badge)](https://yieldchaser.github.io/mcx-margins/)
+[![GitHub Actions](https://img.shields.io/badge/github-actions-automated-388bfd?style=for-the-badge)](https://github.com/yieldchaser/mcx-margins/actions)
 
-[**📈 Click to Launch the Dashboard**](https://yieldchaser.github.io/mcx-margins/)
+## What the dashboard covers
 
-### 🚀 Major Feature Sets
+### Margin intelligence
 
-*   **High-Fidelity Interaction Engine**: Institutional-grade visual tracking — synchronized vertical crosshairs, pulsing data-point highlights, and an **Interactive Measurement Tool** (drag-to-measure) for instant delta and duration calculations across any line chart.
-*   **Contextual Tooltip Engine**: A custom glassmorphism overlay system provides personalized, context-rich tooltips across the dashboard. Table rows recalculate term structure deviations on the fly; charts provide English-language analytical deductions (e.g., classifying a contract as 'historically cheap' or 'expensive' upon hover).
-*   **Overview Hub**: Live front-month metrics, composite conditional Regime detection (Structural vs Elevated states), and a 0–100 weighted Stress Score index to signal funding risk.
-*   **Analytics Layer**:
-    *   **Panic Spread Signal**: A predictive logistic regression framework forecasting next-day margin shifts. Emits explicit probabilities `P(hike) / P(cut) / P(flat)` and ±1σ / ±2σ point-estimate bands.
-    *   **Model Health Scorecard**: Tracks real-time backtest health (Hit-rates, MAE, RMSE, Brier Scores) on rolling 30/90/365 day windows.
-    *   **Delta Distribution Histogram**: Visualizes margin changes segmented by Days-to-Expiry (DTE) buckets (0–30d, 31–90d, 91+d) using dynamic histograms mapped against current daily predictions.
-*   **Term Structure**: Complete dual-axis loading curves mapping `NATURALGAS` against `NATGASMINI` weights. Features dynamic P10/P50/P90 confidence cones calculated against specific DTE profiles to detect curve contango or backwardation anomalies.
-*   **Contract Lifecycle Explorer**: Full single-contract deep-dive with interactive range slider, DTE or date axis toggle, metric switching (Initial / Total / Volatility), and a **Tender Zone** overlay marking the critical ≤30 DTE period. Per-contract stats include peak, trough, and directional hike/cut counts.
-*   **Historical Scatter & Models**: Over a decade of margin and volatility time-series data featuring dual-regime OLS regression lines (Regime A: structural pre-2019, Regime B: elevated 2019–present) mapping the structural relationship between margin requirements and base market volatility.
-*   **Seasonality Checks**: Monthly box plots (P10–P90 whiskers, IQR bars, median and mean markers) exposing true distributional variance — not just means. Accompanied by a dynamic Month×Year heatmap matrix highlighting deviances from all-time averages.
+- Live and historical margin term structure for `NATURALGAS` and `NATGASMINI`
+- Contract lifecycle analysis with date/DTE toggles
+- Regime, seasonality, decomposition, stress, percentile, and prediction views
+- Tender-zone behavior and front-month margin monitoring
 
----
+### Market and PVOI intelligence
 
-## 📈 Dashboard Components: Charts & Tables Guide
+- Front-month price, return, realized-volatility, volume, and open-interest tracking
+- Price/OI positioning states such as `long_build`, `short_build`, `long_unwind`, and `short_cover`
+- Curve and liquidity views across active expiries
+- Event windows, liquidity heatmaps, and active-contract leaderboards
 
-The dashboard is structured into **seven analytical tabs**, each hosting specialized visualization components and dynamic tables.
+### Margin x market linkage
 
-### 1. Overview Tab
-*   **Current Margin Snapshot Table**: The command center. Displays all active expiries for a selected symbol (`NATURALGAS` or `NATGASMINI`), detailing DTE, Initial %, ELM %, Tender %, Total %, and Annualized Volatility. Calculates a **Historical Percentile (Hist. Pct)** benchmarking today's margin against all historical precedents at the exact same DTE range.
-*   **Forward Curve — Today**: A rapid-assessment line chart plotting the term structure of margin requirements for both the primary and mini contracts.
-*   **Panic Spread Signals Table**: A predictive intelligence matrix. Outputs probabilities across three explicit tomorrow-states — Margin Cut / Flat / Hike — with a stacked probability bar per expiry row.
+- Front-month joined views only when margin expiry and market expiry truly match
+- Contract-specific lifecycle overlays using exact `symbol + expiry` payloads
+- Precomputed linkage metrics such as:
+  - `margin_change_1d`
+  - `margin_change_5d`
+  - `margin_price_divergence`
+  - `margin_vs_realized_vol_gap`
+  - `margin_per_liquidity`
+  - `funding_friction_score`
 
-### 2. Term Structure Tab
-*   **Forward Margin Curve (with Confidence Cones)**: Plots the full spine of active expiries against historical confidence cones (P10 to P90 bounds), toggleable between "All-time" and "Recent (5Y)" lookback windows. Visually highlights anomalies where spot margins breach standard term structure models.
-*   **Volatility Term Structure**: Maps implied annualized structural volatility across the forward curve.
-*   **Margin Spread (NATURALGAS vs NATGASMINI)**: Tracks the basis spread directly between the large and mini contracts to surface pricing inefficiencies.
+## Architecture
 
-### 3. History Tab
-*   **Triple-Layer Independent Zoom**: Three decoupled viewports for Margin, Volatility, and Decomposition analysis — each with its own dedicated double-thumb range slider.
-*   **Initial Margin % Over Time**: Longitudinal line chart mapping front-month margin from 2010 to Present. Supports dynamic timeframe toggling (1M through All-time) and an overlay of Henry Hub (Spot) prices.
-*   **Daily Volatility Over Time**: Demonstrates how structural volatility regimes trigger exchange margin interventions.
-*   **Margin vs Volatility (Scatter)**: Maps the base relationship between daily volatility (X) and margin requirement (Y) with two-regime OLS regression lines — Regime A (blue, structural) and Regime B (orange, elevated). Threshold: vol ≥ 4.5% AND year ≥ 2019 → Regime B.
-*   **Margin Decomposition**: Stacked area chart diagnosing what portion of current margin is driven by "Structural Volatility" versus discretionary "Exchange Policy Buffer."
+### 1. Data ingestion
 
-### 4. Seasonality Tab
-*   **Monthly Box Plots**: Replaces simple mean bars with full distributional box plots per month — P10/P90 whiskers, IQR (P25–P75) bars, median dash, mean triangle. All-years vs Last-5-Years toggle. Highlights the current month with a "▲ Now" marker.
-*   **Average Margin by Year**: Macro-year aggregations highlighting multi-year structural margin inflation or deflation.
-*   **Monthly Margin Heatmap**: Institutional Year × Month gradient matrix table. Identifies localized seasonal clusters, historical anomalies, and time-of-year funding peaks.
+- [`src/scraper.py`](src/scraper.py): Playwright scraper for MCX CCL daily margin data
+- [`scripts/main.py`](scripts/main.py): fetch a specific trading date
+- [`scripts/fetch_today.py`](scripts/fetch_today.py): retry-oriented daily fetch
+- [`scripts/lookback.py`](scripts/lookback.py): recent-gap backfill
+- [`scripts/backfill.py`](scripts/backfill.py): historical backfill
+- [`scripts/fetch_prices.py`](scripts/fetch_prices.py): MCX futures bhavcopy scraper into `data/prices.db`
 
-### 5. Analytics Tab
-*   **Model Health Scorecard**: Transparent backtest audit table evaluating predictive model accuracy across 30d / 90d / 365d rolling windows (Directional Accuracy, MAE, RMSE, 1σ and 2σ Hit Rates).
-*   **DTE vs Margin Curve**: Demonstrates the nonlinear degradation of margin requirements as physical settlement approaches. Shows two lines — **all-time average** (solid) and **trailing 5Y average** (dashed) — revealing how much the post-2022 era has shifted structural margin levels at each DTE bucket.
-*   **Lag Correlation**: Analyzes the time lag (T+0 to T+30) coupling sudden volatility shifts to MCX regulatory margin responses.
-*   **Margin Prediction Model (Panic Spread Full View)**: Plots Current vs Predicted bounds with ±1σ and ±2σ shaded bands across the active forward array.
-*   **Margin Change Distribution Histogram**: Segments historically realized day-over-day margin shifts into DTE groups (0–30d, 31–90d, 91+d), mapping the probability of extreme jump-risk tail events. Includes today's predicted delta marker.
-*   **5-Day Rolling Average vs Spot Margin**: Tracks short-term momentum crossover against spot margins (last 90 days).
-*   **Historical Percentile Rank Over Time**: Dual-line chart — **all-time** (gray dashed, since 2010) and **trailing 5Y** (colored, actionable) — showing where today's margin sits vs the current structural era. Color-coded green/amber/red on the 5Y rank so routine market conditions aren't falsely flagged as elevated by historical eras with structurally different vol regimes.
+### 2. Storage
 
-### 6. Contract Lifecycle Explorer Tab
-*   **Single-Contract Deep-Dive**: Select any historical NATURALGAS or NATGASMINI contract by delivery year and month. Renders the full price-of-entry lifecycle from first trading day to expiry.
-*   **Tender Zone Overlay**: A red-shaded region marking the ≤30 DTE window where tender margin pressure compounds total margin requirements. Automatically repositions on zoom.
-*   **Axis Toggle**: Switch between Calendar Date view and Days-to-Expiry (DTE) view for structural pattern comparison across contracts.
-*   **Metric Toggle**: Switch between Initial Margin %, Total Margin %, and Daily Volatility % in one click.
-*   **HH Price Overlay**: Toggle Henry Hub spot price as a secondary Y-axis for vol-margin correlation studies.
-*   **Per-Contract Stats Strip**: Displays Peak Margin, Trough Margin, cumulative Hike count, and cumulative Cut count for the selected lifecycle window.
+- `data/margins.db`: source of truth for margin observations
+- `data/prices.db`: source of truth for futures PVOI observations
 
-### 7. Data Explorer Tab
-*   **Raw Data Explorer Table**: Fully paginated environment rendering underlying day-by-day telemetry. Supports unpaginated CSV export for offline quant modeling.
+### 3. Static publishing
 
----
+- [`scripts/export_json.py`](scripts/export_json.py): builds the JSON data API used by the dashboard
+- [`docs/index.html`](docs/index.html): static client-side dashboard
 
-## 🔬 Advanced Analytics Architecture
+The exporter now hardens contract integrity by:
 
-All statistical enhancements are built natively in the data engineering layer using **numpy + scikit-learn** — heavy computations run once at build time, not in the browser.
+- deduplicating same-day margin rows at export time
+- emitting symbol-scoped contract payloads
+- preserving explicit series scope on integrated datasets:
+  - `front_month`
+  - `active_curve`
+  - `specific_expiry`
 
-| JSON Output | Purpose |
-|---|---|
-| `forecast_bands.json` | Rolling residual σ per DTE bucket → ±1σ / ±2σ prediction intervals |
-| `model_health.json` | Directional accuracy + hit-rate + MAE/RMSE across 30d/90d/365d windows |
-| `regime_model.json` | Dual-regime OLS coefficients (Regime A vol < 4.5% or pre-2019; Regime B otherwise) |
-| `decomposition.json` | Decomposes margin into structural (vol-implied) + policy buffer components |
-| `event_probabilities.json` | Logistic regression P(hike) / P(cut) / P(flat) per active expiry |
-| `curve_cone.json` | P10/P50/P90 confidence bands (all-time + trailing 5Y) per DTE slot; includes `hist_pct` and `hist_pct_recent` for snapshot table color-coding |
-| `delta_distribution.json` | Histogram of day-over-day margin changes segmented by DTE bucket |
-| `seasonality_boxplot.json` | Monthly distributional stats (min/p10/p25/median/p75/p90/max) for box plots |
-| `stress_score.json` | Composite 0–100 stress score from margin + vol percentile vs trailing 5-year baseline |
-| `volatility_correlation.json` | Lag-N Pearson correlations between daily vol and margin changes (T+0 to T+30) |
-| `dte_curve.json` | Average initial and tender margin by DTE bin — all-time and trailing 5Y — to surface structural era shifts at each DTE bucket |
+## JSON outputs
 
----
+### Core margin outputs
 
-## 📊 Current Database Context
+- `docs/data/current.json`
+- `docs/data/history_ng.json`
+- `docs/data/history_ngm.json`
+- `docs/data/forward_curve.json`
+- `docs/data/contract_index.json`
+- `docs/data/contract/ng/<EXPIRY>.json`
+- `docs/data/contract/ngm/<EXPIRY>.json`
 
-The platform leverages a local SQLite buffer at `data/margins.db`:
+### Market and linkage outputs
 
-| Symbol | Range | Records |
-| :--- | :--- | :--- |
-| **NATURALGAS** | `2010-01-01` to `Present` | ~87,407 |
-| **NATGASMINI** | `2023-03-14` to `Present` | ~38,704 |
+- `docs/data/market/meta.json`
+- `docs/data/market/current.json`
+- `docs/data/market/history_ng.json`
+- `docs/data/market/history_ngm.json`
+- `docs/data/market/forward_curve.json`
+- `docs/data/market/contract_index.json`
+- `docs/data/market/contract_crosswalk.json`
+- `docs/data/market/curve_history.json`
+- `docs/data/market/margin_joined_front.json`
+- `docs/data/market/cross_regimes.json`
+- `docs/data/market/signals.json`
+- `docs/data/market/contract/ng/<EXPIRY>.json`
+- `docs/data/market/contract/ngm/<EXPIRY>.json`
 
-> **Total**: ~126,111 records processed securely without blocking browser threads.
+Important contract-path change:
 
----
+- old margin payload path: `docs/data/contract/<EXPIRY>.json`
+- current margin payload path: `docs/data/contract/<sym>/<EXPIRY>.json`
 
-## 🏗️ System Pipeline
+The market payload structure has the same symbol-scoped pattern:
 
-### 1. Scraper (`fetch_today.py` + `main.py`)
-*   Uses a **Multi-Layered Playwright stealth browser** to safely bypass external session cookies and bot-blocks.
-*   Intercepts internal API payloads during execution, extracting live market volatility metrics mapped to forward curve arrays.
+- `docs/data/market/contract/<sym>/<EXPIRY>.json`
 
-### 2. Structured Storage (`data/margins.db`)
-*   Localized fast **SQLite repository** with composite indexes. Deduplicates on insert — each `(date, symbol, expiry)` triplet is uniquely constrained.
+## Repo layout
 
-### 3. Static Publisher (`export_json.py`)
-*   Bundles all aggregates into fully dense statically cached JSON files in `docs/data/*.json`.
-*   Statistical backbone: linear regression, residual computation, logistic model training, histogram binning, seasonality aggregation.
-*   Filtering algorithms explicitly sequester tender-period outlier skews from corrupting longitudinal metrics.
-*   Deduplication layer ensures all JSON outputs contain exactly one entry per `(date, expiry)` pair.
+```text
+.
+|-- data/
+|   |-- margins.db
+|   `-- prices.db
+|-- docs/
+|   |-- index.html
+|   `-- data/
+|-- scripts/
+|   |-- export_json.py
+|   |-- fetch_prices.py
+|   |-- fetch_today.py
+|   |-- backfill.py
+|   |-- lookback.py
+|   |-- main.py
+|   `-- query.py
+|-- src/
+|   |-- db.py
+|   `-- scraper.py
+`-- tests/
+    `-- test_market_export.py
+```
 
-### 4. Alerts Pipeline (`alert.py`)
-*   Queries historical margin shifts from SQLite date differentials.
-*   Auto-flags sudden absolute shifts above configured thresholds, triggering rich **HTML Email Alerts via SMTP** ahead of funding timelines.
+## Automation
 
-### 5. Client Dashboard (`docs/index.html`)
-*   Robust **Vanilla JS SPA** with glassmorphism tooltip aesthetics and Chart.js. Renders all JSON into parallel structural views in the browser — no backend, no build step.
+### Margin workflow
 
----
+Defined in [`daily_margin.yml`](.github/workflows/daily_margin.yml):
 
-## ⚙️ Automated GitHub Actions
+- fetches new margin data
+- bridges recent gaps
+- regenerates dashboard JSON
+- can send alerts
+- commits refreshed `data/` and `docs/data/`
 
-Defined in `.github/workflows/daily_margin.yml`:
+### Price workflow
 
-*   **Scheduled**: Runs automatically at **1:30 & 13:30 UTC** (7:00 AM & 7:00 PM IST).
-*   **Manual trigger**: Supports `workflow_dispatch` for on-demand data refresh from the GitHub Actions tab.
-*   **Sequential Pipeline**:
-    1. **Fetch & Hydrate**: Bootstraps Playwright to fetch the last 3 days of exchange data to bridge weekend/holiday gaps.
-    2. **Publish**: Runs `export_json.py` to regenerate all `docs/data/*.json` aggregates.
-    3. **Alert Guard**: Assesses differential algorithms and pushes SMTP alerts if a systemic spike is detected.
-    4. **Autonomous Commit**: Streams state differentials back to the remote repository.
+Defined in [`daily_prices.yml`](.github/workflows/daily_prices.yml):
 
----
+- refreshes futures price/volume/OI data
+- runs export again so linked market outputs stay fresh
+- commits updated price DB and static JSON
 
-## 💻 Local Setup
+## Local setup
 
-### Dependencies
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 python -m playwright install chromium
-python -m playwright install-deps chromium
 ```
 
-### CLI Helpers
+Fetch data:
+
 ```bash
-# Fetch a single day
-python main.py YYYY-MM-DD
+# one trading date
+python scripts/main.py YYYY-MM-DD
 
-# Regenerate all JSON aggregates
-python export_json.py
+# daily retry fetch
+python scripts/fetch_today.py
 
-# Query DB summary
-python query.py --summary
+# recent lookback repair
+python scripts/lookback.py
 
-# Export to Excel
-python query.py --excel
+# historical backfill
+python scripts/backfill.py
 
-# Run local dashboard
-python export_json.py
-cd docs && python -m http.server 8080
-# Visit: http://localhost:8080
+# price / volume / OI refresh
+python scripts/fetch_prices.py
 ```
+
+Regenerate the static dashboard data:
+
+```bash
+python scripts/export_json.py
+```
+
+Run the site locally:
+
+```bash
+python scripts/export_json.py
+cd docs
+python -m http.server 8080
+```
+
+Then open `http://localhost:8080`.
+
+## Testing
+
+Run the test suite:
+
+```bash
+python -m unittest
+```
+
+Current test coverage includes market-export helpers for:
+
+- front-month contract selection
+- rolling PVOI metric enrichment
+- explainable signal generation
+- freshness logic
+- margin-row dedupe priority
+- contract alignment states
+- joined-summary filtering
+- curve-history generation
+
+## Notes
+
+- The dashboard is fully static at runtime; expensive analytics are computed in Python during export.
+- `numpy` and `scikit-learn` enable the heavier statistical outputs, but the site still renders core data without a backend service.
+- Margin-only usage still works even if `data/prices.db` is absent; market outputs degrade gracefully.

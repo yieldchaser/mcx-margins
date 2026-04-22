@@ -516,6 +516,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="card mb-4">
       <div class="card-title has-tooltip" data-tooltip-key="Initial Margin % Over Time">Initial Margin % Over Time (Front Month)</div>
+      <div id="histMarginScope" class="scope-row">
+        <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+        <span class="scope-chip"><strong>Overlay</strong> Match-only MCX front close</span>
+      </div>
       <div class="chart-container" style="height:340px;"><canvas id="chartHistMargin"></canvas></div>
       <div class="lc-range-controls" id="sliderHistMargin">
         <div class="range-slider-container">
@@ -534,6 +538,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="card mb-4 market-intel-control" id="marketFlowCard" style="display:none;">
       <div class="card-title">MCX Market Flow: Volume & Open Interest</div>
+      <div class="scope-row" style="margin-top:0;">
+        <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+        <span class="scope-chip"><strong>Join</strong> Same-expiry only</span>
+      </div>
       <div class="chart-container" style="height:260px;"><canvas id="chartHistMarketFlow"></canvas></div>
     </div>
     <div class="grid-2">
@@ -586,6 +594,10 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
         <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Explorer" style="margin-bottom:0;">Contract Lifecycle Explorer</div>
         <div style="font-size:11px;color:var(--text-muted);padding-top:2px;">Full margin journey · self-updating · 196+ contracts</div>
+      </div>
+      <div id="lcScopeStatus" class="scope-row">
+        <span class="scope-chip"><strong>Scope</strong> Specific Expiry</span>
+        <span class="scope-chip"><strong>Overlay</strong> Same-expiry only</span>
       </div>
       <!-- Controls -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);margin-bottom:10px;">
@@ -763,7 +775,12 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="grid-3 mb-4" id="marketKpis"></div>
     <div class="card mb-4">
+      <div class="module-kicker">Curve & Liquidity</div>
       <div class="card-title">Current MCX Futures Snapshot</div>
+      <div class="scope-row" style="margin-top:0;">
+        <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+        <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
+      </div>
       <div style="overflow-x:auto;">
         <table class="data-table">
           <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
@@ -773,17 +790,49 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
     </div>
     <div class="grid-2 mb-4">
       <div class="card">
+        <div class="module-kicker">Price & Regime</div>
         <div class="card-title">Front-Month Price & Returns</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+          <span class="scope-chip"><strong>View</strong> Price + returns</span>
+        </div>
         <div class="chart-container" style="height:320px;"><canvas id="chartMarketPrice"></canvas></div>
       </div>
       <div class="card">
+        <div class="module-kicker">Flow & Positioning</div>
         <div class="card-title">Volume & Open Interest</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+          <span class="scope-chip"><strong>View</strong> Flow state</span>
+        </div>
         <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
       </div>
     </div>
     <div class="grid-2 mb-4">
       <div class="card">
+        <div class="card-title">Realized Volatility & Regime</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+          <span class="scope-chip"><strong>Overlay</strong> Vol regime strip</span>
+        </div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketRegime"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Price/OI Phase Map</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+          <span class="scope-chip"><strong>Lens</strong> Position state</span>
+        </div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketPhase"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
         <div class="card-title">Active Futures Curve</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+          <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
+        </div>
         <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
       </div>
       <div class="card">
@@ -794,6 +843,64 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
             <tbody id="marketSignalBody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">Curve Evolution</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+          <span class="scope-chip"><strong>Lens</strong> Roll tension</span>
+        </div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurveHistory"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Event Windows</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Contract</th><th>Events</th><th>Price</th><th>Margin</th><th>Flow</th></tr></thead>
+            <tbody id="marketEventBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-title">Liquidity Heatmap</div>
+        <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Active-Contract Leaderboard</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Contract</th><th>Liquidity</th><th>OI Flow</th><th>Realized Vol</th><th>Roll Yield</th></tr></thead>
+            <tbody id="marketLeaderboardBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="module-kicker">Margin Linkages</div>
+      <div class="card-title">Margin × PVOI Synergy Layer</div>
+      <div class="scope-row" style="margin-top:0;">
+        <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+        <span class="scope-chip"><strong>Join</strong> Expiry-aligned only</span>
+      </div>
+      <div class="grid-2 mb-4">
+        <div class="card" style="margin:0;">
+          <div class="card-title">Margin vs PVOI Regimes</div>
+          <div class="chart-container" style="height:300px;"><canvas id="chartMarketLinkage"></canvas></div>
+        </div>
+        <div class="card" style="margin:0;">
+          <div class="card-title">Margin-over-Liquidity Heatmap</div>
+          <div id="marketMarginHeatmap" class="heatmap-grid"></div>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Aligned Expiry</th><th>Event</th><th>Margin Δ</th><th>Price</th><th>OI Δ</th><th>Friction</th></tr></thead>
+          <tbody id="marketLinkageBody"></tbody>
+        </table>
       </div>
     </div>
     <div class="card">
@@ -855,6 +962,33 @@ tr.has-tooltip::after, td.has-tooltip::after { content: none; display: none; }
 }
 .range-btn:hover { color: var(--text); }
 .range-btn.active-range, .range-btn:focus { background: var(--accent); color: white; border-color: var(--accent); outline: none; }
+.scope-row {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  margin: 8px 0 10px;
+  font-size: 11px; color: var(--text-muted);
+}
+.scope-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text-muted); font-size: 11px; letter-spacing: 0.01em;
+}
+.scope-chip strong { color: var(--text); font-weight: 600; }
+.module-kicker {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent-orange); margin-bottom: 6px;
+}
+.module-sub {
+  font-size: 12px; color: var(--text-muted); margin-top: 4px;
+}
+.heatmap-grid {
+  display: grid; gap: 6px;
+}
+.heatmap-cell {
+  min-height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);
+  padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between;
+  font-size: 11px;
+}
 </style>
 
 <script>
@@ -1074,6 +1208,44 @@ function marketHistName(symKey) {
 
 function marketSymbolName(symKey) {
   return symKey === 'ngm' ? 'NATGASMINI' : 'NATURALGAS';
+}
+
+const SERIES_STYLE = {
+  initialMargin: { color: '#388bfd', fill: 'rgba(56,139,253,0.10)' },
+  totalMargin: { color: '#a371f7', fill: 'rgba(163,113,247,0.10)' },
+  mcxClose: { color: '#fb8f44', fill: 'rgba(251,143,68,0.10)' },
+  henryHub: { color: '#3fb950', fill: 'transparent' },
+  volume: { color: 'rgba(35,178,178,0.80)', fill: 'rgba(35,178,178,0.28)' },
+  openInterest: { color: '#d29922', fill: 'transparent' },
+  positiveRisk: { color: '#f85149' },
+  negativeRisk: { color: '#3fb950' }
+};
+
+function toDataName(path) {
+  return path ? path.replace(/^data\//, '').replace(/\.json$/, '') : path;
+}
+
+function marginContractDataName(symKey, expiry) {
+  const entry = (_lcAllEntries || []).find(e => e.expiry === expiry);
+  return toDataName(entry?.margin_path || `data/contract/${symKey}/${expiry}.json`);
+}
+
+function marketContractDataName(symKey, expiry) {
+  const entry = (_lcAllEntries || []).find(e => e.expiry === expiry);
+  return toDataName(entry?.market_path || `data/market/contract/${symKey}/${expiry}.json`);
+}
+
+function heatColor(value, mode = 'liquidity') {
+  if (value == null || Number.isNaN(Number(value))) return 'rgba(139,148,158,0.14)';
+  const v = Number(value);
+  if (mode === 'friction') {
+    if (v >= 75) return 'rgba(248,81,73,0.34)';
+    if (v >= 50) return 'rgba(210,153,34,0.30)';
+    return 'rgba(63,185,80,0.24)';
+  }
+  if (v >= 75) return 'rgba(63,185,80,0.30)';
+  if (v >= 45) return 'rgba(210,153,34,0.30)';
+  return 'rgba(248,81,73,0.30)';
 }
 
 initMarketIntelShell();
@@ -1593,7 +1765,7 @@ function renderFwdCone() {
     datasets.push({
       label: 'MCX Close',
       data: ng.map(c => marketLookup[c.expiry]?.close ?? null),
-      borderColor: '#3fb950',
+      borderColor: SERIES_STYLE.mcxClose.color,
       backgroundColor: 'transparent',
       tension: 0.25,
       pointRadius: 3,
@@ -1808,9 +1980,13 @@ async function renderHistory(chartName, startIdx, endIdx) {
     // 1. Margin Chart
     if (chartName === 'Margin') {
       _histMarginRC.setLabels(labels[0], labels[labels.length-1]);
+      document.getElementById('histMarginScope').innerHTML =
+        `<span class="scope-chip"><strong>Scope</strong> Front Month</span>` +
+        `<span class="scope-chip"><strong>Overlay</strong> Match-only MCX front close</span>`;
       let margins = data.map(d => d.initial_margin_pct);
       let priceDataset = null;
       let mcxPriceDataset = null;
+      let joinedMap = null;
       if (showPrice) {
         try {
           const hhData = await loadJSON('hh_price');
@@ -1818,22 +1994,30 @@ async function renderHistory(chartName, startIdx, endIdx) {
             const pm = {}; hhData.prices.forEach(p => pm[p.date] = p.price);
             const aligned = labels.map(d => pm[d] ?? null);
             if (aligned.some(v => v !== null)) {
-              priceDataset = { label: 'Henry Hub ($/MMBtu)', data: aligned, borderColor: '#3fb950', backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, borderWidth: 2, borderDash: [5, 3], yAxisID: 'yPrice' };
+              priceDataset = { label: 'Henry Hub ($/MMBtu)', data: aligned, borderColor: SERIES_STYLE.henryHub.color, backgroundColor: SERIES_STYLE.henryHub.fill, tension: 0.2, pointRadius: 0, borderWidth: 2, borderDash: [5, 3], yAxisID: 'yPrice' };
             }
           }
         } catch(e) {}
       }
       if (ENABLE_MARKET_INTEL && document.getElementById('showMcxPrice')?.checked) {
         try {
-          const marketData = await loadMarketJSON(marketHistName(sym));
-          const pm = {};
-          (marketData.rows || []).forEach(p => { pm[p.date] = p.close; });
-          const aligned = labels.map(d => pm[d] ?? null);
+          const joinedFront = await loadMarketJSON('margin_joined_front');
+          const joinedRows = joinedFront?.symbols?.[marketSymbolName(sym)] || [];
+          joinedMap = {};
+          joinedRows.forEach(r => { joinedMap[r.date] = r; });
+          const aligned = labels.map(d => {
+            const row = joinedMap[d];
+            return row && row.alignment_status === 'aligned' ? row.close ?? null : null;
+          });
+          const alignedCount = joinedRows.filter(r => r.alignment_status === 'aligned').length;
+          document.getElementById('histMarginScope').innerHTML =
+            `<span class="scope-chip"><strong>Scope</strong> Front Month</span>` +
+            `<span class="scope-chip"><strong>Overlay</strong> ${alignedCount} aligned sessions</span>`;
           if (aligned.some(v => v !== null)) {
             mcxPriceDataset = {
               label: 'MCX Front Close',
               data: aligned,
-              borderColor: '#58a6ff',
+              borderColor: SERIES_STYLE.mcxClose.color,
               backgroundColor: 'transparent',
               tension: 0.2,
               pointRadius: 0,
@@ -1844,14 +2028,47 @@ async function renderHistory(chartName, startIdx, endIdx) {
           }
         } catch(e) { console.warn('MCX price overlay skipped:', e); }
       }
-      const datasets = [{ label: 'Initial Margin %', data: margins, borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.1)', fill: true, yAxisID: 'y', ...lineDefaults }];
+      const datasets = [{ label: 'Initial Margin %', data: margins, borderColor: SERIES_STYLE.initialMargin.color, backgroundColor: SERIES_STYLE.initialMargin.fill, fill: true, yAxisID: 'y', ...lineDefaults }];
       if (priceDataset) datasets.push(priceDataset);
       if (mcxPriceDataset) datasets.push(mcxPriceDataset);
       const scales = { x: { ticks: { maxTicksLimit: 14, font: { size: 10 } } }, y: { title: { display: true, text: 'Margin %' }, position: 'left' } };
       if (priceDataset) scales.yPrice = { title: { display: true, text: 'Henry Hub ($/MMBtu)' }, position: 'right', grid: { drawOnChartArea: false } };
-      if (mcxPriceDataset) scales.yMcxPrice = { title: { display: true, text: 'MCX Close' }, position: 'right', grid: { drawOnChartArea: false } };
+      if (mcxPriceDataset) scales.yMcxPrice = { title: { display: true, text: 'MCX Close' }, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: SERIES_STYLE.mcxClose.color } };
       if (histChartMargin) histChartMargin.destroy();
-      histChartMargin = new Chart(document.getElementById('chartHistMargin'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: !!priceDataset || !!mcxPriceDataset, position: 'top' } }, scales } });
+      histChartMargin = new Chart(document.getElementById('chartHistMargin'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: !!priceDataset || !!mcxPriceDataset, position: 'top' },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                afterBody: items => {
+                  const idx = items?.[0]?.dataIndex ?? 0;
+                  const joined = joinedMap ? joinedMap[labels[idx]] : null;
+                  if (!joined) return [];
+                  if (joined.alignment_status === 'aligned') {
+                    return [
+                      `Matched expiry: ${joined.matched_expiry || joined.margin_expiry}`,
+                      `Join: expiry-aligned front-month overlay`
+                    ];
+                  }
+                  return [
+                    `Join blocked: ${joined.alignment_status}`,
+                    `Margin ${joined.margin_expiry} vs MCX ${joined.market_expiry || '—'}`
+                  ];
+                }
+              }
+            }
+          },
+          scales
+        }
+      });
     }
 
     if (chartName === 'MarketFlow') {
@@ -1861,9 +2078,9 @@ async function renderHistory(chartName, startIdx, endIdx) {
         if (histChartMarketFlow) { histChartMarketFlow.destroy(); histChartMarketFlow = null; }
       } else {
         try {
-          const marketData = await loadMarketJSON(marketHistName(sym));
+          const joinedFront = await loadMarketJSON('margin_joined_front');
           const byDate = {};
-          (marketData.rows || []).forEach(r => { byDate[r.date] = r; });
+          ((joinedFront?.symbols?.[marketSymbolName(sym)]) || []).forEach(r => { byDate[r.date] = r; });
           const aligned = labels.map(d => byDate[d] || {});
           if (histChartMarketFlow) histChartMarketFlow.destroy();
           histChartMarketFlow = new Chart(document.getElementById('chartHistMarketFlow'), {
@@ -1871,8 +2088,8 @@ async function renderHistory(chartName, startIdx, endIdx) {
             data: {
               labels,
               datasets: [
-                { label: 'Volume Lots', data: aligned.map(r => r.volume_lots ?? null), backgroundColor: 'rgba(56,139,253,0.35)', borderColor: 'rgba(56,139,253,0.8)', yAxisID: 'yVol' },
-                { label: 'Open Interest', data: aligned.map(r => r.open_interest ?? null), type: 'line', borderColor: '#d29922', backgroundColor: 'transparent', pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
+                { label: 'Volume Lots', data: aligned.map(r => r.alignment_status === 'aligned' ? r.volume_lots ?? null : null), backgroundColor: SERIES_STYLE.volume.fill, borderColor: SERIES_STYLE.volume.color, yAxisID: 'yVol' },
+                { label: 'Open Interest', data: aligned.map(r => r.alignment_status === 'aligned' ? r.open_interest ?? null : null), type: 'line', borderColor: SERIES_STYLE.openInterest.color, backgroundColor: SERIES_STYLE.openInterest.fill, pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
               ]
             },
             options: {
@@ -2125,8 +2342,13 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 
   // If startIdx/endIdx missing, we are loading a NEW contract
   if (startIdx === undefined) {
-    const contractData = await loadJSON('contract/' + expiry);
+    const contractData = await loadJSON(marginContractDataName(_lcSym, expiry));
     _lcFullRows = (contractData ? contractData.rows : []).sort((a,b) => a.date < b.date ? -1 : 1);
+    const lcEntry = (_lcAllEntries || []).find(e => e.expiry === expiry);
+    document.getElementById('lcScopeStatus').innerHTML =
+      `<span class="scope-chip"><strong>Scope</strong> Specific Expiry</span>` +
+      `<span class="scope-chip"><strong>Join</strong> ${lcEntry?.alignment_status || 'unknown'}</span>` +
+      `<span class="scope-chip"><strong>Shared Obs</strong> ${lcEntry?.shared_obs ?? '-'}</span>`;
     
     if (_lcFullRows.length < 2) {
       const lbl = _contractLabel(expiry);
@@ -2230,7 +2452,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
         hhPairs = rows.map((r,i) => ({ m: ms.fn(r), h: aligned[i] })).filter(p => p.m != null && p.h != null);
         datasets.push({
           label: 'HH Price ($/MMBtu)',
-          data: aligned, borderColor: '#3fb950', backgroundColor: 'transparent',
+          data: aligned, borderColor: SERIES_STYLE.henryHub.color, backgroundColor: SERIES_STYLE.henryHub.fill,
           tension: 0.25, pointRadius: 0, borderWidth: 2, borderDash: [5,3],
           yAxisID: 'yHH', spanGaps: true
         });
@@ -2244,7 +2466,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 
   if (ENABLE_MARKET_INTEL && document.getElementById('lcShowMcx')?.checked) {
     try {
-      const marketContract = await loadMarketJSON('contract/' + _lcSym + '/' + expiry);
+      const marketContract = await loadMarketJSON(marketContractDataName(_lcSym, expiry).replace(/^market\//, ''));
       const byDate = {};
       (marketContract.rows || []).forEach(r => { byDate[r.date] = r; });
       const aligned = rows.map(r => byDate[r.date] || {});
@@ -2252,7 +2474,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
         datasets.push({
           label: 'MCX Close',
           data: aligned.map(r => r.close ?? null),
-          borderColor: '#58a6ff',
+          borderColor: SERIES_STYLE.mcxClose.color,
           backgroundColor: 'transparent',
           tension: 0.25,
           pointRadius: 0,
@@ -2272,8 +2494,8 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
           label: 'Volume Lots',
           type: 'bar',
           data: aligned.map(r => r.volume_lots ?? null),
-          backgroundColor: 'rgba(56,139,253,0.18)',
-          borderColor: 'rgba(56,139,253,0.35)',
+          backgroundColor: SERIES_STYLE.volume.fill,
+          borderColor: SERIES_STYLE.volume.color,
           yAxisID: 'yMcxVolume'
         });
         scales.yMcxVolume = { display: false, position: 'right' };
@@ -2282,8 +2504,8 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
         datasets.push({
           label: 'Open Interest',
           data: aligned.map(r => r.open_interest ?? null),
-          borderColor: '#d29922',
-          backgroundColor: 'transparent',
+          borderColor: SERIES_STYLE.openInterest.color,
+          backgroundColor: SERIES_STYLE.openInterest.fill,
           tension: 0.25,
           pointRadius: 0,
           borderWidth: 1.5,
@@ -3202,7 +3424,21 @@ document.querySelector('[data-tab="analytics"]').addEventListener('click', () =>
 let marketRendered = false;
 let marketExplorerData = [], marketExplorerPage = 0;
 let marketPriceChart = null, marketFlowChart = null, marketCurveChart = null;
+let marketRegimeChart = null, marketPhaseChart = null, marketCurveHistoryChart = null, marketLinkageChart = null;
 const MARKET_PAGE_SIZE = 50;
+
+function renderHeatmapGrid(targetId, cells, mode = 'liquidity') {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.style.gridTemplateColumns = `repeat(${Math.max(1, Math.min(cells.length, 4))}, minmax(0, 1fr))`;
+  el.innerHTML = cells.map(cell => `
+    <div class="heatmap-cell" style="background:${heatColor(cell.value, mode)};">
+      <div style="font-weight:600;color:var(--text);">${cell.label}</div>
+      <div style="color:var(--text-muted);">${cell.sub || ''}</div>
+      <div style="font-size:12px;color:var(--text);">${cell.metric || fmtNum(cell.value, 1)}</div>
+    </div>
+  `).join('');
+}
 
 async function renderMarketIntel(force = false) {
   if (!ENABLE_MARKET_INTEL) return;
@@ -3211,25 +3447,35 @@ async function renderMarketIntel(force = false) {
   const symKey = document.getElementById('marketSymbol').value;
   const symbol = marketSymbolName(symKey);
   try {
-    const [meta, current, hist, forward, signals] = await Promise.all([
+    const [meta, current, hist, forward, signals, curveHistory, marginJoined, crossRegimes] = await Promise.all([
       loadMarketJSON('meta'),
       loadMarketJSON('current'),
       loadMarketJSON(marketHistName(symKey)),
       loadMarketJSON('forward_curve'),
-      loadMarketJSON('signals')
+      loadMarketJSON('signals'),
+      loadMarketJSON('curve_history'),
+      loadMarketJSON('margin_joined_front'),
+      loadMarketJSON('cross_regimes')
     ]);
     const rows = hist.rows || [];
     const latest = rows[rows.length - 1] || {};
     const fresh = meta.freshness || {};
+    const curve = forward[symbol]?.curve || [];
+    const curveTrail = curveHistory?.symbols?.[symbol] || [];
+    const joinedRows = marginJoined?.symbols?.[symbol] || [];
+    const joinedSummary = marginJoined?.summaries?.[symbol] || {};
+    const regimePack = crossRegimes?.symbols?.[symbol] || {};
+    const regimeRows = regimePack.rows || [];
+    const latestAligned = [...joinedRows].reverse().find(r => r.alignment_status === 'aligned') || {};
     document.getElementById('marketStatus').textContent =
-      `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows`;
+      `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows | ${joinedSummary.aligned_obs ?? 0} aligned front joins`;
     document.getElementById('marketKpis').innerHTML = [
       ['Front Close', fmtNum(latest.close, 2), `${_contractLabel(latest.expiry || '')} | ${latest.dte ?? '-'}d`],
-      ['1D Return', fmtPct(latest.return_pct, 2), `5D ${fmtPct(latest.return_5d_pct, 2)}`],
-      ['Realized Vol', fmtPct(latest.rolling_realized_vol_20d, 2), '20D annualized'],
-      ['Volume Shock', `${fmtNum(latest.volume_z_20d, 2)}z`, `${fmtNum(latest.volume_lots, 0)} lots`],
-      ['Open Interest', fmtNum(latest.open_interest, 0), `Change ${fmtPct(latest.oi_change_pct, 2)}`],
-      ['Liquidity Score', fmtNum(latest.liquidity_score, 1), 'Volume + OI percentile']
+      ['1D Return', fmtPct(latest.return_1d_pct ?? latest.return_pct, 2), `5D ${fmtPct(latest.return_5d_pct, 2)}`],
+      ['Realized Vol', fmtPct(latest.rolling_realized_vol_20d, 2), `5D ${fmtPct(latest.rolling_realized_vol_5d, 2)}`],
+      ['OI Flow State', latest.oi_flow_state || '-', `OI ${fmtPct(latest.oi_change_pct, 2)}`],
+      ['Liquidity Score', fmtNum(latest.liquidity_score, 1), `Concentration ${fmtNum(forward[symbol]?.liquidity_concentration, 1)}`],
+      ['Funding Friction', fmtNum(latestAligned.funding_friction_score, 1), latestAligned.matched_expiry || 'No aligned join']
     ].map(([label, value, sub]) => `
       <div class="card">
         <div class="stat-label">${label}</div>
@@ -3253,44 +3499,171 @@ async function renderMarketIntel(force = false) {
     `).join('');
 
     const recent = rows.slice(-365);
+    const recentLabels = recent.map(r => r.date);
     if (marketPriceChart) marketPriceChart.destroy();
     marketPriceChart = new Chart(document.getElementById('chartMarketPrice'), {
       type: 'line',
       data: {
-        labels: recent.map(r => r.date),
+        labels: recentLabels,
         datasets: [
-          { label: 'Close', data: recent.map(r => r.close), borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.10)', fill: true, tension: 0.2, pointRadius: 0, yAxisID: 'y' },
-          { label: 'Return %', data: recent.map(r => r.return_pct), borderColor: '#3fb950', backgroundColor: 'transparent', borderDash: [4,3], tension: 0.2, pointRadius: 0, yAxisID: 'yRet' }
+          { label: 'MCX Close', data: recent.map(r => r.close), borderColor: SERIES_STYLE.mcxClose.color, backgroundColor: SERIES_STYLE.mcxClose.fill, fill: true, tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Return %', data: recent.map(r => r.return_1d_pct ?? r.return_pct), borderColor: SERIES_STYLE.henryHub.color, backgroundColor: 'transparent', borderDash: [4,3], tension: 0.2, pointRadius: 0, yAxisID: 'yRet' }
         ]
       },
-      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } }, y: { title: { display: true, text: 'Close' } }, yRet: { position: 'right', title: { display: true, text: 'Return %' }, grid: { drawOnChartArea: false } } } }
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+          y: { title: { display: true, text: 'MCX Close' } },
+          yRet: { position: 'right', title: { display: true, text: 'Return %' }, grid: { drawOnChartArea: false } }
+        }
+      }
     });
 
     if (marketFlowChart) marketFlowChart.destroy();
     marketFlowChart = new Chart(document.getElementById('chartMarketFlow'), {
       type: 'bar',
       data: {
-        labels: recent.map(r => r.date),
+        labels: recentLabels,
         datasets: [
-          { label: 'Volume Lots', data: recent.map(r => r.volume_lots), backgroundColor: 'rgba(56,139,253,0.35)', yAxisID: 'yVol' },
-          { label: 'Open Interest', data: recent.map(r => r.open_interest), type: 'line', borderColor: '#d29922', backgroundColor: 'transparent', pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
+          { label: 'Volume Lots', data: recent.map(r => r.volume_lots), backgroundColor: SERIES_STYLE.volume.fill, borderColor: SERIES_STYLE.volume.color, yAxisID: 'yVol' },
+          { label: 'Open Interest', data: recent.map(r => r.open_interest), type: 'line', borderColor: SERIES_STYLE.openInterest.color, backgroundColor: SERIES_STYLE.openInterest.fill, pointRadius: 0, tension: 0.2, yAxisID: 'yOi' }
         ]
       },
-      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } }, yVol: { title: { display: true, text: 'Volume Lots' } }, yOi: { position: 'right', title: { display: true, text: 'Open Interest' }, grid: { drawOnChartArea: false } } } }
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+          yVol: { title: { display: true, text: 'Volume Lots' } },
+          yOi: { position: 'right', title: { display: true, text: 'Open Interest' }, grid: { drawOnChartArea: false } }
+        }
+      }
     });
 
-    const curve = forward[symbol]?.curve || [];
+    const regimeRecent = regimeRows.slice(-365);
+    if (marketRegimeChart) marketRegimeChart.destroy();
+    marketRegimeChart = new Chart(document.getElementById('chartMarketRegime'), {
+      type: 'line',
+      data: {
+        labels: regimeRecent.map(r => r.date),
+        datasets: [
+          {
+            label: 'Realized Vol 20D',
+            data: regimeRecent.map(r => r.rolling_realized_vol_20d),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245,158,11,0.08)',
+            fill: true,
+            tension: 0.2,
+            pointRadius: 3,
+            pointBackgroundColor: regimeRecent.map(r => r.vol_regime === 'STRESS' ? '#f85149' : r.vol_regime === 'ELEVATED' ? '#d29922' : r.vol_regime === 'NORMAL' ? '#3fb950' : '#58a6ff'),
+            yAxisID: 'y'
+          },
+          {
+            label: 'Funding Friction',
+            data: regimeRecent.map(r => r.funding_friction_score),
+            borderColor: '#f85149',
+            backgroundColor: 'transparent',
+            borderDash: [6,3],
+            tension: 0.2,
+            pointRadius: 0,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Realized Vol %' } },
+          y2: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Friction' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    const phaseRecent = recent.slice(-120);
+    const phaseColors = {
+      long_build: '#3fb950',
+      short_build: '#f85149',
+      long_unwind: '#d29922',
+      short_cover: '#58a6ff',
+      neutral: '#8b949e'
+    };
+    if (marketPhaseChart) marketPhaseChart.destroy();
+    marketPhaseChart = new Chart(document.getElementById('chartMarketPhase'), {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Price/OI State',
+          data: phaseRecent.map(r => ({ x: r.return_1d_pct ?? r.return_pct, y: r.oi_change_pct, label: r.date, state: r.oi_flow_state })),
+          backgroundColor: phaseRecent.map(r => phaseColors[r.oi_flow_state || 'neutral']),
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const raw = ctx.raw || {};
+                return `${raw.label}: ${raw.state || 'neutral'} | Price ${fmtPct(raw.x, 2)} | OI ${fmtPct(raw.y, 2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: 'Price Return %' } },
+          y: { title: { display: true, text: 'OI Change %' } }
+        }
+      }
+    });
+
     if (marketCurveChart) marketCurveChart.destroy();
     marketCurveChart = new Chart(document.getElementById('chartMarketCurve'), {
       type: 'line',
       data: {
         labels: curve.map(r => `${_expLabel(r.expiry)} (${r.dte}d)`),
         datasets: [
-          { label: 'Close', data: curve.map(r => r.close), borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.10)', fill: true, tension: 0.25, pointRadius: 4 },
-          { label: 'Liquidity', data: curve.map(r => r.liquidity_score), borderColor: '#d29922', backgroundColor: 'transparent', borderDash: [4,3], tension: 0.25, pointRadius: 4, yAxisID: 'yLiq' }
+          { label: 'MCX Close', data: curve.map(r => r.close), borderColor: SERIES_STYLE.mcxClose.color, backgroundColor: SERIES_STYLE.mcxClose.fill, fill: true, tension: 0.25, pointRadius: 4 },
+          { label: 'Liquidity', data: curve.map(r => r.liquidity_score), borderColor: SERIES_STYLE.openInterest.color, backgroundColor: 'transparent', borderDash: [4,3], tension: 0.25, pointRadius: 4, yAxisID: 'yLiq' }
         ]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { title: { display: true, text: 'Close' } }, yLiq: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Liquidity' }, grid: { drawOnChartArea: false } } } }
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } } },
+          y: { title: { display: true, text: 'MCX Close' } },
+          yLiq: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Liquidity' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    const curveRecent = curveTrail.slice(-180);
+    if (marketCurveHistoryChart) marketCurveHistoryChart.destroy();
+    marketCurveHistoryChart = new Chart(document.getElementById('chartMarketCurveHistory'), {
+      type: 'line',
+      data: {
+        labels: curveRecent.map(r => r.date),
+        datasets: [
+          { label: 'Front-Second Spread', data: curveRecent.map(r => r.front_second_spread), borderColor: SERIES_STYLE.mcxClose.color, backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Roll Yield %', data: curveRecent.map(r => r.roll_yield_pct), borderColor: SERIES_STYLE.henryHub.color, backgroundColor: 'transparent', borderDash: [4,3], tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Liquidity Concentration', data: curveRecent.map(r => r.liquidity_concentration), borderColor: SERIES_STYLE.openInterest.color, backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, yAxisID: 'y2' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Spread / Yield' } },
+          y2: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Liquidity Concentration' }, grid: { drawOnChartArea: false } }
+        }
+      }
     });
 
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
@@ -3303,6 +3676,83 @@ async function renderMarketIntel(force = false) {
         <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
       </tr>
     `).join('');
+
+    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.matched_expiry || '-'}</td>
+        <td>${(r.events || []).join(', ')}</td>
+        <td>${fmtPct(r.return_1d_pct, 2)}</td>
+        <td>${fmtPct(r.margin_change_1d, 2)}</td>
+        <td>${fmtPct(r.oi_change_pct, 2)}</td>
+      </tr>
+    `).join('');
+
+    renderHeatmapGrid('marketLiquidityHeatmap', curve.slice(0, 8).map(r => ({
+      label: _contractLabel(r.expiry),
+      sub: `${fmtNum(r.volume_lots, 0)} lots | OI ${fmtNum(r.open_interest, 0)}`,
+      value: r.liquidity_score,
+      metric: `Liq ${fmtNum(r.liquidity_score, 1)}`
+    })));
+
+    document.getElementById('marketLeaderboardBody').innerHTML = [...curve]
+      .sort((a,b) => (b.liquidity_score || -1) - (a.liquidity_score || -1))
+      .slice(0, 8)
+      .map(r => `
+        <tr>
+          <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+          <td>${fmtNum(r.liquidity_score, 1)}</td>
+          <td>${r.oi_flow_state || '-'}</td>
+          <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
+          <td>${fmtPct(forward[symbol]?.roll_yield_pct, 2)}</td>
+        </tr>
+      `).join('');
+
+    const linkageRecent = joinedRows.filter(r => r.alignment_status === 'aligned').slice(-180);
+    if (marketLinkageChart) marketLinkageChart.destroy();
+    marketLinkageChart = new Chart(document.getElementById('chartMarketLinkage'), {
+      type: 'line',
+      data: {
+        labels: linkageRecent.map(r => r.date),
+        datasets: [
+          { label: 'Initial Margin %', data: linkageRecent.map(r => r.initial_margin_pct), borderColor: SERIES_STYLE.initialMargin.color, backgroundColor: SERIES_STYLE.initialMargin.fill, fill: true, tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Realized Vol 20D', data: linkageRecent.map(r => r.rolling_realized_vol_20d), borderColor: '#f59e0b', backgroundColor: 'transparent', borderDash: [5,3], tension: 0.2, pointRadius: 0, yAxisID: 'y' },
+          { label: 'Funding Friction', data: linkageRecent.map(r => r.funding_friction_score), borderColor: SERIES_STYLE.positiveRisk.color, backgroundColor: 'transparent', tension: 0.2, pointRadius: 0, yAxisID: 'y2' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+          y: { title: { display: true, text: 'Margin / Realized Vol' } },
+          y2: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Friction' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    renderHeatmapGrid('marketMarginHeatmap', linkageRecent.slice(-8).map(r => ({
+      label: r.date,
+      sub: r.matched_expiry || '-',
+      value: r.funding_friction_score,
+      metric: `Friction ${fmtNum(r.funding_friction_score, 1)}`
+    })), 'friction');
+
+    document.getElementById('marketLinkageBody').innerHTML = (regimePack.event_windows || [])
+      .filter(r => (r.events || []).some(ev => ev.includes('margin') || ev.includes('oi')))
+      .slice(-20)
+      .reverse()
+      .map(r => `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.matched_expiry || '-'}</td>
+          <td>${(r.events || []).join(', ')}</td>
+          <td>${fmtPct(r.margin_change_1d, 2)}</td>
+          <td>${fmtPct(r.return_1d_pct, 2)}</td>
+          <td>${fmtPct(r.oi_change_pct, 2)}</td>
+          <td>${fmtNum(r.funding_friction_score, 1)}</td>
+        </tr>
+      `).join('');
 
     marketExplorerData = [...rows].reverse();
     marketExplorerPage = 0;
@@ -3342,7 +3792,7 @@ document.getElementById('marketNextPage')?.addEventListener('click', () => {
   if ((marketExplorerPage + 1) * MARKET_PAGE_SIZE < marketExplorerData.length) { marketExplorerPage++; renderMarketExplorerPage(); }
 });
 document.getElementById('marketExportCSV')?.addEventListener('click', () => {
-  const headers = ['date','expiry','dte','open','high','low','close','prev_close','return_pct','rolling_realized_vol_20d','volume_lots','volume_z_20d','open_interest','oi_change_pct','liquidity_score'];
+  const headers = ['date','expiry','dte','open','high','low','close','prev_close','return_1d_pct','return_5d_pct','return_20d_pct','rolling_realized_vol_5d','rolling_realized_vol_20d','range_pct','volume_lots','volume_z_20d','volume_pct_252d','open_interest','oi_change_pct','oi_pct_252d','turnover_ratio','liquidity_score','oi_flow_state'];
   const csv = [headers.join(','), ...marketExplorerData.map(r => headers.map(h => r[h] ?? '').join(','))].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv,' + encodeURIComponent(csv);
@@ -3727,12 +4177,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Back to top
 const bttBtn = document.getElementById('backToTop');
-window.addEventListener('scroll', () => {
-  bttBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-  bttBtn.style.alignItems = 'center';
-  bttBtn.style.justifyContent = 'center';
-});
-bttBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+if (bttBtn) {
+  window.addEventListener('scroll', () => {
+    bttBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    bttBtn.style.alignItems = 'center';
+    bttBtn.style.justifyContent = 'center';
+  });
+  bttBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+}
 
 // Keyboard tab navigation
 const allTabBtns = Array.from(document.querySelectorAll('.tab-btn'));

@@ -149,6 +149,161 @@ def _zscore(value, history):
     return round((value - avg) / sd, 3) if sd > 0 else None
 
 
+MARGIN_VALUE_FIELDS = (
+    "initial_margin_pct",
+    "elm_pct",
+    "tender_margin_pct",
+    "total_margin_pct",
+    "additional_long_margin_pct",
+    "additional_short_margin_pct",
+    "special_long_margin_pct",
+    "special_short_margin_pct",
+    "delivery_margin_pct",
+    "daily_volatility",
+    "annualized_volatility",
+)
+MARGIN_ROW_COLUMNS = (
+    "date",
+    "symbol",
+    "expiry",
+    "file_id",
+    "created_at",
+    *MARGIN_VALUE_FIELDS,
+)
+MARGIN_COMPLETENESS_SQL = " + ".join(
+    f"(CASE WHEN {field} IS NOT NULL THEN 1 ELSE 0 END)"
+    for field in MARGIN_VALUE_FIELDS
+)
+
+
+def _load_margin_rows(cur, where_sql="1=1", params=(), order_by="date ASC, symbol ASC, expiry ASC"):
+    cols_sql = ", ".join(MARGIN_ROW_COLUMNS)
+    query = f"""
+        SELECT {cols_sql}
+        FROM (
+            SELECT
+                {cols_sql},
+                ROW_NUMBER() OVER (
+                    PARTITION BY date, symbol, expiry
+                    ORDER BY
+                        COALESCE(file_id, -1) DESC,
+                        COALESCE(created_at, '') DESC,
+                        {MARGIN_COMPLETENESS_SQL} DESC
+                ) AS rn
+            FROM margins
+            WHERE {where_sql}
+        )
+        WHERE rn = 1
+        ORDER BY {order_by}
+    """
+    cur.execute(query, params)
+    return [dict(row) for row in cur.fetchall()]
+
+
+def _normalize_margin_row(row):
+    return {
+        "date": row.get("date"),
+        "symbol": row.get("symbol"),
+        "expiry": row.get("expiry"),
+        "dte": compute_dte(row.get("expiry", ""), row.get("date")),
+        "initial_margin_pct": row.get("initial_margin_pct"),
+        "total_margin_pct": row.get("total_margin_pct"),
+        "elm_pct": row.get("elm_pct"),
+        "tender_margin_pct": row.get("tender_margin_pct"),
+        "daily_volatility": row.get("daily_volatility"),
+        "annualized_volatility": row.get("annualized_volatility"),
+    }
+
+
+def _build_margin_contract_histories(cur, symbol):
+    rows = _load_margin_rows(
+        cur,
+        "symbol = ? AND initial_margin_pct IS NOT NULL",
+        (symbol,),
+        "expiry ASC, date ASC",
+    )
+    by_expiry = {}
+    for row in rows:
+        expiry = row.get("expiry")
+        if not expiry:
+            continue
+        dv = row.get("daily_volatility")
+        av = row.get("annualized_volatility")
+        by_expiry.setdefault(expiry, []).append({
+            "date": row.get("date"),
+            "dte": compute_dte(expiry, row.get("date")),
+            "initial_margin_pct": row.get("initial_margin_pct"),
+            "total_margin_pct": row.get("total_margin_pct"),
+            "elm_pct": row.get("elm_pct"),
+            "tender_margin_pct": row.get("tender_margin_pct"),
+            "daily_volatility": round(dv * 100, 4) if dv is not None else None,
+            "annualized_volatility": round(av * 100, 4) if av is not None else None,
+        })
+    return by_expiry
+
+
+def _contract_alignment_status(margin_dates, market_dates):
+    if margin_dates and market_dates:
+        shared = margin_dates & market_dates
+        if len(shared) == len(margin_dates) == len(market_dates):
+            return "aligned"
+        if shared:
+            return "partial"
+        return "disjoint"
+    if margin_dates:
+        return "missing_market"
+    if market_dates:
+        return "missing_margin"
+    return "empty"
+
+
+def _value_sign(value, eps=1e-9):
+    if value is None:
+        return 0
+    if value > eps:
+        return 1
+    if value < -eps:
+        return -1
+    return 0
+
+
+def _oi_flow_state(price_return, oi_change_pct):
+    price_sign = _value_sign(price_return)
+    oi_sign = _value_sign(oi_change_pct)
+    if price_sign > 0 and oi_sign > 0:
+        return "long_build"
+    if price_sign < 0 and oi_sign > 0:
+        return "short_build"
+    if price_sign < 0 and oi_sign < 0:
+        return "long_unwind"
+    if price_sign > 0 and oi_sign < 0:
+        return "short_cover"
+    return "neutral"
+
+
+def _liquidity_concentration(rows):
+    total_volume = sum((r.get("volume_lots") or 0) for r in rows)
+    total_oi = sum((r.get("open_interest") or 0) for r in rows)
+    if not rows or (total_volume <= 0 and total_oi <= 0):
+        return None
+    front = rows[0]
+    vol_share = (front.get("volume_lots") or 0) / total_volume if total_volume > 0 else 0
+    oi_share = (front.get("open_interest") or 0) / total_oi if total_oi > 0 else 0
+    return round((vol_share * 0.6 + oi_share * 0.4) * 100, 1)
+
+
+def _regime_label(percentile):
+    if percentile is None:
+        return None
+    if percentile < 25:
+        return "CALM"
+    if percentile < 60:
+        return "NORMAL"
+    if percentile < 85:
+        return "ELEVATED"
+    return "STRESS"
+
+
 def _freshness_status(latest_date):
     if not latest_date:
         return {"label": "MISSING", "age_days": None}
@@ -220,12 +375,17 @@ def _enrich_market_history(rows):
     closes, returns, volumes, open_interest = [], [], [], []
     for idx, row in enumerate(sorted(rows, key=lambda r: r["date"])):
         close = row.get("close")
+        high = row.get("high")
+        low = row.get("low")
         volume = row.get("volume_lots")
         oi = row.get("open_interest")
         ret = row.get("return_pct")
         prior_oi = open_interest[-1] if open_interest else None
         volume_hist = volumes[-20:]
+        volume_hist_long = volumes[-252:]
+        oi_hist_long = open_interest[-252:]
         return_window = [v for v in returns[-19:] + [ret] if v is not None]
+        return_window_5d = [v for v in returns[-4:] + [ret] if v is not None]
         oi_change = oi - prior_oi if oi is not None and prior_oi is not None else None
         oi_change_pct = (
             round((oi_change / prior_oi) * 100, 3)
@@ -234,24 +394,43 @@ def _enrich_market_history(rows):
         )
         vol_z = _zscore(volume, volume_hist)
         realized = _stdev(return_window)
-        volume_pct = _percentile_rank(volumes[-252:], volume)
-        oi_pct = _percentile_rank(open_interest[-252:], oi)
+        realized_5d = _stdev(return_window_5d)
+        volume_pct = _percentile_rank(volume_hist_long, volume)
+        oi_pct = _percentile_rank(oi_hist_long, oi)
         liquidity_score = None
         if volume_pct is not None or oi_pct is not None:
             liquidity_score = round((volume_pct or 0) * 0.6 + (oi_pct or 0) * 0.4, 1)
+        base_px = close if close not in (None, 0) else row.get("prev_close")
+        range_pct = (
+            round(((high - low) / base_px) * 100, 3)
+            if base_px not in (None, 0) and high is not None and low is not None
+            else None
+        )
+        turnover_ratio = round(volume / oi, 4) if volume is not None and oi not in (None, 0) else None
         enriched_row = {
             **row,
             "return_pct": ret,
+            "return_1d_pct": ret,
+            "range_pct": range_pct,
+            "rolling_realized_vol_5d": round(realized_5d * math.sqrt(252), 3) if realized_5d is not None else None,
             "rolling_realized_vol_20d": round(realized * math.sqrt(252), 3) if realized is not None else None,
             "volume_z_20d": vol_z,
+            "volume_pct_252d": volume_pct,
             "oi_change": oi_change,
             "oi_change_pct": oi_change_pct,
+            "oi_pct_252d": oi_pct,
             "liquidity_score": liquidity_score,
+            "turnover_ratio": turnover_ratio,
+            "oi_flow_state": _oi_flow_state(ret, oi_change_pct),
         }
         if idx >= 5 and close is not None and closes[-5] not in (None, 0):
             enriched_row["return_5d_pct"] = round(((close - closes[-5]) / closes[-5]) * 100, 3)
         else:
             enriched_row["return_5d_pct"] = None
+        if idx >= 20 and close is not None and closes[-20] not in (None, 0):
+            enriched_row["return_20d_pct"] = round(((close - closes[-20]) / closes[-20]) * 100, 3)
+        else:
+            enriched_row["return_20d_pct"] = None
         enriched.append(enriched_row)
         closes.append(close)
         returns.append(ret)
@@ -383,37 +562,113 @@ def _build_market_signals(symbol, history_rows, joined_rows):
 
 
 def _build_margin_front_series_for_symbol(cur, symbol):
-    cur.execute("SELECT DISTINCT date FROM margins WHERE symbol=? ORDER BY date", (symbol,))
-    dates = [r[0] for r in cur.fetchall()]
-    series = []
-    for d in dates:
-        cur.execute(
-            """
-            SELECT expiry, initial_margin_pct, total_margin_pct, elm_pct,
-                   tender_margin_pct, daily_volatility, annualized_volatility
-            FROM margins WHERE date=? AND symbol=?
-            ORDER BY expiry ASC
-            """,
-            (d, symbol),
+    rows = [
+        _normalize_margin_row(row)
+        for row in _load_margin_rows(
+            cur,
+            "symbol = ? AND initial_margin_pct IS NOT NULL",
+            (symbol,),
+            "date ASC, expiry ASC",
         )
-        rows = []
-        for row in cur.fetchall():
-            rows.append({
-                "date": d,
-                "symbol": symbol,
-                "expiry": row[0],
-                "dte": compute_dte(row[0], d),
-                "initial_margin_pct": row[1],
-                "total_margin_pct": row[2],
-                "elm_pct": row[3],
-                "tender_margin_pct": row[4],
-                "daily_volatility": row[5],
-                "annualized_volatility": row[6],
-            })
-        best = _select_front_month(rows, d)
+    ]
+    by_date = {}
+    for row in rows:
+        by_date.setdefault(row["date"], []).append(row)
+    series = []
+    for d in sorted(by_date):
+        best = _select_front_month(by_date[d], d)
         if best:
             series.append(best)
     return series
+
+
+def _lagged_metric_corr(rows, field, lag):
+    xs, ys = [], []
+    for idx, row in enumerate(rows):
+        source_idx = idx - lag
+        if source_idx < 0:
+            continue
+        x = rows[source_idx].get(field)
+        y = row.get("margin_change_1d")
+        if x is None or y is None:
+            continue
+        xs.append(x)
+        ys.append(y)
+    return safe_corr(xs, ys)
+
+
+def _joined_symbol_summary(rows):
+    aligned = [r for r in rows if r.get("alignment_status") == "aligned"]
+    return {
+        "aligned_obs": len(aligned),
+        "lag_correlations": {
+            f"lag_{lag}": {
+                "price_return": _lagged_metric_corr(aligned, "return_1d_pct", lag),
+                "realized_vol_20d": _lagged_metric_corr(aligned, "rolling_realized_vol_20d", lag),
+                "volume_z_20d": _lagged_metric_corr(aligned, "volume_z_20d", lag),
+                "oi_change_pct": _lagged_metric_corr(aligned, "oi_change_pct", lag),
+            }
+            for lag in (0, 1, 5)
+        },
+    }
+
+
+def _build_curve_history_for_symbol(by_date_rows):
+    history = []
+    for d in sorted(by_date_rows):
+        active = sorted(
+            [r for r in by_date_rows[d] if r.get("dte") is not None and r["dte"] >= 0],
+            key=lambda r: r["dte"],
+        )
+        if not active:
+            continue
+        front = active[0]
+        second = active[1] if len(active) > 1 else None
+        back = active[-1] if len(active) > 1 else active[0]
+        front_second_spread = (
+            _round(second["close"] - front["close"], 4)
+            if second and second.get("close") is not None and front.get("close") is not None
+            else None
+        )
+        front_back_spread = (
+            _round(back["close"] - front["close"], 4)
+            if back.get("close") is not None and front.get("close") is not None
+            else None
+        )
+        front_back_tension_pct = (
+            _round(((back["close"] - front["close"]) / front["close"]) * 100, 3)
+            if back.get("close") is not None and front.get("close") not in (None, 0)
+            else None
+        )
+        roll_yield_pct = (
+            _round(((front["close"] - second["close"]) / front["close"]) * 100, 3)
+            if second and second.get("close") is not None and front.get("close") not in (None, 0)
+            else None
+        )
+        curve_state = "flat"
+        if front_second_spread is not None:
+            if front_second_spread > 0.5:
+                curve_state = "contango"
+            elif front_second_spread < -0.5:
+                curve_state = "backwardation"
+        history.append({
+            "date": d,
+            "series_scope": "active_curve",
+            "front_expiry": front.get("expiry"),
+            "second_expiry": second.get("expiry") if second else None,
+            "back_expiry": back.get("expiry"),
+            "front_close": front.get("close"),
+            "second_close": second.get("close") if second else None,
+            "back_close": back.get("close"),
+            "front_second_spread": front_second_spread,
+            "front_back_spread": front_back_spread,
+            "front_back_tension_pct": front_back_tension_pct,
+            "roll_yield_pct": roll_yield_pct,
+            "active_contracts": len(active),
+            "liquidity_concentration": _liquidity_concentration(active),
+            "curve_state": curve_state,
+        })
+    return history
 
 
 def _market_validation(conn, latest_date, futures_rows):
@@ -564,12 +819,17 @@ def _export_market_intelligence(margin_cur):
             save(f"market/history_{key}.json", {
                 "schema_version": MARKET_SCHEMA_VERSION,
                 "symbol": symbol,
+                "series_scope": "front_month",
                 "rows": histories[symbol],
             })
             outputs.append(f"market/history_{key}.json")
 
         contract_histories = {}
         contract_row_lookup = {}
+        margin_contract_histories = {
+            symbol: _build_margin_contract_histories(margin_cur, symbol)
+            for symbol in MARKET_SYMBOLS
+        }
         for symbol in MARKET_SYMBOLS:
             by_expiry = {}
             for row in rows:
@@ -581,8 +841,19 @@ def _export_market_intelligence(margin_cur):
                 for enriched_row in enriched:
                     contract_row_lookup[(symbol, expiry, enriched_row["date"])] = enriched_row
 
-        current = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date}
-        forward = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date}
+        curve_history = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "generated_at": _utc_now(),
+            "symbols": {
+                symbol: _build_curve_history_for_symbol(by_symbol_date[symbol])
+                for symbol in MARKET_SYMBOLS
+            },
+        }
+        save("market/curve_history.json", curve_history)
+        outputs.append("market/curve_history.json")
+
+        current = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date, "series_scope": "active_curve"}
+        forward = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date, "series_scope": "active_curve"}
         for symbol in MARKET_SYMBOLS:
             active = sorted(
                 [r for r in by_symbol_date[symbol].get(latest_date, []) if r["dte"] >= 0],
@@ -601,10 +872,18 @@ def _export_market_intelligence(margin_cur):
                     liquidity_score = round((volume_pct or 0) * 0.6 + (oi_pct or 0) * 0.4, 1)
                 entry = {
                     **row,
+                    "return_1d_pct": flow_row.get("return_1d_pct"),
                     "rolling_realized_vol_20d": flow_row.get("rolling_realized_vol_20d"),
+                    "rolling_realized_vol_5d": flow_row.get("rolling_realized_vol_5d"),
+                    "return_20d_pct": flow_row.get("return_20d_pct"),
+                    "range_pct": flow_row.get("range_pct"),
                     "volume_z_20d": flow_row.get("volume_z_20d"),
+                    "volume_pct_252d": flow_row.get("volume_pct_252d"),
                     "oi_change": flow_row.get("oi_change"),
                     "oi_change_pct": flow_row.get("oi_change_pct"),
+                    "oi_pct_252d": flow_row.get("oi_pct_252d"),
+                    "turnover_ratio": flow_row.get("turnover_ratio"),
+                    "oi_flow_state": flow_row.get("oi_flow_state"),
                     "spread_vs_front": _round(row["close"] - front_close, 4) if row.get("close") is not None and front_close is not None else None,
                     "spread_vs_next": _round(active[idx + 1]["close"] - row["close"], 4) if idx + 1 < len(active) and row.get("close") is not None and active[idx + 1].get("close") is not None else None,
                     "liquidity_score": liquidity_score,
@@ -614,16 +893,42 @@ def _export_market_intelligence(margin_cur):
             ranks = {id(row): i + 1 for i, row in enumerate(ranked)}
             for row in curve:
                 row["liquidity_rank"] = ranks.get(id(row))
+            front_second_spread = (
+                _round(curve[1]["close"] - curve[0]["close"], 4)
+                if len(curve) >= 2 and curve[1].get("close") is not None and curve[0].get("close") is not None
+                else None
+            )
+            front_back_spread = (
+                _round(curve[-1]["close"] - curve[0]["close"], 4)
+                if len(curve) >= 2 and curve[-1].get("close") is not None and curve[0].get("close") is not None
+                else None
+            )
+            front_back_tension_pct = (
+                _round(((curve[-1]["close"] - curve[0]["close"]) / curve[0]["close"]) * 100, 3)
+                if len(curve) >= 2 and curve[0].get("close") not in (None, 0) and curve[-1].get("close") is not None
+                else None
+            )
+            roll_yield_pct = (
+                _round(((curve[0]["close"] - curve[1]["close"]) / curve[0]["close"]) * 100, 3)
+                if len(curve) >= 2 and curve[0].get("close") not in (None, 0) and curve[1].get("close") is not None
+                else None
+            )
             current[symbol] = curve
             forward[symbol] = {
                 "curve": curve,
-                "curve_slope": _round(curve[-1]["close"] - curve[0]["close"], 4) if len(curve) >= 2 and curve[-1].get("close") is not None and curve[0].get("close") is not None else None,
-                "front_to_back_tension": _round(((curve[-1]["close"] - curve[0]["close"]) / curve[0]["close"]) * 100, 3) if len(curve) >= 2 and curve[0].get("close") not in (None, 0) and curve[-1].get("close") is not None else None,
+                "curve_slope": front_back_spread,
+                "front_to_back_tension": front_back_tension_pct,
+                "front_second_spread": front_second_spread,
+                "front_back_spread": front_back_spread,
+                "front_back_tension_pct": front_back_tension_pct,
+                "roll_yield_pct": roll_yield_pct,
+                "liquidity_concentration": _liquidity_concentration(curve),
             }
         save("market/current.json", current); outputs.append("market/current.json")
         save("market/forward_curve.json", forward); outputs.append("market/forward_curve.json")
 
-        contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "ng": [], "ngm": []}
+        contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "ng": [], "ngm": []}
+        contract_crosswalk = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "symbols": {"NATURALGAS": [], "NATGASMINI": []}}
         for symbol in MARKET_SYMBOLS:
             key = MARKET_SYMBOL_KEYS[symbol]
             symbol_dir = contract_root / key
@@ -639,55 +944,235 @@ def _export_market_intelligence(margin_cur):
                     "schema_version": MARKET_SCHEMA_VERSION,
                     "symbol": symbol,
                     "expiry": expiry,
+                    "series_scope": "specific_expiry",
                     "rows": enriched,
                 })
                 outputs.append(out_name)
                 dates = [r["date"] for r in enriched]
+                market_dates = set(dates)
+                margin_rows = margin_contract_histories.get(symbol, {}).get(expiry, [])
+                margin_dates = {r["date"] for r in margin_rows}
+                alignment_status = _contract_alignment_status(margin_dates, market_dates)
                 contract_index[key].append({
                     "expiry": expiry,
                     "obs": len(enriched),
                     "first_date": min(dates) if dates else None,
                     "last_date": max(dates) if dates else None,
+                    "margin_path": f"data/contract/{key}/{expiry}.json",
+                    "market_path": f"data/market/contract/{key}/{expiry}.json",
+                    "shared_obs": len(margin_dates & market_dates),
+                    "alignment_status": alignment_status,
+                })
+                contract_crosswalk["symbols"][symbol].append({
+                    "expiry": expiry,
+                    "symbol": symbol,
+                    "series_scope": "specific_expiry",
+                    "margin_obs": len(margin_dates),
+                    "market_obs": len(market_dates),
+                    "shared_obs": len(margin_dates & market_dates),
+                    "first_margin_date": min(margin_dates) if margin_dates else None,
+                    "last_margin_date": max(margin_dates) if margin_dates else None,
+                    "first_market_date": min(market_dates) if market_dates else None,
+                    "last_market_date": max(market_dates) if market_dates else None,
+                    "alignment_status": alignment_status,
+                    "margin_path": f"data/contract/{key}/{expiry}.json",
+                    "market_path": f"data/market/contract/{key}/{expiry}.json",
+                })
+            market_expiries = set(by_expiry)
+            for expiry, margin_rows in sorted(margin_contract_histories.get(symbol, {}).items()):
+                if expiry in market_expiries:
+                    continue
+                margin_dates = {r["date"] for r in margin_rows}
+                contract_crosswalk["symbols"][symbol].append({
+                    "expiry": expiry,
+                    "symbol": symbol,
+                    "series_scope": "specific_expiry",
+                    "margin_obs": len(margin_dates),
+                    "market_obs": 0,
+                    "shared_obs": 0,
+                    "first_margin_date": min(margin_dates) if margin_dates else None,
+                    "last_margin_date": max(margin_dates) if margin_dates else None,
+                    "first_market_date": None,
+                    "last_market_date": None,
+                    "alignment_status": "missing_market",
+                    "margin_path": f"data/contract/{key}/{expiry}.json",
+                    "market_path": f"data/market/contract/{key}/{expiry}.json",
                 })
         save("market/contract_index.json", contract_index); outputs.append("market/contract_index.json")
+        save("market/contract_crosswalk.json", contract_crosswalk); outputs.append("market/contract_crosswalk.json")
 
         joined_symbols = {}
+        joined_summaries = {}
         flat_joined = []
+        cross_regimes = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "generated_at": _utc_now(),
+            "series_scope": "front_month",
+            "symbols": {},
+        }
         for symbol in MARKET_SYMBOLS:
             margin_series = _build_margin_front_series_for_symbol(margin_cur, symbol)
             market_by_date = {row["date"]: row for row in histories[symbol]}
             joined = []
-            for m in margin_series:
+            for idx, m in enumerate(margin_series):
                 market = market_by_date.get(m["date"])
-                if not market:
-                    continue
+                alignment_status = "missing_market"
+                market_expiry = market["expiry"] if market else None
+                if market:
+                    alignment_status = "aligned" if market_expiry == m["expiry"] else "expiry_mismatch"
+                prev_1 = margin_series[idx - 1] if idx >= 1 else None
+                prev_5 = margin_series[idx - 5] if idx >= 5 else None
+                margin_change_1d = (
+                    _round(m["initial_margin_pct"] - prev_1["initial_margin_pct"], 3)
+                    if prev_1 and m["initial_margin_pct"] is not None and prev_1["initial_margin_pct"] is not None
+                    else None
+                )
+                margin_change_5d = (
+                    _round(m["initial_margin_pct"] - prev_5["initial_margin_pct"], 3)
+                    if prev_5 and m["initial_margin_pct"] is not None and prev_5["initial_margin_pct"] is not None
+                    else None
+                )
                 entry = {
                     "date": m["date"],
                     "symbol": symbol,
+                    "series_scope": "front_month",
                     "margin_expiry": m["expiry"],
-                    "market_expiry": market["expiry"],
+                    "market_expiry": market_expiry,
+                    "matched_expiry": m["expiry"] if alignment_status == "aligned" else None,
+                    "alignment_status": alignment_status,
                     "dte": m["dte"],
                     "initial_margin_pct": m["initial_margin_pct"],
                     "total_margin_pct": m["total_margin_pct"],
                     "daily_volatility": m["daily_volatility"],
                     "annualized_volatility": m["annualized_volatility"],
-                    "close": market["close"],
-                    "return_pct": market["return_pct"],
-                    "return_5d_pct": market.get("return_5d_pct"),
-                    "volume_lots": market["volume_lots"],
-                    "volume_z_20d": market.get("volume_z_20d"),
-                    "open_interest": market["open_interest"],
-                    "oi_change_pct": market.get("oi_change_pct"),
-                    "liquidity_score": market.get("liquidity_score"),
+                    "margin_change_1d": margin_change_1d,
+                    "margin_change_5d": margin_change_5d,
+                    "close": None,
+                    "return_pct": None,
+                    "return_1d_pct": None,
+                    "return_5d_pct": None,
+                    "return_20d_pct": None,
+                    "rolling_realized_vol_5d": None,
+                    "rolling_realized_vol_20d": None,
+                    "range_pct": None,
+                    "volume_lots": None,
+                    "volume_z_20d": None,
+                    "volume_pct_252d": None,
+                    "open_interest": None,
+                    "oi_change_pct": None,
+                    "oi_pct_252d": None,
+                    "turnover_ratio": None,
+                    "liquidity_score": None,
+                    "oi_flow_state": None,
+                    "margin_price_divergence": None,
+                    "margin_vs_realized_vol_gap": None,
+                    "margin_per_liquidity": None,
+                    "funding_friction_score": None,
                 }
+                if market and alignment_status == "aligned":
+                    entry.update({
+                        "close": market["close"],
+                        "return_pct": market["return_pct"],
+                        "return_1d_pct": market.get("return_1d_pct", market.get("return_pct")),
+                        "return_5d_pct": market.get("return_5d_pct"),
+                        "return_20d_pct": market.get("return_20d_pct"),
+                        "rolling_realized_vol_5d": market.get("rolling_realized_vol_5d"),
+                        "rolling_realized_vol_20d": market.get("rolling_realized_vol_20d"),
+                        "range_pct": market.get("range_pct"),
+                        "volume_lots": market["volume_lots"],
+                        "volume_z_20d": market.get("volume_z_20d"),
+                        "volume_pct_252d": market.get("volume_pct_252d"),
+                        "open_interest": market["open_interest"],
+                        "oi_change_pct": market.get("oi_change_pct"),
+                        "oi_pct_252d": market.get("oi_pct_252d"),
+                        "turnover_ratio": market.get("turnover_ratio"),
+                        "liquidity_score": market.get("liquidity_score"),
+                        "oi_flow_state": market.get("oi_flow_state"),
+                    })
+                    if entry["return_5d_pct"] is not None and margin_change_5d is not None:
+                        entry["margin_price_divergence"] = _round(abs(entry["return_5d_pct"]) - abs(margin_change_5d), 3)
+                    if entry["rolling_realized_vol_20d"] is not None and entry["initial_margin_pct"] is not None:
+                        entry["margin_vs_realized_vol_gap"] = _round(entry["initial_margin_pct"] - entry["rolling_realized_vol_20d"], 3)
+                    if entry["liquidity_score"] not in (None, 0):
+                        entry["margin_per_liquidity"] = _round(entry["initial_margin_pct"] / entry["liquidity_score"], 4)
+                    flat_joined.append(entry)
                 joined.append(entry)
-                flat_joined.append(entry)
+
+            aligned = [r for r in joined if r["alignment_status"] == "aligned"]
+            margin_vals = [r["initial_margin_pct"] for r in aligned if r.get("initial_margin_pct") is not None]
+            realized_vals = [r["rolling_realized_vol_20d"] for r in aligned if r.get("rolling_realized_vol_20d") is not None]
+            liquidity_vals = [r["liquidity_score"] for r in aligned if r.get("liquidity_score") is not None]
+            vol_prev = None
+            margin_prev = None
+            event_windows = []
+            regime_rows = []
+            for row in aligned:
+                margin_pct_rank = _percentile_rank(margin_vals, row.get("initial_margin_pct"))
+                vol_pct_rank = _percentile_rank(realized_vals, row.get("rolling_realized_vol_20d"))
+                liq_pct_rank = _percentile_rank(liquidity_vals, row.get("liquidity_score"))
+                liq_inv = None if row.get("liquidity_score") is None else round(100 - row["liquidity_score"], 1)
+                if margin_pct_rank is not None or vol_pct_rank is not None or liq_inv is not None:
+                    row["funding_friction_score"] = round((margin_pct_rank or 0) * 0.45 + (vol_pct_rank or 0) * 0.25 + (liq_inv or 0) * 0.30, 1)
+                vol_regime = _regime_label(vol_pct_rank)
+                margin_regime = _regime_label(margin_pct_rank)
+                liquidity_regime = _regime_label(liq_pct_rank)
+                regime_rows.append({
+                    "date": row["date"],
+                    "series_scope": "front_month",
+                    "matched_expiry": row["matched_expiry"],
+                    "vol_regime": vol_regime,
+                    "margin_regime": margin_regime,
+                    "liquidity_regime": liquidity_regime,
+                    "funding_friction_score": row.get("funding_friction_score"),
+                    "return_1d_pct": row.get("return_1d_pct"),
+                    "rolling_realized_vol_20d": row.get("rolling_realized_vol_20d"),
+                    "initial_margin_pct": row.get("initial_margin_pct"),
+                    "liquidity_score": row.get("liquidity_score"),
+                })
+                event_tags = []
+                if row.get("margin_change_1d") is not None:
+                    if row["margin_change_1d"] >= 1:
+                        event_tags.append("margin_hike")
+                    elif row["margin_change_1d"] <= -1:
+                        event_tags.append("margin_cut")
+                if abs(row.get("volume_z_20d") or 0) >= 2:
+                    event_tags.append("volume_shock")
+                if abs(row.get("oi_change_pct") or 0) >= 10:
+                    event_tags.append("oi_shift")
+                if vol_prev and vol_regime and vol_regime != vol_prev:
+                    event_tags.append("vol_regime_flip")
+                if margin_prev and margin_regime and margin_regime != margin_prev:
+                    event_tags.append("margin_regime_flip")
+                if event_tags:
+                    event_windows.append({
+                        "date": row["date"],
+                        "matched_expiry": row["matched_expiry"],
+                        "events": event_tags,
+                        "margin_change_1d": row.get("margin_change_1d"),
+                        "return_1d_pct": row.get("return_1d_pct"),
+                        "volume_z_20d": row.get("volume_z_20d"),
+                        "oi_change_pct": row.get("oi_change_pct"),
+                        "funding_friction_score": row.get("funding_friction_score"),
+                    })
+                vol_prev = vol_regime or vol_prev
+                margin_prev = margin_regime or margin_prev
+
             joined_symbols[symbol] = joined
+            joined_summaries[symbol] = _joined_symbol_summary(joined)
+            cross_regimes["symbols"][symbol] = {
+                "rows": regime_rows,
+                "event_windows": event_windows[-180:],
+                "correlations": joined_summaries[symbol]["lag_correlations"],
+            }
         save("market/margin_joined_front.json", {
             "schema_version": MARKET_SCHEMA_VERSION,
+            "generated_at": _utc_now(),
+            "series_scope": "front_month",
             "symbols": joined_symbols,
+            "summaries": joined_summaries,
         })
         outputs.append("market/margin_joined_front.json")
+        save("market/cross_regimes.json", cross_regimes); outputs.append("market/cross_regimes.json")
 
         signals = {
             "schema_version": MARKET_SCHEMA_VERSION,
@@ -764,39 +1249,14 @@ def export_manifest():
 
 def _build_front_month_series(cur):
     """Build date-sorted front-month NATURALGAS series with margin, vol, dte."""
-    cur.execute(
-        "SELECT DISTINCT date FROM margins WHERE symbol='NATURALGAS' ORDER BY date"
-    )
-    dates = [r[0] for r in cur.fetchall()]
     series = []
-    for d in dates:
-        cur.execute(
-            """SELECT expiry, initial_margin_pct, total_margin_pct, elm_pct,
-                      tender_margin_pct, daily_volatility, annualized_volatility
-               FROM margins WHERE date=? AND symbol='NATURALGAS'
-               ORDER BY expiry ASC""",
-            (d,),
-        )
-        rows = cur.fetchall()
-        best, best_dte = None, 99999
-        for row in rows:
-            dte = compute_dte(row[0], d)
-            if 0 <= dte < best_dte:
-                best_dte = dte
-                best = row
-        if best and best[1] is not None and best[5] is not None:
-            series.append({
-                "date": d,
-                "year": int(d[:4]),
-                "expiry": best[0],
-                "dte": best_dte,
-                "initial_margin_pct": best[1],
-                "total_margin_pct": best[2],
-                "elm_pct": best[3],
-                "tender_margin_pct": best[4],
-                "daily_volatility": best[5],
-                "annualized_volatility": best[6],
-            })
+    for row in _build_margin_front_series_for_symbol(cur, "NATURALGAS"):
+        if row["initial_margin_pct"] is None or row["daily_volatility"] is None:
+            continue
+        series.append({
+            **row,
+            "year": int(row["date"][:4]),
+        })
     return series
 
 
@@ -1536,39 +1996,26 @@ def main():
     # ── current.json ──────────────────────────────────────────────────────────
     latest_date = max_date  # already fetched above
     result = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
-    seen_cur: dict = {"NATURALGAS": set(), "NATGASMINI": set()}  # dedup by expiry
-    cur.execute(
-        """
-        SELECT symbol, expiry, initial_margin_pct, elm_pct, tender_margin_pct,
-               total_margin_pct, additional_long_margin_pct, additional_short_margin_pct,
-               special_long_margin_pct, special_short_margin_pct, delivery_margin_pct,
-               daily_volatility, annualized_volatility
-        FROM margins WHERE date = ?
-        ORDER BY symbol, expiry
-        """,
-        (latest_date,),
-    )
-    for row in cur.fetchall():
-        sym = row[0]
-        expiry = row[1]
-        if sym not in result or expiry in seen_cur.get(sym, set()):
+    for row in _load_margin_rows(cur, "date = ?", (latest_date,), "symbol ASC, expiry ASC"):
+        sym = row["symbol"]
+        expiry = row["expiry"]
+        if sym not in result:
             continue
-        seen_cur[sym].add(expiry)
         dte = compute_dte(expiry, latest_date)
         entry = {
             "expiry": expiry,
             "dte": dte,
-            "initial_margin_pct": row[2],
-            "elm_pct": row[3],
-            "tender_margin_pct": row[4],
-            "total_margin_pct": row[5],
-            "additional_long_margin_pct": row[6],
-            "additional_short_margin_pct": row[7],
-            "special_long_margin_pct": row[8],
-            "special_short_margin_pct": row[9],
-            "delivery_margin_pct": row[10],
-            "daily_volatility": row[11],
-            "annualized_volatility": row[12],
+            "initial_margin_pct": row["initial_margin_pct"],
+            "elm_pct": row["elm_pct"],
+            "tender_margin_pct": row["tender_margin_pct"],
+            "total_margin_pct": row["total_margin_pct"],
+            "additional_long_margin_pct": row["additional_long_margin_pct"],
+            "additional_short_margin_pct": row["additional_short_margin_pct"],
+            "special_long_margin_pct": row["special_long_margin_pct"],
+            "special_short_margin_pct": row["special_short_margin_pct"],
+            "delivery_margin_pct": row["delivery_margin_pct"],
+            "daily_volatility": row["daily_volatility"],
+            "annualized_volatility": row["annualized_volatility"],
         }
         result[sym].append(entry)
     # Sort by DTE ascending
@@ -1578,89 +2025,60 @@ def main():
 
     # ── history_ng.json + history_ngm.json (front-month daily series) ─────────
     for sym, fname in [("NATURALGAS", "history_ng.json"), ("NATGASMINI", "history_ngm.json")]:
-        cur.execute(
-            "SELECT DISTINCT date FROM margins WHERE symbol=? ORDER BY date", (sym,)
-        )
-        dates = [r[0] for r in cur.fetchall()]
-        series = []
-        for d in dates:
-            cur.execute(
-                """
-                SELECT expiry, initial_margin_pct, total_margin_pct, elm_pct,
-                       tender_margin_pct, daily_volatility, annualized_volatility
-                FROM margins WHERE date=? AND symbol=?
-                ORDER BY expiry ASC
-                """,
-                (d, sym),
-            )
-            rows = cur.fetchall()
-            best = None
-            best_dte = 99999
-            for row in rows:
-                dte = compute_dte(row[0], d)
-                if 0 <= dte < best_dte:
-                    best_dte = dte
-                    best = row
-            if best:
-                series.append(
-                    {
-                        "date": d,
-                        "expiry": best[0],
-                        "dte": best_dte,
-                        "initial_margin_pct": best[1],
-                        "total_margin_pct": best[2],
-                        "elm_pct": best[3],
-                        "tender_margin_pct": best[4],
-                        "daily_volatility": best[5],
-                        "annualized_volatility": best[6],
-                    }
-                )
-        save(fname, series)
+        save(fname, _build_margin_front_series_for_symbol(cur, sym))
 
-    # ── contract_index.json + per-contract docs/data/contract/<EXPIRY>.json ───
+    # ── contract_index.json + per-contract docs/data/contract/<SYM>/<EXPIRY>.json ───
     # Two-tier lazy loading: index (~31 KB) loaded once for dropdown;
     # individual contract file (~75 KB avg) fetched only when contract selected.
     # Self-sustaining: new contracts in margins.db get their own file on next run.
     from pathlib import Path as _Path
     _cdir = _Path(OUT_DIR) / "contract"
     _cdir.mkdir(parents=True, exist_ok=True)
-    _SYM_MAP = {"NATURALGAS": "ng", "NATGASMINI": "ngm"}
-    _cidx = {"ng": [], "ngm": []}
+    for _legacy in _cdir.glob("*.json"):
+        _legacy.unlink()
+    _SYM_MAP = dict(MARKET_SYMBOL_KEYS)
+    _cidx = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "ng": [], "ngm": []}
+    _market_contract_dates = {}
+    if PRICE_DB_PATH.exists():
+        _price_conn = sqlite3.connect(PRICE_DB_PATH)
+        _price_conn.row_factory = sqlite3.Row
+        try:
+            _price_rows = _price_conn.execute(
+                """
+                SELECT date, symbol, expiry, instrument, open, high, low, close,
+                       prev_close, volume_lots, volume_kgs, value_lacs, open_interest
+                FROM prices
+                WHERE symbol IN ('NATURALGAS','NATGASMINI','NATGAS')
+                  AND UPPER(COALESCE(instrument,''))='FUTCOM'
+                """
+            ).fetchall()
+            for _row in _price_rows:
+                _rec = _market_row_from_db(_row)
+                if not _is_market_futures_row(_rec):
+                    continue
+                _market_contract_dates.setdefault((_rec["symbol"], _rec["expiry"]), set()).add(_rec["date"])
+        finally:
+            _price_conn.close()
     for _sym, _skey in _SYM_MAP.items():
-        cur.execute(
-            """
-            SELECT date, expiry, initial_margin_pct, total_margin_pct, elm_pct,
-                   tender_margin_pct, daily_volatility, annualized_volatility
-            FROM margins
-            WHERE symbol=? AND initial_margin_pct IS NOT NULL
-            ORDER BY expiry ASC, date ASC
-            """,
-            (_sym,),
-        )
-        _bexp = {}
-        for _r in cur.fetchall():
-            _exp = _r[1]
-            if _exp not in _bexp:
-                _bexp[_exp] = []
-            _dv, _av = _r[6], _r[7]
-            _bexp[_exp].append({
-                "date": _r[0],
-                "dte": compute_dte(_exp, _r[0]),
-                "initial_margin_pct": _r[2],
-                "total_margin_pct": _r[3],
-                "elm_pct": _r[4],
-                "tender_margin_pct": _r[5],
-                "daily_volatility": round(_dv * 100, 4) if _dv is not None else None,
-                "annualized_volatility": round(_av * 100, 4) if _av is not None else None,
-            })
+        _sym_dir = _cdir / _skey
+        _sym_dir.mkdir(parents=True, exist_ok=True)
+        _bexp = _build_margin_contract_histories(cur, _sym)
         for _exp, _rows in _bexp.items():
-            with open(_cdir / f"{_exp}.json", "w") as _f:
-                json.dump({"expiry": _exp, "symbol": _sym, "rows": _rows},
+            with open(_sym_dir / f"{_exp}.json", "w", encoding="utf-8") as _f:
+                json.dump({"expiry": _exp, "symbol": _sym, "series_scope": "specific_expiry", "rows": _rows},
                           _f, separators=(",", ":"))
             _ds = [rr["date"] for rr in _rows]
+            _margin_dates = set(_ds)
+            _market_dates = _market_contract_dates.get((_sym, _exp), set())
             _cidx[_skey].append({
-                "expiry": _exp, "obs": len(_rows),
-                "first_date": min(_ds), "last_date": max(_ds),
+                "expiry": _exp,
+                "obs": len(_rows),
+                "first_date": min(_ds),
+                "last_date": max(_ds),
+                "margin_path": f"data/contract/{_skey}/{_exp}.json",
+                "market_path": f"data/market/contract/{_skey}/{_exp}.json",
+                "shared_obs": len(_margin_dates & _market_dates),
+                "alignment_status": _contract_alignment_status(_margin_dates, _market_dates),
             })
         _cidx[_skey].sort(key=lambda x: x["expiry"])
     save("contract_index.json", _cidx)
@@ -1840,68 +2258,37 @@ def main():
 
 
     # ── forward_curve.json ────────────────────────────────────────────────────
-    cur.execute(
-        """
-        SELECT symbol, expiry, initial_margin_pct, total_margin_pct,
-               daily_volatility, annualized_volatility
-        FROM margins WHERE date=? ORDER BY symbol, expiry
-        """,
-        (latest_date,),
-    )
     fwd: dict = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
-    seen_fwd: dict = {"NATURALGAS": set(), "NATGASMINI": set()}  # dedup by expiry
-    for row in cur.fetchall():
-        sym, exp, im, tm, dv, av = row
-        if sym in fwd and exp not in seen_fwd[sym]:
-            seen_fwd[sym].add(exp)
-            dte = compute_dte(exp, latest_date)
-            fwd[sym].append(
-                {
-                    "expiry": exp,
-                    "dte": dte,
-                    "initial_margin_pct": im,
-                    "total_margin_pct": tm,
-                    "daily_volatility": dv,
-                    "annualized_volatility": av,
-                }
-            )
+    for row in _load_margin_rows(cur, "date = ?", (latest_date,), "symbol ASC, expiry ASC"):
+        sym = row["symbol"]
+        exp = row["expiry"]
+        if sym not in fwd:
+            continue
+        fwd[sym].append(
+            {
+                "expiry": exp,
+                "dte": compute_dte(exp, latest_date),
+                "initial_margin_pct": row["initial_margin_pct"],
+                "total_margin_pct": row["total_margin_pct"],
+                "daily_volatility": row["daily_volatility"],
+                "annualized_volatility": row["annualized_volatility"],
+            }
+        )
     for sym in ["NATURALGAS", "NATGASMINI"]:
         fwd[sym].sort(key=lambda x: x["dte"])
     save("forward_curve.json", fwd)
 
     # ── volatility_correlation.json ───────────────────────────────────────────
     # One row per date (front month) for NATURALGAS
-    cur.execute(
-        "SELECT DISTINCT date FROM margins WHERE symbol='NATURALGAS' ORDER BY date",
-    )
-    all_dates = [r[0] for r in cur.fetchall()]
-
-    ts = []
-    for d in all_dates:
-        cur.execute(
-            """
-            SELECT expiry, initial_margin_pct, daily_volatility, annualized_volatility
-            FROM margins WHERE date=? AND symbol='NATURALGAS'
-            """,
-            (d,),
-        )
-        rows = cur.fetchall()
-        best = None
-        best_dte = 99999
-        for row in rows:
-            dte = compute_dte(row[0], d)
-            if 0 <= dte < best_dte:
-                best_dte = dte
-                best = row
-        if best and best[1] is not None and best[2] is not None:
-            ts.append(
-                {
-                    "date": d,
-                    "margin_pct": best[1],
-                    "vol_daily": best[2],
-                    "vol_annual": best[3],
-                }
-            )
+    ts = [
+        {
+            "date": row["date"],
+            "margin_pct": row["initial_margin_pct"],
+            "vol_daily": row["daily_volatility"],
+            "vol_annual": row["annualized_volatility"],
+        }
+        for row in _build_front_month_series(cur)
+    ]
 
     margins_list = [r["margin_pct"] for r in ts]
     vols_list = [r["vol_daily"] for r in ts]
