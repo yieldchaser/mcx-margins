@@ -852,6 +852,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
             <tbody id="marketSignalBody"></tbody>
           </table>
         </div>
+        <div id="marketSignalBias"></div>
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
@@ -871,6 +872,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
             <span class="scope-chip"><strong>Model</strong> Day-over-day</span>
           </div>
           <div id="regimeTransitionMatrix" style="margin-top:8px;"></div>
+          <div id="regimePlaybook" style="margin-top:12px;"></div>
         </div>
       </div>
       <div class="card">
@@ -912,6 +914,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
             <tbody id="marketLeaderboardBody"></tbody>
           </table>
         </div>
+        <div id="rollYieldSpectrum"></div>
       </div>
     </div>
     <div class="card mb-4">
@@ -4071,6 +4074,40 @@ async function renderMarketIntel(force = false) {
     matHtml += `</tbody></table><div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Based on <strong>${regimeRows.length}</strong> daily observations. <strong>Diagonal</strong> = regime persistence. High off-diagonal = transition risk.</div>`;
     document.getElementById('regimeTransitionMatrix').innerHTML = matHtml;
 
+    // ── Regime Playbook Panel ──
+    {
+      const lastRow = regimeRows.length ? regimeRows[regimeRows.length - 1] : {};
+      const curReg  = (lastRow.vol_regime || '').toUpperCase();
+      const validReg = REGIME_STATES.includes(curReg);
+      const persistPct = validReg && rowTotals[curReg] > 0
+        ? Math.round((transMatrix[curReg][curReg] / rowTotals[curReg]) * 100) : 0;
+      let nextReg = '-', nextPct = 0;
+      if (validReg) {
+        REGIME_STATES.forEach(to => {
+          if (to === curReg) return;
+          const p = rowTotals[curReg] > 0 ? Math.round((transMatrix[curReg][to] / rowTotals[curReg]) * 100) : 0;
+          if (p > nextPct) { nextPct = p; nextReg = REGIME_LABELS[to]; }
+        });
+      }
+      const regColor = { CALM: '#3fb950', ELEVATED: '#d29922', STRESS: '#f59e0b', CRISIS: '#f85149' }[curReg] || '#8b949e';
+      const playbook = {
+        CALM:     'Low-vol regime — margin requirements stable. Front-month liquidity is the primary tradeable hub.',
+        ELEVATED: 'Elevated vol — monitor for margin hike triggers. OI flow state is the key leading indicator now.',
+        STRESS:   'Stress regime — margin hike probability high. Reduce size in thin contracts (Liq < 40).',
+        CRISIS:   'Crisis regime — defensive posture. Expect sharp margin adjustments and rapid liquidity withdrawal.'
+      }[curReg] || 'Insufficient history to generate playbook.';
+      document.getElementById('regimePlaybook').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;">CURRENT REGIME PLAYBOOK</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <span style="background:${regColor}22;color:${regColor};border:1px solid ${regColor}55;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700;">${REGIME_LABELS[curReg] || curReg || 'Unknown'}</span>
+            <span style="font-size:11px;color:var(--text-muted);">${persistPct}% persistence</span>
+            ${nextPct > 0 ? `<span style="font-size:11px;color:var(--text-muted);">&#8594; ${nextReg} (${nextPct}% risk)</span>` : ''}
+          </div>
+          <div style="font-size:12px;color:var(--text);line-height:1.6;">${playbook}</div>
+        </div>`;
+    }
+
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
@@ -4084,6 +4121,38 @@ async function renderMarketIntel(force = false) {
       </tr>
     `;
     }).join('');
+
+    // ── Signal Bias Panel ──
+    {
+      const totalScore = sigRows.reduce((s, r) => s + (r.score || 0), 0) || 1;
+      const bullScore  = sigRows.filter(r => (r.direction || '').toUpperCase() === 'UP'   || (r.direction || '').toUpperCase() === 'BULLISH').reduce((s, r) => s + (r.score || 0), 0);
+      const bearScore  = sigRows.filter(r => (r.direction || '').toUpperCase() === 'DOWN' || (r.direction || '').toUpperCase() === 'BEARISH').reduce((s, r) => s + (r.score || 0), 0);
+      const bullPct    = Math.round(bullScore / totalScore * 100);
+      const bearPct    = Math.round(bearScore / totalScore * 100);
+      const biasLabel  = bullPct > 55 ? 'Bullish' : bearPct > 55 ? 'Bearish' : 'Mixed';
+      const biasColor  = bullPct > 55 ? '#3fb950' : bearPct > 55 ? '#f85149' : '#d29922';
+      const topSig     = sigRows[0] || {};
+      const highCount  = sigRows.filter(r => r.severity === 'HIGH').length;
+      const midCount   = sigRows.filter(r => r.severity === 'MEDIUM').length;
+      document.getElementById('marketSignalBias').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding:12px 0 2px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;">SIGNAL BIAS</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="flex:1;height:7px;border-radius:4px;background:var(--surface2);overflow:hidden;">
+              <div style="width:${bullPct}%;height:100%;background:linear-gradient(90deg,#3fb950 0%,#58a6ff 100%);border-radius:4px;"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:${biasColor};min-width:48px;text-align:right;">${biasLabel}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:10px;">
+            <span>&#9650; Bull ${bullPct}%</span>
+            <span>${highCount} High &nbsp;|&nbsp; ${midCount} Med &nbsp;|&nbsp; ${sigRows.length - highCount - midCount} Low</span>
+            <span>&#9660; Bear ${bearPct}%</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:5px;">DOMINANT SIGNAL</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;">${formatLabel(topSig.label || '-')}&nbsp;<span style="font-size:11px;color:var(--text-muted);font-weight:400;">Score ${topSig.score || 0}/100</span></div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">${topSig.reason || '-'}</div>
+        </div>`;
+    }
 
     document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => {
       const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
@@ -4122,6 +4191,33 @@ async function renderMarketIntel(force = false) {
           </tr>
         `;
       }).join('');
+
+    // ── Roll Yield Spectrum ──
+    {
+      const orderedCurve = curve.slice(0, 8);
+      const maxAbsYield  = Math.max(...orderedCurve.map(r => Math.abs(r.roll_yield_pct || 0)), 0.01);
+      document.getElementById('rollYieldSpectrum').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding:12px 0 4px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:10px;">ROLL YIELD SPECTRUM</div>
+          ${orderedCurve.map(r => {
+            const pct   = r.roll_yield_pct || 0;
+            const barW  = Math.round(Math.min(Math.abs(pct) / maxAbsYield * 45, 45));
+            const color = pct >= 0 ? '#3fb950' : '#f85149';
+            const side  = pct >= 0 ? 'left:50%' : `right:50%`;
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <div style="width:68px;font-size:10px;color:var(--text-muted);text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;">${_contractLabel(r.expiry)}</div>
+              <div style="flex:1;height:11px;background:var(--surface2);border-radius:3px;overflow:visible;position:relative;">
+                <div style="position:absolute;${side};width:${barW}%;height:100%;background:${color};opacity:.85;"></div>
+                <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);z-index:1;"></div>
+              </div>
+              <div style="width:44px;font-size:10px;font-weight:600;color:${color};flex-shrink:0;">${fmtPct(pct,2)}</div>
+            </div>`;
+          }).join('')}
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:2px;padding:0 74px 0 74px;">
+            <span>← Contango</span><span>Backwardation →</span>
+          </div>
+        </div>`;
+    }
 
     // ── Contract Capital Efficiency Map ──
     const effColors = { long_build: '#3fb950', short_build: '#f85149', long_unwind: '#d29922', short_cover: '#58a6ff', neutral: '#8b949e' };
