@@ -855,13 +855,23 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Curve Evolution">Curve Evolution</div>
-        <div class="scope-row" style="margin-top:0;">
-          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
-          <span class="scope-chip"><strong>Lens</strong> Roll tension</span>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title has-tooltip" data-tooltip-key="Curve Evolution">Curve Evolution</div>
+          <div class="scope-row" style="margin-top:0;">
+            <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+            <span class="scope-chip"><strong>Lens</strong> Roll tension</span>
+          </div>
+          <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurveHistory"></canvas></div>
         </div>
-        <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurveHistory"></canvas></div>
+        <div class="card">
+          <div class="card-title has-tooltip" data-tooltip-key="Vol Regime Transition Matrix">Vol Regime Transition Matrix</div>
+          <div class="scope-row" style="margin-top:0;">
+            <span class="scope-chip"><strong>Horizon</strong> Full history</span>
+            <span class="scope-chip"><strong>Model</strong> Day-over-day</span>
+          </div>
+          <div id="regimeTransitionMatrix" style="margin-top:8px;"></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="Event Windows">Event Windows</div>
@@ -874,14 +884,25 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Liquidity Heatmap">Liquidity Heatmap</div>
-        <div class="heatmap-legend">
-          <span><i class="legend-dot legend-low"></i>Low stress</span>
-          <span><i class="legend-dot legend-mid"></i>Balanced</span>
-          <span><i class="legend-dot legend-high"></i>Crowded</span>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title has-tooltip" data-tooltip-key="Liquidity Heatmap">Liquidity Heatmap</div>
+          <div class="heatmap-legend">
+            <span><i class="legend-dot legend-low"></i>Low stress</span>
+            <span><i class="legend-dot legend-mid"></i>Balanced</span>
+            <span><i class="legend-dot legend-high"></i>Crowded</span>
+          </div>
+          <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
         </div>
-        <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
+        <div class="card">
+          <div class="card-title has-tooltip" data-tooltip-key="Contract Capital Efficiency Map">Contract Capital Efficiency Map</div>
+          <div class="scope-row" style="margin-top:0;">
+            <span class="scope-chip"><strong>X</strong> Liquidity</span>
+            <span class="scope-chip"><strong>Y</strong> Roll Yield %</span>
+            <span class="scope-chip"><strong>Size</strong> OI depth</span>
+          </div>
+          <div class="chart-container" style="height:240px;"><canvas id="chartMarketEfficiency"></canvas></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="Active-Contract Leaderboard">Active-Contract Leaderboard</div>
@@ -4020,6 +4041,36 @@ async function renderMarketIntel(force = false) {
       }
     });
 
+    // ── Vol Regime Transition Matrix ──
+    const REGIME_STATES = ['CALM', 'ELEVATED', 'STRESS', 'CRISIS'];
+    const transMatrix = {};
+    REGIME_STATES.forEach(r => { transMatrix[r] = {}; REGIME_STATES.forEach(c => transMatrix[r][c] = 0); });
+    for (let i = 1; i < regimeRows.length; i++) {
+      const from = (regimeRows[i-1].vol_regime || '').toUpperCase();
+      const to   = (regimeRows[i].vol_regime   || '').toUpperCase();
+      if (transMatrix[from] && transMatrix[from][to] !== undefined) transMatrix[from][to]++;
+    }
+    const rowTotals = {};
+    REGIME_STATES.forEach(r => { rowTotals[r] = REGIME_STATES.reduce((s,c) => s + transMatrix[r][c], 0); });
+    const tCellColor = p => p >= 70 ? 'rgba(56,139,253,0.60)' : p >= 40 ? 'rgba(88,166,255,0.28)' : p >= 15 ? 'rgba(210,153,34,0.45)' : p >= 5 ? 'rgba(248,81,73,0.30)' : 'rgba(139,148,158,0.08)';
+    const REGIME_LABELS = { CALM: 'Calm', ELEVATED: 'Elevated', STRESS: 'Stress', CRISIS: 'Crisis' };
+    let matHtml = `<table class="data-table" style="width:100%;font-size:11px;">`
+      + `<thead><tr><th style="font-size:10px;">From \ To</th>`
+      + REGIME_STATES.map(s => `<th style="text-align:center;font-size:10px;">${REGIME_LABELS[s]}</th>`).join('')
+      + `</tr></thead><tbody>`;
+    REGIME_STATES.forEach(from => {
+      const total = rowTotals[from] || 1;
+      matHtml += `<tr><td style="font-weight:600;font-size:10px;color:var(--text-muted);white-space:nowrap;">${REGIME_LABELS[from]}</td>`;
+      REGIME_STATES.forEach(to => {
+        const pct = Math.round((transMatrix[from][to] / total) * 100);
+        const isDiag = from === to;
+        matHtml += `<td style="text-align:center;padding:9px 6px;background:${tCellColor(pct)};font-weight:${isDiag ? '700' : '400'};font-size:${isDiag ? '13' : '11'}px;">${pct}%</td>`;
+      });
+      matHtml += `</tr>`;
+    });
+    matHtml += `</tbody></table><div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Based on <strong>${regimeRows.length}</strong> daily observations. <strong>Diagonal</strong> = regime persistence. High off-diagonal = transition risk.</div>`;
+    document.getElementById('regimeTransitionMatrix').innerHTML = matHtml;
+
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
@@ -4071,6 +4122,47 @@ async function renderMarketIntel(force = false) {
           </tr>
         `;
       }).join('');
+
+    // ── Contract Capital Efficiency Map ──
+    const effColors = { long_build: '#3fb950', short_build: '#f85149', long_unwind: '#d29922', short_cover: '#58a6ff', neutral: '#8b949e' };
+    const maxOI = Math.max(...curve.map(r => r.open_interest || 0), 1);
+    if (marketEfficiencyChart) marketEfficiencyChart.destroy();
+    marketEfficiencyChart = new Chart(document.getElementById('chartMarketEfficiency'), {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Contracts',
+          data: curve.map(r => ({ x: r.liquidity_score, y: r.roll_yield_pct, expiry: r.expiry, dte: r.dte, state: r.oi_flow_state, oi: r.open_interest, close: r.close })),
+          backgroundColor: curve.map(r => (effColors[r.oi_flow_state || 'neutral']) + 'CC'),
+          borderColor: curve.map(r => effColors[r.oi_flow_state || 'neutral']),
+          borderWidth: 1.5,
+          pointRadius: curve.map(r => Math.max(7, Math.min(20, 7 + 13 * (r.open_interest || 0) / maxOI)))
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const d = ctx.raw;
+                return [
+                  `${_contractLabel(d.expiry)}  (${d.dte}d to expiry)`,
+                  `Liquidity: ${fmtNum(d.x, 1)}  |  Roll Yield: ${fmtPct(d.y, 2)}`,
+                  `Flow: ${formatLabel(d.state)}  |  OI: ${fmtNum(d.oi, 0)}`,
+                  `Close: ${fmtNum(d.close, 2)}`
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: { min: 0, max: 100, title: { display: true, text: 'Liquidity Score →', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+          y: { title: { display: true, text: 'Roll Yield %', font: { size: 10 } }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
 
     const linkageRecent = joinedRows.filter(r => r.alignment_status === 'aligned').slice(-180);
     if (marketLinkageChart) marketLinkageChart.destroy();
@@ -4475,6 +4567,14 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "Current MCX Futures Snapshot": {
     title: "Current MCX Futures Snapshot",
     body: `<strong>What:</strong> Contract-level snapshot of close, return, volume, OI, and liquidity.<br><strong>How to read:</strong> Start here before curve/regime charts to locate where risk is actually trading.<br><strong>Threshold zone:</strong> Liquidity score < 40 = thin, 40-70 = balanced, > 70 = deep.<br><strong>What to watch:</strong> Avoid forcing size into thin contracts during high-friction sessions.`
+  },
+  "Vol Regime Transition Matrix": {
+    title: "Vol Regime Transition Matrix",
+    body: `<strong>What it is:</strong> A probability matrix showing how often the vol regime shifts from one state to another, day-over-day.<br><br><strong>How to read:</strong> Each row = today's regime. Each column = tomorrow's regime. The value is the historical probability of that transition.<br><br><strong>Diagonal cells (blue)</strong> = regime persistence — the market stayed in the same regime.<br><strong>Off-diagonal cells (amber/red)</strong> = regime transitions — directional regime change risk.<br><br><strong>Why it matters:</strong> A high STRESS → CRISIS probability means risk is not mean-reverting quickly. A high ELEVATED → CALM probability signals a self-correcting market. Size positions accordingly.`
+  },
+  "Contract Capital Efficiency Map": {
+    title: "Contract Capital Efficiency Map",
+    body: `<strong>What it is:</strong> A scatter plot of every active expiry — liquidity vs roll yield, sized by open interest.<br><br><strong>X-axis (Liquidity Score):</strong> Higher = easier to trade, lower slippage, tighter spreads.<br><strong>Y-axis (Roll Yield %):</strong> Positive = backwardation (favorable carry). Negative = contango (carry cost).<br><strong>Dot size:</strong> Proportional to open interest — bigger = deeper positioning.<br><strong>Dot color:</strong> OI flow state — green = Long Build, red = Short Build, amber = Long Unwind, blue = Short Cover.<br><br><strong>Sweet spot</strong> = top-right quadrant: high liquidity + positive roll yield. This is the contract with the best capital efficiency for new positions.`
   },
   "Front-Month Price & Returns": {
     title: "Front-Month Price & Returns",
