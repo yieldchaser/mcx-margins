@@ -134,7 +134,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   text-align: left; font-size: 10px;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--text-muted); font-weight: 600;
-  position: sticky; top: 0;
+  position: sticky; top: 100px; z-index: 10;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 .data-table td {
   padding: 9px 12px; font-size: 12px;
@@ -344,8 +346,18 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
 }
 @media (min-width: 1400px) {
   .card { padding: 16px; }
-  .market-kpi-card { padding: 12px; }
 }
+.market-kpi-card { 
+  padding: 12px; 
+  border: 1px solid var(--border); 
+  background: var(--surface);
+  transition: all 0.2s;
+}
+.market-table-shell { 
+  overflow-x: auto; 
+  width: 100%;
+}
+.market-kpi-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 </style>
 </head>
 <body>
@@ -944,7 +956,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
         </div>
         <div class="market-table-shell">
           <table class="data-table">
-            <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
+            <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th><th>OI Flow</th></tr></thead>
             <tbody id="marketExplorerBody"></tbody>
           </table>
         </div>
@@ -3270,16 +3282,19 @@ async function renderAnalytics() {
         const ms = await loadMarketJSON('signals');
         const rows = (ms.signals || []).sort((a,b) => b.score - a.score).slice(0, 12);
         if (rows.length) {
-          document.getElementById('marketSignalsBody').innerHTML = rows.map(s => `
+          document.getElementById('marketSignalsBody').innerHTML = rows.map(s => {
+            const displayDirection = s.direction === 'STRESS' || s.direction === 'CONFIRMED' ? 'N/A' : formatLabel(s.direction);
+            return `
             <tr>
               <td>${s.symbol}</td>
               <td>${formatLabel(s.label)}</td>
               <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
               <td>${s.score}</td>
-              <td>${formatLabel(s.direction)}</td>
+              <td>${displayDirection}</td>
               <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
             </tr>
-          `).join('');
+          `;
+          }).join('');
           document.getElementById('marketSignalsCard').style.display = 'block';
         }
       } catch(e) { console.warn('Market signals skipped:', e); }
@@ -4040,13 +4055,14 @@ async function renderMarketIntel(force = false) {
 
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
-      const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
+      const displayDirection = s.direction === 'STRESS' || s.direction === 'CONFIRMED' ? 'N/A' : formatLabel(s.direction);
+      const dynBody = `<strong>Signal: ${s.label}</strong><br>Flow Bias: <strong>${s.direction}</strong><br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
       return `
       <tr class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
         <td>${formatLabel(s.label)}</td>
         <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
         <td>${s.score}</td>
-        <td>${formatLabel(s.direction)}</td>
+        <td>${displayDirection}</td>
         <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
       </tr>
     `;
@@ -4191,6 +4207,7 @@ function renderMarketExplorerPage() {
         <td>${fmtNum(r.volume_z_20d, 2)}</td>
         <td>${fmtNum(r.open_interest, 0)}</td>
         <td>${fmtPct(r.oi_change_pct, 2)}</td>
+        <td><span class="badge-safe" style="font-size:10px;background:rgba(88,166,255,0.1);color:var(--accent);">${formatLabel(r.oi_flow_state)}</span></td>
       </tr>
     `;
   }).join('');
