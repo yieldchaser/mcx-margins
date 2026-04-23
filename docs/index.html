@@ -324,6 +324,28 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
 .meas-val { font-size: 16px; font-weight: 700; color: var(--text); }
 .meas-pct { font-weight: 600; }
 .meas-sub { color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-top: 4px; }
+
+/* ── High-Density Layout System ── */
+.market-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 992px) {
+  .market-grid-12 { grid-template-columns: repeat(12, 1fr); }
+  .span-12 { grid-column: span 12; }
+  .span-9  { grid-column: span 9; }
+  .span-8  { grid-column: span 8; }
+  .span-6  { grid-column: span 6; }
+  .span-4  { grid-column: span 4; }
+  .span-3  { grid-column: span 3; }
+  .span-2  { grid-column: span 2; }
+}
+@media (min-width: 1400px) {
+  .card { padding: 16px; }
+  .market-kpi-card { padding: 12px; }
+}
 </style>
 </head>
 <body>
@@ -703,67 +725,60 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
   </div>
 
   <div id="tab-analytics" class="tab-content">
-    <!-- Item 2: Model Health Scorecard -->
-    <div class="card mb-4" id="modelHealthCard" style="display:none;">
-      <div class="card-title has-tooltip" data-tooltip-key="Model Health" style="margin-bottom:12px;">Model Health — Prediction Backtest Scorecard</div>
-      <div style="overflow-x:auto;">
-        <table class="data-table" id="modelHealthTable">
-          <thead><tr><th>Metric</th><th>30 Day</th><th>90 Day</th><th>365 Day</th></tr></thead>
-          <tbody id="modelHealthBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card mb-4 market-intel-control" id="marketSignalsCard" style="display:none;">
-      <div class="card-title" style="margin-bottom:12px;">Market-Confirmed Risk Signals</div>
-      <div style="overflow-x:auto;">
-        <table class="data-table">
-          <thead><tr><th>Symbol</th><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
-          <tbody id="marketSignalsBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="grid-2 mb-4">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
-        <div class="chart-container"><canvas id="chartDTE"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Lag Correlation">Lag Correlation: Margin % vs Daily Volatility</div>
-        <div class="chart-container"><canvas id="chartLagCorr"></canvas></div>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-          Correlation is strongest at lag=0 (simultaneous). Relationship weakens beyond 10 days — MCX responds to current vol, not future conditions.
-        </p>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
-      <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-        Predicted = 0.886 × Initial Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
-      </p>
-    </div>
-    <!-- Item 4: Delta Distribution Histogram -->
-    <div class="card" style="margin-top:16px;" id="deltaDistCard" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution</div>
-        <div style="display:flex;gap:6px;" id="deltaBucketBtns">
-          <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
-          <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
-          <button class="range-btn" data-bucket="91+" title="Distribution of day-over-day margin changes for contracts with over 90 days to expiry.">91+d DTE</button>
+    <div class="market-grid-12">
+      <!-- Row 1: Tables -->
+      <div class="card span-6" id="modelHealthCard" style="display:none;">
+        <div class="card-title has-tooltip" data-tooltip-key="Model Health" style="margin-bottom:12px;">Model Health — Prediction Backtest</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="modelHealthTable">
+            <thead><tr><th>Metric</th><th>30 Day</th><th>90 Day</th><th>365 Day</th></tr></thead>
+            <tbody id="modelHealthBody"></tbody>
+          </table>
         </div>
       </div>
-      <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
-      <div id="deltaCondSummary" style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text-muted);"></div>
-    </div>
-    <div class="grid-2" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="5-Day Rolling">5-Day Rolling Average vs Spot Margin</div>
-        <div class="chart-container"><canvas id="chartMomentum"></canvas></div>
+      <div class="card span-6 market-intel-control" id="marketSignalsCard" style="display:none;">
+        <div class="card-title" style="margin-bottom:12px;">Market-Confirmed Risk Signals</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Symbol</th><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
+            <tbody id="marketSignalsBody"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
-        <div class="chart-container"><canvas id="chartPercentile"></canvas></div>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
+
+      <!-- Row 2: Charts -->
+      <div class="card span-6">
+        <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin</div>
+        <div class="chart-container" style="height:280px;"><canvas id="chartDTE"></canvas></div>
+      </div>
+      <div class="card span-6">
+        <div class="card-title has-tooltip" data-tooltip-key="Lag Correlation">Lag Correlation: Margin vs Vol</div>
+        <div class="chart-container" style="height:280px;"><canvas id="chartLagCorr"></canvas></div>
+      </div>
+
+      <!-- Row 3: Prediction & Distribution -->
+      <div class="card span-8">
+        <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread</div>
+        <div class="chart-container" style="height:320px;"><canvas id="chartPanicFull"></canvas></div>
+      </div>
+      <div class="card span-4" id="deltaDistCard" style="display:none;">
+        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution">Margin Change Distribution</div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;" id="deltaBucketBtns">
+          <button class="range-btn active-range" data-bucket="0-30" style="padding:2px 6px;font-size:10px;">0-30d</button>
+          <button class="range-btn" data-bucket="31-90" style="padding:2px 6px;font-size:10px;">31-90d</button>
+          <button class="range-btn" data-bucket="91+" style="padding:2px 6px;font-size:10px;">91d+</button>
+        </div>
+        <div class="chart-container" style="height:240px;"><canvas id="chartDeltaDist"></canvas></div>
+      </div>
+
+      <!-- Row 4: Momentum & Percentile -->
+      <div class="card span-6">
+        <div class="card-title has-tooltip" data-tooltip-key="5-Day Rolling">5-Day Rolling Average vs Spot</div>
+        <div class="chart-container" style="height:260px;"><canvas id="chartMomentum"></canvas></div>
+      </div>
+      <div class="card span-6">
+        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank</div>
+        <div class="chart-container" style="height:260px;"><canvas id="chartPercentile"></canvas></div>
       </div>
     </div>
   </div>
@@ -781,69 +796,67 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
         <span id="marketStatus" class="has-tooltip" data-tooltip-key="Market Status Bar" style="font-size:12px;color:var(--text-muted);">Loading market intelligence...</span>
       </div>
     </div>
-    <div class="grid-3 mb-4" id="marketKpis"></div>
-    <div class="card mb-4">
-      <div class="module-kicker">Curve & Liquidity</div>
-      <div class="card-title has-tooltip" data-tooltip-key="Current MCX Futures Snapshot">Current MCX Futures Snapshot</div>
-      <div class="scope-row" style="margin-top:0;">
-        <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
-        <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
+
+    <!-- Unified High-Density Grid -->
+    <div class="market-grid-12">
+      
+      <!-- KPIs: Span 12 -->
+      <div class="span-12">
+        <div class="market-grid-12" id="marketKpis" style="gap:12px;"></div>
       </div>
-      <div class="market-table-shell">
-        <table class="data-table">
-          <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
-          <tbody id="marketCurrentBody"></tbody>
-        </table>
+
+      <!-- Snapshot: Full width -->
+      <div class="card span-12">
+        <div class="module-kicker">Curve & Liquidity</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Current MCX Futures Snapshot">Current MCX Futures Snapshot</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+          <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
+        </div>
+        <div class="market-table-shell">
+          <table class="data-table">
+            <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
+            <tbody id="marketCurrentBody"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
+      <!-- Main Charts: 6+6 -->
+      <div class="card span-6">
         <div class="module-kicker">Price & Regime</div>
         <div class="card-title has-tooltip" data-tooltip-key="Front-Month Price & Returns">Front-Month Price & Returns</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>View</strong> Price + returns</span>
         </div>
-        <div class="chart-container" style="height:320px;"><canvas id="chartMarketPrice"></canvas></div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketPrice"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card span-6">
         <div class="module-kicker">Flow & Positioning</div>
         <div class="card-title has-tooltip" data-tooltip-key="Volume & Open Interest">Volume & Open Interest</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>View</strong> Flow state</span>
         </div>
-        <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
+        <div class="chart-container" style="height:300px;"><canvas id="chartMarketFlow"></canvas></div>
       </div>
-    </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
+      <!-- Analysis Layer: 4+4+4 -->
+      <div class="card span-4">
         <div class="card-title has-tooltip" data-tooltip-key="Realized Volatility & Regime">Realized Volatility & Regime</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>Overlay</strong> Vol regime strip</span>
         </div>
-        <div class="chart-container" style="height:300px;"><canvas id="chartMarketRegime"></canvas></div>
+        <div class="chart-container" style="height:260px;"><canvas id="chartMarketRegime"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card span-4">
         <div class="card-title has-tooltip" data-tooltip-key="Price/OI Phase Map">Price/OI Phase Map</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Front Month</span>
           <span class="scope-chip"><strong>Lens</strong> Position state</span>
         </div>
-        <div class="chart-container" style="height:300px;"><canvas id="chartMarketPhase"></canvas></div>
+        <div class="chart-container" style="height:260px;"><canvas id="chartMarketPhase"></canvas></div>
       </div>
-    </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Active Futures Curve">Active Futures Curve</div>
-        <div class="scope-row" style="margin-top:0;">
-          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
-          <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
-        </div>
-        <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
-      </div>
-      <div class="card">
+      <div class="card span-4">
         <div class="card-title has-tooltip" data-tooltip-key="Explainable Market Signals">Explainable Market Signals</div>
         <div class="market-table-shell">
           <table class="data-table">
@@ -852,9 +865,16 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </table>
         </div>
       </div>
-    </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
+      <!-- Curve Layer: 6+6 -->
+      <div class="card span-6">
+        <div class="card-title has-tooltip" data-tooltip-key="Active Futures Curve">Active Futures Curve</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+          <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
+        </div>
+        <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurve"></canvas></div>
+      </div>
+      <div class="card span-6">
         <div class="card-title has-tooltip" data-tooltip-key="Curve Evolution">Curve Evolution</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
@@ -862,7 +882,8 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
         </div>
         <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurveHistory"></canvas></div>
       </div>
-      <div class="card">
+      <!-- Events & Heatmaps: 6+6 -->
+      <div class="card span-6">
         <div class="card-title has-tooltip" data-tooltip-key="Event Windows">Event Windows</div>
         <div class="market-table-shell">
           <table class="data-table">
@@ -871,18 +892,41 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </table>
         </div>
       </div>
-    </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
+      <div class="card span-6">
         <div class="card-title has-tooltip" data-tooltip-key="Liquidity Heatmap">Liquidity Heatmap</div>
         <div class="heatmap-legend">
           <span><i class="legend-dot legend-low"></i>Low stress</span>
           <span><i class="legend-dot legend-mid"></i>Balanced</span>
           <span><i class="legend-dot legend-high"></i>Crowded</span>
         </div>
-        <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
+        <div id="marketLiquidityHeatmap" class="heatmap-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));"></div>
       </div>
-      <div class="card">
+      <!-- Synergy: 8 -->
+      <div class="card span-8">
+        <div class="module-kicker">Margin Linkages</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Margin x PVOI Synergy Layer">Margin x PVOI Synergy Layer</div>
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
+          <span class="scope-chip"><strong>Join</strong> Expiry-aligned only</span>
+        </div>
+        <div class="market-grid-12" style="gap:12px;">
+          <div class="span-7">
+            <div class="chart-container" style="height:280px;"><canvas id="chartMarketLinkage"></canvas></div>
+          </div>
+          <div class="span-5">
+            <div class="card-title has-tooltip" data-tooltip-key="Margin-over-Liquidity Heatmap" style="font-size:10px;">Funding Friction Heatmap</div>
+            <div id="marketMarginHeatmap" class="heatmap-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));"></div>
+          </div>
+        </div>
+        <div class="market-table-shell" style="margin-top:12px;">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Aligned Expiry</th><th>Event</th><th>Margin Δ</th><th>Price</th><th>OI Δ</th><th>Friction</th></tr></thead>
+            <tbody id="marketLinkageBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Leaderboard: 4 -->
+      <div class="card span-4">
         <div class="card-title has-tooltip" data-tooltip-key="Active-Contract Leaderboard">Active-Contract Leaderboard</div>
         <div class="market-table-shell">
           <table class="data-table">
@@ -891,54 +935,27 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </table>
         </div>
       </div>
-    </div>
-    <div class="card mb-4">
-      <div class="module-kicker">Margin Linkages</div>
-      <div class="card-title has-tooltip" data-tooltip-key="Margin x PVOI Synergy Layer">Margin x PVOI Synergy Layer</div>
-      <div class="scope-row" style="margin-top:0;">
-        <span class="scope-chip"><strong>Scope</strong> Front Month</span>
-        <span class="scope-chip"><strong>Join</strong> Expiry-aligned only</span>
-      </div>
-      <div class="grid-2 market-grid mb-4">
-        <div class="card" style="margin:0;">
-          <div class="card-title has-tooltip" data-tooltip-key="Margin vs PVOI Regimes">Margin vs PVOI Regimes</div>
-          <div class="chart-container" style="height:300px;"><canvas id="chartMarketLinkage"></canvas></div>
+
+      <!-- Explorer: Full width -->
+      <div class="card span-12">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+          <div class="card-title has-tooltip" data-tooltip-key="Market Data Explorer" style="margin-bottom:0;">Market Data Explorer</div>
+          <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Download CSV</button>
         </div>
-        <div class="card" style="margin:0;">
-          <div class="card-title has-tooltip" data-tooltip-key="Margin-over-Liquidity Heatmap">Margin-over-Liquidity Heatmap</div>
-          <div class="heatmap-legend">
-            <span><i class="legend-dot legend-low"></i>Loose funding</span>
-            <span><i class="legend-dot legend-mid"></i>Neutral</span>
-            <span><i class="legend-dot legend-high"></i>Tight funding</span>
-          </div>
-          <div id="marketMarginHeatmap" class="heatmap-grid"></div>
+        <div class="market-table-shell">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
+            <tbody id="marketExplorerBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
+          <button id="marketPrevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
+          <span id="marketPageInfo" style="color:var(--text-muted);"></span>
+          <button id="marketNextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
         </div>
       </div>
-      <div class="market-table-shell">
-        <table class="data-table">
-          <thead><tr><th>Date</th><th>Aligned Expiry</th><th>Event</th><th>Margin Δ</th><th>Price</th><th>OI Δ</th><th>Friction</th></tr></thead>
-          <tbody id="marketLinkageBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
-        <div class="card-title has-tooltip" data-tooltip-key="Market Data Explorer" style="margin-bottom:0;">Market Data Explorer</div>
-        <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Download CSV</button>
-      </div>
-      <div class="market-table-shell">
-        <table class="data-table">
-          <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
-          <tbody id="marketExplorerBody"></tbody>
-        </table>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
-        <button id="marketPrevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
-        <span id="marketPageInfo" style="color:var(--text-muted);"></span>
-        <button id="marketNextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
-      </div>
-    </div>
-  </div>
+    </div> <!-- End .market-grid-12 -->
+  </div> <!-- End #tab-market -->
 
   <div id="tab-explorer" class="tab-content">
     <div class="card mb-4" style="padding:14px 20px;">
@@ -1324,6 +1341,15 @@ function fmtNum(v, digits = 2) {
 
 function fmtPct(v, digits = 2) {
   return v == null || Number.isNaN(Number(v)) ? '-' : `${Number(v).toFixed(digits)}%`;
+}
+
+function formatLabel(str) {
+  if (!str) return '';
+  return str.split(/[_\s]+/).map(word => {
+    if (word.toLowerCase() === 'oi') return 'OI';
+    if (word.toLowerCase() === 'pvoi') return 'PVOI';
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
 }
 
 function marketLiquidityBand(score) {
@@ -3247,10 +3273,10 @@ async function renderAnalytics() {
           document.getElementById('marketSignalsBody').innerHTML = rows.map(s => `
             <tr>
               <td>${s.symbol}</td>
-              <td>${s.label}</td>
-              <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${s.severity}</span></td>
+              <td>${formatLabel(s.label)}</td>
+              <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
               <td>${s.score}</td>
-              <td>${s.direction}</td>
+              <td>${formatLabel(s.direction)}</td>
               <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
             </tr>
           `).join('');
@@ -3628,7 +3654,8 @@ function renderHeatmapGrid(targetId, cells, mode = 'liquidity') {
     el.innerHTML = `<div class="market-empty-state">No aligned observations are available for this heatmap yet.</div>`;
     return;
   }
-  el.style.gridTemplateColumns = `repeat(${Math.max(1, Math.min(cells.length, 4))}, minmax(0, 1fr))`;
+  // Let CSS handle the columns for better responsiveness
+  el.style.gridTemplateColumns = '';
   el.innerHTML = cells.map(cell => {
     const metric = cell.metric || fmtNum(cell.value, 1);
     const modeLabel = mode === 'friction' ? 'Funding friction' : 'Liquidity score';
@@ -3703,9 +3730,9 @@ async function renderMarketIntel(force = false) {
       },
       {
         label: 'OI Flow State',
-        value: latest.oi_flow_state || '-',
+        value: formatLabel(latest.oi_flow_state),
         sub: `OI ${fmtPct(latest.oi_change_pct, 2)}`,
-        tip: `Current State: <strong>${latest.oi_flow_state || 'neutral'}</strong><br>OI Change: <strong>${fmtPct(latest.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(latest.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
+        tip: `Current State: <strong>${formatLabel(latest.oi_flow_state) || 'Neutral'}</strong><br>OI Change: <strong>${fmtPct(latest.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(latest.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
       },
       {
         label: 'Liquidity Score',
@@ -3721,9 +3748,9 @@ async function renderMarketIntel(force = false) {
       }
     ];
     document.getElementById('marketKpis').innerHTML = marketKpiCards.map(card => `
-      <div class="card market-kpi-card has-tooltip" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
+      <div class="card market-kpi-card has-tooltip span-2" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
         <div class="stat-label">${card.label}</div>
-        <div class="stat-value" style="font-size:20px;">${card.value}</div>
+        <div class="stat-value" style="font-size:18px;">${card.value}</div>
         <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${card.sub}</div>
       </div>
     `).join('');
@@ -3777,7 +3804,7 @@ async function renderMarketIntel(force = false) {
                   ? 'Watch: high daily move; monitor follow-through in OI.'
                   : 'Watch: if return expands with OI rise, trend conviction is strengthening.';
                 return [
-                  `State: ${state} (${marketOiFlowHint(state)})`,
+                  `State: ${formatLabel(state)} (${marketOiFlowHint(state)})`,
                   `Liquidity: ${fmtNum(row.liquidity_score, 1)} (${marketLiquidityBand(row.liquidity_score)})`,
                   watch
                 ];
@@ -3822,7 +3849,7 @@ async function renderMarketIntel(force = false) {
                   ? 'Watch: participation shock day; validate if OI confirms.'
                   : 'Watch: rising OI with stable volume often signals stealth position build.';
                 return [
-                  `Flow: ${flowState} (${marketOiFlowHint(flowState)})`,
+                  `Flow: ${formatLabel(flowState)} (${marketOiFlowHint(flowState)})`,
                   `Volume Z-score: ${fmtNum(row.volume_z_20d, 2)}`,
                   watch
                 ];
@@ -3886,7 +3913,7 @@ async function renderMarketIntel(force = false) {
                   ? 'Watch: stress/tight funding zone; keep position sizing conservative.'
                   : 'Watch: if friction rises while vol stays flat, funding strain is building silently.';
                 return [
-                  `Vol regime: ${row.vol_regime || 'unknown'}`,
+                  `Vol regime: ${formatLabel(row.vol_regime)}`,
                   `Friction: ${fmtNum(row.funding_friction_score, 1)} (${frictionBand})`,
                   watch
                 ];
@@ -3929,7 +3956,7 @@ async function renderMarketIntel(force = false) {
             callbacks: {
               label: ctx => {
                 const raw = ctx.raw || {};
-                return `${raw.label}: ${raw.state || 'neutral'} | Price ${fmtPct(raw.x, 2)} | OI ${fmtPct(raw.y, 2)}`;
+                return `${raw.label}: ${formatLabel(raw.state)} | Price ${fmtPct(raw.x, 2)} | OI ${fmtPct(raw.y, 2)}`;
               }
             }
           }
@@ -4016,10 +4043,10 @@ async function renderMarketIntel(force = false) {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
       return `
       <tr class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
-        <td>${s.label}</td>
-        <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${s.severity}</span></td>
+        <td>${formatLabel(s.label)}</td>
+        <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
         <td>${s.score}</td>
-        <td>${s.direction}</td>
+        <td>${formatLabel(s.direction)}</td>
         <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
       </tr>
     `;
@@ -4031,7 +4058,7 @@ async function renderMarketIntel(force = false) {
         <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
           <td>${r.date}</td>
           <td>${r.matched_expiry || '-'}</td>
-          <td>${(r.events || []).join(', ')}</td>
+          <td>${(r.events || []).map(formatLabel).join(', ')}</td>
           <td>${fmtPct(r.return_1d_pct, 2)}</td>
           <td>${fmtPct(r.margin_change_1d, 2)}</td>
           <td>${fmtPct(r.oi_change_pct, 2)}</td>
@@ -4056,7 +4083,7 @@ async function renderMarketIntel(force = false) {
           <tr class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
             <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
             <td>${fmtNum(r.liquidity_score, 1)}</td>
-            <td>${r.oi_flow_state || '-'}</td>
+            <td>${formatLabel(r.oi_flow_state)}</td>
             <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
             <td>${fmtPct(r.roll_yield_pct, 2)}</td>
           </tr>
@@ -4127,7 +4154,7 @@ async function renderMarketIntel(force = false) {
           <tr class="has-tooltip" data-dyn-title="Linkage Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
             <td>${r.date}</td>
             <td>${r.matched_expiry || '-'}</td>
-            <td>${(r.events || []).join(', ')}</td>
+            <td>${(r.events || []).map(formatLabel).join(', ')}</td>
             <td>${fmtPct(r.margin_change_1d, 2)}</td>
             <td>${fmtPct(r.return_1d_pct, 2)}</td>
             <td>${fmtPct(r.oi_change_pct, 2)}</td>
@@ -4151,7 +4178,7 @@ function renderMarketExplorerPage() {
   const slice = marketExplorerData.slice(start, start + MARKET_PAGE_SIZE);
   document.getElementById('marketPageInfo').textContent = `Page ${marketExplorerPage + 1} of ${Math.max(1, Math.ceil(marketExplorerData.length / MARKET_PAGE_SIZE))}`;
   document.getElementById('marketExplorerBody').innerHTML = slice.map(r => {
-    const dynBody = `Date: <strong>${r.date}</strong><br>Contract: <strong>${_contractLabel(r.expiry)}</strong><br><br>Return: <strong>${fmtPct(r.return_pct, 2)}</strong><br>Realized Vol: <strong>${fmtPct(r.rolling_realized_vol_20d, 2)}</strong><br>Vol Z-score: <strong>${fmtNum(r.volume_z_20d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
+    const dynBody = `Date: <strong>${r.date}</strong><br>Contract: <strong>${_contractLabel(r.expiry)}</strong><br><br>Return: <strong>${fmtPct(r.return_pct, 2)}</strong><br>Realized Vol: <strong>${fmtPct(r.rolling_realized_vol_20d, 2)}</strong><br>Vol Z-score: <strong>${fmtNum(r.volume_z_20d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong><br>Flow: <strong>${formatLabel(r.oi_flow_state)}</strong>`;
     return `
       <tr class="has-tooltip" data-dyn-title="Data Point: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
         <td>${r.date}</td>
@@ -4473,7 +4500,7 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   },
   "Volume & Open Interest": {
     title: "Volume & Open Interest",
-    body: `<strong>What:</strong> Participation (volume) plus positioning depth (open interest).<br><strong>How to read:</strong> Volume without OI follow-through is often transient; rising OI indicates position commitment.<br><strong>Threshold zone:</strong> Volume Z-score > 1.5 = participation shock; < 0 = below-normal flow.<br><strong>What to watch:</strong> Use OI flow states: long_build, short_build, long_unwind, short_cover.`
+    body: `<strong>What:</strong> Participation (volume) plus positioning depth (open interest).<br><strong>How to read:</strong> Volume without OI follow-through is often transient; rising OI indicates position commitment.<br><strong>Threshold zone:</strong> Volume Z-score > 1.5 = participation shock; < 0 = below-normal flow.<br><strong>What to watch:</strong> Use OI flow states: Long Build, Short Build, Long Unwind, Short Cover.`
   },
   "Realized Volatility & Regime": {
     title: "Realized Volatility & Regime",
@@ -4481,7 +4508,7 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   },
   "Price/OI Phase Map": {
     title: "Price/OI Phase Map",
-    body: `<strong>What:</strong> Quadrant map of price return vs OI change.<br><strong>How to read:</strong> long_build (up/up), short_build (down/up), long_unwind (down/down), short_cover (up/down).<br><strong>Threshold zone:</strong> Large |price| and |OI| moves indicate regime transitions.<br><strong>What to watch:</strong> Repeated short_build/long_build clusters usually precede broader directional phases.`
+    body: `<strong>What:</strong> Quadrant map of price return vs OI change.<br><strong>How to read:</strong> Long Build (up/up), Short Build (down/up), Long Unwind (down/down), Short Cover (up/down).<br><strong>Threshold zone:</strong> Large |price| and |OI| moves indicate regime transitions.<br><strong>What to watch:</strong> Repeated Short Build/Long Build clusters usually precede broader directional phases.`
   },
   "Active Futures Curve": {
     title: "Active Futures Curve",
