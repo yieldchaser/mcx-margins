@@ -906,7 +906,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
             <span class="scope-chip"><strong>Y</strong> Roll Yield %</span>
             <span class="scope-chip"><strong>Size</strong> OI depth</span>
           </div>
-          <div class="chart-container" style="height:400px;"><canvas id="chartMarketEfficiency"></canvas></div>
+          <div class="chart-container" style="height:460px;"><canvas id="chartMarketEfficiency"></canvas></div>
         </div>
       </div>
       <div class="card">
@@ -4185,7 +4185,7 @@ async function renderMarketIntel(force = false) {
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
       return `
-      <tr style="height:54px;" class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
+      <tr style="height:68px;" class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
         <td>${formatLabel(s.label)}</td>
         <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
         <td>${s.score}</td>
@@ -4353,7 +4353,7 @@ async function renderMarketIntel(force = false) {
           }
         },
         scales: {
-          x: { min: 0, max: 100, title: { display: true, text: 'Liquidity Score →', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+          x: { min: -6, max: 108, title: { display: true, text: 'Liquidity Score →', font: { size: 10 } }, ticks: { font: { size: 10 } } },
           y: { title: { display: true, text: 'Roll Yield %', font: { size: 10 } }, ticks: { font: { size: 10 } } }
         }
       }
