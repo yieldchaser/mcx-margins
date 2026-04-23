@@ -899,14 +899,14 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </div>
           <div id="marketLiquidityHeatmap" class="heatmap-grid"></div>
         </div>
-        <div class="card">
+        <div class="card" style="flex:1;display:flex;flex-direction:column;">
           <div class="card-title has-tooltip" data-tooltip-key="Contract Capital Efficiency Map">Contract Capital Efficiency Map</div>
           <div class="scope-row" style="margin-top:0;">
             <span class="scope-chip"><strong>X</strong> Liquidity</span>
             <span class="scope-chip"><strong>Y</strong> Roll Yield %</span>
             <span class="scope-chip"><strong>Size</strong> OI depth</span>
           </div>
-          <div class="chart-container" style="height:460px;"><canvas id="chartMarketEfficiency"></canvas></div>
+          <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartMarketEfficiency"></canvas></div>
         </div>
       </div>
       <div class="card">
@@ -929,9 +929,9 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
         <span class="scope-chip"><strong>Join</strong> Expiry-aligned only</span>
       </div>
       <div class="grid-2 market-grid mb-4">
-        <div class="card" style="margin:0;">
+        <div class="card" style="margin:0;display:flex;flex-direction:column;">
           <div class="card-title has-tooltip" data-tooltip-key="Margin vs PVOI Regimes">Margin vs PVOI Regimes</div>
-          <div class="chart-container" style="height:360px;"><canvas id="chartMarketLinkage"></canvas></div>
+          <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="chartMarketLinkage"></canvas></div>
         </div>
         <div class="card" style="margin:0;">
           <div class="card-title has-tooltip" data-tooltip-key="Margin-over-Liquidity Heatmap">Margin-over-Liquidity Heatmap</div>
@@ -1037,7 +1037,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
   border: 1px solid var(--border); background: linear-gradient(180deg, rgba(56,139,253,0.06), rgba(56,139,253,0.01));
 }
 .market-grid {
-  align-items: start;
+  align-items: stretch;
 }
 .market-table-shell {
   overflow-x: auto; border: 1px solid rgba(255,255,255,0.06);
