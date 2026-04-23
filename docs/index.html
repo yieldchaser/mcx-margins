@@ -842,7 +842,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
         </div>
-        <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
+        <div class="chart-container" style="height:360px;"><canvas id="chartMarketCurve"></canvas></div>
         <div id="marketCurveInsight"></div>
       </div>
       <div class="card">
@@ -875,6 +875,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           <div id="regimeTransitionMatrix" style="margin-top:8px;"></div>
           <div id="regimePlaybook" style="margin-top:12px;"></div>
           <div id="marketExpiriesCalendar"></div>
+          <div id="regimeFrequencyStats"></div>
         </div>
       </div>
       <div class="card">
@@ -917,6 +918,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </table>
         </div>
         <div id="rollYieldSpectrum"></div>
+        <div id="contractIntelPicks"></div>
       </div>
     </div>
     <div class="card mb-4">
@@ -4157,6 +4159,28 @@ async function renderMarketIntel(force = false) {
         </div>`;
     }
 
+    // ── Regime Frequency Stats ──
+    {
+      const freqColors = { CALM: '#3fb950', ELEVATED: '#d29922', STRESS: '#f59e0b', CRISIS: '#f85149' };
+      const totalDays  = REGIME_STATES.reduce((s, r) => s + (rowTotals[r] || 0), 0) || 1;
+      document.getElementById('regimeFrequencyStats').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">REGIME FREQUENCY</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${REGIME_STATES.map(r => {
+              const days = rowTotals[r] || 0;
+              const pct  = Math.round(days / totalDays * 100);
+              const col  = freqColors[r] || '#8b949e';
+              return `<div style="background:${col}11;border:1px solid ${col}33;border-radius:6px;padding:8px 10px;">
+                <div style="font-size:10px;font-weight:600;color:${col};margin-bottom:3px;">${REGIME_LABELS[r]}</div>
+                <div style="font-size:16px;font-weight:700;color:var(--text);">${pct}%</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:1px;">${days} days</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
     const sigRows = (signals.signals || []).filter(s => s.symbol === symbol).sort((a,b) => b.score - a.score);
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
@@ -4268,6 +4292,32 @@ async function renderMarketIntel(force = false) {
         </div>`;
     }
 
+    // ── Contract Intelligence Picks ──
+    {
+      const bestEntry  = [...curve].sort((a,b) => (b.liquidity_score||0) - (a.liquidity_score||0))[0]   || {};
+      const bestCarry  = [...curve].sort((a,b) => (b.roll_yield_pct||0)   - (a.roll_yield_pct||0))[0]   || {};
+      const bestOI     = [...curve].sort((a,b) => (b.open_interest||0)    - (a.open_interest||0))[0]    || {};
+      const picks = [
+        { label: 'Best Entry',  sub: 'Highest liquidity', contract: bestEntry, val: `Liq ${fmtNum(bestEntry.liquidity_score,1)}`,  color: '#58a6ff' },
+        { label: 'Best Carry',  sub: 'Highest roll yield', contract: bestCarry, val: fmtPct(bestCarry.roll_yield_pct,2),            color: '#3fb950' },
+        { label: 'Deepest OI',  sub: 'Largest positioning', contract: bestOI,  val: `${fmtNum(bestOI.open_interest,0)} lots`,      color: '#d29922' }
+      ];
+      document.getElementById('contractIntelPicks').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">CONTRACT INTELLIGENCE PICKS</div>
+          ${picks.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:7px 10px;background:${p.color}0D;border-left:3px solid ${p.color};border-radius:0 4px 4px 0;">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:${p.color};">${p.label}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${p.sub}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12px;font-weight:700;color:var(--text);">${_contractLabel(p.contract.expiry)}</div>
+              <div style="font-size:11px;color:${p.color};font-weight:600;">${p.val}</div>
+            </div>
+          </div>`).join('')}
+        </div>`;
+    }
+
     // ── Contract Capital Efficiency Map ──
     const effColors = { long_build: '#3fb950', short_build: '#f85149', long_unwind: '#d29922', short_cover: '#58a6ff', neutral: '#8b949e' };
     const maxOI = Math.max(...curve.map(r => r.open_interest || 0), 1);
@@ -4355,12 +4405,44 @@ async function renderMarketIntel(force = false) {
       }
     });
 
-    renderHeatmapGrid('marketMarginHeatmap', linkageRecent.slice(-8).map(r => ({
+    renderHeatmapGrid('marketMarginHeatmap', linkageRecent.slice(-12).map(r => ({
       label: r.date,
       sub: r.matched_expiry || '-',
       value: r.funding_friction_score,
       metric: `Friction ${fmtNum(r.funding_friction_score, 1)}`
     })), 'friction');
+
+    // Friction Trend Summary (below heatmap)
+    {
+      const last7  = linkageRecent.slice(-7);
+      const last30 = linkageRecent.slice(-30);
+      const avg7   = last7.length  ? last7.reduce((s,r)  => s + (r.funding_friction_score||0), 0) / last7.length  : null;
+      const avg30  = last30.length ? last30.reduce((s,r) => s + (r.funding_friction_score||0), 0) / last30.length : null;
+      const trend  = (avg7 !== null && avg30 !== null) ? avg7 - avg30 : null;
+      const trendLabel = trend === null ? '-' : trend > 3 ? 'Rising ↑' : trend < -3 ? 'Falling ↓' : 'Stable →';
+      const trendColor = trend === null ? '#8b949e' : trend > 3 ? '#f85149' : trend < -3 ? '#3fb950' : '#d29922';
+      const heatmapEl = document.getElementById('marketMarginHeatmap');
+      if (heatmapEl && !document.getElementById('frictionTrendSummary')) {
+        const el = document.createElement('div');
+        el.id = 'frictionTrendSummary';
+        heatmapEl.parentNode.insertBefore(el, heatmapEl.nextSibling);
+      }
+      const summaryEl = document.getElementById('frictionTrendSummary');
+      if (summaryEl) summaryEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:3px;">7D AVG FRICTION</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);">${avg7 !== null ? fmtNum(avg7,1) : '-'}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:3px;">30D AVG FRICTION</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);">${avg30 !== null ? fmtNum(avg30,1) : '-'}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:3px;">TREND</div>
+            <div style="font-size:15px;font-weight:700;color:${trendColor};">${trendLabel}</div>
+          </div>
+        </div>`;    }
 
     document.getElementById('marketLinkageBody').innerHTML = (regimePack.event_windows || [])
       .filter(r => (r.events || []).some(ev => ev.includes('margin') || ev.includes('oi')))
