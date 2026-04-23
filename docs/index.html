@@ -842,7 +842,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
         </div>
-        <div class="chart-container" style="height:360px;"><canvas id="chartMarketCurve"></canvas></div>
+        <div class="chart-container" style="height:400px;"><canvas id="chartMarketCurve"></canvas></div>
         <div id="marketCurveInsight"></div>
       </div>
       <div class="card">
@@ -4255,7 +4255,7 @@ async function renderMarketIntel(force = false) {
         const liqBand = marketLiquidityBand(r.liquidity_score);
         const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong><br>Liquidity Score: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>OI State: <strong>${r.oi_flow_state || 'neutral'}</strong><br>Roll Yield: <strong>${fmtPct(r.roll_yield_pct, 2)}</strong><br><br><em>Recommendation:</em> ${liqBand === 'deep' ? 'Optimal for high-conviction sizing.' : 'Monitor execution slippage.'}`;
         return `
-          <tr class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+          <tr style="height:54px;" class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
             <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
             <td>${fmtNum(r.liquidity_score, 1)}</td>
             <td>${formatLabel(r.oi_flow_state)}</td>
@@ -4335,7 +4335,7 @@ async function renderMarketIntel(force = false) {
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false, clip: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -4353,7 +4353,7 @@ async function renderMarketIntel(force = false) {
           }
         },
         scales: {
-          x: { min: -6, max: 108, title: { display: true, text: 'Liquidity Score →', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+          x: { min: 0, max: 100, title: { display: true, text: 'Liquidity Score →', font: { size: 10 } }, ticks: { font: { size: 10 } } },
           y: { title: { display: true, text: 'Roll Yield %', font: { size: 10 } }, ticks: { font: { size: 10 } } }
         }
       }
