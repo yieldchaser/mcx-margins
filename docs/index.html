@@ -843,6 +843,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
         </div>
         <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurve"></canvas></div>
+        <div id="marketCurveInsight"></div>
       </div>
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="Explainable Market Signals">Explainable Market Signals</div>
@@ -873,6 +874,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
           </div>
           <div id="regimeTransitionMatrix" style="margin-top:8px;"></div>
           <div id="regimePlaybook" style="margin-top:12px;"></div>
+          <div id="marketExpiriesCalendar"></div>
         </div>
       </div>
       <div class="card">
@@ -3995,6 +3997,35 @@ async function renderMarketIntel(force = false) {
       }
     });
 
+    // ── Curve Shape Insight ──
+    {
+      const front = curve[0] || {};
+      const avgRollYield = curve.length ? curve.reduce((s, r) => s + (r.roll_yield_pct || 0), 0) / curve.length : 0;
+      const shapeLabel = avgRollYield > 0.5 ? 'Backwardation' : avgRollYield < -0.5 ? 'Contango' : 'Flat';
+      const shapeColor = avgRollYield > 0.5 ? '#3fb950' : avgRollYield < -0.5 ? '#f85149' : '#d29922';
+      const latestTrail = curveTrail.length ? curveTrail[curveTrail.length - 1] : {};
+      const conc = latestTrail.liquidity_concentration;
+      const concLabel = Number.isFinite(conc) ? (conc >= 70 ? 'Crowded' : conc >= 45 ? 'Balanced' : 'Diffused') : '-';
+      document.getElementById('marketCurveInsight').innerHTML = `
+        <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 0 2px;margin-top:8px;">
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">CURVE SHAPE</div>
+            <div style="font-size:15px;font-weight:700;color:${shapeColor};">${shapeLabel}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Avg roll ${fmtPct(avgRollYield,2)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">FRONT CLOSE</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);">${fmtNum(front.close,2)}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${_contractLabel(front.expiry)} · ${front.dte}d</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">CONCENTRATION</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);">${fmtNum(conc,1)}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${concLabel}</div>
+          </div>
+        </div>`;
+    }
+
     const curveRecent = curveTrail.slice(-180);
     if (marketCurveHistoryChart) marketCurveHistoryChart.destroy();
     marketCurveHistoryChart = new Chart(document.getElementById('chartMarketCurveHistory'), {
@@ -4077,7 +4108,7 @@ async function renderMarketIntel(force = false) {
     // ── Regime Playbook Panel ──
     {
       const lastRow = regimeRows.length ? regimeRows[regimeRows.length - 1] : {};
-      const curReg  = (lastRow.vol_regime || '').toUpperCase();
+      const curReg  = ({ NORMAL:'CALM', CALM:'CALM', ELEVATED:'ELEVATED', STRESS:'STRESS', CRISIS:'CRISIS' })[(lastRow.vol_regime || '').toUpperCase()] || '';
       const validReg = REGIME_STATES.includes(curReg);
       const persistPct = validReg && rowTotals[curReg] > 0
         ? Math.round((transMatrix[curReg][curReg] / rowTotals[curReg]) * 100) : 0;
@@ -4105,6 +4136,24 @@ async function renderMarketIntel(force = false) {
             ${nextPct > 0 ? `<span style="font-size:11px;color:var(--text-muted);">&#8594; ${nextReg} (${nextPct}% risk)</span>` : ''}
           </div>
           <div style="font-size:12px;color:var(--text);line-height:1.6;">${playbook}</div>
+        </div>`;
+    }
+
+    // ── Upcoming Expiries Calendar ──
+    {
+      const expiryRows = curve.slice(0, 6);
+      document.getElementById('marketExpiriesCalendar').innerHTML = `
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">UPCOMING EXPIRIES</div>
+          ${expiryRows.map(r => {
+            const urgency = r.dte <= 10 ? '#f85149' : r.dte <= 30 ? '#d29922' : 'var(--text-muted)';
+            const dteBg   = r.dte <= 10 ? 'rgba(248,81,73,0.12)' : r.dte <= 30 ? 'rgba(210,153,34,0.12)' : 'var(--surface2)';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
+              <div style="font-size:12px;color:var(--text);font-weight:500;">${_contractLabel(r.expiry)}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div>
+              <div style="font-size:11px;font-weight:700;color:${urgency};background:${dteBg};border-radius:3px;padding:2px 7px;min-width:38px;text-align:center;">${r.dte}d</div>
+            </div>`;
+          }).join('')}
         </div>`;
     }
 
@@ -4154,7 +4203,7 @@ async function renderMarketIntel(force = false) {
         </div>`;
     }
 
-    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-20).reverse().map(r => {
+    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-30).reverse().map(r => {
       const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
       return `
         <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
