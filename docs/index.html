@@ -414,10 +414,16 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
       <div style="overflow-x:auto;">
         <table class="data-table" id="snapshotTable">
           <thead><tr>
-            <th>Contract</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
-            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th><th title="Percentile rank of today's margin vs all historical observations at the same days-to-expiry (±15 days). Green = historically cheap. Amber = elevated. Red = historically expensive. P50 = median.">Hist. Pct</th>
+            <th>Contract</th>
+            <th title="MCX closing price for this contract (₹)">Price ₹</th>
+            <th title="1-day price return %">Chg %</th>
+            <th title="Open-interest flow state: direction of current positioning">Flow</th>
+            <th>DTE</th><th>Initial %</th><th>ELM %</th>
+            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th>
+            <th title="Absolute margin required per lot in ₹ = (Total % / 100) × Price × Lot Size">₹/Lot</th>
+            <th title="Percentile rank of today's margin vs all historical observations at the same days-to-expiry (±15 days). Green = historically cheap. Amber = elevated. Red = historically expensive. P50 = median.">Hist. Pct</th>
           </tr></thead>
-          <tbody id="snapshotBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
+          <tbody id="snapshotBody"><tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -428,6 +434,23 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
         <div id="marketOverviewFreshness" style="font-size:11px;color:var(--text-muted);"></div>
       </div>
       <div class="grid-3" id="marketOverviewGrid"></div>
+    </div>
+
+    <!-- Price × Margin Confluence Chart -->
+    <div class="card mb-4" id="priceMarginConfCard" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
+        <div class="card-title has-tooltip" data-tooltip-key="Price Margin Confluence" style="margin-bottom:0;">
+          Price &times; Margin Confluence
+          <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px;">— 60D Rolling · Front Month NATURALGAS</span>
+        </div>
+        <div id="confluenceFreshness" style="font-size:11px;color:var(--text-muted);"></div>
+      </div>
+      <div class="scope-row" style="margin-top:0;margin-bottom:10px;">
+        <span class="scope-chip"><strong>Left Y</strong> Initial Margin %</span>
+        <span class="scope-chip"><strong>Right Y</strong> MCX Close ₹</span>
+        <span class="scope-chip"><strong>Scope</strong> Front Month Contract</span>
+      </div>
+      <div class="chart-container" style="height:240px;"><canvas id="chartPriceMarginConfluence"></canvas></div>
     </div>
 
     <!-- Mini forward curve + panic signals -->
@@ -1466,6 +1489,16 @@ async function renderMarketOverviewContext() {
     const ng = (current.NATURALGAS || []).filter(r => r.dte >= 0).sort((a,b) => a.dte - b.dte)[0];
     const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
     if (!ng) return;
+
+    // ── Build global price lookup for snapshot table price columns ────────
+    snapMarketLookup = {};
+    ['NATURALGAS', 'NATGASMINI'].forEach(sym => {
+      snapMarketLookup[sym] = {};
+      (current[sym] || []).forEach(r => { snapMarketLookup[sym][r.expiry] = r; });
+    });
+    // Re-render snapshot table now that price data is available
+    if (_reRenderSnapshot) _reRenderSnapshot();
+
     document.getElementById('marketOverviewFreshness').textContent =
       `Market data: ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'}${fresh.age_days != null ? ' | age ' + fresh.age_days + 'd' : ''}`;
     grid.innerHTML = [
@@ -1486,10 +1519,130 @@ async function renderMarketOverviewContext() {
       `;
     }).join('');
     card.style.display = 'block';
+    // Render 60-day price × margin confluence chart
+    renderPriceMarginConfluence();
   } catch(e) {
     console.warn('Market overview skipped:', e);
   }
 }
+
+async function renderPriceMarginConfluence() {
+  if (!ENABLE_MARKET_INTEL) return;
+  const confCard = document.getElementById('priceMarginConfCard');
+  if (!confCard) return;
+  try {
+    // Load price history (front_month scope) + margin history (already cached)
+    const [mktHist, margHist] = await Promise.all([
+      loadMarketJSON('history_ng'),
+      loadJSON('history_ng')
+    ]);
+    // mktHist: { rows: [{date, close, dte, ...}] }  — already front_month scope
+    // margHist: array [{date, expiry, dte, initial_margin_pct, ...}]
+
+    // Build date → front-month price map from market history
+    const priceByDate = {};
+    (mktHist.rows || []).forEach(r => {
+      if (r.close != null && r.close > 0) priceByDate[r.date] = r.close;
+    });
+
+    // Build date → front-month initial margin map from margin history
+    const margByDate = {};
+    (Array.isArray(margHist) ? margHist : []).forEach(r => {
+      if (!margByDate[r.date] || r.dte < margByDate[r.date].dte) {
+        margByDate[r.date] = r;
+      }
+    });
+
+    // Intersect: dates with both price and margin, last 60
+    const allDates = Object.keys(priceByDate)
+      .filter(d => margByDate[d]?.initial_margin_pct != null)
+      .sort()
+      .slice(-60);
+
+    if (allDates.length < 10) return;
+
+    const labels      = allDates.map(d => d.slice(5));   // MM-DD
+    const marginData  = allDates.map(d => margByDate[d].initial_margin_pct);
+    const priceData   = allDates.map(d => priceByDate[d]);
+
+    if (priceMarginChart) { priceMarginChart.destroy(); priceMarginChart = null; }
+
+    priceMarginChart = new Chart(document.getElementById('chartPriceMarginConfluence'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Initial Margin %',
+            data: marginData,
+            borderColor: '#388bfd',
+            backgroundColor: 'rgba(56,139,253,0.07)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            yAxisID: 'yMargin',
+            borderWidth: 2,
+          },
+          {
+            label: 'MCX Front Close ₹',
+            data: priceData,
+            borderColor: '#3fb950',
+            backgroundColor: 'rgba(63,185,80,0.05)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            yAxisID: 'yPrice',
+            borderWidth: 2,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12, padding: 14 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.dataset.yAxisID === 'yMargin'
+                ? `Margin: ${ctx.parsed.y.toFixed(2)}%`
+                : `Price: ₹${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 12 },
+            grid:  { color: 'rgba(48,54,61,0.6)' }
+          },
+          yMargin: {
+            type: 'linear', position: 'left',
+            ticks: { color: '#388bfd', font: { size: 10 }, callback: v => v.toFixed(1) + '%' },
+            grid:  { color: 'rgba(48,54,61,0.6)' },
+            title: { display: true, text: 'Margin %', color: '#388bfd', font: { size: 10 } }
+          },
+          yPrice: {
+            type: 'linear', position: 'right',
+            ticks: { color: '#3fb950', font: { size: 10 }, callback: v => '₹' + v.toFixed(0) },
+            grid:  { drawOnChartArea: false },
+            title: { display: true, text: 'Price ₹', color: '#3fb950', font: { size: 10 } }
+          }
+        }
+      }
+    });
+
+    document.getElementById('confluenceFreshness').textContent =
+      `${allDates[0]} → ${allDates[allDates.length - 1]}`;
+    confCard.style.display = 'block';
+  } catch(e) {
+    console.warn('Price-margin confluence chart skipped:', e);
+  }
+}
+
 
 (async () => {
   try {
@@ -1638,15 +1791,19 @@ async function renderOverview() {
         seen.add(c.expiry);
         return true;
       });
+      const LOT = sym === 'NATURALGAS' ? 1250 : 250;
+      const FLOW_STYLE = {
+        long_build:   { label: 'Long Build ↑',   c: '#22c55e', b: 'rgba(34,197,94,0.12)'   },
+        long_unwind:  { label: 'Long Unwind ↓',  c: '#ef4444', b: 'rgba(239,68,68,0.12)'   },
+        short_build:  { label: 'Short Build ↓',  c: '#fb923c', b: 'rgba(251,146,60,0.12)'  },
+        short_unwind: { label: 'Short Unwind ↑', c: '#a78bfa', b: 'rgba(167,139,250,0.12)' },
+        neutral:      { label: 'Neutral →',      c: '#8b949e', b: 'rgba(139,148,158,0.12)' }
+      };
       document.getElementById('snapshotBody').innerHTML = deduped.map(c => {
         const cn = coneLookup[c.expiry];
-        // Use trailing 5Y percentile as the primary signal (fallback to all-time)
         const hp5y  = cn ? (cn.hist_pct_recent != null ? cn.hist_pct_recent : cn.hist_pct) : null;
         const hpAll = cn ? cn.hist_pct : null;
-        // FIX: Color based on recent 5Y rank, not all-time
-        let hpColor = 'var(--text-muted)';
-        let hpLabel = '—';
-        let hpTitle = 'No historical comparison data for this DTE.';
+        let hpColor = 'var(--text-muted)', hpLabel = '—', hpTitle = 'No historical comparison data for this DTE.';
         if (hp5y != null) {
           hpLabel = 'P' + hp5y + ' <span style="font-size:9px;opacity:0.7">(5Y)</span>';
           if (hp5y <= 33)      hpColor = '#22c55e';
@@ -1660,19 +1817,44 @@ async function renderOverview() {
           hpTitle = `${_contractLabel(c.expiry)} (${c.expiry}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp5y}% of 5-year trailing readings at equivalent DTE (±15d). This is ${zone}.` +
             (hpAll != null ? ` All-time rank: P${hpAll}.` : '');
         }
-        
+
+        // ── Price / flow enrichment from market/current.json ──────────────
+        const mkt = snapMarketLookup[sym]?.[c.expiry];
+        const priceCell = mkt?.close != null
+          ? `<strong>₹${fmtNum(mkt.close, 2)}</strong>`
+          : '<span style="color:var(--text-muted);">—</span>';
+        let chgCell = '<span style="color:var(--text-muted);">—</span>';
+        if (mkt?.return_pct != null) {
+          const rp = mkt.return_pct;
+          const arrow = rp > 0.01 ? '▲' : rp < -0.01 ? '▼' : '→';
+          const col   = rp > 0.01 ? '#22c55e' : rp < -0.01 ? '#ef4444' : 'var(--text-muted)';
+          chgCell = `<span style="color:${col};font-weight:600;">${arrow} ${rp > 0 ? '+' : ''}${rp.toFixed(2)}%</span>`;
+        }
+        let flowCell = '<span style="color:var(--text-muted);">—</span>';
+        if (mkt?.oi_flow_state) {
+          const fs = FLOW_STYLE[mkt.oi_flow_state] || FLOW_STYLE.neutral;
+          flowCell = `<span style="color:${fs.c};background:${fs.b};border:1px solid ${fs.c}33;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;white-space:nowrap;">${fs.label}</span>`;
+        }
+        let lotCell = '<span style="color:var(--text-muted);">—</span>';
+        if (mkt?.close != null) {
+          const marginRs = (c.total_margin_pct / 100) * mkt.close * LOT;
+          lotCell = `<strong>₹${Math.round(marginRs).toLocaleString('en-IN')}</strong>`;
+        }
+
         const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${c.expiry})`;
-        const curMargin = c.total_margin_pct.toFixed(2);
-        const frontCur = rows.length > 0 ? rows[0].total_margin_pct.toFixed(2) : curMargin;
         const diffToFront = (c.total_margin_pct - rows[0].total_margin_pct).toFixed(2);
-        const diffText = c.expiry !== rows[0].expiry 
-                         ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.` 
+        const diffText = c.expiry !== rows[0].expiry
+                         ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.`
                          : '<br><br>This is the front-month contract, carrying maximum tender pressure and near-term vol.';
         const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style='color:var(--accent-red)'>${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
-        const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
+        const priceCtx = mkt?.close != null ? ` Price: <strong>₹${fmtNum(mkt.close, 2)}</strong> (${mkt.return_pct != null ? (mkt.return_pct > 0 ? '+' : '') + mkt.return_pct.toFixed(2) + '%' : '—'} today). ₹/Lot blocked: <strong>₹${mkt.close != null ? Math.round((c.total_margin_pct/100)*mkt.close*LOT).toLocaleString('en-IN') : '—'}</strong>.` : '';
+        const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${priceCtx}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
 
         return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
           <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
+          <td>${priceCell}</td>
+          <td>${chgCell}</td>
+          <td>${flowCell}</td>
           <td>${dteBadge(c.dte)}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
           <td>${c.elm_pct.toFixed(2)}%</td>
@@ -1683,11 +1865,15 @@ async function renderOverview() {
           <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
           <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
           <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
+          <td>${lotCell}</td>
           <td style="font-weight:700;color:${hpColor};">${hpLabel}</td>
         </tr>`;
       }).join('');
       attachTooltips();
     }
+
+    // Expose re-render hook at module scope so renderMarketOverviewContext can trigger it
+    _reRenderSnapshot = () => renderSnapshotTable(activeSnapSym);
 
     renderSnapshotTable(activeSnapSym);
 
@@ -3629,6 +3815,12 @@ let marketExplorerData = [], marketExplorerPage = 0;
 let marketPriceChart = null, marketFlowChart = null, marketCurveChart = null;
 let marketRegimeChart = null, marketPhaseChart = null, marketCurveHistoryChart = null, marketLinkageChart = null;
 const MARKET_PAGE_SIZE = 50;
+
+// Overview tab — price enrichment lookup populated by renderMarketOverviewContext()
+let snapMarketLookup = {};  // { sym: { expiry: marketRow } }
+let priceMarginChart = null;
+let _reRenderSnapshot = null; // set inside renderOverview so renderMarketOverviewContext can call back
+
 
 function resetMarketIntelView(message) {
   marketRendered = false;
