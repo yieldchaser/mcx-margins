@@ -931,7 +931,7 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
       <div class="grid-2 market-grid mb-4">
         <div class="card" style="margin:0;">
           <div class="card-title has-tooltip" data-tooltip-key="Margin vs PVOI Regimes">Margin vs PVOI Regimes</div>
-          <div class="chart-container" style="height:300px;"><canvas id="chartMarketLinkage"></canvas></div>
+          <div class="chart-container" style="height:360px;"><canvas id="chartMarketLinkage"></canvas></div>
         </div>
         <div class="card" style="margin:0;">
           <div class="card-title has-tooltip" data-tooltip-key="Margin-over-Liquidity Heatmap">Margin-over-Liquidity Heatmap</div>
@@ -4255,7 +4255,7 @@ async function renderMarketIntel(force = false) {
         const liqBand = marketLiquidityBand(r.liquidity_score);
         const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong><br>Liquidity Score: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>OI State: <strong>${r.oi_flow_state || 'neutral'}</strong><br>Roll Yield: <strong>${fmtPct(r.roll_yield_pct, 2)}</strong><br><br><em>Recommendation:</em> ${liqBand === 'deep' ? 'Optimal for high-conviction sizing.' : 'Monitor execution slippage.'}`;
         return `
-          <tr style="height:54px;" class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+          <tr style="height:66px;" class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
             <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
             <td>${fmtNum(r.liquidity_score, 1)}</td>
             <td>${formatLabel(r.oi_flow_state)}</td>
