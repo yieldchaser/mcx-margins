@@ -4467,12 +4467,50 @@ async function renderMarketIntel(force = false) {
     marketExplorerData = [...rows].reverse();
     marketExplorerPage = 0;
     renderMarketExplorerPage();
-    // Flex-fill charts render at min-height at init time; CSS flex/stretch settles
-    // afterward. Call resize() so Chart.js re-reads the final container dimensions.
+    // CSS flex:1 on chart containers doesn't expand because the flexbox chain
+    // loses its size reference. Instead, measure actual DOM heights and set
+    // explicit pixel heights so Chart.js fills them perfectly.
     setTimeout(() => {
-      if (marketEfficiencyChart) marketEfficiencyChart.resize();
-      if (marketLinkageChart)   marketLinkageChart.resize();
-    }, 80);
+      // ── Capital Efficiency Map ──────────────────────────────────────────
+      // Target: match the height of the right-side leaderboard card
+      try {
+        const rightCard  = document.getElementById('contractIntelPicks')?.closest('.card');
+        const effCard    = document.getElementById('chartMarketEfficiency')?.closest('.card');
+        const hmLiqCard  = document.getElementById('marketLiquidityHeatmap')?.closest('.card');
+        if (rightCard && effCard && hmLiqCard) {
+          const gap        = 16;
+          const rightH     = rightCard.offsetHeight;
+          const hmLiqH     = hmLiqCard.offsetHeight;
+          const effCS      = getComputedStyle(effCard);
+          const effPad     = parseFloat(effCS.paddingTop) + parseFloat(effCS.paddingBottom);
+          const effInner   = effCard.querySelector('.card-title')?.offsetHeight || 0;
+          const effScope   = effCard.querySelector('.scope-row')?.offsetHeight   || 0;
+          const targetH    = Math.max(300, rightH - hmLiqH - gap - effPad - effInner - effScope);
+          const effCont    = document.getElementById('chartMarketEfficiency').parentElement;
+          effCont.style.height = targetH + 'px';
+          effCont.style.flex   = 'none';
+          if (marketEfficiencyChart) marketEfficiencyChart.resize();
+        }
+      } catch(_) {}
+
+      // ── Margin vs PVOI Regimes ──────────────────────────────────────────
+      // Target: match the height of the Margin-over-Liquidity Heatmap card
+      try {
+        const hmCard  = document.getElementById('marketMarginHeatmap')?.closest('.card');
+        const pvCard  = document.getElementById('chartMarketLinkage')?.closest('.card');
+        if (hmCard && pvCard) {
+          const hmH     = hmCard.offsetHeight;
+          const pvCS    = getComputedStyle(pvCard);
+          const pvPad   = parseFloat(pvCS.paddingTop) + parseFloat(pvCS.paddingBottom);
+          const pvTitle = pvCard.querySelector('.card-title')?.offsetHeight || 0;
+          const targetH = Math.max(280, hmH - pvPad - pvTitle);
+          const pvCont  = document.getElementById('chartMarketLinkage').parentElement;
+          pvCont.style.height = targetH + 'px';
+          pvCont.style.flex   = 'none';
+          if (marketLinkageChart) marketLinkageChart.resize();
+        }
+      } catch(_) {}
+    }, 150);
     attachTooltips();
   } catch(e) {
     console.error('Market render error:', e);
