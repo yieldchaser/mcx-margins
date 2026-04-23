@@ -4126,7 +4126,7 @@ async function renderMarketIntel(force = false) {
     // ── Contract Capital Efficiency Map ──
     const effColors = { long_build: '#3fb950', short_build: '#f85149', long_unwind: '#d29922', short_cover: '#58a6ff', neutral: '#8b949e' };
     const maxOI = Math.max(...curve.map(r => r.open_interest || 0), 1);
-    if (marketEfficiencyChart) marketEfficiencyChart.destroy();
+    if (typeof marketEfficiencyChart !== 'undefined' && marketEfficiencyChart) marketEfficiencyChart.destroy();
     marketEfficiencyChart = new Chart(document.getElementById('chartMarketEfficiency'), {
       type: 'scatter',
       data: {
