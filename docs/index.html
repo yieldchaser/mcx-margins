@@ -4467,45 +4467,36 @@ async function renderMarketIntel(force = false) {
     marketExplorerData = [...rows].reverse();
     marketExplorerPage = 0;
     renderMarketExplorerPage();
-    // CSS flex:1 on chart containers doesn't expand because the flexbox chain
-    // loses its size reference. Instead, measure actual DOM heights and set
-    // explicit pixel heights so Chart.js fills them perfectly.
+    // Equalize paired card heights by measuring the actual pixel delta between
+    // the two sides and adjusting the chart container by exactly that amount.
+    // This avoids any formula/padding guesswork — pure delta measurement.
     setTimeout(() => {
-      // ── Capital Efficiency Map ──────────────────────────────────────────
-      // Target: match the height of the right-side leaderboard card
+      // ── Capital Efficiency Map vs Leaderboard ───────────────────────────
       try {
+        const hmLiqCard = document.getElementById('marketLiquidityHeatmap')?.closest('.card');
+        const leftColDiv = hmLiqCard?.parentElement;           // flex-column wrapper div
         const rightCard  = document.getElementById('contractIntelPicks')?.closest('.card');
-        const effCard    = document.getElementById('chartMarketEfficiency')?.closest('.card');
-        const hmLiqCard  = document.getElementById('marketLiquidityHeatmap')?.closest('.card');
-        if (rightCard && effCard && hmLiqCard) {
-          const gap        = 16;
-          const rightH     = rightCard.offsetHeight;
-          const hmLiqH     = hmLiqCard.offsetHeight;
-          const effCS      = getComputedStyle(effCard);
-          const effPad     = parseFloat(effCS.paddingTop) + parseFloat(effCS.paddingBottom);
-          const effInner   = effCard.querySelector('.card-title')?.offsetHeight || 0;
-          const effScope   = effCard.querySelector('.scope-row')?.offsetHeight   || 0;
-          const targetH    = Math.max(300, rightH - hmLiqH - gap - effPad - effInner - effScope);
-          const effCont    = document.getElementById('chartMarketEfficiency').parentElement;
-          effCont.style.height = targetH + 'px';
+        const effCont    = document.getElementById('chartMarketEfficiency')?.parentElement;
+        if (leftColDiv && rightCard && effCont) {
+          const diff = rightCard.offsetHeight - leftColDiv.offsetHeight;
+          // diff > 0 → right taller → grow eff chart; diff < 0 → left taller → shrink
+          const newH = Math.max(280, effCont.offsetHeight + diff);
+          effCont.style.height = newH + 'px';
           effCont.style.flex   = 'none';
           if (marketEfficiencyChart) marketEfficiencyChart.resize();
         }
       } catch(_) {}
 
-      // ── Margin vs PVOI Regimes ──────────────────────────────────────────
-      // Target: match the height of the Margin-over-Liquidity Heatmap card
+      // ── Margin vs PVOI Regimes vs Margin-over-Liquidity Heatmap ────────
       try {
-        const hmCard  = document.getElementById('marketMarginHeatmap')?.closest('.card');
         const pvCard  = document.getElementById('chartMarketLinkage')?.closest('.card');
-        if (hmCard && pvCard) {
-          const hmH     = hmCard.offsetHeight;
-          const pvCS    = getComputedStyle(pvCard);
-          const pvPad   = parseFloat(pvCS.paddingTop) + parseFloat(pvCS.paddingBottom);
-          const pvTitle = pvCard.querySelector('.card-title')?.offsetHeight || 0;
-          const targetH = Math.max(280, hmH - pvPad - pvTitle);
-          const pvCont  = document.getElementById('chartMarketLinkage').parentElement;
-          pvCont.style.height = targetH + 'px';
+        const hmCard  = document.getElementById('marketMarginHeatmap')?.closest('.card');
+        const pvCont  = document.getElementById('chartMarketLinkage')?.parentElement;
+        if (pvCard && hmCard && pvCont) {
+          const diff = hmCard.offsetHeight - pvCard.offsetHeight;
+          // diff > 0 → heatmap taller → grow pvoi chart; diff < 0 → pvoi taller → shrink
+          const newH = Math.max(200, pvCont.offsetHeight + diff);
+          pvCont.style.height = newH + 'px';
           pvCont.style.flex   = 'none';
           if (marketLinkageChart) marketLinkageChart.resize();
         }
