@@ -111,6 +111,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
 /* ── Grids ── */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-2.market-grid { align-items: start; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
 /* ── Chart wrapper ── */
@@ -4039,7 +4040,7 @@ async function renderMarketIntel(force = false) {
         <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
           <td>${r.date}</td>
           <td>${r.matched_expiry || '-'}</td>
-          <td>${(r.events || []).join(', ')}</td>
+          <td>${(r.events || []).map(formatLabel).join(', ')}</td>
           <td>${fmtPct(r.return_1d_pct, 2)}</td>
           <td>${fmtPct(r.margin_change_1d, 2)}</td>
           <td>${fmtPct(r.oi_change_pct, 2)}</td>
@@ -4135,7 +4136,7 @@ async function renderMarketIntel(force = false) {
           <tr class="has-tooltip" data-dyn-title="Linkage Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
             <td>${r.date}</td>
             <td>${r.matched_expiry || '-'}</td>
-            <td>${(r.events || []).join(', ')}</td>
+            <td>${(r.events || []).map(formatLabel).join(', ')}</td>
             <td>${fmtPct(r.margin_change_1d, 2)}</td>
             <td>${fmtPct(r.return_1d_pct, 2)}</td>
             <td>${fmtPct(r.oi_change_pct, 2)}</td>
