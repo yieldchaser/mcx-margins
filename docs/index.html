@@ -4467,6 +4467,12 @@ async function renderMarketIntel(force = false) {
     marketExplorerData = [...rows].reverse();
     marketExplorerPage = 0;
     renderMarketExplorerPage();
+    // Flex-fill charts render at min-height at init time; CSS flex/stretch settles
+    // afterward. Call resize() so Chart.js re-reads the final container dimensions.
+    setTimeout(() => {
+      if (marketEfficiencyChart) marketEfficiencyChart.resize();
+      if (marketLinkageChart)   marketLinkageChart.resize();
+    }, 80);
     attachTooltips();
   } catch(e) {
     console.error('Market render error:', e);
