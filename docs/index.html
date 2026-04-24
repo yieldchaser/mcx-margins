@@ -3983,6 +3983,10 @@ async function renderMarketIntel(force = false) {
       'data-dyn-body',
       escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong><br>Aligned joins: <strong>${joinedSummary.aligned_obs ?? 0}</strong>`)
     );
+    const retVal = latest.return_1d_pct ?? latest.return_pct;
+    const colRet = retVal > 0 ? 'var(--accent-green)' : (retVal < 0 ? 'var(--accent-red)' : 'var(--text)');
+    const colOI = latest.oi_change_pct > 0 ? 'var(--accent-green)' : (latest.oi_change_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+
     const marketKpiCards = [
       {
         label: 'Front Close',
@@ -3992,9 +3996,10 @@ async function renderMarketIntel(force = false) {
       },
       {
         label: '1D Return',
-        value: fmtPct(latest.return_1d_pct ?? latest.return_pct, 2),
+        value: fmtPct(retVal, 2),
+        valColor: colRet,
         sub: `5D ${fmtPct(latest.return_5d_pct, 2)}`,
-        tip: `Daily move: <strong>${fmtPct(latest.return_1d_pct ?? latest.return_pct, 2)}</strong><br>5-day drift: <strong>${fmtPct(latest.return_5d_pct, 2)}</strong><br><br>Sustained directional moves (5D drift) are higher-confidence signals for policy adjustment than single-day noise.`
+        tip: `Daily move: <strong>${fmtPct(retVal, 2)}</strong><br>5-day drift: <strong>${fmtPct(latest.return_5d_pct, 2)}</strong><br><br>Sustained directional moves (5D drift) are higher-confidence signals for policy adjustment than single-day noise.`
       },
       {
         label: 'Realized Vol',
@@ -4006,6 +4011,7 @@ async function renderMarketIntel(force = false) {
         label: 'OI Flow State',
         value: formatLabel(latest.oi_flow_state),
         sub: `OI ${fmtPct(latest.oi_change_pct, 2)}`,
+        subColor: colOI,
         tip: `Current State: <strong>${latest.oi_flow_state || 'neutral'}</strong><br>OI Change: <strong>${fmtPct(latest.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(latest.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
       },
       {
@@ -4022,10 +4028,10 @@ async function renderMarketIntel(force = false) {
       }
     ];
     document.getElementById('marketKpis').innerHTML = marketKpiCards.map(card => `
-      <div class="card market-kpi-card has-tooltip" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
-        <div class="stat-label">${card.label}</div>
-        <div class="stat-value" style="font-size:20px;">${card.value}</div>
-        <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${card.sub}</div>
+      <div class="mkt-card market-kpi-card has-tooltip" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
+        <div class="stat-label" style="font-size:11px; margin-bottom:4px;">${card.label}</div>
+        <div class="stat-value" style="font-size:22px; color:${card.valColor || 'var(--text)'};">${card.value}</div>
+        <div class="stat-sub" style="font-size:12px; color:${card.subColor || 'var(--text-muted)'}; margin-top:4px;">${card.sub}</div>
       </div>
     `).join('');
 
