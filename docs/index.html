@@ -192,7 +192,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 /* Prevent structural breaks when applying tooltip wrapper to table rows or cells */
 tr.has-tooltip { display: table-row; }
 td.has-tooltip, th.has-tooltip { display: table-cell; }
-div.card.has-tooltip { display: block; }
+div.card.has-tooltip, div.mkt-card.has-tooltip { display: block; }
 .heatmap-cell.has-tooltip { display: flex; }
 tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.has-tooltip::after, div.mkt-card.has-tooltip::after, .heatmap-cell.has-tooltip::after {
   content: none;
@@ -1535,20 +1535,24 @@ async function renderMarketOverviewContext() {
       'Liquidity': `<strong>Liquidity Score</strong> (0–100) — composite of bid-ask spread, volume depth, and OI size relative to 20-day norms.<br><br><strong>80+</strong>: Deep, efficient market. Tight spreads, easy entry/exit.<br><strong>50–79</strong>: Normal liquidity. Standard execution risk.<br><strong>&lt; 50</strong>: Thin market. Wider spreads, higher impact cost — reduce position size.<br><br>Rank compares this contract against all active contracts today.`,
       'Top Signal': `The <strong>highest-scoring intelligence signal</strong> active on NATURALGAS right now — from the multi-feature signal engine scanning for positioning anomalies, vol regime shifts, and margin divergence.<br><br>Severity: <span style="color:#f85149;">CRITICAL</span> → act immediately · <span style="color:#d29922;">WARNING</span> → monitor closely · <span style="color:#3fb950;">INFO</span> → context only.<br><br>Score = 0–100 confidence weight. Higher = stronger signal conviction.`
     };
+    const colRet = ng.return_pct > 0 ? 'var(--accent-green)' : (ng.return_pct < 0 ? 'var(--accent-red)' : 'var(--text)');
+    const colVol = ng.volume_z_20d > 1 ? 'var(--accent-green)' : (ng.volume_z_20d < -1 ? 'var(--accent-red)' : 'var(--text)');
+    const colOI = ng.oi_change_pct > 0 ? 'var(--accent-green)' : (ng.oi_change_pct < 0 ? 'var(--accent-red)' : 'var(--text)');
+
     grid.innerHTML = [
-      ['Front Close', fmtNum(ng.close, 2), `${_contractLabel(ng.expiry)} | ${ng.dte}d`],
-      ['Return', fmtPct(ng.return_pct, 2), `Prev close ${fmtNum(ng.prev_close, 2)}`],
-      ['Volume Shock', fmtNum(ng.volume_z_20d, 2) + 'z', `${fmtNum(ng.volume_lots, 0)} lots`],
-      ['OI Change', fmtPct(ng.oi_change_pct, 2), `OI ${fmtNum(ng.open_interest, 0)}`],
-      ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`],
-      ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal']
-    ].map(([label, value, sub]) => {
+      ['Front Close', fmtNum(ng.close, 2), `${_contractLabel(ng.expiry)} | ${ng.dte}d`, 'var(--text)'],
+      ['Return', fmtPct(ng.return_pct, 2), `Prev close ${fmtNum(ng.prev_close, 2)}`, colRet],
+      ['Volume Shock', fmtNum(ng.volume_z_20d, 2) + 'z', `${fmtNum(ng.volume_lots, 0)} lots`, colVol],
+      ['OI Change', fmtPct(ng.oi_change_pct, 2), `OI ${fmtNum(ng.open_interest, 0)}`, colOI],
+      ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`, 'var(--text)'],
+      ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal', 'var(--text)']
+    ].map(([label, value, sub, color]) => {
       const dynBody = MKTCTX_TIPS[label] || `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}`;
       return `
         <div class="mkt-card has-tooltip" data-dyn-title="Market Context: ${label}" data-dyn-body="${escAttr(dynBody)}">
-          <div class="stat-label">${label}</div>
-          <div class="stat-value" style="font-size:18px;">${value}</div>
-          <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
+          <div class="stat-label" style="font-size:11px; margin-bottom:4px;">${label}</div>
+          <div class="stat-value" style="font-size:22px; color:${color};">${value}</div>
+          <div class="stat-sub" style="font-size:12px; color:var(--text-muted); margin-top:4px;">${sub}</div>
         </div>
       `;
     }).join('');
