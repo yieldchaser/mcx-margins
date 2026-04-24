@@ -1,111 +1,88 @@
 # Blue Margin
 
-Blue Margin is a static, GitHub Pages-hosted intelligence dashboard for MCX natural gas margins and futures market data.
+Blue Margin is a static, high-fidelity intelligence dashboard for MCX Natural Gas margins and futures market data. It provides an institutional-grade visual interface for quantitative market analysis without requiring any active backend server.
 
 It scrapes:
-
 - MCX CCL daily margin files into `data/margins.db`
 - MCX futures bhavcopy price, volume, and open-interest data into `data/prices.db`
 
-It then exports precomputed JSON to `docs/data/` so the dashboard in `docs/index.html` can render everything client-side with no backend.
+It then computes complex analytics in Python (using `numpy`, `scikit-learn`, `scipy`) and exports precomputed JSON to `docs/data/`. The dashboard (`docs/index.html`) renders these datasets completely client-side using Vanilla JS, modern CSS, and Chart.js.
 
 [![Live Dashboard](https://img.shields.io/badge/live-dashboard-3fb950?style=for-the-badge)](https://yieldchaser.github.io/mcx-margins/)
 [![GitHub Actions](https://img.shields.io/badge/github-actions-automated-388bfd?style=for-the-badge)](https://github.com/yieldchaser/mcx-margins/actions)
 
-## What the dashboard covers
+## Dashboard Features (The 7 Tabs)
 
-### Margin intelligence
+The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 
-- Live and historical margin term structure for `NATURALGAS` and `NATGASMINI`
-- Contract lifecycle analysis with date/DTE toggles
-- Regime, seasonality, decomposition, stress, percentile, and prediction views
-- Tender-zone behavior and front-month margin monitoring
+### 1. Overview
+- **Market Context:** At-a-glance KPIs (Front Close, Return, Volume Shock, OI Change, Liquidity Score) with semantic color-coding.
+- **Price vs Margin Confluence:** A trailing 60-day interactive chart overlaying front-month price action against margin requirements to spot immediate divergences.
+- **Stress & Regime Scoring:** Real-time composite indicators determining if the market is in a structural calm or high-stress, pre-hike regime.
 
-### Market and PVOI intelligence
+### 2. Term Structure
+- **Historical Forward Curves:** Visualizes the evolution of the margin and price curves. Overlays today's curve against the 1-week, 1-month, and 1-year historical curves to measure structural shifts in maturity expectations.
 
-- Front-month price, return, realized-volatility, volume, and open-interest tracking
-- Price/OI positioning states such as `long_build`, `short_build`, `long_unwind`, and `short_cover`
-- Curve and liquidity views across active expiries
-- Event windows, liquidity heatmaps, and active-contract leaderboards
+### 3. History
+- **Deep Time-Series Analysis:** A dedicated historical engine with an interactive range slider (1M, 3M, 6M, 1Y, 3Y, ALL).
+- Plots absolute Margins, Realized Volatility over time, Margin Component Decomposition, and Market Flow dynamics.
 
-### Margin x market linkage
+### 4. Seasonality
+- **Year-Over-Year Overlays:** Compares historical margin behavior normalized across the Jan–Dec calendar year. Allows easy spotting of structural seasonal hikes (e.g., winter volatility pricing).
 
-- Front-month joined views only when margin expiry and market expiry truly match
-- Contract-specific lifecycle overlays using exact `symbol + expiry` payloads
-- Precomputed linkage metrics such as:
-  - `margin_change_1d`
-  - `margin_change_5d`
-  - `margin_price_divergence`
-  - `margin_vs_realized_vol_gap`
-  - `margin_per_liquidity`
-  - `funding_friction_score`
+### 5. Analytics
+- **Machine Learning & Stats:** Random Forest feature importance, margin-to-volatility linear regression, and cross-regime correlation matrices. Generated entirely from backend data and surfaced gracefully.
+
+### 6. Market
+- **Market Intelligence KPIs:** In-depth metrics including Realized Volatility percentiles, exact OI Flow States (e.g., "Long Unwind", "Short Cover"), and Funding Friction scores.
+- **Futures Details Panel:** Heatmapped tabular data highlighting liquidity bandwidth and exact PVOI metrics across all active contract months.
+
+### 7. Data Explorer
+- **Raw Exportable Data:** A high-density, searchable, and sortable tabular interface of the combined margin + market payloads for quantitative researchers who need raw numbers.
 
 ## Architecture
 
-### 1. Data ingestion
+The project is split into a robust Python data pipeline and a stateless frontend:
 
+### 1. Data ingestion
 - [`src/scraper.py`](src/scraper.py): Playwright scraper for MCX CCL daily margin data
-- [`scripts/main.py`](scripts/main.py): fetch a specific trading date
-- [`scripts/fetch_today.py`](scripts/fetch_today.py): retry-oriented daily fetch
-- [`scripts/lookback.py`](scripts/lookback.py): recent-gap backfill
-- [`scripts/backfill.py`](scripts/backfill.py): historical backfill
+- [`scripts/main.py`](scripts/main.py): Fetch a specific trading date
+- [`scripts/fetch_today.py`](scripts/fetch_today.py): Retry-oriented daily fetch
+- [`scripts/lookback.py`](scripts/lookback.py): Recent-gap backfill
+- [`scripts/backfill.py`](scripts/backfill.py): Historical backfill
 - [`scripts/fetch_prices.py`](scripts/fetch_prices.py): MCX futures bhavcopy scraper into `data/prices.db`
 
 ### 2. Storage
-
-- `data/margins.db`: source of truth for margin observations
-- `data/prices.db`: source of truth for futures PVOI observations
+- `data/margins.db`: Source of truth for margin observations
+- `data/prices.db`: Source of truth for futures PVOI (Price/Volume/OI) observations
 
 ### 3. Static publishing
-
-- [`scripts/export_json.py`](scripts/export_json.py): builds the JSON data API used by the dashboard
-- [`docs/index.html`](docs/index.html): static client-side dashboard
-
-The exporter now hardens contract integrity by:
-
-- deduplicating same-day margin rows at export time
-- emitting symbol-scoped contract payloads
-- preserving explicit series scope on integrated datasets:
-  - `front_month`
-  - `active_curve`
-  - `specific_expiry`
+- [`scripts/export_json.py`](scripts/export_json.py): Builds the entire JSON API used by the dashboard. Applies deduplication, active-curve scoping, rolling volatility calculations, and cross-regime statistics.
+- [`docs/index.html`](docs/index.html): The static client-side dashboard file containing all layout, CSS tokens, and rendering logic.
 
 ## JSON outputs
 
-### Core margin outputs
+The Python pipeline exports heavily structured payloads:
 
+### Core margin outputs
 - `docs/data/current.json`
-- `docs/data/history_ng.json`
-- `docs/data/history_ngm.json`
+- `docs/data/history_ng.json` / `history_ngm.json`
 - `docs/data/forward_curve.json`
 - `docs/data/contract_index.json`
-- `docs/data/contract/ng/<EXPIRY>.json`
-- `docs/data/contract/ngm/<EXPIRY>.json`
+- `docs/data/contract/<sym>/<EXPIRY>.json`
 
 ### Market and linkage outputs
-
 - `docs/data/market/meta.json`
 - `docs/data/market/current.json`
-- `docs/data/market/history_ng.json`
-- `docs/data/market/history_ngm.json`
+- `docs/data/market/history_ng.json` / `history_ngm.json`
 - `docs/data/market/forward_curve.json`
-- `docs/data/market/contract_index.json`
-- `docs/data/market/contract_crosswalk.json`
 - `docs/data/market/curve_history.json`
 - `docs/data/market/margin_joined_front.json`
 - `docs/data/market/cross_regimes.json`
 - `docs/data/market/signals.json`
-- `docs/data/market/contract/ng/<EXPIRY>.json`
-- `docs/data/market/contract/ngm/<EXPIRY>.json`
-
-Important contract-path change:
-
-- old margin payload path: `docs/data/contract/<EXPIRY>.json`
-- current margin payload path: `docs/data/contract/<sym>/<EXPIRY>.json`
-
-The market payload structure has the same symbol-scoped pattern:
-
 - `docs/data/market/contract/<sym>/<EXPIRY>.json`
+
+*Note: The system explicitly aligns margin expiries with market expiries to calculate exact `margin_vs_realized_vol_gap`, `margin_per_liquidity`, and `funding_friction_score` metrics.*
 
 ## Repo layout
 
@@ -135,34 +112,27 @@ The market payload structure has the same symbol-scoped pattern:
 ## Automation
 
 ### Margin workflow
-
 Defined in [`daily_margin.yml`](.github/workflows/daily_margin.yml):
-
-- fetches new margin data
-- bridges recent gaps
-- regenerates dashboard JSON
-- can send alerts
-- commits refreshed `data/` and `docs/data/`
+- Fetches new margin data
+- Bridges recent gaps if any
+- Regenerates dashboard JSON
+- Commits refreshed `data/` and `docs/data/` straight to GitHub Pages
 
 ### Price workflow
-
 Defined in [`daily_prices.yml`](.github/workflows/daily_prices.yml):
-
-- refreshes futures price/volume/OI data
-- runs export again so linked market outputs stay fresh
-- commits updated price DB and static JSON
+- Refreshes futures price/volume/OI data from MCX bhavcopy
+- Re-runs JSON export so linked market outputs stay perfectly synchronized
+- Commits updated DB and static files
 
 ## Local setup
 
 Install dependencies:
-
 ```bash
 pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
 Fetch data:
-
 ```bash
 # one trading date
 python scripts/main.py YYYY-MM-DD
@@ -170,53 +140,36 @@ python scripts/main.py YYYY-MM-DD
 # daily retry fetch
 python scripts/fetch_today.py
 
-# recent lookback repair
-python scripts/lookback.py
-
-# historical backfill
-python scripts/backfill.py
-
 # price / volume / OI refresh
 python scripts/fetch_prices.py
 ```
 
 Regenerate the static dashboard data:
-
 ```bash
 python scripts/export_json.py
 ```
 
 Run the site locally:
-
 ```bash
-python scripts/export_json.py
 cd docs
 python -m http.server 8080
 ```
-
 Then open `http://localhost:8080`.
 
 ## Testing
 
 Run the test suite:
-
 ```bash
 python -m unittest
 ```
-
 Current test coverage includes market-export helpers for:
-
-- front-month contract selection
-- rolling PVOI metric enrichment
-- explainable signal generation
-- freshness logic
-- margin-row dedupe priority
-- contract alignment states
-- joined-summary filtering
-- curve-history generation
+- Front-month contract selection
+- Rolling PVOI metric enrichment
+- Explainable signal generation
+- Freshness logic & margin-row dedupe priority
+- Joined-summary filtering and curve-history generation
 
 ## Notes
-
-- The dashboard is fully static at runtime; expensive analytics are computed in Python during export.
-- `numpy` and `scikit-learn` enable the heavier statistical outputs, but the site still renders core data without a backend service.
-- Margin-only usage still works even if `data/prices.db` is absent; market outputs degrade gracefully.
+- The dashboard is fully static at runtime; expensive analytics are computed entirely in Python during export.
+- `numpy` and `scikit-learn` enable the heavier statistical outputs, but the site still renders core data natively in the browser.
+- Margin-only usage still works gracefully even if `data/prices.db` is completely absent or empty.
