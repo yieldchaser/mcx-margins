@@ -1534,6 +1534,9 @@ async function renderMarketOverviewContext() {
       `;
     }).join('');
     card.style.display = 'block';
+    
+    // Attach tooltips to newly injected dynamically created cards
+    if (typeof attachTooltips === 'function') attachTooltips();
 
     // Render 60-day price × margin confluence chart
     renderPriceMarginConfluence();
