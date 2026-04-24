@@ -414,15 +414,22 @@ tr.has-tooltip::after, td.has-tooltip::after, div.card.has-tooltip::after, .heat
       <div style="overflow-x:auto;">
         <table class="data-table" id="snapshotTable">
           <thead><tr>
-            <th>Contract</th>
-            <th title="MCX closing price for this contract (₹)">Price ₹</th>
-            <th title="1-day price return %">Chg %</th>
-            <th title="Open-interest flow state: direction of current positioning">Flow</th>
-            <th>DTE</th><th>Initial %</th><th>ELM %</th>
-            <th>Tender %</th><th>Total %</th><th>Add. Long %</th><th>Add. Short %</th><th>Ann. Vol %</th>
-            <th title="Absolute margin required per lot in ₹ = (Total % / 100) × Price × Lot Size">₹/Lot</th>
-            <th title="Percentile rank of today's margin vs all historical observations at the same days-to-expiry (±15 days). Green = historically cheap. Amber = elevated. Red = historically expensive. P50 = median.">Hist. Pct</th>
+            <th class="has-tooltip" data-tooltip-key="snap-contract" style="cursor:help;">Contract</th>
+            <th class="has-tooltip" data-tooltip-key="snap-price"    style="cursor:help;">Price ₹</th>
+            <th class="has-tooltip" data-tooltip-key="snap-chg"      style="cursor:help;">Chg %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-flow"     style="cursor:help;">Flow</th>
+            <th class="has-tooltip" data-tooltip-key="snap-dte"      style="cursor:help;">DTE</th>
+            <th class="has-tooltip" data-tooltip-key="snap-initial"  style="cursor:help;">Initial %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-elm"      style="cursor:help;">ELM %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-tender"   style="cursor:help;">Tender %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-total"    style="cursor:help;">Total %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-add-long" style="cursor:help;">Add. Long %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-add-short" style="cursor:help;">Add. Short %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-vol"      style="cursor:help;">Ann. Vol %</th>
+            <th class="has-tooltip" data-tooltip-key="snap-lot"      style="cursor:help;">₹/Lot</th>
+            <th class="has-tooltip" data-tooltip-key="snap-hist"     style="cursor:help;">Hist. Pct</th>
           </tr></thead>
+
           <tbody id="snapshotBody"><tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
         </table>
       </div>
@@ -1501,6 +1508,14 @@ async function renderMarketOverviewContext() {
 
     document.getElementById('marketOverviewFreshness').textContent =
       `Market data: ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'}${fresh.age_days != null ? ' | age ' + fresh.age_days + 'd' : ''}`;
+    const MKTCTX_TIPS = {
+      'Front Close': `<strong>MCX closing price</strong> for the front-month NATURALGAS contract — the nearest active expiry (DTE ≥ 0).<br><br>This is the price that drives all margin calculations. A sharp ±3–5% move typically triggers an MCX margin revision within 1–2 trading days. The sub-text shows the contract label and days to expiry.`,
+      'Return': `<strong>1-day price return</strong> = (Close − Prev Close) ÷ Prev Close × 100.<br><br>Large positive returns often precede <em>margin hikes</em> as MCX's vol estimate catches up. Large negative returns with sustained vol can also trigger hikes — watch the direction of the Vol Cover metric in the snapshot table.`,
+      'Volume Shock': `<strong>Volume Z-score</strong> — how far today's traded volume deviates from its 20-day rolling mean, in standard-deviation units.<br><br><strong>&gt; +2σ</strong>: Unusually high activity. Institutional positioning or event-driven flow.<br><strong>&lt; −1σ</strong>: Thin market. Spreads widen, liquidity risk increases.<br><strong>Near 0</strong>: Normal session. Raw lot count shown in sub-text.`,
+      'OI Change': `<strong>Open Interest change %</strong> since yesterday's settlement.<br><br><strong>OI ↑ + Price ↑</strong>: Fresh longs entering — bullish, structurally sound.<br><strong>OI ↓ + Price ↑</strong>: Short-covering rally — less sustainable.<br><strong>OI ↑ + Price ↓</strong>: Fresh shorts — bearish conviction.<br><strong>OI ↓ + Price ↓</strong>: Long liquidation — watch for forced margin calls. Sub-text shows absolute OI in contracts.`,
+      'Liquidity': `<strong>Liquidity Score</strong> (0–100) — composite of bid-ask spread, volume depth, and OI size relative to 20-day norms.<br><br><strong>80+</strong>: Deep, efficient market. Tight spreads, easy entry/exit.<br><strong>50–79</strong>: Normal liquidity. Standard execution risk.<br><strong>&lt; 50</strong>: Thin market. Wider spreads, higher impact cost — reduce position size.<br><br>Rank compares this contract against all active contracts today.`,
+      'Top Signal': `The <strong>highest-scoring intelligence signal</strong> active on NATURALGAS right now — from the multi-feature signal engine scanning for positioning anomalies, vol regime shifts, and margin divergence.<br><br>Severity: <span style="color:#f85149;">CRITICAL</span> → act immediately · <span style="color:#d29922;">WARNING</span> → monitor closely · <span style="color:#3fb950;">INFO</span> → context only.<br><br>Score = 0–100 confidence weight. Higher = stronger signal conviction.`
+    };
     grid.innerHTML = [
       ['Front Close', fmtNum(ng.close, 2), `${_contractLabel(ng.expiry)} | ${ng.dte}d`],
       ['Return', fmtPct(ng.return_pct, 2), `Prev close ${fmtNum(ng.prev_close, 2)}`],
@@ -1509,9 +1524,9 @@ async function renderMarketOverviewContext() {
       ['Liquidity', fmtNum(ng.liquidity_score, 1), `Rank ${ng.liquidity_rank || '-'}`],
       ['Top Signal', ngSignals[0]?.label || '-', ngSignals[0] ? `${ngSignals[0].severity} | score ${ngSignals[0].score}` : 'No signal']
     ].map(([label, value, sub]) => {
-      const dynBody = `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}<br><br><em>Insight:</em> This front-month summary provides the immediate liquidity and price context for the ${ng.symbol || 'Natural Gas'} market.`;
+      const dynBody = MKTCTX_TIPS[label] || `Metric: <strong>${label}</strong><br>Value: <strong>${value}</strong><br>Context: ${sub}`;
       return `
-        <div class="card has-tooltip" data-dyn-title="Market Intel: ${label}" data-dyn-body="${escAttr(dynBody)}" style="background:var(--surface2);padding:14px;">
+        <div class="card has-tooltip" data-dyn-title="Market Context: ${label}" data-dyn-body="${escAttr(dynBody)}" style="background:var(--surface2);padding:14px;">
           <div class="stat-label">${label}</div>
           <div class="stat-value" style="font-size:18px;">${value}</div>
           <div class="stat-sub" style="font-size:11px;color:var(--text-muted);">${sub}</div>
@@ -1519,6 +1534,7 @@ async function renderMarketOverviewContext() {
       `;
     }).join('');
     card.style.display = 'block';
+
     // Render 60-day price × margin confluence chart
     renderPriceMarginConfluence();
   } catch(e) {
@@ -4830,18 +4846,67 @@ document.querySelector('[data-tab="explorer"]').addEventListener('click', () => 
 const TOOLTIPS = {
   "Current Margin Snapshot": {
     title: "Current Margin Snapshot — NATURALGAS",
-    body: `The <strong>live margin table</strong> shows all active contract expiries for NATURALGAS as of today's MCX CCL update.<br><br>
-<strong>Price ₹</strong> — MCX closing price for this contract. Refreshed daily with market data.<br>
-<strong>Chg %</strong> — 1-day price return. <span style="color:#22c55e;">Green ▲</span> = up, <span style="color:#ef4444;">Red ▼</span> = down.<br>
-<strong>Flow</strong> — OI flow state: direction of current positioning. <em>Long Build ↑</em> = fresh longs being added. <em>Long Unwind ↓</em> = longs being squared. <em>Short Build ↓</em> = fresh shorts. <em>Neutral →</em> = no clear positioning bias.<br>
-<strong>Initial %</strong> — Base margin MCX requires to hold 1 lot. Rises sharply as DTE → 0.<br>
-<strong>ELM %</strong> — Extreme Loss Margin. Locked at <em>1.25%</em> — MCX's buffer against gap-down opens.<br>
-<strong>Tender %</strong> — Extra margin in the last 7 days before expiry. Can spike to 25%+ on expiry day. If you're underfunded and holding a front-month at DTE ≤ 7, expect a forced liquidation notice.<br>
-<strong>Total %</strong> = Initial + ELM + Tender + any Additional margin. <em>Sub-text: leverage multiple</em> — e.g. "4.2x lev" means you control 4.2× your blocked capital. <span style="color:#22c55e;">Green</span> = low leverage (safe). <span style="color:#f59e0b;">Amber</span> = elevated. <span style="color:#ef4444;">Red</span> = high leverage regime.<br>
-<strong>DTE</strong> — Days to expiry. <em>Sub-text: roll alert</em> — <span style="color:#ef4444;">TENDER ZONE</span> if DTE ≤ 7 (tender margin active, roll immediately). <span style="color:#f59e0b;">Roll ~Xd</span> if DTE 8–14 (plan your roll).<br>
-<strong>Ann. Vol %</strong> — MCX's annualized volatility estimate. The primary driver of Initial margin changes. <em>Sub-text: Vol Cover</em> = Total % ÷ Daily Vol%. Shows how many daily vol units your margin absorbs. Below 10× historically precedes MCX hikes.<br>
-<strong>₹/Lot</strong> — Actual rupees blocked per lot = (Total % ÷ 100) × Price × Lot Size (1,250 for NATURALGAS, 250 for NATGASMINI). This is the real cash you need to hold one lot. <em>Sub-text: ₹/1%</em> = P&L impact of a 1% price move per lot. Use this for position sizing.`
+    body: `Live margin table for all active NATURALGAS (and NATGASMINI) expiries as of today's MCX CCL update.<br><br>Hover any <strong>column header</strong> for a detailed explanation of that specific metric. Hover any <strong>row</strong> for contract-level analysis including historical context.`
   },
+
+  // ── Per-column snapshot tooltips ──────────────────────────────────────
+  "snap-contract": {
+    title: "Contract",
+    body: `The MCX NATURALGAS expiry contract.<br><br><strong>Label</strong> (e.g. "Jun 25") = month/year of delivery.<br><strong>Code</strong> (e.g. "25JUNFUT") = the MCX instrument code used in CCL margin circulars.<br><br>Contracts are listed from front (nearest expiry) to far. Front-month always carries the highest margin due to tender pressure and near-term vol.`
+  },
+  "snap-price": {
+    title: "Price ₹",
+    body: `MCX <strong>closing price</strong> for this contract, in Rupees per MMBtu.<br><br>Source: MCX bhavcopy (daily settlement). Updated each trading day via the automated scraper.<br><br>When price data is unavailable for a specific expiry (e.g. low-liquidity far contracts), this cell shows <em>—</em>. All derived metrics (₹/Lot, ₹/1%, leverage cost) depend on this value.`
+  },
+  "snap-chg": {
+    title: "Chg %",
+    body: `<strong>1-day price return</strong> = (Today's Close − Yesterday's Close) ÷ Yesterday's Close × 100.<br><br><span style="color:#22c55e;">▲ Green</span> = price rose. <span style="color:#ef4444;">▼ Red</span> = price fell. <span style="color:var(--text-muted);">→ Muted</span> = flat (< 0.01% move).<br><br>Large moves (±3–5%) are a leading indicator of an imminent MCX margin revision — watch Vol Cover in the Ann. Vol % column for confirmation.`
+  },
+  "snap-flow": {
+    title: "Flow",
+    body: `<strong>OI Flow State</strong> — the net positioning direction derived from combining price direction with open-interest change.<br><br><span style="color:#22c55e;font-weight:600;">Long Build ↑</span> — Price up + OI up. Fresh longs entering. Bullish and structurally sound.<br><span style="color:#ef4444;font-weight:600;">Long Unwind ↓</span> — Price down + OI down. Existing longs exiting. Bearish de-risking.<br><span style="color:#fb923c;font-weight:600;">Short Build ↓</span> — Price down + OI up. Fresh shorts entering. Bearish conviction.<br><span style="color:#a78bfa;font-weight:600;">Short Unwind ↑</span> — Price up + OI down. Shorts covering. Rally less sustainable.<br><span style="color:var(--text-muted);font-weight:600;">Neutral →</span> — No clear directional bias.`
+  },
+  "snap-dte": {
+    title: "DTE — Days to Expiry",
+    body: `<strong>Days remaining</strong> until this contract's MCX expiry date.<br><br><span style="color:#22c55e;">Green badge (≥ 30d)</span>: Far contract. Low tender risk. Normal margin regime.<br><span style="color:#f59e0b;">Amber badge (8–29d)</span>: Approaching expiry. Begin planning your roll.<br><span style="color:#ef4444;">Red badge (≤ 7d)</span>: Tender zone active. MCX applies tender margin on top of initial margin.<br><br><em>Sub-text alert:</em> <span style="color:#ef4444;font-weight:700;">TENDER ZONE</span> if DTE ≤ 7 — roll immediately or expect a margin call. <span style="color:#f59e0b;">Roll ~Xd</span> if DTE 8–14 — start planning.`
+  },
+  "snap-initial": {
+    title: "Initial Margin %",
+    body: `The <strong>base margin</strong> MCX requires to hold 1 lot overnight, as a percentage of contract value.<br><br>Calculated by MCX using their SPAN-equivalent model: primary input is their annualized volatility estimate. Rises sharply as DTE → 0 (vol uncertainty compresses into fewer remaining days).<br><br>Historical range for NATURALGAS: <strong>6% (2010–2018 low-vol era)</strong> to <strong>65% (2022 Russia-Ukraine crisis peak)</strong>. Current normal: 15–30%.`
+  },
+  "snap-elm": {
+    title: "ELM % — Extreme Loss Margin",
+    body: `<strong>Extreme Loss Margin</strong> — a fixed additional buffer MCX charges on top of Initial margin.<br><br>For NATURALGAS, ELM is locked at <strong>1.25%</strong> and almost never changes. It is MCX's protection against gap-down opens that exceed the SPAN model's worst-case scenario.<br><br>In practice this column is always 1.25% — it exists for regulatory transparency, not daily risk management.`
+  },
+  "snap-tender": {
+    title: "Tender Margin %",
+    body: `<strong>Tender margin</strong> is an additional charge MCX applies in the <em>last 7 days before expiry</em> to ensure only traders who genuinely intend delivery hold the contract to settlement.<br><br>Typical range: 0% (outside 7 DTE) → 5–25%+ (inside 7 DTE, rising daily). On expiry day itself, tender margin can spike to 25%+ making it prohibitively expensive to hold.<br><br><span style="color:#ef4444;font-weight:600;">If this column is red and non-zero</span>, you are in the tender zone. Roll to the next expiry immediately or maintain adequate capital buffer for potential MCX margin call.`
+  },
+  "snap-total": {
+    title: "Total Margin %",
+    body: `<strong>Total margin</strong> = Initial % + ELM % + Tender % + any Additional margin declared by MCX.<br><br>This is the full percentage of contract value you must keep as collateral. <em>Sub-text shows your effective leverage multiple</em>:<br><br><strong>Leverage = 100 ÷ Total %</strong><br>e.g. Total 25% → 4.0× leverage. You control ₹4 of notional for every ₹1 of margin.<br><br><span style="color:#22c55e;">Green</span> = ≤ 22% (conservative, manageable). <span style="color:#f59e0b;">Amber</span> = 22–35% (elevated, monitor). <span style="color:#ef4444;">Red</span> = &gt; 35% (high-margin stress regime).`
+  },
+  "snap-add-long": {
+    title: "Additional Long Margin %",
+    body: `<strong>Additional margin for long positions</strong> — an extra charge MCX can impose specifically on buyers (long holders) of a contract.<br><br>This is typically zero but MCX can invoke it during supply-demand imbalances or when long OI concentration is unusually high.<br><br>When this is non-zero, long positions are more expensive to hold than short positions — a signal of MCX concern about one-sided long-side risk.`
+  },
+  "snap-add-short": {
+    title: "Additional Short Margin %",
+    body: `<strong>Additional margin for short positions</strong> — an extra charge MCX can impose specifically on sellers (short holders).<br><br>Typically zero, but MCX can invoke it when short OI is concentrated or when delivery risk on the short side is elevated.<br><br>When this is non-zero, short positions are more expensive to hold than long positions — asymmetric margin is a strong signal of MCX's view on directional risk.`
+  },
+  "snap-vol": {
+    title: "Ann. Vol % — Annualized Volatility",
+    body: `MCX's <strong>annualized volatility estimate</strong> for this contract — the single most important input to the Initial margin calculation.<br><br>When vol spikes here, a margin hike is almost certain within 1–2 days. The relationship is near-linear: Initial% ≈ 0.886 × Ann. Vol% + constant.<br><br><em>Sub-text: Vol Cover</em> = Total % ÷ Daily Vol %<br>Shows how many daily vol units your margin buffer absorbs.<br><span style="color:#ef4444;">Below 10×</span>: Margin is thin relative to daily expected moves. MCX historically hikes soon.<br><span style="color:#f59e0b;">10–15×</span>: Moderate buffer. Watch closely.<br><span style="color:var(--text-muted);">Above 15×</span>: Comfortable margin cushion.`
+  },
+  "snap-lot": {
+    title: "₹/Lot — Capital Blocked per Lot",
+    body: `<strong>Actual rupees</strong> you must keep as margin to hold 1 lot overnight.<br><br><strong>Formula:</strong> (Total % ÷ 100) × Price × Lot Size<br>Lot sizes: 1,250 MMBtu for NATURALGAS · 250 MMBtu for NATGASMINI<br><br>Example: If Total = 25%, Price = ₹200, Lot = 1,250 → ₹62,500 blocked per lot.<br><br><em>Sub-text: ₹/1% Move</em> = Price × Lot Size × 0.01<br>This is your <strong>P&amp;L impact per 1% price swing per lot</strong> — the essential position-sizing number. A 1% adverse move costs you exactly this much. Divide your risk budget by this number to size your position.`
+  },
+  "snap-hist": {
+    title: "Hist. Pct — Historical Percentile Rank",
+    body: `Where today's margin sits within the <strong>full historical distribution</strong> of margin readings at the same days-to-expiry (±15 days), using trailing 5-year data.<br><br><strong>P5 (5Y)</strong> = Today's margin is higher than only 5% of historical readings at this DTE — historically very cheap.<br><strong>P50 (5Y)</strong> = At the median. Normal regime.<br><strong>P90 (5Y)</strong> = Higher than 90% of historical readings — historically expensive territory.<br><br><span style="color:#22c55e;">Green (≤ P33)</span>: Cheap. Consider this a relatively low-cost entry window.<br><span style="color:var(--text);">Normal (P34–P66)</span>: Standard regime.<br><span style="color:#f59e0b;">Amber (P67–P80)</span>: Elevated. Watch for further hikes.<br><span style="color:#ef4444;">Red (&gt; P80)</span>: Historically expensive. Defensive positioning warranted.`
+  },
+
 
   "Forward Curve": {
     title: "Forward Curve — Margin Term Structure",
