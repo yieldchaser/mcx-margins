@@ -4801,11 +4801,15 @@ const TOOLTIPS = {
   "Current Margin Snapshot": {
     title: "Current Margin Snapshot — NATURALGAS",
     body: `The <strong>live margin table</strong> shows all active contract expiries for NATURALGAS as of today's MCX CCL update.<br><br>
+<strong>Price ₹</strong> — MCX closing price for this contract. Refreshed daily with market data.<br>
+<strong>Chg %</strong> — 1-day price return. <span style="color:#22c55e;">Green ▲</span> = up, <span style="color:#ef4444;">Red ▼</span> = down.<br>
+<strong>Flow</strong> — OI flow state: direction of current positioning. <em>Long Build ↑</em> = fresh longs being added. <em>Long Unwind ↓</em> = longs being squared. <em>Short Build ↓</em> = fresh shorts. <em>Neutral →</em> = no clear positioning bias.<br>
 <strong>Initial %</strong> — Base margin MCX requires to hold 1 lot. Rises sharply as DTE → 0.<br>
 <strong>ELM %</strong> — Extreme Loss Margin. Locked at <em>1.25%</em> — MCX's buffer against gap-down opens.<br>
 <strong>Tender %</strong> — Extra margin in the last 7 days before expiry. Can spike to 25%+ on expiry day. If you're underfunded and holding a front-month at DTE ≤ 7, expect a forced liquidation notice.<br>
 <strong>Total %</strong> = Initial + ELM + Tender + any Additional margin.<br>
-<strong>Ann. Vol %</strong> — MCX's annualized volatility estimate. The primary driver of Initial margin changes.`
+<strong>Ann. Vol %</strong> — MCX's annualized volatility estimate. The primary driver of Initial margin changes.<br>
+<strong>₹/Lot</strong> — Actual rupees blocked per lot = (Total % ÷ 100) × Price × Lot Size (1,250 for NATURALGAS, 250 for NATGASMINI). This is the real cash you need to hold one lot.`
   },
   "Forward Curve": {
     title: "Forward Curve — Margin Term Structure",
@@ -4821,6 +4825,17 @@ const TOOLTIPS = {
 <strong>Probability bar</strong> — Logistic model trained on 6 features (margin, vol, DTE, percentile rank, days since last change, policy buffer). More sensitive to structural positioning than the linear formula.<br><br>
 <strong>Signal badge</strong> — Driven by the logistic model's dominant class. <span style="color:#f85149;">▲ HIKE X%</span> = logistic assigns X% probability. <span style="color:#3fb950;">▼ CUT X%</span> likewise.<br><br>
 <strong style="color:#d29922;">Amber Predicted cell</strong> = the two models disagree on direction. The linear formula predicts a mild numeric cut while the logistic model's multi-feature analysis favours a hike — treat that contract with extra caution.`
+  },
+  "Price Margin Confluence": {
+    title: "Price × Margin Confluence — 60D Rolling",
+    body: `Dual-axis chart showing <strong>MCX front-month price</strong> and <strong>initial margin %</strong> over the last 60 trading days.<br><br>
+<span style="color:#388bfd;"><strong>Blue line (left Y)</strong></span> — Initial Margin %. Watch for divergences where price has moved significantly but margin has not yet responded — these often precede a hike or cut within 1–3 days.<br><br>
+<span style="color:#3fb950;"><strong>Green line (right Y)</strong></span> — MCX Front Month Close ₹. A sharp price move (±3–5%) without a corresponding margin adjustment is a classic leading indicator of an imminent MCX CCL update.<br><br>
+<strong>How to read it:</strong><br>
+• <em>Price falls, margin stays high</em> → margin cut likely incoming.<br>
+• <em>Price spikes, margin unchanged</em> → margin hike risk elevated.<br>
+• <em>Both moving together</em> → normal regime, MCX is tracking price volatility faithfully.<br><br>
+Scope: front-month contract only (minimum DTE ≥ 0 each day). Source: MCX CCL margin circulars + MCX market data.`
   },
   "Forward Margin Curve": {
     title: "Forward Margin Curve — All Active Expiries",
