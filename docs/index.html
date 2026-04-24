@@ -1835,10 +1835,39 @@ async function renderOverview() {
           const fs = FLOW_STYLE[mkt.oi_flow_state] || FLOW_STYLE.neutral;
           flowCell = `<span style="color:${fs.c};background:${fs.b};border:1px solid ${fs.c}33;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;white-space:nowrap;">${fs.label}</span>`;
         }
+
+        // ── ₹/Lot + ₹/1% sub-text ─────────────────────────────────────────
         let lotCell = '<span style="color:var(--text-muted);">—</span>';
         if (mkt?.close != null) {
-          const marginRs = (c.total_margin_pct / 100) * mkt.close * LOT;
-          lotCell = `<strong>₹${Math.round(marginRs).toLocaleString('en-IN')}</strong>`;
+          const marginRs  = (c.total_margin_pct / 100) * mkt.close * LOT;
+          const perOnePct = Math.round(mkt.close * LOT * 0.01);
+          lotCell = `<strong>₹${Math.round(marginRs).toLocaleString('en-IN')}</strong>`
+                  + `<div style="font-size:9px;color:var(--text-muted);margin-top:2px;">₹${perOnePct.toLocaleString('en-IN')}/1%</div>`;
+        }
+
+        // ── DTE badge + Roll-In / Tender alert ────────────────────────────
+        let rollSub = '';
+        if (c.dte <= 7)       rollSub = `<div style="font-size:9px;color:#ef4444;font-weight:700;margin-top:3px;">TENDER ZONE</div>`;
+        else if (c.dte <= 14) rollSub = `<div style="font-size:9px;color:#f59e0b;margin-top:3px;">Roll ~${c.dte - 7}d</div>`;
+
+        // ── Total % + Leverage sub-text ────────────────────────────────────
+        const leverage = (100 / c.total_margin_pct).toFixed(1);
+        const levColor = c.total_margin_pct > 35 ? '#ef4444' : c.total_margin_pct > 22 ? '#f59e0b' : '#22c55e';
+        const totalCell = `<strong>${c.total_margin_pct.toFixed(2)}%</strong>`
+                        + `<div style="font-size:9px;color:${levColor};margin-top:2px;font-weight:600;">${leverage}x lev</div>`;
+
+        // ── Ann. Vol % + Vol Cover sub-text ───────────────────────────────
+        let volCell = '—';
+        if (c.annualized_volatility != null) {
+          const annVolPct = (c.annualized_volatility * 100).toFixed(1) + '%';
+          if (c.daily_volatility != null && c.daily_volatility > 0) {
+            const cover = (c.total_margin_pct / (c.daily_volatility * 100)).toFixed(1);
+            const coverNum = parseFloat(cover);
+            const coverCol = coverNum < 10 ? '#ef4444' : coverNum < 15 ? '#f59e0b' : '#8b949e';
+            volCell = `${annVolPct}<div style="font-size:9px;color:${coverCol};margin-top:2px;">Cover ${cover}×</div>`;
+          } else {
+            volCell = annVolPct;
+          }
         }
 
         const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${c.expiry})`;
@@ -1847,7 +1876,7 @@ async function renderOverview() {
                          ? `<br><br>This is <strong>${Math.abs(diffToFront)}% ${diffToFront >= 0 ? 'higher' : 'lower'}</strong> than the front-month contract.`
                          : '<br><br>This is the front-month contract, carrying maximum tender pressure and near-term vol.';
         const tenderText = c.tender_margin_pct > 0 ? ` It currently carries a heavy tender pressure of <strong style='color:var(--accent-red)'>${c.tender_margin_pct.toFixed(2)}%</strong>.` : '';
-        const priceCtx = mkt?.close != null ? ` Price: <strong>₹${fmtNum(mkt.close, 2)}</strong> (${mkt.return_pct != null ? (mkt.return_pct > 0 ? '+' : '') + mkt.return_pct.toFixed(2) + '%' : '—'} today). ₹/Lot blocked: <strong>₹${mkt.close != null ? Math.round((c.total_margin_pct/100)*mkt.close*LOT).toLocaleString('en-IN') : '—'}</strong>.` : '';
+        const priceCtx = mkt?.close != null ? ` Price: <strong>₹${fmtNum(mkt.close, 2)}</strong> (${mkt.return_pct != null ? (mkt.return_pct > 0 ? '+' : '') + mkt.return_pct.toFixed(2) + '%' : '—'} today). ₹/Lot blocked: <strong>₹${mkt.close != null ? Math.round((c.total_margin_pct/100)*mkt.close*LOT).toLocaleString('en-IN') : '—'}</strong>. Leverage: <strong>${leverage}x</strong>.` : '';
         const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${priceCtx}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
 
         return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
@@ -1855,19 +1884,20 @@ async function renderOverview() {
           <td>${priceCell}</td>
           <td>${chgCell}</td>
           <td>${flowCell}</td>
-          <td>${dteBadge(c.dte)}</td>
+          <td>${dteBadge(c.dte)}${rollSub}</td>
           <td>${c.initial_margin_pct.toFixed(2)}%</td>
           <td>${c.elm_pct.toFixed(2)}%</td>
           <td>${c.tender_margin_pct > 0
             ? `<strong style="color:var(--accent-red)">${c.tender_margin_pct.toFixed(2)}%</strong>`
             : '0.00%'}</td>
-          <td><strong>${c.total_margin_pct.toFixed(2)}%</strong></td>
+          <td>${totalCell}</td>
           <td>${c.additional_long_margin_pct.toFixed(2)}%</td>
           <td>${c.additional_short_margin_pct.toFixed(2)}%</td>
-          <td>${c.annualized_volatility != null ? (c.annualized_volatility * 100).toFixed(1) + '%' : '—'}</td>
+          <td>${volCell}</td>
           <td>${lotCell}</td>
           <td style="font-weight:700;color:${hpColor};">${hpLabel}</td>
         </tr>`;
+
       }).join('');
       attachTooltips();
     }
@@ -4807,10 +4837,12 @@ const TOOLTIPS = {
 <strong>Initial %</strong> — Base margin MCX requires to hold 1 lot. Rises sharply as DTE → 0.<br>
 <strong>ELM %</strong> — Extreme Loss Margin. Locked at <em>1.25%</em> — MCX's buffer against gap-down opens.<br>
 <strong>Tender %</strong> — Extra margin in the last 7 days before expiry. Can spike to 25%+ on expiry day. If you're underfunded and holding a front-month at DTE ≤ 7, expect a forced liquidation notice.<br>
-<strong>Total %</strong> = Initial + ELM + Tender + any Additional margin.<br>
-<strong>Ann. Vol %</strong> — MCX's annualized volatility estimate. The primary driver of Initial margin changes.<br>
-<strong>₹/Lot</strong> — Actual rupees blocked per lot = (Total % ÷ 100) × Price × Lot Size (1,250 for NATURALGAS, 250 for NATGASMINI). This is the real cash you need to hold one lot.`
+<strong>Total %</strong> = Initial + ELM + Tender + any Additional margin. <em>Sub-text: leverage multiple</em> — e.g. "4.2x lev" means you control 4.2× your blocked capital. <span style="color:#22c55e;">Green</span> = low leverage (safe). <span style="color:#f59e0b;">Amber</span> = elevated. <span style="color:#ef4444;">Red</span> = high leverage regime.<br>
+<strong>DTE</strong> — Days to expiry. <em>Sub-text: roll alert</em> — <span style="color:#ef4444;">TENDER ZONE</span> if DTE ≤ 7 (tender margin active, roll immediately). <span style="color:#f59e0b;">Roll ~Xd</span> if DTE 8–14 (plan your roll).<br>
+<strong>Ann. Vol %</strong> — MCX's annualized volatility estimate. The primary driver of Initial margin changes. <em>Sub-text: Vol Cover</em> = Total % ÷ Daily Vol%. Shows how many daily vol units your margin absorbs. Below 10× historically precedes MCX hikes.<br>
+<strong>₹/Lot</strong> — Actual rupees blocked per lot = (Total % ÷ 100) × Price × Lot Size (1,250 for NATURALGAS, 250 for NATGASMINI). This is the real cash you need to hold one lot. <em>Sub-text: ₹/1%</em> = P&L impact of a 1% price move per lot. Use this for position sizing.`
   },
+
   "Forward Curve": {
     title: "Forward Curve — Margin Term Structure",
     body: `How MCX-required margin varies across all active expiries today.<br><br>
