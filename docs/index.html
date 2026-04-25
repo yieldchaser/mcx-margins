@@ -868,18 +868,46 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             </div>
 
             <div id="customLotRow" style="display:none;">
-              <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">ENTER LOTS</label>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.02em;text-transform:uppercase;">Enter Lots</label>
+                <span id="lotGuide" style="font-size:10px;color:var(--accent);font-weight:600;letter-spacing:0.02em;"></span>
+              </div>
               <input type="number" id="calcCustomLots" value="1" min="1" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;font-family:monospace;">
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">ENTRY DATE</label>
-                <input type="date" id="calcEntryDate" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color-scheme:dark;">
+            <div style="grid-column: 1 / -1; margin-top: 6px;">
+              <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:8px;">
+                <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.02em;text-transform:uppercase;font-weight:600;">Trade Horizon Selection</label>
+                <div style="display:flex; gap:6px;" id="calcPresets">
+                   <button class="lc-ctrl active" data-range="full" style="font-size:10px; padding:3px 8px;">Full</button>
+                   <button class="lc-ctrl" data-range="30d" style="font-size:10px; padding:3px 8px;">Last 30D</button>
+                   <button class="lc-ctrl" data-range="10d" style="font-size:10px; padding:3px 8px;">Last 10D</button>
+                </div>
               </div>
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">EXIT DATE</label>
-                <input type="date" id="calcExitDate" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color-scheme:dark;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div class="calc-input-group">
+                  <label>Entry Date</label>
+                  <input type="date" id="calcEntryDate" style="color-scheme:dark; font-family:monospace; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:6px 10px; color:var(--text); font-size:13px;">
+                </div>
+                <div class="calc-input-group">
+                  <label>Exit Date</label>
+                  <input type="date" id="calcExitDate" style="color-scheme:dark; font-family:monospace; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:6px 10px; color:var(--text); font-size:13px;">
+                </div>
+              </div>
+              <!-- Dual Range Slider -->
+              <div id="calcRangeSlider" class="lc-range-controls" style="margin-top:4px; padding:0 8px; display:none;">
+                  <div class="range-slider-container" style="height:4px;">
+                      <div class="range-slider-track" style="background:var(--border);"></div>
+                      <div class="range-slider-highlight" style="background:var(--accent); box-shadow: 0 0 10px rgba(56,139,253,0.4);"></div>
+                      <div class="range-inputs">
+                          <input type="range" class="range-start">
+                          <input type="range" class="range-end">
+                      </div>
+                  </div>
+                  <div class="range-label-container" style="margin-top:8px;">
+                      <span class="label-start" style="font-family:monospace;font-size:10px;color:var(--text-muted);"></span>
+                      <span class="label-end" style="font-family:monospace;font-size:10px;color:var(--text-muted);"></span>
+                  </div>
               </div>
             </div>
           </div>
@@ -1387,16 +1415,29 @@ class RangeController {
     if (this.onUpdate) this.onUpdate(parseInt(this.inStart.value), parseInt(this.inEnd.value));
   }
 
+  updateRange(min, max, s, e) {
+    this.min = min;
+    this.max = max;
+    this.inStart.min = this.inEnd.min = min;
+    this.inStart.max = this.inEnd.max = max;
+    if (s !== undefined) this.inStart.value = s;
+    if (e !== undefined) this.inEnd.value = e;
+    this.updateUI();
+  }
+
   updateUI() {
     const s = parseInt(this.inStart.value);
     const e = parseInt(this.inEnd.value);
     const range = this.max - this.min;
-    if (range === 0) return; // guard: single-row data, avoid division by zero
+    if (range <= 0) {
+      this.highlight.style.width = '0%';
+      return;
+    }
     const lPercent = ((s - this.min) / range) * 100;
     const rPercent = ((e - this.min) / range) * 100;
 
     this.highlight.style.left = lPercent + '%';
-    this.highlight.style.width = (rPercent - lPercent) + '%';
+    this.highlight.style.width = Math.max(0, rPercent - lPercent) + '%';
   }
 
   setRange(s, e) {
@@ -4086,7 +4127,7 @@ document.querySelector('[data-tab="analytics"]').addEventListener('click', () =>
 // PART 7 — Trade Intelligence & Capital Calculator
 // ═══════════════════════════════════════════════════════════════════
 
-let _calcChart = null, _calcDir = 'long', _calcInited = false;
+let _calcChart = null, _calcDir = 'long', _calcInited = false, _calcRC = null;
 
 async function initCalculator() {
   if (_calcInited) return;
@@ -4103,28 +4144,19 @@ async function initCalculator() {
     if (isCollapsed) {
       if (!_lcAllEntries.length) await buildLCDropdown();
       syncCalcSelectors();
-      window.updateCalc();
+      window.updateCalc(true); // force reset dates on first expand
     }
   });
 
-  // Independent Selectors logic using the existing _lcAllEntries
   function syncCalcSelectors() {
     const symSelect = document.getElementById('calcSymbol');
     const yrSel = document.getElementById('calcYear');
     const expSel = document.getElementById('calcExpiry');
-    
-    const sym = symSelect.value; // 'ng' or 'ngm'
-    // Filter index for this symbol. Note: buildLCDropdown loads index for _lcSym.
-    // If user changes symbol here, we might need a fresh index if we want it to be truly independent.
-    // However, NG/NGM index is usually loaded together or can be switched.
+    const sym = symSelect.value;
     
     const updateYears = () => {
-      // In this app, _lcAllEntries is the filtered list for the current symbol.
-      // To be truly independent, we'll use a local filter of the global index if available,
-      // but let's stick to the current symbol for now to match the Explorer's data state.
       const entries = _lcAllEntries.sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
       const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))].sort((a,b) => b-a);
-      
       yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
       updateExpiries();
     };
@@ -4133,7 +4165,7 @@ async function initCalculator() {
       const year = yrSel.value;
       const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
       expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)}</option>`).join('');
-      window.updateCalc();
+      window.updateCalc(true); // snap dates on expiry change
     };
 
     yrSel.onchange = updateExpiries;
@@ -4141,14 +4173,40 @@ async function initCalculator() {
   }
 
   document.getElementById('calcSymbol').addEventListener('change', async (e) => {
-    // If symbol changes, we must sync the Lifecycle Explorer's sym and rebuild
     _lcSym = e.target.value;
     await buildLCDropdown();
     syncCalcSelectors();
   });
   
-  document.getElementById('calcExpiry').addEventListener('change', () => window.updateCalc());
+  document.getElementById('calcExpiry').addEventListener('change', () => window.updateCalc(true));
   
+  // Wire Range Presets
+  document.querySelectorAll('#calcPresets button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const range = btn.dataset.range;
+      const inStart = document.querySelector('#calcRangeSlider .range-start');
+      const inEnd = document.querySelector('#calcRangeSlider .range-end');
+      const max = parseInt(inEnd.max);
+      
+      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      if (range === 'full') {
+        inStart.value = 0;
+        inEnd.value = max;
+      } else if (range === '30d') {
+        inStart.value = Math.max(0, max - 30);
+        inEnd.value = max;
+      } else if (range === '10d') {
+        inStart.value = Math.max(0, max - 10);
+        inEnd.value = max;
+      }
+      
+      _calcRC?.updateUI();
+      window.updateCalc();
+    });
+  });
+
   // Wire direction buttons
   document.getElementById('calcDirLong').addEventListener('click', () => {
     _calcDir = 'long';
@@ -4163,20 +4221,18 @@ async function initCalculator() {
     window.updateCalc();
   });
 
-  // Wire lot mode
   document.getElementById('calcLotMode').addEventListener('change', (e) => {
     document.getElementById('customLotRow').style.display = e.target.value === 'custom' ? 'block' : 'none';
     window.updateCalc();
   });
 
-  // Global update triggers
   ['calcCapital', 'calcEntryDate', 'calcExitDate', 'calcCustomLots'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => window.updateCalc());
   });
 }
 
-window.updateCalc = async function() {
+window.updateCalc = async function(forceSnap = false) {
   const sym = document.getElementById('calcSymbol').value;
   const expiry = document.getElementById('calcExpiry').value;
   if (!expiry) return;
@@ -4186,18 +4242,14 @@ window.updateCalc = async function() {
   const exitDateRaw = document.getElementById('calcExitDate').value;
   const lotMode = document.getElementById('calcLotMode').value;
   
-  // Reset results while loading
   const resIds = ['resPL', 'resDD', 'resLots', 'resMargin'];
   resIds.forEach(id => { document.getElementById(id).style.opacity = '0.5'; });
   
-  // 1. Get Data
   let marginData, marketData;
   try {
     marginData = await loadJSON(marginContractDataName(sym, expiry));
     marketData = await loadMarketJSON(marketContractDataName(sym, expiry).replace(/^market\//, ''));
-  } catch(e) {
-    console.warn('Calc data load fail:', e);
-  }
+  } catch(e) { console.warn('Calc data fail:', e); }
   
   resIds.forEach(id => { document.getElementById(id).style.opacity = '1'; });
 
@@ -4207,25 +4259,53 @@ window.updateCalc = async function() {
     return;
   }
 
-  // 2. Align Data
   const mByDate = {}; (marginData.rows || []).forEach(r => mByDate[r.date] = r);
   const pByDate = {}; (marketData.rows || []).forEach(r => pByDate[r.date] = r);
-  
   const allDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
   if (allDates.length === 0) return;
 
-  // Set default dates if empty
-  if (!entryDateRaw || !exitDateRaw) {
-    document.getElementById('calcEntryDate').value = allDates[0];
-    document.getElementById('calcExitDate').value = allDates[allDates.length - 1];
+  // Initialize or Update Range Controller
+  if (!_calcRC) {
+    _calcRC = new RangeController('calcRangeSlider', 0, allDates.length - 1, 0, allDates.length - 1, (s, e) => {
+      document.getElementById('calcEntryDate').value = allDates[s];
+      document.getElementById('calcExitDate').value = allDates[e];
+      window.updateCalc();
+    });
+  } else {
+    _calcRC.updateRange(0, allDates.length - 1);
+  }
+  
+  document.getElementById('calcRangeSlider').style.display = 'block';
+
+  if (forceSnap || !entryDateRaw || !exitDateRaw) {
+    const start = allDates[0], end = allDates[allDates.length - 1];
+    document.getElementById('calcEntryDate').value = start;
+    document.getElementById('calcExitDate').value = end;
+    document.getElementById('calcEntryDate').min = start; document.getElementById('calcEntryDate').max = end;
+    document.getElementById('calcExitDate').min = start; document.getElementById('calcExitDate').max = end;
+    _calcRC.setRange(0, allDates.length - 1);
+    if (forceSnap) return window.updateCalc(false);
+  } else {
+    // Set constraints even if not snapping
     document.getElementById('calcEntryDate').min = allDates[0];
     document.getElementById('calcEntryDate').max = allDates[allDates.length - 1];
     document.getElementById('calcExitDate').min = allDates[0];
     document.getElementById('calcExitDate').max = allDates[allDates.length - 1];
-    return window.updateCalc();
+    
+    // Find best index even for weekend/holiday inputs
+    const findIdx = (d) => {
+      let i = allDates.indexOf(d);
+      if (i !== -1) return i;
+      // Fallback: find closest date
+      return allDates.findIndex(ad => ad >= d);
+    };
+    const s = Math.max(0, findIdx(entryDateRaw));
+    const e = Math.min(allDates.length - 1, findIdx(exitDateRaw));
+    _calcRC.setRange(s, e);
   }
+  _calcRC.setLabels(document.getElementById('calcEntryDate').value, document.getElementById('calcExitDate').value);
 
-  const windowDays = allDates.filter(d => d >= entryDateRaw && d <= exitDateRaw);
+  const windowDays = allDates.filter(d => d >= document.getElementById('calcEntryDate').value && d <= document.getElementById('calcExitDate').value);
   if (windowDays.length < 2) {
     document.getElementById('calcWarning').textContent = 'Please select a valid date range (min 2 days).';
     document.getElementById('calcWarning').style.display = 'block';
@@ -4233,7 +4313,6 @@ window.updateCalc = async function() {
   }
   document.getElementById('calcWarning').style.display = 'none';
 
-  // 3. Robust Entry Point Search (find nearest available price if exact is holiday)
   const findNearest = (dateStr, dataMap) => {
     if (dataMap[dateStr]) return dataMap[dateStr];
     const targetIdx = allDates.indexOf(dateStr);
@@ -4248,21 +4327,28 @@ window.updateCalc = async function() {
   const lotSize = sym === 'ngm' ? 250 : 1250;
   
   if (!entryPrice || !entryMarginPct) {
-    document.getElementById('calcWarning').textContent = 'Incomplete margin/price data for start of range.';
+    document.getElementById('calcWarning').textContent = 'Incomplete data for the selected range.';
     document.getElementById('calcWarning').style.display = 'block';
     return;
   }
 
   const marginReqPerLot = (entryPrice * lotSize * entryMarginPct) / 100;
-  let lots = 0;
+  const maxPossibleLots = Math.floor(capital / marginReqPerLot);
   
-  if (lotMode === 'max') {
-    lots = Math.floor(capital / marginReqPerLot);
-  } else if (lotMode === 'safe') {
-    lots = Math.floor((capital * 0.5) / marginReqPerLot);
+  // Update Lot Intelligence labels
+  if (maxPossibleLots > 0) {
+    const l75 = Math.round(maxPossibleLots * 0.75);
+    const l80 = Math.round(maxPossibleLots * 0.80);
+    const l90 = Math.round(maxPossibleLots * 0.90);
+    document.getElementById('lotGuide').textContent = `Max: ${maxPossibleLots} | 50%: ${Math.round(maxPossibleLots * 0.5)} | 75%: ${l75} | 90%: ${l90}`;
   } else {
-    lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
+    document.getElementById('lotGuide').textContent = 'Insufficient Capital';
   }
+
+  let lots = 0;
+  if (lotMode === 'max') lots = maxPossibleLots;
+  else if (lotMode === 'safe') lots = Math.round(maxPossibleLots * 0.5);
+  else lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
 
   if (lots < 1 && lotMode !== 'custom') {
     document.getElementById('calcWarning').textContent = `Insufficient capital for 1 lot (Req: ₹${fmtNum(marginReqPerLot, 0)}).`;
@@ -4270,57 +4356,57 @@ window.updateCalc = async function() {
     lots = 0;
   }
 
-  // 4. Performance Calculation
-  let totalPL = 0;
-  let maxDD = 0;
-  let peakMargin = 0;
-  let peakEquity = -Infinity;
-  const equityCurve = [];
-  const labels = [];
+  let totalPL = 0, maxDD = 0, peakMargin = 0, peakEquity = -Infinity;
+  const equityCurve = [], labels = [];
 
   windowDays.forEach(date => {
-    const p = pByDate[date]?.close;
-    const m = mByDate[date]?.total_margin_pct;
-    
+    const row = pByDate[date] || findNearest(date, pByDate);
+    const p = row?.close;
+    const mRow = mByDate[date] || findNearest(date, mByDate);
+    const m = mRow?.total_margin_pct;
+
     if (p != null) {
       const pl = _calcDir === 'long' ? (p - entryPrice) * lots * lotSize : (entryPrice - p) * lots * lotSize;
       totalPL = pl;
       equityCurve.push(pl);
-      labels.push(date.slice(5));
-      
+      labels.push(date);
       if (pl > peakEquity) peakEquity = pl;
       const dd = peakEquity - pl;
       if (dd > maxDD) maxDD = dd;
     }
-    
     if (p != null && m != null) {
       const curMargin = (p * lotSize * m * lots) / 100;
       if (curMargin > peakMargin) peakMargin = curMargin;
     }
   });
 
-  // 5. UI Update
   const plColor = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('resPL').textContent = '₹' + fmtNum(totalPL, 0);
   document.getElementById('resPL').style.color = plColor;
   document.getElementById('resPLPct').textContent = (capital > 0 ? fmtPct((totalPL / capital) * 100, 2) : '0.00%') + ' ROI';
-  
   document.getElementById('resDD').textContent = '₹' + fmtNum(maxDD, 0);
   document.getElementById('resDDPct').textContent = (capital + peakEquity > 0 ? fmtPct((maxDD / (capital + peakEquity)) * 100, 2) : '0.00%') + ' of peak';
-  
   document.getElementById('resLots').textContent = lots + ' Lots';
-  document.getElementById('resLotInfo').textContent = `₹${fmtNum(marginReqPerLot, 0)} per lot`;
-  
+  document.getElementById('resLotInfo').textContent = `₹${fmtNum(marginReqPerLot, 0)} per lot \u00B7 ${windowDays.length} days`;
   document.getElementById('resMargin').textContent = '₹' + fmtNum(peakMargin, 0);
-  document.getElementById('resMarginPeak').textContent = `Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0.0%'}`;
+  document.getElementById('resMarginPeak').textContent = `Peak Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0.0%'}`;
   
   document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
   document.getElementById('calcSummaryBadge').style.background = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('calcSummaryBadge').style.display = 'inline-flex';
 
-  // 6. Chart Update
   if (_calcChart) _calcChart.destroy();
   const ctx = document.getElementById('chartCalcEquity').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 140);
+  gradient.addColorStop(0, _hexRgba(totalPL >= 0 ? '#3fb950' : '#f85149', 0.25));
+  gradient.addColorStop(1, 'transparent');
+
+  const chartFmt = (v) => {
+    if (Math.abs(v) >= 100000) return (v / 100000).toFixed(1) + 'L';
+    if (Math.abs(v) >= 1000) return (v / 1000).toFixed(0) + 'K';
+    return v;
+  };
+
   _calcChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -4329,19 +4415,36 @@ window.updateCalc = async function() {
         label: 'M2M P/L',
         data: equityCurve,
         borderColor: plColor,
-        backgroundColor: _hexRgba(totalPL >= 0 ? '#238636' : '#da3633', 0.1),
+        backgroundColor: gradient,
         fill: true,
-        tension: 0.2,
+        tension: 0.3,
         pointRadius: 0,
-        borderWidth: 2
+        borderWidth: 3,
+        shadowColor: 'rgba(0,0,0,0.4)',
+        shadowBlur: 10
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: (ctx) => ` P/L: \u20B9${fmtNum(ctx.raw, 0)}`
+          }
+        }
+      },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: { ticks: { font: { size: 9 }, color: 'var(--text-muted)' }, grid: { color: 'rgba(139,148,158,0.1)' } }
+        y: { 
+          ticks: { 
+            font: { size: 9, weight: '600' }, 
+            color: 'var(--text-muted)',
+            callback: chartFmt
+          }, 
+          grid: { color: 'rgba(139,148,158,0.06)' } 
+        }
       }
     }
   });
