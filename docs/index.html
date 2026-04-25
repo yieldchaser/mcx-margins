@@ -1267,7 +1267,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                     <button type="button" class="lc-ctrl" data-range="30d">30D</button>
                     <button type="button" class="lc-ctrl" data-range="10d">10D</button>
                     <button type="button" class="lc-ctrl" data-range="5d">5D</button>
-                    <button type="button" class="lc-ctrl" data-range="dte30">\u226430 DTE</button>
+                    <button type="button" class="lc-ctrl" data-range="dte30">≤30 DTE</button>
                   </div>
                 </div>
                 <div class="calc-grid--duo">
@@ -3377,9 +3377,18 @@ document.querySelectorAll('#tab-history .horizon-btn').forEach(btn => {
 });
 
 document.getElementById('histSymbol').addEventListener('change', () => renderHistory('FullReload'));
-document.getElementById('showPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
-document.getElementById('showMcxPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
-document.getElementById('showMcxFlow')?.addEventListener('change', () => renderHistory('MarketFlow', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
+document.getElementById('showPrice')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
+document.getElementById('showMcxPrice')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
+document.getElementById('showMcxFlow')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('MarketFlow', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
 
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   if (!histInited) { histInited = true; renderHistory('FullReload'); }
@@ -4671,21 +4680,35 @@ async function initCalculator() {
     btn.addEventListener('click', async () => {
       const allDates = window._calcAllDates;
       if (!_calcRC || !allDates || !allDates.length) return;
-      
+
       document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
       btn.classList.add('lc-active');
 
       const range = btn.dataset.range;
       const maxIdx = allDates.length - 1;
       let s = 0, e = maxIdx;
-      
+
       if (range === '30d') s = Math.max(0, maxIdx - 30);
       else if (range === '10d') s = Math.max(0, maxIdx - 10);
+      else if (range === '5d') s = Math.max(0, maxIdx - 5);
+      else if (range === 'dte30') {
+        const expDate = document.getElementById('calcExpiry').value;
+        if (expDate) {
+          const expMs = new Date(expDate).getTime();
+          for (let i = maxIdx; i >= 0; i--) {
+            const dateMs = new Date(allDates[i]).getTime();
+            const daysToExp = Math.ceil((expMs - dateMs) / (1000 * 60 * 60 * 24));
+            if (daysToExp > 30) { s = i; break; }
+          }
+        }
+      }
+      // 'full' uses defaults: s=0, e=maxIdx
 
       document.getElementById('calcEntryDate').value = allDates[s];
       document.getElementById('calcExitDate').value = allDates[e];
-      
+
       _calcRC.setRange(s, e);
+      _calcRC.setLabels(allDates[s], allDates[e]);
       await window.updateCalc();
     });
   });
@@ -4707,9 +4730,31 @@ async function initCalculator() {
     window.updateCalc();
   });
 
-  ['calcCapital', 'calcEntryDate', 'calcExitDate', 'calcCustomLots'].forEach(id => {
+  ['calcCapital', 'calcCustomLots'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => window.updateCalc());
+  });
+
+  // Sync date inputs with range slider
+  ['calcEntryDate', 'calcExitDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+      const allDates = window._calcAllDates;
+      if (!_calcRC || !allDates) return window.updateCalc();
+
+      const entryVal = document.getElementById('calcEntryDate').value;
+      const exitVal = document.getElementById('calcExitDate').value;
+      const startIdx = allDates.indexOf(entryVal);
+      const endIdx = allDates.indexOf(exitVal);
+
+      // Valid indices found: sync slider with dates
+      if (startIdx !== -1 && endIdx !== -1) {
+        _calcRC.setRange(startIdx, endIdx);
+        _calcRC.setLabels(entryVal, exitVal);
+      }
+
+      window.updateCalc();
+    });
   });
 
   // Capital quick-preset buttons (replaces inline onclick)
