@@ -223,16 +223,22 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-horizon-presets { display: flex; gap: 6px; flex-wrap: wrap; }
 .calc-horizon-presets .lc-ctrl { font-size: 10px; padding: 3px 8px; }
 
-#calcRangeSlider { margin-top: 4px; padding: 0 4px; }
+#calcRangeSlider { margin-top: 4px; margin-bottom: 24px; padding: 0 4px; }
 #calcRangeSlider .range-slider-container {
   position: relative;
 }
 #calcRangeSlider .range-slider-container::before {
   content: ''; position: absolute; left: -8px; right: -8px; top: -16px; bottom: -16px;
 }
+#calcRangeSlider .range-label-container {
+  position: relative;
+  margin-top: 18px;
+  font-size: 11px;
+  color: var(--text);
+}
 #calcRangeSlider .range-label-container::before,
 #calcRangeSlider .range-label-container::after {
-  content: '▲'; position: absolute; top: -8px; font-size: 8px; color: var(--accent);
+  content: '▲'; position: absolute; top: -14px; font-size: 8px; color: var(--accent);
 }
 #calcRangeSlider .range-label-container::before {
   left: 0;
