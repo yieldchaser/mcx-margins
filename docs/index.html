@@ -936,13 +936,23 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <div class="stat-value" id="resMargin" style="font-size:18px;color:var(--accent-orange);">\u2014</div>
                 <div class="stat-sub" id="resMarginPeak" style="font-size:11px;">\u2014</div>
               </div>
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Best Day (M2M)</div>
+                <div class="stat-value" id="resBest" style="font-size:18px;color:var(--accent-green);">\u2014</div>
+                <div class="stat-sub" id="resBestDate" style="font-size:11px;">\u2014</div>
+              </div>
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Worst Day (M2M)</div>
+                <div class="stat-value" id="resWorst" style="font-size:18px;color:var(--accent-red);">\u2014</div>
+                <div class="stat-sub" id="resWorstDate" style="font-size:11px;">\u2014</div>
+              </div>
             </div>
           </div>
 
           <!-- Column 3: Visual Analytics -->
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div class="module-kicker">M2M Equity Curve</div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;height:140px;position:relative;">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;height:240px;position:relative;">
               <canvas id="chartCalcEquity"></canvas>
             </div>
             <div id="calcWarning" style="font-size:11px;color:var(--accent-red);background:rgba(248,81,73,0.1);padding:10px;border-radius:6px;display:none;border:1px solid rgba(248,81,73,0.2);"></div>
@@ -1368,10 +1378,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 }
 
 .lc-range-controls {
-  position: relative; width: 100%; height: 40px; margin-top: 15px;
+  position: relative; width: 100%; height: 32px; margin-top: 12px;
 }
 .range-slider-container {
-  position: absolute; width: 100%; height: 4px; top: 18px;
+  position: absolute; width: 100%; height: 4px; top: 12px;
 }
 .range-slider-track {
   position: absolute; height: 100%; width: 100%;
@@ -1383,12 +1393,12 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   box-shadow: 0 0 12px rgba(56, 139, 253, 0.4);
 }
 .range-inputs {
-  position: relative; width: 100%; height: 40px;
+  position: relative; width: 100%; height: 24px;
 }
 .range-inputs input {
   position: absolute; width: 100%; pointer-events: none;
   appearance: none; -webkit-appearance: none; background: none;
-  top: 10px; left: 0; z-index: 2; outline: none; margin: 0;
+  top: 2px; left: 0; z-index: 2; outline: none; margin: 0;
 }
 .range-inputs input::-webkit-slider-thumb {
   pointer-events: auto; appearance: none; -webkit-appearance: none;
@@ -1403,7 +1413,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   background: #fff; border: 3px solid var(--accent); cursor: pointer;
 }
 .range-label-container {
-  display: flex; justify-content: space-between; margin-top: 5px;
+  display: flex; justify-content: space-between; margin-top: 8px;
   font-family: 'SF Mono', 'Fira Code', monospace; font-size: 9px; color: var(--text-muted);
 }
 </style>
@@ -4281,7 +4291,7 @@ window.updateCalc = async function(forceSnap = false) {
   const exitDateRaw = document.getElementById('calcExitDate').value;
   const lotMode = document.getElementById('calcLotMode').value;
   
-  const resIds = ['resPL', 'resDD', 'resLots', 'resMargin'];
+  const resIds = ['resPL', 'resDD', 'resLots', 'resMargin', 'resBest', 'resWorst'];
   resIds.forEach(id => { document.getElementById(id).style.opacity = '0.5'; });
   
   let marginData, marketData;
@@ -4438,13 +4448,24 @@ window.updateCalc = async function(forceSnap = false) {
   document.getElementById('resMargin').textContent = '₹' + fmtNum(peakMargin, 0);
   document.getElementById('resMarginPeak').textContent = `Peak Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0.0%'}`;
   
+  let bestDay = -Infinity, worstDay = Infinity, bestDate = '', worstDate = '';
+  for (let i = 0; i < equityCurve.length; i++) {
+    const dailyChange = i === 0 ? equityCurve[i] : equityCurve[i] - equityCurve[i-1];
+    if (dailyChange > bestDay) { bestDay = dailyChange; bestDate = labels[i]; }
+    if (dailyChange < worstDay) { worstDay = dailyChange; worstDate = labels[i]; }
+  }
+  document.getElementById('resBest').textContent = '₹' + fmtNum(bestDay === -Infinity ? 0 : bestDay, 0);
+  document.getElementById('resBestDate').textContent = bestDate || '\u2014';
+  document.getElementById('resWorst').textContent = '₹' + fmtNum(worstDay === Infinity ? 0 : worstDay, 0);
+  document.getElementById('resWorstDate').textContent = worstDate || '\u2014';
+  
   document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
   document.getElementById('calcSummaryBadge').style.background = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('calcSummaryBadge').style.display = 'inline-flex';
 
   if (_calcChart) _calcChart.destroy();
   const ctx = document.getElementById('chartCalcEquity').getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 140);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
   gradient.addColorStop(0, _hexRgba(totalPL >= 0 ? '#3fb950' : '#f85149', 0.25));
   gradient.addColorStop(1, 'transparent');
 
