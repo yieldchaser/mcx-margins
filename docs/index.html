@@ -3377,9 +3377,18 @@ document.querySelectorAll('#tab-history .horizon-btn').forEach(btn => {
 });
 
 document.getElementById('histSymbol').addEventListener('change', () => renderHistory('FullReload'));
-document.getElementById('showPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
-document.getElementById('showMcxPrice')?.addEventListener('change', () => renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
-document.getElementById('showMcxFlow')?.addEventListener('change', () => renderHistory('MarketFlow', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value)));
+document.getElementById('showPrice')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
+document.getElementById('showMcxPrice')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('Margin', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
+document.getElementById('showMcxFlow')?.addEventListener('change', () => {
+  if (!histInited) { renderHistory('FullReload'); }
+  else renderHistory('MarketFlow', parseInt(_histMarginRC.inStart.value), parseInt(_histMarginRC.inEnd.value));
+});
 
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   if (!histInited) { histInited = true; renderHistory('FullReload'); }
