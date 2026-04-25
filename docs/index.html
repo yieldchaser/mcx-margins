@@ -726,6 +726,113 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
 
+    <!-- ── Trade Intelligence & Capital Calculator ── -->
+    <div class="card" style="margin-top:16px;" id="calculatorCard">
+      <div id="calculatorHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="card-title has-tooltip" data-tooltip-key="Trade Intelligence Calculator" style="margin-bottom:0;">Trade Intelligence & Capital Calculator</div>
+          <span id="calcSummaryBadge" class="scope-chip" style="background:var(--accent);color:white;border:none;display:none;font-weight:600;padding:2px 10px;"></span>
+        </div>
+        <span id="calcChevron" style="transition:transform 0.3s ease;transform:rotate(0deg);font-size:18px;color:var(--text-muted);">&#x25BE;</span>
+      </div>
+      
+      <div id="calculatorBody" style="margin-top:0;overflow:hidden;transition:all 0.3s ease;max-height:0;">
+        <div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:24px;">
+          
+          <!-- Column 1: Inputs -->
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="module-kicker">Trade Setup</div>
+            
+            <div>
+              <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">CAPITAL AVAILABLE (₹)</label>
+              <div style="display:flex;gap:6px;">
+                <input type="number" id="calcCapital" value="500000" step="50000" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;flex-grow:1;font-family:monospace;">
+                <div style="display:flex;gap:3px;">
+                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=200000; window.updateCalc();">2L</button>
+                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=500000; window.updateCalc();">5L</button>
+                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=1000000; window.updateCalc();">10L</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">DIRECTION</label>
+                <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--surface2);">
+                  <button id="calcDirLong" class="lc-sym-btn lc-sym-active" style="flex:1;padding:6px 0;font-size:12px;font-weight:600;">LONG</button>
+                  <button id="calcDirShort" class="lc-sym-btn" style="flex:1;padding:6px 0;font-size:12px;font-weight:600;">SHORT</button>
+                </div>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">LOT SIZING</label>
+                <select id="calcLotMode" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:500;">
+                  <option value="max">Max Possible</option>
+                  <option value="safe">Risk Safe (50% Util)</option>
+                  <option value="custom">Custom Lots</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="customLotRow" style="display:none;">
+              <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">ENTER LOTS</label>
+              <input type="number" id="calcCustomLots" value="1" min="1" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;font-family:monospace;">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">ENTRY DATE</label>
+                <input type="date" id="calcEntryDate" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color-scheme:dark;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">EXIT DATE</label>
+                <input type="date" id="calcExitDate" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;color-scheme:dark;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Performance Results -->
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="module-kicker">Performance Snapshot</div>
+            <div id="calcResultsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Total P/L</div>
+                <div class="stat-value" id="resPL" style="font-size:18px;">\u2014</div>
+                <div class="stat-sub" id="resPLPct" style="font-size:11px;">\u2014</div>
+              </div>
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Max Drawdown</div>
+                <div class="stat-value" id="resDD" style="font-size:18px;color:var(--accent-red);">\u2014</div>
+                <div class="stat-sub" id="resDDPct" style="font-size:11px;">\u2014</div>
+              </div>
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Lots Traded</div>
+                <div class="stat-value" id="resLots" style="font-size:18px;color:var(--accent);">\u2014</div>
+                <div class="stat-sub" id="resLotInfo" style="font-size:11px;">\u2014</div>
+              </div>
+              <div class="mkt-card" style="padding:10px 14px;">
+                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Margin Peak</div>
+                <div class="stat-value" id="resMargin" style="font-size:18px;color:var(--accent-orange);">\u2014</div>
+                <div class="stat-sub" id="resMarginPeak" style="font-size:11px;">\u2014</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 3: Visual Analytics -->
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="module-kicker">M2M Equity Curve</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;height:140px;position:relative;">
+              <canvas id="chartCalcEquity"></canvas>
+            </div>
+            <div id="calcWarning" style="font-size:11px;color:var(--accent-red);background:rgba(248,81,73,0.1);padding:10px;border-radius:6px;display:none;border:1px solid rgba(248,81,73,0.2);"></div>
+            <div id="calcInfo" style="font-size:10px;color:var(--text-muted);margin-top:auto;">
+              * Calculations use actual exchange margin requirements and closing prices for the selected dates.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div id="tab-seasonality" class="tab-content">
@@ -3881,6 +3988,208 @@ async function renderAnalytics() {
 
 document.querySelector('[data-tab="analytics"]').addEventListener('click', () => renderAnalytics());
 
+// ═══════════════════════════════════════════════════════════════════
+// PART 7 — Trade Intelligence & Capital Calculator
+// ═══════════════════════════════════════════════════════════════════
+
+let _calcChart = null, _calcDir = 'long', _calcInited = false;
+
+function initCalculator() {
+  if (_calcInited) return;
+  _calcInited = true;
+
+  const header = document.getElementById('calculatorHeader');
+  const body = document.getElementById('calculatorBody');
+  const chevron = document.getElementById('calcChevron');
+  
+  header.addEventListener('click', () => {
+    const isCollapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '';
+    body.style.maxHeight = isCollapsed ? '1000px' : '0px';
+    chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    if (isCollapsed) window.updateCalc();
+  });
+  
+  // Wire direction buttons
+  document.getElementById('calcDirLong').addEventListener('click', () => {
+    _calcDir = 'long';
+    document.getElementById('calcDirLong').classList.add('lc-sym-active');
+    document.getElementById('calcDirShort').classList.remove('lc-sym-active');
+    window.updateCalc();
+  });
+  document.getElementById('calcDirShort').addEventListener('click', () => {
+    _calcDir = 'short';
+    document.getElementById('calcDirShort').classList.add('lc-sym-active');
+    document.getElementById('calcDirLong').classList.remove('lc-sym-active');
+    window.updateCalc();
+  });
+
+  // Wire lot mode
+  document.getElementById('calcLotMode').addEventListener('change', (e) => {
+    document.getElementById('customLotRow').style.display = e.target.value === 'custom' ? 'block' : 'none';
+    window.updateCalc();
+  });
+
+  // Global update triggers
+  ['calcCapital', 'calcEntryDate', 'calcExitDate', 'calcCustomLots'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => window.updateCalc());
+  });
+
+  // Sync with Lifecycle Explorer
+  document.getElementById('lcMonthSelect').addEventListener('change', () => {
+    if (body.style.maxHeight !== '0px') window.updateCalc();
+  });
+}
+
+window.updateCalc = async function() {
+  const expiry = document.getElementById('lcMonthSelect').value;
+  if (!expiry) return;
+
+  const capital = parseFloat(document.getElementById('calcCapital').value) || 0;
+  const entryDate = document.getElementById('calcEntryDate').value;
+  const exitDate = document.getElementById('calcExitDate').value;
+  const lotMode = document.getElementById('calcLotMode').value;
+  
+  // 1. Get Data
+  const marginData = await loadJSON(marginContractDataName(_lcSym, expiry));
+  const marketData = await loadMarketJSON(marketContractDataName(_lcSym, expiry).replace(/^market\//, ''));
+  
+  if (!marginData || !marketData) {
+    document.getElementById('calcWarning').textContent = 'Market data not available for this expiry yet.';
+    document.getElementById('calcWarning').style.display = 'block';
+    return;
+  }
+
+  // 2. Align Data
+  const mByDate = {}; (marginData.rows || []).forEach(r => mByDate[r.date] = r);
+  const pByDate = {}; (marketData.rows || []).forEach(r => pByDate[r.date] = r);
+  
+  const allDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
+  
+  // Set default dates if empty
+  if (!entryDate || !exitDate) {
+    document.getElementById('calcEntryDate').value = allDates[0];
+    document.getElementById('calcExitDate').value = allDates[allDates.length - 1];
+    return window.updateCalc();
+  }
+
+  const windowDays = allDates.filter(d => d >= entryDate && d <= exitDate);
+  if (windowDays.length < 2) {
+    document.getElementById('calcWarning').textContent = 'Please select a valid date range (min 2 days).';
+    document.getElementById('calcWarning').style.display = 'block';
+    return;
+  }
+  document.getElementById('calcWarning').style.display = 'none';
+
+  // 3. Logic
+  const entryRow = pByDate[windowDays[0]];
+  const entryPrice = entryRow?.close;
+  const entryMarginPct = mByDate[windowDays[0]]?.total_margin_pct;
+  const lotSize = _lcSym === 'ngm' ? 250 : 1250;
+  
+  if (!entryPrice || !entryMarginPct) {
+    document.getElementById('calcWarning').textContent = 'Incomplete data for the selected entry date.';
+    document.getElementById('calcWarning').style.display = 'block';
+    return;
+  }
+
+  const marginReqPerLot = (entryPrice * lotSize * entryMarginPct) / 100;
+  let lots = 0;
+  
+  if (lotMode === 'max') {
+    lots = Math.floor(capital / marginReqPerLot);
+  } else if (lotMode === 'safe') {
+    lots = Math.floor((capital * 0.5) / marginReqPerLot);
+  } else {
+    lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
+  }
+
+  if (lots < 1) {
+    document.getElementById('calcWarning').textContent = `Insufficient capital for 1 lot (Req: ₹${fmtNum(marginReqPerLot, 0)}).`;
+    document.getElementById('calcWarning').style.display = 'block';
+    lots = 0;
+  }
+
+  // 4. Performance Calculation
+  let totalPL = 0;
+  let maxDD = 0;
+  let peakMargin = 0;
+  let peakEquity = -Infinity;
+  const equityCurve = [];
+  const labels = [];
+
+  windowDays.forEach(date => {
+    const p = pByDate[date]?.close;
+    const m = mByDate[date]?.total_margin_pct;
+    
+    if (p) {
+      const pl = _calcDir === 'long' ? (p - entryPrice) * lots * lotSize : (entryPrice - p) * lots * lotSize;
+      totalPL = pl;
+      equityCurve.push(pl);
+      labels.push(date.slice(5));
+      
+      if (pl > peakEquity) peakEquity = pl;
+      const dd = peakEquity - pl;
+      if (dd > maxDD) maxDD = dd;
+    }
+    
+    if (p && m) {
+      const curMargin = (p * lotSize * m * lots) / 100;
+      if (curMargin > peakMargin) peakMargin = curMargin;
+    }
+  });
+
+  // 5. UI Update
+  const plColor = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  document.getElementById('resPL').textContent = '₹' + fmtNum(totalPL, 0);
+  document.getElementById('resPL').style.color = plColor;
+  document.getElementById('resPLPct').textContent = (capital > 0 ? fmtPct((totalPL / capital) * 100, 2) : '0%') + ' ROI';
+  
+  document.getElementById('resDD').textContent = '₹' + fmtNum(maxDD, 0);
+  document.getElementById('resDDPct').textContent = (capital + peakEquity > 0 ? fmtPct((maxDD / (capital + peakEquity)) * 100, 2) : '0%') + ' of peak';
+  
+  document.getElementById('resLots').textContent = lots + ' Lots';
+  document.getElementById('resLotInfo').textContent = `₹${fmtNum(marginReqPerLot, 0)} per lot`;
+  
+  document.getElementById('resMargin').textContent = '₹' + fmtNum(peakMargin, 0);
+  document.getElementById('resMarginPeak').textContent = `Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0%'}`;
+  
+  document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
+  document.getElementById('calcSummaryBadge').style.background = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  document.getElementById('calcSummaryBadge').style.display = 'inline-flex';
+
+  // 6. Chart Update
+  if (_calcChart) _calcChart.destroy();
+  _calcChart = new Chart(document.getElementById('chartCalcEquity'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'M2M P/L',
+        data: equityCurve,
+        borderColor: plColor,
+        backgroundColor: _hexRgba(totalPL >= 0 ? '#238636' : '#da3633', 0.1),
+        fill: true,
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: { ticks: { font: { size: 9 }, color: 'var(--text-muted)' }, grid: { color: 'rgba(139,148,158,0.1)' } }
+      }
+    }
+  });
+}
+
+// Wire the calculator init to the history tab
+document.querySelector('[data-tab="history"]').addEventListener('click', () => {
+  setTimeout(initCalculator, 150);
+});
+
 // Market Intelligence Tab
 let marketRendered = false;
 let marketExplorerData = [], marketExplorerPage = 0;
@@ -4889,6 +5198,16 @@ const TOOLTIPS = {
   "snap-price": {
     title: "Price ₹",
     body: `MCX <strong>closing price</strong> for this contract, in Rupees per MMBtu.<br><br>Source: MCX bhavcopy (daily settlement). Updated each trading day via the automated scraper.<br><br>When price data is unavailable for a specific expiry (e.g. low-liquidity far contracts), this cell shows <em>—</em>. All derived metrics (₹/Lot, ₹/1%, leverage cost) depend on this value.`
+  },
+  "Trade Intelligence Calculator": {
+    title: "Trade Intelligence & Capital Calculator",
+    body: `<strong>What it is:</strong> A simulation tool to analyze the performance and capital requirements of a specific trade.<br><br>
+<strong>How to use:</strong><br>
+1. Select a contract in the Lifecycle Explorer above.<br>
+2. Enter your available capital.<br>
+3. Choose your direction (Long/Short) and lot sizing strategy.<br>
+4. Adjust Entry/Exit dates to see historical performance.<br><br>
+<strong>Calculations:</strong> Uses actual exchange margin requirements and closing prices for every day in the selected window to compute M2M P/L and peak margin utilization.`
   },
   "snap-chg": {
     title: "Chg %",
