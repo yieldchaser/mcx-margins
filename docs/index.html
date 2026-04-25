@@ -1367,45 +1367,44 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   color: var(--text-muted); font-size: 12px; text-align: center;
 }
 
-/* ── Dual Range Slider Aesthetics ── */
 .lc-range-controls {
-  position: relative; width: 100%; height: 32px; margin-top: 10px;
+  position: relative; width: 100%; height: 40px; margin-top: 15px;
 }
 .range-slider-container {
-  position: relative; width: 100%; height: 4px; top: 14px;
+  position: absolute; width: 100%; height: 4px; top: 18px;
 }
 .range-slider-track {
   position: absolute; height: 100%; width: 100%;
-  background: var(--surface2); border-radius: 2px;
+  background: var(--surface2); border-radius: 4px;
 }
 .range-slider-highlight {
   position: absolute; height: 100%;
-  background: var(--accent); border-radius: 2px;
-  box-shadow: 0 0 10px rgba(56, 139, 253, 0.4);
+  background: var(--accent); border-radius: 4px;
+  box-shadow: 0 0 12px rgba(56, 139, 253, 0.4);
 }
 .range-inputs {
-  position: relative; width: 100%; height: 0;
+  position: relative; width: 100%; height: 40px;
 }
 .range-inputs input {
   position: absolute; width: 100%; pointer-events: none;
   appearance: none; -webkit-appearance: none; background: none;
-  top: -10px; z-index: 2; outline: none;
+  top: 10px; left: 0; z-index: 2; outline: none; margin: 0;
 }
 .range-inputs input::-webkit-slider-thumb {
   pointer-events: auto; appearance: none; -webkit-appearance: none;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: white; border: 2px solid var(--accent);
-  cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--accent);
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
   transition: transform 0.1s;
 }
-.range-inputs input::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.range-inputs input::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .range-inputs input::-moz-range-thumb {
-  pointer-events: auto; width: 12px; height: 12px; border-radius: 50%;
-  background: white; border: 2px solid var(--accent); cursor: pointer;
+  pointer-events: auto; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--accent); cursor: pointer;
 }
 .range-label-container {
-  display: flex; justify-content: space-between; margin-top: 18px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 10px; color: var(--text-muted);
+  display: flex; justify-content: space-between; margin-top: 5px;
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 9px; color: var(--text-muted);
 }
 </style>
 
@@ -1447,10 +1446,15 @@ class RangeController {
     let s = parseInt(this.inStart.value);
     let e = parseInt(this.inEnd.value);
 
-    // Collision prevention: enforce gap of 1
+    // Collision prevention: enforce gap of 1 and boundaries
     if (s >= e) {
-      if (isStart) this.inStart.value = e - 1;
-      else this.inEnd.value = s + 1;
+      if (isStart) {
+        s = Math.max(this.min, e - 1);
+        this.inStart.value = s;
+      } else {
+        e = Math.min(this.max, s + 1);
+        this.inEnd.value = e;
+      }
     }
     this.updateUI();
     if (this.onUpdate) this.onUpdate(parseInt(this.inStart.value), parseInt(this.inEnd.value));
@@ -4327,22 +4331,31 @@ window.updateCalc = async function(forceSnap = false) {
     document.getElementById('calcExitDate').min = allDates[0];
     document.getElementById('calcExitDate').max = allDates[allDates.length - 1];
     
-    // Find best index even for weekend/holiday inputs
     const findIdx = (d) => {
       let i = allDates.indexOf(d);
       if (i !== -1) return i;
-      // Fallback: find closest date
-      return allDates.findIndex(ad => ad >= d);
+      let idx = allDates.findIndex(ad => ad >= d);
+      if (idx === -1) return allDates.length - 1;
+      return idx;
     };
-    const s = Math.max(0, findIdx(entryDateRaw));
-    const e = Math.min(allDates.length - 1, findIdx(exitDateRaw));
+    let s = findIdx(entryDateRaw);
+    let e = findIdx(exitDateRaw);
+
+    // If reversed by user, swap
+    if (s > e) [s, e] = [e, s];
+    if (s === e) e = Math.min(allDates.length - 1, s + 1);
+
+    document.getElementById('calcEntryDate').value = allDates[s];
+    document.getElementById('calcExitDate').value = allDates[e];
     _calcRC.setRange(s, e);
   }
   _calcRC.setLabels(document.getElementById('calcEntryDate').value, document.getElementById('calcExitDate').value);
 
   document.getElementById('calcWarning').style.display = 'none';
 
-  const windowDays = allDates.filter(d => d >= document.getElementById('calcEntryDate').value && d <= document.getElementById('calcExitDate').value);
+  const entryVal = document.getElementById('calcEntryDate').value;
+  const exitVal = document.getElementById('calcExitDate').value;
+  const windowDays = allDates.filter(d => d >= entryVal && d <= exitVal);
   if (windowDays.length < 2) {
     document.getElementById('calcWarning').textContent = 'Please select a valid date range (min 2 days).';
     document.getElementById('calcWarning').style.display = 'block';
@@ -4450,14 +4463,12 @@ window.updateCalc = async function(forceSnap = false) {
       datasets: [{
         label: 'M2M P/L',
         data: equityCurve,
-        borderColor: plColor,
+        borderColor: '#ffffff',
         backgroundColor: gradient,
         fill: true,
         tension: 0.3,
         pointRadius: 0,
-        borderWidth: 3,
-        shadowColor: 'rgba(0,0,0,0.4)',
-        shadowBlur: 10
+        borderWidth: 2
       }]
     },
     options: {
@@ -4472,14 +4483,19 @@ window.updateCalc = async function(forceSnap = false) {
         }
       },
       scales: {
-        x: { ticks: { display: false }, grid: { display: false } },
+        x: { 
+          display: true,
+          ticks: { color: '#ffffff', font: { size: 8 } },
+          grid: { color: 'rgba(255,255,255,0.1)' }
+        },
         y: { 
+          display: true,
           ticks: { 
             font: { size: 9, weight: '600' }, 
-            color: 'var(--text)',
+            color: '#ffffff',
             callback: chartFmt
           }, 
-          grid: { color: 'rgba(139,148,158,0.06)' } 
+          grid: { color: 'rgba(255,255,255,0.1)' } 
         }
       }
     }
