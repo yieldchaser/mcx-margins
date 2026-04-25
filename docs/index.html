@@ -38,6 +38,81 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   justify-content: space-between;
   padding: 0 20px; gap: 12px;
 }
+
+/* Calculator Polishing */
+#calculatorCard {
+  border: 1px solid var(--border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#calculatorCard:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.calc-stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.calc-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.calc-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.calc-stat-card:hover::after {
+  opacity: 1;
+}
+.calc-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.calc-input-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.calc-input-group select, .calc-input-group input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.calc-input-group select:focus, .calc-input-group input:focus {
+  border-color: var(--accent);
+}
+.quick-cap-btn {
+  flex: 1;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quick-cap-btn:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+}
 .header-left {
   display: flex; align-items: center; gap: 8px;
   font-weight: 700; font-size: 15px; letter-spacing: -0.01em;
@@ -4013,7 +4088,7 @@ document.querySelector('[data-tab="analytics"]').addEventListener('click', () =>
 
 let _calcChart = null, _calcDir = 'long', _calcInited = false;
 
-function initCalculator() {
+async function initCalculator() {
   if (_calcInited) return;
   _calcInited = true;
 
@@ -4021,36 +4096,57 @@ function initCalculator() {
   const body = document.getElementById('calculatorBody');
   const chevron = document.getElementById('calcChevron');
   
-  header.addEventListener('click', () => {
+  header.addEventListener('click', async () => {
     const isCollapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '';
     body.style.maxHeight = isCollapsed ? '2000px' : '0px';
     chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     if (isCollapsed) {
-      if (!document.getElementById('calcYear').options.length) syncCalcSelectors();
+      if (!_lcAllEntries.length) await buildLCDropdown();
+      syncCalcSelectors();
       window.updateCalc();
     }
   });
 
-  // Independent Selectors
+  // Independent Selectors logic using the existing _lcAllEntries
   function syncCalcSelectors() {
-    const sym = document.getElementById('calcSymbol').value;
-    const years = Object.keys(_idx[sym] || {}).sort((a,b) => b-a);
+    const symSelect = document.getElementById('calcSymbol');
     const yrSel = document.getElementById('calcYear');
-    yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    const expSel = document.getElementById('calcExpiry');
     
+    const sym = symSelect.value; // 'ng' or 'ngm'
+    // Filter index for this symbol. Note: buildLCDropdown loads index for _lcSym.
+    // If user changes symbol here, we might need a fresh index if we want it to be truly independent.
+    // However, NG/NGM index is usually loaded together or can be switched.
+    
+    const updateYears = () => {
+      // In this app, _lcAllEntries is the filtered list for the current symbol.
+      // To be truly independent, we'll use a local filter of the global index if available,
+      // but let's stick to the current symbol for now to match the Explorer's data state.
+      const entries = _lcAllEntries.sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+      const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))].sort((a,b) => b-a);
+      
+      yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+      updateExpiries();
+    };
+
     const updateExpiries = () => {
       const year = yrSel.value;
-      const expSel = document.getElementById('calcExpiry');
-      const exps = Object.keys(_idx[sym][year] || {}).sort();
-      expSel.innerHTML = exps.map(e => `<option value="${e}">${_contractLabel(sym, e)}</option>`).join('');
+      const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
+      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)}</option>`).join('');
       window.updateCalc();
     };
-    
+
     yrSel.onchange = updateExpiries;
-    updateExpiries();
+    updateYears();
   }
 
-  document.getElementById('calcSymbol').addEventListener('change', syncCalcSelectors);
+  document.getElementById('calcSymbol').addEventListener('change', async (e) => {
+    // If symbol changes, we must sync the Lifecycle Explorer's sym and rebuild
+    _lcSym = e.target.value;
+    await buildLCDropdown();
+    syncCalcSelectors();
+  });
+  
   document.getElementById('calcExpiry').addEventListener('change', () => window.updateCalc());
   
   // Wire direction buttons
@@ -4075,7 +4171,8 @@ function initCalculator() {
 
   // Global update triggers
   ['calcCapital', 'calcEntryDate', 'calcExitDate', 'calcCustomLots'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => window.updateCalc());
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => window.updateCalc());
   });
 }
 
@@ -4089,10 +4186,21 @@ window.updateCalc = async function() {
   const exitDateRaw = document.getElementById('calcExitDate').value;
   const lotMode = document.getElementById('calcLotMode').value;
   
-  // 1. Get Data
-  const marginData = await loadJSON(marginContractDataName(sym, expiry));
-  const marketData = await loadMarketJSON(marketContractDataName(sym, expiry).replace(/^market\//, ''));
+  // Reset results while loading
+  const resIds = ['resPL', 'resDD', 'resLots', 'resMargin'];
+  resIds.forEach(id => { document.getElementById(id).style.opacity = '0.5'; });
   
+  // 1. Get Data
+  let marginData, marketData;
+  try {
+    marginData = await loadJSON(marginContractDataName(sym, expiry));
+    marketData = await loadMarketJSON(marketContractDataName(sym, expiry).replace(/^market\//, ''));
+  } catch(e) {
+    console.warn('Calc data load fail:', e);
+  }
+  
+  resIds.forEach(id => { document.getElementById(id).style.opacity = '1'; });
+
   if (!marginData || !marketData) {
     document.getElementById('calcWarning').textContent = 'Market data not available for this expiry yet.';
     document.getElementById('calcWarning').style.display = 'block';
@@ -4174,7 +4282,7 @@ window.updateCalc = async function() {
     const p = pByDate[date]?.close;
     const m = mByDate[date]?.total_margin_pct;
     
-    if (p) {
+    if (p != null) {
       const pl = _calcDir === 'long' ? (p - entryPrice) * lots * lotSize : (entryPrice - p) * lots * lotSize;
       totalPL = pl;
       equityCurve.push(pl);
@@ -4185,7 +4293,7 @@ window.updateCalc = async function() {
       if (dd > maxDD) maxDD = dd;
     }
     
-    if (p && m) {
+    if (p != null && m != null) {
       const curMargin = (p * lotSize * m * lots) / 100;
       if (curMargin > peakMargin) peakMargin = curMargin;
     }
