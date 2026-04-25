@@ -755,10 +755,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   border-radius: 2px; z-index: 2; pointer-events: none;
 }
 .range-inputs {
-  position: relative; width: 100%; height: 32px; z-index: 3;
+  position: absolute; top: 0; left: 0; width: 100%; height: 32px; z-index: 3;
 }
 .range-inputs input[type="range"] {
-  position: absolute; width: 100%; height: 32px;
+  position: absolute; top: 0; left: 0; width: 100%; height: 32px;
   -webkit-appearance: none; appearance: none;
   background: none; pointer-events: none; margin: 0;
 }
@@ -1351,7 +1351,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               </div>
               <div id="calcFeesPanel" class="calc-fees-panel" aria-hidden="true">
                 <label><span>Apply costs (STT, exchange, GST, brokerage)</span><input type="checkbox" id="calcFeesEnabled"></label>
-                <label><span>Brokerage \u20B9/lot/side</span><input type="number" id="calcFeeBrokerage" value="20" step="1" min="0"></label>
+                <label><span>Brokerage ₹/lot/side</span><input type="number" id="calcFeeBrokerage" value="20" step="1" min="0"></label>
                 <div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
                   STT 0.0125% on sell turnover \u00B7 Exchange 0.0026% on turnover \u00B7 SEBI 0.0001% \u00B7 GST 18% on (brokerage + exchange).
                 </div>
