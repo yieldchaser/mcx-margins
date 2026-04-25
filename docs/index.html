@@ -224,8 +224,21 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-horizon-presets .lc-ctrl { font-size: 10px; padding: 3px 8px; }
 
 #calcRangeSlider { margin-top: 4px; padding: 0 4px; }
+#calcRangeSlider .range-slider-container {
+  position: relative;
+}
 #calcRangeSlider .range-slider-container::before {
   content: ''; position: absolute; left: -8px; right: -8px; top: -16px; bottom: -16px;
+}
+#calcRangeSlider .range-label-container::before,
+#calcRangeSlider .range-label-container::after {
+  content: '▲'; position: absolute; top: -8px; font-size: 8px; color: var(--accent);
+}
+#calcRangeSlider .range-label-container::before {
+  left: 0;
+}
+#calcRangeSlider .range-label-container::after {
+  right: 0;
 }
 
 /* Stat grid */
@@ -4824,6 +4837,7 @@ window.updateCalc = async function(forceSnap = false) {
     document.getElementById('calcEntryDate').min = start; document.getElementById('calcEntryDate').max = end;
     document.getElementById('calcExitDate').min = start; document.getElementById('calcExitDate').max = end;
     _calcRC.setRange(0, allDates.length - 1);
+    _calcRC.setLabels(start, end);
     if (forceSnap) return window.updateCalc(false);
   } else {
     // Set constraints even if not snapping
@@ -4831,7 +4845,7 @@ window.updateCalc = async function(forceSnap = false) {
     document.getElementById('calcEntryDate').max = allDates[allDates.length - 1];
     document.getElementById('calcExitDate').min = allDates[0];
     document.getElementById('calcExitDate').max = allDates[allDates.length - 1];
-    
+
     const findIdx = (d) => {
       let i = allDates.indexOf(d);
       if (i !== -1) return i;
@@ -4849,8 +4863,8 @@ window.updateCalc = async function(forceSnap = false) {
     document.getElementById('calcEntryDate').value = allDates[s];
     document.getElementById('calcExitDate').value = allDates[e];
     _calcRC.setRange(s, e);
+    _calcRC.setLabels(allDates[s], allDates[e]);
   }
-  _calcRC.setLabels(document.getElementById('calcEntryDate').value, document.getElementById('calcExitDate').value);
 
   document.getElementById('calcWarning').style.display = 'none';
 
