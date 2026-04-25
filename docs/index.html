@@ -1047,6 +1047,20 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <span class="scope-chip"><strong>Join</strong> Same-expiry only</span>
       </div>
       <div class="chart-container" style="height:260px;"><canvas id="chartHistMarketFlow"></canvas></div>
+      <div class="lc-range-controls" id="sliderHistMarketFlow">
+        <div class="range-slider-container">
+          <div class="range-slider-track"></div>
+          <div class="range-slider-highlight"></div>
+          <div class="range-inputs">
+            <input type="range" class="range-start">
+            <input type="range" class="range-end">
+          </div>
+        </div>
+        <div class="range-label-container">
+          <span class="label-start">—</span>
+          <span class="label-end">—</span>
+        </div>
+      </div>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -3110,7 +3124,7 @@ async function renderTermStructure() {
 
 let histChartMargin = null, histChartVol = null, histChartScatter = null, histChartDecomp = null, histChartMarketFlow = null;
 let histInited = false;
-let _histFullRaw = [], _histMarginRC = null, _histVolRC = null, _histDecompRC = null;
+let _histFullRaw = [], _histMarginRC = null, _histVolRC = null, _histDecompRC = null, _histMarketFlowRC = null;
 
 function filterByMonths(data, months) {
   if (!months) return data;
@@ -3135,6 +3149,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
       _histMarginRC = new RangeController('sliderHistMargin', 0, max, startIdx ?? 0, max, (s, e) => renderHistory('Margin', s, e));
       _histVolRC    = new RangeController('sliderHistVol',    0, max, startIdx ?? 0, max, (s, e) => renderHistory('Vol',    s, e));
       _histDecompRC = new RangeController('sliderDecomp',   0, max, startIdx ?? 0, max, (s, e) => renderHistory('Decomp', s, e));
+      _histMarketFlowRC = new RangeController('sliderHistMarketFlow', 0, max, startIdx ?? 0, max, (s, e) => renderHistory('MarketFlow', s, e));
       
       renderHistory('Margin', startIdx ?? 0, max);
       renderHistory('Vol',    startIdx ?? 0, max);
@@ -3254,6 +3269,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
           const byDate = {};
           ((joinedFront?.symbols?.[marketSymbolName(sym)]) || []).forEach(r => { byDate[r.date] = r; });
           const aligned = labels.map(d => byDate[d] || {});
+          _histMarketFlowRC.setLabels(labels[0], labels[labels.length-1]);
           if (histChartMarketFlow) histChartMarketFlow.destroy();
           histChartMarketFlow = new Chart(document.getElementById('chartHistMarketFlow'), {
             type: 'bar',
