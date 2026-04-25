@@ -879,7 +879,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:8px;">
                 <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.02em;text-transform:uppercase;font-weight:600;">Trade Horizon Selection</label>
                 <div style="display:flex; gap:6px;" id="calcPresets">
-                   <button class="lc-ctrl active" data-range="full" style="font-size:10px; padding:3px 8px;">Full</button>
+                   <button class="lc-ctrl lc-active" data-range="full" style="font-size:10px; padding:3px 8px;">Full</button>
                    <button class="lc-ctrl" data-range="30d" style="font-size:10px; padding:3px 8px;">Last 30D</button>
                    <button class="lc-ctrl" data-range="10d" style="font-size:10px; padding:3px 8px;">Last 10D</button>
                 </div>
@@ -4182,6 +4182,7 @@ document.querySelector('[data-tab="analytics"]').addEventListener('click', () =>
 // PART 7 — Trade Intelligence & Capital Calculator
 // ═══════════════════════════════════════════════════════════════════
 
+
 let _calcChart = null, _calcDir = 'long', _calcInited = false, _calcRC = null;
 
 async function initCalculator() {
@@ -4199,7 +4200,7 @@ async function initCalculator() {
     if (isCollapsed) {
       if (!_lcAllEntries.length) await buildLCDropdown();
       syncCalcSelectors();
-      window.updateCalc(true); // force reset dates on first expand
+      await window.updateCalc(true); // force reset dates on first expand
     }
   });
 
@@ -4237,22 +4238,25 @@ async function initCalculator() {
   
   // Wire Range Presets
   document.querySelectorAll('#calcPresets button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!_calcRC || !allDates.length) return;
+    btn.addEventListener('click', async () => {
+      const allDates = window._calcAllDates;
+      if (!_calcRC || !allDates || !allDates.length) return;
+      
+      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
+      btn.classList.add('lc-active');
+
       const range = btn.dataset.range;
       const maxIdx = allDates.length - 1;
-      
-      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      
       let s = 0, e = maxIdx;
+      
       if (range === '30d') s = Math.max(0, maxIdx - 30);
       else if (range === '10d') s = Math.max(0, maxIdx - 10);
-      
+
       document.getElementById('calcEntryDate').value = allDates[s];
       document.getElementById('calcExitDate').value = allDates[e];
+      
       _calcRC.setRange(s, e);
-      window.updateCalc();
+      await window.updateCalc();
     });
   });
 
@@ -4309,6 +4313,7 @@ window.updateCalc = async function(forceSnap = false) {
   const mByDate = {}; (marginData.rows || []).forEach(r => mByDate[r.date] = r);
   const pByDate = {}; (marketData.rows || []).forEach(r => pByDate[r.date] = r);
   const allDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
+  window._calcAllDates = allDates;
   if (allDates.length === 0) return;
 
   // Initialize or Update Range Controller
@@ -4454,9 +4459,15 @@ window.updateCalc = async function(forceSnap = false) {
     if (dailyChange > bestDay) { bestDay = dailyChange; bestDate = labels[i]; }
     if (dailyChange < worstDay) { worstDay = dailyChange; worstDate = labels[i]; }
   }
-  document.getElementById('resBest').textContent = '₹' + fmtNum(bestDay === -Infinity ? 0 : bestDay, 0);
+  const bestVal = bestDay === -Infinity ? 0 : bestDay;
+  const worstVal = worstDay === Infinity ? 0 : worstDay;
+  
+  document.getElementById('resBest').textContent = '₹' + fmtNum(bestVal, 0);
+  document.getElementById('resBest').style.color = bestVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('resBestDate').textContent = bestDate || '\u2014';
-  document.getElementById('resWorst').textContent = '₹' + fmtNum(worstDay === Infinity ? 0 : worstDay, 0);
+  
+  document.getElementById('resWorst').textContent = '₹' + fmtNum(worstVal, 0);
+  document.getElementById('resWorst').style.color = worstVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('resWorstDate').textContent = worstDate || '\u2014';
   
   document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
