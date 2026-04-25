@@ -4288,13 +4288,11 @@ window.updateCalc = async function(forceSnap = false) {
   try {
     marginData = await loadJSON(marginContractDataName(sym, expiry));
     marketData = await loadMarketJSON(marketContractDataName(sym, expiry).replace(/^market\//, ''));
-  } catch(e) { console.warn('Calc data fail:', e); }
-  
-  resIds.forEach(id => { document.getElementById(id).style.opacity = '1'; });
-
-  if (!marginData || !marketData) {
-    document.getElementById('calcWarning').textContent = 'Market data not available for this expiry yet.';
+    if (!marginData || !marketData) throw new Error('Missing data');
+  } catch(e) {
+    document.getElementById('calcWarning').textContent = 'Intelligence data unavailable for this specific contract yet.';
     document.getElementById('calcWarning').style.display = 'block';
+    resIds.forEach(id => { document.getElementById(id).style.opacity = '1'; });
     return;
   }
 
@@ -4376,7 +4374,7 @@ window.updateCalc = async function(forceSnap = false) {
   const lotSize = sym === 'ngm' ? 250 : 1250;
   
   if (!entryPrice || !entryMarginPct) {
-    document.getElementById('calcWarning').textContent = 'Incomplete data for the selected range.';
+    document.getElementById('calcWarning').textContent = 'Insufficient historical data for selected date range.';
     document.getElementById('calcWarning').style.display = 'block';
     return;
   }
