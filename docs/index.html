@@ -748,10 +748,28 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <div style="display:flex;gap:6px;">
                 <input type="number" id="calcCapital" value="500000" step="50000" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;flex-grow:1;font-family:monospace;">
                 <div style="display:flex;gap:3px;">
-                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=200000; window.updateCalc();">2L</button>
-                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=500000; window.updateCalc();">5L</button>
-                  <button class="range-btn" onclick="document.getElementById('calcCapital').value=1000000; window.updateCalc();">10L</button>
+                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=200000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">2L</button>
+                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=500000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">5L</button>
+                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=1000000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">10L</button>
                 </div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px;">
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">SYMBOL</label>
+                <select id="calcSymbol" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;">
+                  <option value="ng">NG</option>
+                  <option value="ngm">NGM</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">YEAR</label>
+                <select id="calcYear" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;"></select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">EXPIRY</label>
+                <select id="calcExpiry" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;"></select>
               </div>
             </div>
 
@@ -4004,10 +4022,35 @@ function initCalculator() {
   
   header.addEventListener('click', () => {
     const isCollapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '';
-    body.style.maxHeight = isCollapsed ? '1000px' : '0px';
+    body.style.maxHeight = isCollapsed ? '2000px' : '0px';
     chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-    if (isCollapsed) window.updateCalc();
+    if (isCollapsed) {
+      if (!document.getElementById('calcYear').options.length) syncCalcSelectors();
+      window.updateCalc();
+    }
   });
+
+  // Independent Selectors
+  function syncCalcSelectors() {
+    const sym = document.getElementById('calcSymbol').value;
+    const years = Object.keys(_idx[sym] || {}).sort((a,b) => b-a);
+    const yrSel = document.getElementById('calcYear');
+    yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    
+    const updateExpiries = () => {
+      const year = yrSel.value;
+      const expSel = document.getElementById('calcExpiry');
+      const exps = Object.keys(_idx[sym][year] || {}).sort();
+      expSel.innerHTML = exps.map(e => `<option value="${e}">${_contractLabel(sym, e)}</option>`).join('');
+      window.updateCalc();
+    };
+    
+    yrSel.onchange = updateExpiries;
+    updateExpiries();
+  }
+
+  document.getElementById('calcSymbol').addEventListener('change', syncCalcSelectors);
+  document.getElementById('calcExpiry').addEventListener('change', () => window.updateCalc());
   
   // Wire direction buttons
   document.getElementById('calcDirLong').addEventListener('click', () => {
@@ -4033,25 +4076,21 @@ function initCalculator() {
   ['calcCapital', 'calcEntryDate', 'calcExitDate', 'calcCustomLots'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => window.updateCalc());
   });
-
-  // Sync with Lifecycle Explorer
-  document.getElementById('lcMonthSelect').addEventListener('change', () => {
-    if (body.style.maxHeight !== '0px') window.updateCalc();
-  });
 }
 
 window.updateCalc = async function() {
-  const expiry = document.getElementById('lcMonthSelect').value;
+  const sym = document.getElementById('calcSymbol').value;
+  const expiry = document.getElementById('calcExpiry').value;
   if (!expiry) return;
 
   const capital = parseFloat(document.getElementById('calcCapital').value) || 0;
-  const entryDate = document.getElementById('calcEntryDate').value;
-  const exitDate = document.getElementById('calcExitDate').value;
+  const entryDateRaw = document.getElementById('calcEntryDate').value;
+  const exitDateRaw = document.getElementById('calcExitDate').value;
   const lotMode = document.getElementById('calcLotMode').value;
   
   // 1. Get Data
-  const marginData = await loadJSON(marginContractDataName(_lcSym, expiry));
-  const marketData = await loadMarketJSON(marketContractDataName(_lcSym, expiry).replace(/^market\//, ''));
+  const marginData = await loadJSON(marginContractDataName(sym, expiry));
+  const marketData = await loadMarketJSON(marketContractDataName(sym, expiry).replace(/^market\//, ''));
   
   if (!marginData || !marketData) {
     document.getElementById('calcWarning').textContent = 'Market data not available for this expiry yet.';
@@ -4064,15 +4103,20 @@ window.updateCalc = async function() {
   const pByDate = {}; (marketData.rows || []).forEach(r => pByDate[r.date] = r);
   
   const allDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
-  
+  if (allDates.length === 0) return;
+
   // Set default dates if empty
-  if (!entryDate || !exitDate) {
+  if (!entryDateRaw || !exitDateRaw) {
     document.getElementById('calcEntryDate').value = allDates[0];
     document.getElementById('calcExitDate').value = allDates[allDates.length - 1];
+    document.getElementById('calcEntryDate').min = allDates[0];
+    document.getElementById('calcEntryDate').max = allDates[allDates.length - 1];
+    document.getElementById('calcExitDate').min = allDates[0];
+    document.getElementById('calcExitDate').max = allDates[allDates.length - 1];
     return window.updateCalc();
   }
 
-  const windowDays = allDates.filter(d => d >= entryDate && d <= exitDate);
+  const windowDays = allDates.filter(d => d >= entryDateRaw && d <= exitDateRaw);
   if (windowDays.length < 2) {
     document.getElementById('calcWarning').textContent = 'Please select a valid date range (min 2 days).';
     document.getElementById('calcWarning').style.display = 'block';
@@ -4080,14 +4124,22 @@ window.updateCalc = async function() {
   }
   document.getElementById('calcWarning').style.display = 'none';
 
-  // 3. Logic
-  const entryRow = pByDate[windowDays[0]];
+  // 3. Robust Entry Point Search (find nearest available price if exact is holiday)
+  const findNearest = (dateStr, dataMap) => {
+    if (dataMap[dateStr]) return dataMap[dateStr];
+    const targetIdx = allDates.indexOf(dateStr);
+    for (let i = targetIdx; i < allDates.length; i++) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
+    for (let i = targetIdx; i >= 0; i--) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
+    return null;
+  };
+
+  const entryRow = findNearest(windowDays[0], pByDate);
   const entryPrice = entryRow?.close;
-  const entryMarginPct = mByDate[windowDays[0]]?.total_margin_pct;
-  const lotSize = _lcSym === 'ngm' ? 250 : 1250;
+  const entryMarginPct = findNearest(windowDays[0], mByDate)?.total_margin_pct;
+  const lotSize = sym === 'ngm' ? 250 : 1250;
   
   if (!entryPrice || !entryMarginPct) {
-    document.getElementById('calcWarning').textContent = 'Incomplete data for the selected entry date.';
+    document.getElementById('calcWarning').textContent = 'Incomplete margin/price data for start of range.';
     document.getElementById('calcWarning').style.display = 'block';
     return;
   }
@@ -4103,7 +4155,7 @@ window.updateCalc = async function() {
     lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
   }
 
-  if (lots < 1) {
+  if (lots < 1 && lotMode !== 'custom') {
     document.getElementById('calcWarning').textContent = `Insufficient capital for 1 lot (Req: ₹${fmtNum(marginReqPerLot, 0)}).`;
     document.getElementById('calcWarning').style.display = 'block';
     lots = 0;
@@ -4142,16 +4194,16 @@ window.updateCalc = async function() {
   const plColor = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   document.getElementById('resPL').textContent = '₹' + fmtNum(totalPL, 0);
   document.getElementById('resPL').style.color = plColor;
-  document.getElementById('resPLPct').textContent = (capital > 0 ? fmtPct((totalPL / capital) * 100, 2) : '0%') + ' ROI';
+  document.getElementById('resPLPct').textContent = (capital > 0 ? fmtPct((totalPL / capital) * 100, 2) : '0.00%') + ' ROI';
   
   document.getElementById('resDD').textContent = '₹' + fmtNum(maxDD, 0);
-  document.getElementById('resDDPct').textContent = (capital + peakEquity > 0 ? fmtPct((maxDD / (capital + peakEquity)) * 100, 2) : '0%') + ' of peak';
+  document.getElementById('resDDPct').textContent = (capital + peakEquity > 0 ? fmtPct((maxDD / (capital + peakEquity)) * 100, 2) : '0.00%') + ' of peak';
   
   document.getElementById('resLots').textContent = lots + ' Lots';
   document.getElementById('resLotInfo').textContent = `₹${fmtNum(marginReqPerLot, 0)} per lot`;
   
   document.getElementById('resMargin').textContent = '₹' + fmtNum(peakMargin, 0);
-  document.getElementById('resMarginPeak').textContent = `Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0%'}`;
+  document.getElementById('resMarginPeak').textContent = `Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0.0%'}`;
   
   document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
   document.getElementById('calcSummaryBadge').style.background = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
@@ -4159,7 +4211,8 @@ window.updateCalc = async function() {
 
   // 6. Chart Update
   if (_calcChart) _calcChart.destroy();
-  _calcChart = new Chart(document.getElementById('chartCalcEquity'), {
+  const ctx = document.getElementById('chartCalcEquity').getContext('2d');
+  _calcChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
