@@ -39,79 +39,439 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   padding: 0 20px; gap: 12px;
 }
 
-/* Calculator Polishing */
+/* ───────────────────────────────────────────────────────────
+   Trade Intelligence & Capital Calculator — Design System
+   ─────────────────────────────────────────────────────────── */
 #calculatorCard {
   border: 1px solid var(--border);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, rgba(33,38,45,0.85) 0%, rgba(22,27,34,0.85) 100%);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 #calculatorCard:hover {
-  border-color: var(--accent);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-color: rgba(56,139,253,0.45);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
 }
-.calc-stat-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.2s ease;
-  position: relative;
+#calculatorHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; user-select: none;
+  border-radius: 4px;
+}
+#calculatorHeader:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+#calcChevron {
+  display: inline-block; font-size: 18px; color: var(--text-muted);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.calc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.calc-body.is-open { grid-template-rows: 1fr; }
+.calc-body__inner {
   overflow: hidden;
+  min-height: 0;
 }
-.calc-stat-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-  background: var(--surface);
+.calc-body.is-open .calc-body__inner {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
 }
-.calc-stat-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 2px;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+
+/* Scope row beneath header */
+#calcScopeRow { margin: 0 0 16px; }
+#calcSummaryBadge {
+  background: var(--accent); color: white; border: none;
+  font-weight: 600; padding: 3px 12px; font-size: 11px;
+  letter-spacing: 0.02em; display: none; align-items: center; gap: 4px;
 }
-.calc-stat-card:hover::after {
-  opacity: 1;
+#calcSummaryBadge.is-loss { background: var(--accent-red); }
+#calcSummaryBadge.is-profit { background: var(--accent-green); color: #0d1117; }
+
+/* Three-column layout */
+.calc-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.05fr) minmax(320px, 1.25fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
 }
-.calc-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.calc-section {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
 }
-.calc-input-group label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.calc-section__kicker {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent-orange); font-weight: 600;
 }
-.calc-input-group select, .calc-input-group input {
-  background: var(--surface);
+.calc-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.calc-field__label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.calc-field__hint {
+  font-size: 10px; color: var(--accent); font-weight: 600;
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+
+/* Inputs */
+.calc-input, .calc-select {
+  width: 100%;
+  background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px 12px;
-  color: var(--text);
+  padding: 7px 10px;
   font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   outline: none;
-  transition: border-color 0.2s;
 }
-.calc-input-group select:focus, .calc-input-group input:focus {
+.calc-input--mono { font-family: 'SF Mono', 'Consolas', monospace; }
+.calc-input:hover, .calc-select:hover { border-color: rgba(139,148,158,0.55); }
+.calc-input:focus, .calc-select:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(56,139,253,0.18);
 }
-.quick-cap-btn {
-  flex: 1;
-  padding: 6px;
-  font-size: 11px;
-  font-weight: 600;
+.calc-input[aria-invalid="true"] {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 0 3px rgba(248,81,73,0.18);
+}
+.calc-input[type="date"] { color-scheme: dark; }
+.calc-input::-webkit-calendar-picker-indicator { filter: invert(0.65); cursor: pointer; }
+.calc-grid--triple {
+  display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 8px;
+}
+.calc-grid--duo {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+
+/* Capital row */
+.calc-capital-row { display: flex; gap: 8px; align-items: stretch; }
+.calc-capital-row .calc-input { flex: 1; min-width: 0; }
+.calc-quick-btns {
+  display: flex; gap: 4px;
+}
+.calc-quick-btn {
+  flex: 0 0 auto;
+  min-width: 38px;
+  padding: 0 10px;
+  height: 32px;
+  font-size: 11px; font-weight: 600;
   background: var(--surface2);
+  color: var(--text-muted);
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-.quick-cap-btn:hover {
-  background: var(--border);
-  border-color: var(--text-muted);
+.calc-quick-btn:hover { color: var(--text); border-color: rgba(139,148,158,0.55); }
+.calc-quick-btn:active { transform: scale(0.95); }
+.calc-quick-btn.is-active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(56,139,253,0.18);
+}
+.calc-quick-btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* Segmented direction toggle (Long / Short) with sliding pill */
+.calc-toggle {
+  position: relative;
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.calc-toggle__pill {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: calc(50% - 3px); height: calc(100% - 6px);
+  background: var(--accent);
+  border-radius: 4px;
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s ease;
+  z-index: 0;
+  box-shadow: 0 2px 8px rgba(56,139,253,0.35);
+}
+.calc-toggle[data-value="short"] .calc-toggle__pill {
+  transform: translateX(100%);
+  background: var(--accent-red);
+  box-shadow: 0 2px 8px rgba(248,81,73,0.35);
+}
+.calc-toggle__option {
+  position: relative; z-index: 1;
+  background: transparent; border: none; cursor: pointer;
+  padding: 6px 0; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted); font-family: inherit;
+  transition: color 0.2s ease;
+}
+.calc-toggle__option[aria-checked="true"] { color: #fff; }
+.calc-toggle__option:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Trade horizon presets row */
+.calc-horizon-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; gap: 8px; flex-wrap: wrap;
+}
+.calc-horizon-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.calc-horizon-presets .lc-ctrl { font-size: 10px; padding: 3px 8px; }
+
+#calcRangeSlider { margin-top: 4px; padding: 0 4px; }
+#calcRangeSlider .range-slider-container::before {
+  content: ''; position: absolute; left: -8px; right: -8px; top: -16px; bottom: -16px;
+}
+
+/* Stat grid */
+.calc-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.calc-stat {
+  position: relative;
+  background: linear-gradient(145deg, rgba(33,38,45,0.85) 0%, rgba(22,27,34,0.85) 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: hidden;
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), border-color 0.18s ease, box-shadow 0.18s ease;
+  isolation: isolate;
+}
+.calc-stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--bar, linear-gradient(90deg, rgba(56,139,253,0.6), rgba(163,113,247,0.2), transparent));
+  opacity: 0.85;
+}
+.calc-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56,139,253,0.4);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.calc-stat--profit { --bar: linear-gradient(90deg, rgba(63,185,80,0.85), rgba(63,185,80,0.1), transparent); }
+.calc-stat--risk   { --bar: linear-gradient(90deg, rgba(248,81,73,0.85), rgba(248,81,73,0.1), transparent); }
+.calc-stat--lots   { --bar: linear-gradient(90deg, rgba(56,139,253,0.85), rgba(56,139,253,0.1), transparent); }
+.calc-stat--margin { --bar: linear-gradient(90deg, rgba(251,143,68,0.85), rgba(251,143,68,0.1), transparent); }
+.calc-stat--green  { --bar: linear-gradient(90deg, rgba(63,185,80,0.85), rgba(63,185,80,0.1), transparent); }
+.calc-stat--red    { --bar: linear-gradient(90deg, rgba(248,81,73,0.85), rgba(248,81,73,0.1), transparent); }
+.calc-stat--util   { --bar: linear-gradient(90deg, rgba(163,113,247,0.85), rgba(163,113,247,0.1), transparent); }
+.calc-stat__label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.calc-stat__value {
+  font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  color: var(--text);
+  line-height: 1.15;
+  transition: color 0.25s ease;
+}
+.calc-stat__value.is-positive { color: var(--accent-green); }
+.calc-stat__value.is-negative { color: var(--accent-red); }
+.calc-stat__sub {
+  font-size: 11px; color: var(--text-muted);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+@keyframes calcStatPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(56,139,253,0.45); }
+  100% { box-shadow: 0 0 0 6px rgba(56,139,253,0); }
+}
+.calc-stat.is-flashing { animation: calcStatPulse 0.55s ease-out; }
+
+/* Skeleton state */
+@keyframes calcShimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.calc-stat.is-skeleton .calc-stat__value,
+.calc-stat.is-skeleton .calc-stat__sub {
+  color: transparent;
+  background: linear-gradient(90deg,
+    rgba(139,148,158,0.10) 0%,
+    rgba(139,148,158,0.22) 50%,
+    rgba(139,148,158,0.10) 100%);
+  background-size: 200px 100%;
+  border-radius: 4px;
+  animation: calcShimmer 1.4s linear infinite;
+  display: inline-block;
+}
+
+/* Chart */
+.calc-chart-shell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  height: 280px;
+  position: relative;
+  transition: border-color 0.18s ease;
+}
+.calc-chart-shell:hover { border-color: rgba(56,139,253,0.35); }
+.calc-chart-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px;
+}
+.calc-chart-tab {
+  flex: 1 1 auto;
+  background: transparent; border: none; cursor: pointer;
+  padding: 5px 10px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-radius: 4px;
+  font-family: inherit;
+  transition: background 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+.calc-chart-tab:hover { color: var(--text); }
+.calc-chart-tab[aria-pressed="true"] {
+  background: var(--accent); color: #fff;
+}
+.calc-chart-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Status ribbon (warning, margin call) */
+.calc-status {
+  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: none;
+  border: 1px solid transparent;
+  line-height: 1.4;
+  display: none;
+}
+.calc-status.is-visible { display: block; }
+.calc-status--warn {
+  color: var(--accent-yellow);
+  background: rgba(210,153,34,0.10);
+  border-color: rgba(210,153,34,0.28);
+}
+.calc-status--danger {
+  color: var(--accent-red);
+  background: rgba(248,81,73,0.10);
+  border-color: rgba(248,81,73,0.28);
+}
+.calc-status--info {
+  color: var(--text);
+  background: rgba(56,139,253,0.08);
+  border-color: rgba(56,139,253,0.28);
+}
+.calc-status__title { font-weight: 700; letter-spacing: 0.02em; }
+.calc-status__detail { color: var(--text-muted); margin-top: 3px; font-size: 11px; }
+
+/* Footnote / disclaimer / share strip */
+.calc-info {
+  font-size: 10px; color: var(--text-muted);
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-top: auto; padding-top: 6px;
+}
+.calc-share-strip {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+}
+.calc-share-btn {
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.calc-share-btn:hover { color: var(--text); border-color: rgba(139,148,158,0.55); }
+.calc-share-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.calc-share-btn.is-success {
+  color: var(--accent-green); border-color: rgba(63,185,80,0.5);
+  background: rgba(63,185,80,0.08);
+}
+
+/* Fees panel */
+.calc-fees-panel {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 11px; color: var(--text-muted);
+  margin-top: 8px;
+}
+.calc-fees-panel.is-open { display: block; }
+.calc-fees-panel label {
+  display: flex; justify-content: space-between; gap: 8px;
+  align-items: center; padding: 3px 0;
+}
+.calc-fees-panel input[type="number"] {
+  width: 80px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 3px 6px;
+  font-size: 11px; font-family: 'SF Mono', monospace;
+  text-align: right;
+}
+.calc-fees-panel input[type="checkbox"] { accent-color: var(--accent); }
+
+.calc-meta-row {
+  font-size: 10px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+  letter-spacing: 0.04em;
+}
+.calc-meta-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-green); display: inline-block;
+}
+.calc-meta-dot.is-stale { background: var(--accent-yellow); }
+.calc-meta-dot.is-error { background: var(--accent-red); }
+
+/* sr-only for a11y announcements */
+.calc-sr {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .calc-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .calc-grid > .calc-section:nth-child(3) { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .calc-grid { grid-template-columns: 1fr; gap: 18px; }
+  .calc-stat-grid { grid-template-columns: 1fr 1fr; }
+  .calc-grid--triple { grid-template-columns: 1fr 1fr; }
+  .calc-grid--triple > div:nth-child(3) { grid-column: 1 / -1; }
+  .calc-capital-row { flex-wrap: wrap; }
+  .calc-quick-btns { width: 100%; }
+  .calc-quick-btn { flex: 1; min-width: 44px; height: 36px; }
+  .calc-chart-shell { height: 240px; }
+  #calcRangeSlider .range-inputs input::-webkit-slider-thumb { width: 22px; height: 22px; }
+}
+@media (max-width: 420px) {
+  .calc-stat-grid { grid-template-columns: 1fr; }
+  .calc-chart-tabs { font-size: 9px; }
+  .calc-chart-tab { padding: 4px 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calc-toggle__pill, .calc-stat, #calcChevron, .calc-body { transition: none !important; }
+  .calc-stat.is-flashing { animation: none; }
+  .calc-stat.is-skeleton .calc-stat__value,
+  .calc-stat.is-skeleton .calc-stat__sub { animation: none; }
 }
 .header-left {
   display: flex; align-items: center; gap: 8px;
@@ -269,7 +629,8 @@ tr.has-tooltip { display: table-row; }
 td.has-tooltip, th.has-tooltip { display: table-cell; }
 div.card.has-tooltip, div.mkt-card.has-tooltip { display: block; }
 .heatmap-cell.has-tooltip { display: flex; }
-tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.has-tooltip::after, div.mkt-card.has-tooltip::after, .heatmap-cell.has-tooltip::after {
+tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.has-tooltip::after, div.mkt-card.has-tooltip::after, .heatmap-cell.has-tooltip::after,
+.calc-stat.has-tooltip::after, .calc-quick-btns.has-tooltip::after, #calcRangeSlider.has-tooltip::after, .calc-share-btn.has-tooltip::after {
   content: none;
   display: none;
 }
@@ -803,164 +1164,211 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- ── Trade Intelligence & Capital Calculator ── -->
     <div class="card" style="margin-top:16px;" id="calculatorCard">
-      <div id="calculatorHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="card-title has-tooltip" data-tooltip-key="Trade Intelligence Calculator" style="margin-bottom:0;">Trade Intelligence & Capital Calculator</div>
-          <span id="calcSummaryBadge" class="scope-chip" style="background:var(--accent);color:white;border:none;display:none;font-weight:600;padding:2px 10px;"></span>
+      <div id="calculatorHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="calculatorBody">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="card-title has-tooltip" data-tooltip-key="Trade Intelligence Calculator" style="margin-bottom:0;">Trade Intelligence &amp; Capital Calculator</div>
+          <span id="calcSummaryBadge" class="scope-chip" aria-live="polite"></span>
         </div>
-        <span id="calcChevron" style="transition:transform 0.3s ease;transform:rotate(0deg);font-size:18px;color:var(--text-muted);">&#x25BE;</span>
+        <span id="calcChevron" aria-hidden="true">&#x25BE;</span>
       </div>
-      
-      <div id="calculatorBody" style="margin-top:0;overflow:hidden;transition:all 0.3s ease;max-height:0;">
-        <div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:24px;">
-          
-          <!-- Column 1: Inputs -->
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div class="module-kicker">Trade Setup</div>
-            
-            <div>
-              <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">CAPITAL AVAILABLE (₹)</label>
-              <div style="display:flex;gap:6px;">
-                <input type="number" id="calcCapital" value="500000" step="50000" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;flex-grow:1;font-family:monospace;">
-                <div style="display:flex;gap:3px;">
-                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=500000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">5L</button>
-                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=1000000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">10L</button>
-                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=2500000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">25L</button>
-                  <button class="lc-ctrl" onclick="document.getElementById('calcCapital').value=5000000; window.updateCalc();" style="padding:4px 8px;font-size:10px;">50L</button>
-                </div>
-              </div>
-            </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px;">
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">SYMBOL</label>
-                <select id="calcSymbol" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;">
-                  <option value="ng">NG</option>
-                  <option value="ngm">NGM</option>
-                </select>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">YEAR</label>
-                <select id="calcYear" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;"></select>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;">EXPIRY</label>
-                <select id="calcExpiry" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px;font-size:12px;"></select>
-              </div>
-            </div>
+      <div id="calculatorBody" class="calc-body">
+        <div class="calc-body__inner">
+          <div id="calcScopeRow" class="scope-row" style="display:none;">
+            <span class="scope-chip"><strong>Contract</strong> <span data-fill="contract">\u2014</span></span>
+            <span class="scope-chip"><strong>Direction</strong> <span data-fill="direction">Long</span></span>
+            <span class="scope-chip"><strong>Lots</strong> <span data-fill="lots">\u2014</span></span>
+            <span class="scope-chip"><strong>Horizon</strong> <span data-fill="horizon">\u2014</span></span>
+            <span class="scope-chip"><strong>Sizing</strong> <span data-fill="lotmode">Max</span></span>
+          </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">DIRECTION</label>
-                <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--surface2);">
-                  <button id="calcDirLong" class="lc-sym-btn lc-sym-active" style="flex:1;padding:6px 0;font-size:12px;font-weight:600;">LONG</button>
-                  <button id="calcDirShort" class="lc-sym-btn" style="flex:1;padding:6px 0;font-size:12px;font-weight:600;">SHORT</button>
-                </div>
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.02em;">LOT SIZING</label>
-                <select id="calcLotMode" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:500;">
-                  <option value="max">Max Possible</option>
-                  <option value="safe">Risk Safe (50% Util)</option>
-                  <option value="custom">Custom Lots</option>
-                </select>
-              </div>
-            </div>
+          <div class="calc-grid">
 
-            <div id="customLotRow" style="display:none;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.02em;text-transform:uppercase;">Enter Lots</label>
-                <span id="lotGuide" style="font-size:10px;color:var(--accent);font-weight:600;letter-spacing:0.02em;"></span>
-              </div>
-              <input type="number" id="calcCustomLots" value="1" min="1" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:13px;font-family:monospace;">
-            </div>
+            <!-- ── Column 1: Trade Setup ── -->
+            <div class="calc-section">
+              <div class="calc-section__kicker">Trade Setup</div>
 
-            <div style="grid-column: 1 / -1; margin-top: 6px;">
-              <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:8px;">
-                <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.02em;text-transform:uppercase;font-weight:600;">Trade Horizon Selection</label>
-                <div style="display:flex; gap:6px;" id="calcPresets">
-                   <button class="lc-ctrl lc-active" data-range="full" style="font-size:10px; padding:3px 8px;">Full</button>
-                   <button class="lc-ctrl" data-range="30d" style="font-size:10px; padding:3px 8px;">Last 30D</button>
-                   <button class="lc-ctrl" data-range="10d" style="font-size:10px; padding:3px 8px;">Last 10D</button>
-                </div>
-              </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-                <div class="calc-input-group">
-                  <label>Entry Date</label>
-                  <input type="date" id="calcEntryDate" style="color-scheme:dark; font-family:monospace; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:6px 10px; color:var(--text); font-size:13px;">
-                </div>
-                <div class="calc-input-group">
-                  <label>Exit Date</label>
-                  <input type="date" id="calcExitDate" style="color-scheme:dark; font-family:monospace; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:6px 10px; color:var(--text); font-size:13px;">
-                </div>
-              </div>
-              <!-- Dual Range Slider -->
-              <div id="calcRangeSlider" class="lc-range-controls" style="margin-top:4px; padding:0 8px; display:none;">
-                  <div class="range-slider-container" style="height:4px;">
-                      <div class="range-slider-track" style="background:var(--border);"></div>
-                      <div class="range-slider-highlight" style="background:var(--accent); box-shadow: 0 0 10px rgba(56,139,253,0.4);"></div>
-                      <div class="range-inputs">
-                          <input type="range" class="range-start">
-                          <input type="range" class="range-end">
-                      </div>
+              <div class="calc-field">
+                <label class="calc-field__label has-tooltip" data-tooltip-key="calc-capital" for="calcCapital">Capital Available (₹)</label>
+                <div class="calc-capital-row">
+                  <input type="number" id="calcCapital" class="calc-input calc-input--mono" value="500000" step="50000" min="0" inputmode="numeric">
+                  <div class="calc-quick-btns has-tooltip" data-tooltip-key="calc-capital-presets" role="group" aria-label="Capital presets">
+                    <button type="button" class="calc-quick-btn" data-cap="500000">5L</button>
+                    <button type="button" class="calc-quick-btn" data-cap="1000000">10L</button>
+                    <button type="button" class="calc-quick-btn" data-cap="2500000">25L</button>
+                    <button type="button" class="calc-quick-btn" data-cap="5000000">50L</button>
                   </div>
-                  <div class="range-label-container" style="margin-top:8px;">
-                      <span class="label-start" style="font-family:monospace;font-size:10px;color:var(--text-muted);"></span>
-                      <span class="label-end" style="font-family:monospace;font-size:10px;color:var(--text-muted);"></span>
+                </div>
+              </div>
+
+              <div class="calc-grid--triple">
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-symbol" for="calcSymbol">Symbol</label>
+                  <select id="calcSymbol" class="calc-select">
+                    <option value="ng">NG</option>
+                    <option value="ngm">NGM</option>
+                  </select>
+                </div>
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-year" for="calcYear">Year</label>
+                  <select id="calcYear" class="calc-select"></select>
+                </div>
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-expiry" for="calcExpiry">Expiry</label>
+                  <select id="calcExpiry" class="calc-select"></select>
+                </div>
+              </div>
+
+              <div class="calc-grid--duo">
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-direction">Direction</label>
+                  <div class="calc-toggle" data-value="long" role="radiogroup" aria-label="Trade direction">
+                    <span class="calc-toggle__pill" aria-hidden="true"></span>
+                    <button type="button" id="calcDirLong" class="calc-toggle__option" role="radio" aria-checked="true" data-dir="long">LONG</button>
+                    <button type="button" id="calcDirShort" class="calc-toggle__option" role="radio" aria-checked="false" data-dir="short">SHORT</button>
                   </div>
+                </div>
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-lotmode" for="calcLotMode">Lot Sizing</label>
+                  <select id="calcLotMode" class="calc-select">
+                    <option value="max">Max Possible</option>
+                    <option value="safe">Risk Safe (50% Util)</option>
+                    <option value="custom">Custom Lots</option>
+                  </select>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Column 2: Performance Results -->
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div class="module-kicker">Performance Snapshot</div>
-            <div id="calcResultsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Total P/L</div>
-                <div class="stat-value" id="resPL" style="font-size:18px;">\u2014</div>
-                <div class="stat-sub" id="resPLPct" style="font-size:11px;">\u2014</div>
+              <div id="customLotRow" class="calc-field" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-customlots" for="calcCustomLots">Enter Lots</label>
+                  <span id="lotGuide" class="calc-field__hint has-tooltip" data-tooltip-key="calc-lotguide"></span>
+                </div>
+                <input type="number" id="calcCustomLots" class="calc-input calc-input--mono" value="1" min="1" inputmode="numeric">
               </div>
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Max Drawdown</div>
-                <div class="stat-value" id="resDD" style="font-size:18px;color:var(--accent-red);">\u2014</div>
-                <div class="stat-sub" id="resDDPct" style="font-size:11px;">\u2014</div>
-              </div>
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Lots Traded</div>
-                <div class="stat-value" id="resLots" style="font-size:18px;color:var(--accent);">\u2014</div>
-                <div class="stat-sub" id="resLotInfo" style="font-size:11px;">\u2014</div>
-              </div>
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Margin Peak</div>
-                <div class="stat-value" id="resMargin" style="font-size:18px;color:var(--accent-orange);">\u2014</div>
-                <div class="stat-sub" id="resMarginPeak" style="font-size:11px;">\u2014</div>
-              </div>
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Best Day (M2M)</div>
-                <div class="stat-value" id="resBest" style="font-size:18px;color:var(--accent-green);">\u2014</div>
-                <div class="stat-sub" id="resBestDate" style="font-size:11px;">\u2014</div>
-              </div>
-              <div class="mkt-card" style="padding:10px 14px;">
-                <div class="stat-label" style="font-size:10px;text-transform:uppercase;margin-bottom:2px;">Worst Day (M2M)</div>
-                <div class="stat-value" id="resWorst" style="font-size:18px;color:var(--accent-red);">\u2014</div>
-                <div class="stat-sub" id="resWorstDate" style="font-size:11px;">\u2014</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Column 3: Visual Analytics -->
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div class="module-kicker">M2M Equity Curve</div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;height:240px;position:relative;">
-              <canvas id="chartCalcEquity"></canvas>
+              <div class="calc-field" style="margin-top:4px;">
+                <div class="calc-horizon-row">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="calc-horizon">Trade Horizon</label>
+                  <div class="calc-horizon-presets" id="calcPresets" role="group" aria-label="Horizon presets">
+                    <button type="button" class="lc-ctrl lc-active" data-range="full">Full</button>
+                    <button type="button" class="lc-ctrl" data-range="30d">30D</button>
+                    <button type="button" class="lc-ctrl" data-range="10d">10D</button>
+                    <button type="button" class="lc-ctrl" data-range="5d">5D</button>
+                    <button type="button" class="lc-ctrl" data-range="dte30">\u226430 DTE</button>
+                  </div>
+                </div>
+                <div class="calc-grid--duo">
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="calc-entrydate" for="calcEntryDate">Entry Date</label>
+                    <input type="date" id="calcEntryDate" class="calc-input calc-input--mono">
+                  </div>
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="calc-exitdate" for="calcExitDate">Exit Date</label>
+                    <input type="date" id="calcExitDate" class="calc-input calc-input--mono">
+                  </div>
+                </div>
+                <div id="calcRangeSlider" class="lc-range-controls has-tooltip" data-tooltip-key="calc-rangeslider" style="display:none;">
+                  <div class="range-slider-container">
+                    <div class="range-slider-track"></div>
+                    <div class="range-slider-highlight"></div>
+                    <div class="range-inputs">
+                      <input type="range" class="range-start" aria-label="Trade window start">
+                      <input type="range" class="range-end" aria-label="Trade window end">
+                    </div>
+                  </div>
+                  <div class="range-label-container">
+                    <span class="label-start"></span>
+                    <span class="label-end"></span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div id="calcWarning" style="font-size:11px;color:var(--accent-red);background:rgba(248,81,73,0.1);padding:10px;border-radius:6px;display:none;border:1px solid rgba(248,81,73,0.2);"></div>
-            <div id="calcInfo" style="font-size:10px;color:var(--text-muted);margin-top:auto;">
-              * Calculations use actual exchange margin requirements and closing prices for the selected dates.
-            </div>
-          </div>
 
+            <!-- ── Column 2: Performance Snapshot ── -->
+            <div class="calc-section">
+              <div class="calc-section__kicker">Performance Snapshot</div>
+              <div id="calcResultsGrid" class="calc-stat-grid" aria-live="polite">
+                <div class="calc-stat calc-stat--profit has-tooltip" data-tooltip-key="calc-stat-pl">
+                  <div class="calc-stat__label">Total P/L</div>
+                  <div class="calc-stat__value" id="resPL">\u2014</div>
+                  <div class="calc-stat__sub" id="resPLPct">\u2014</div>
+                </div>
+                <div class="calc-stat calc-stat--risk has-tooltip" data-tooltip-key="calc-stat-dd">
+                  <div class="calc-stat__label">Max Drawdown</div>
+                  <div class="calc-stat__value" id="resDD" style="color:var(--accent-red);">\u2014</div>
+                  <div class="calc-stat__sub" id="resDDPct">\u2014</div>
+                </div>
+                <div class="calc-stat calc-stat--lots has-tooltip" data-tooltip-key="calc-stat-lots">
+                  <div class="calc-stat__label">Lots Traded</div>
+                  <div class="calc-stat__value" id="resLots" style="color:var(--accent);">\u2014</div>
+                  <div class="calc-stat__sub" id="resLotInfo">\u2014</div>
+                </div>
+                <div class="calc-stat calc-stat--margin has-tooltip" data-tooltip-key="calc-stat-margin">
+                  <div class="calc-stat__label">Margin Peak</div>
+                  <div class="calc-stat__value" id="resMargin" style="color:var(--accent-orange);">\u2014</div>
+                  <div class="calc-stat__sub" id="resMarginPeak">\u2014</div>
+                </div>
+                <div class="calc-stat calc-stat--util has-tooltip" data-tooltip-key="calc-stat-roi">
+                  <div class="calc-stat__label">ROI on Margin</div>
+                  <div class="calc-stat__value" id="resROIMargin">\u2014</div>
+                  <div class="calc-stat__sub" id="resROIMarginSub">\u2014</div>
+                </div>
+                <div class="calc-stat has-tooltip" data-tooltip-key="calc-stat-net">
+                  <div class="calc-stat__label">Net P/L (after costs)</div>
+                  <div class="calc-stat__value" id="resNet">\u2014</div>
+                  <div class="calc-stat__sub" id="resNetSub">Costs disabled</div>
+                </div>
+                <div class="calc-stat calc-stat--green has-tooltip" data-tooltip-key="calc-stat-best">
+                  <div class="calc-stat__label">Best Day (M2M)</div>
+                  <div class="calc-stat__value" id="resBest" style="color:var(--accent-green);">\u2014</div>
+                  <div class="calc-stat__sub" id="resBestDate">\u2014</div>
+                </div>
+                <div class="calc-stat calc-stat--red has-tooltip" data-tooltip-key="calc-stat-worst">
+                  <div class="calc-stat__label">Worst Day (M2M)</div>
+                  <div class="calc-stat__value" id="resWorst" style="color:var(--accent-red);">\u2014</div>
+                  <div class="calc-stat__sub" id="resWorstDate">\u2014</div>
+                </div>
+              </div>
+              <div id="calcStatusRibbon" class="calc-status" role="status" aria-live="polite"></div>
+              <div id="calcMarginCallNotice" class="calc-status calc-status--danger" role="alert"></div>
+              <div class="calc-share-strip">
+                <button type="button" id="calcShareBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-share">Copy Link</button>
+                <button type="button" id="calcResetBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-reset">Reset</button>
+                <button type="button" id="calcFeesBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-fees" aria-expanded="false" aria-controls="calcFeesPanel">Fees &amp; Costs</button>
+              </div>
+              <div id="calcFeesPanel" class="calc-fees-panel" aria-hidden="true">
+                <label><span>Apply costs (STT, exchange, GST, brokerage)</span><input type="checkbox" id="calcFeesEnabled"></label>
+                <label><span>Brokerage \u20B9/lot/side</span><input type="number" id="calcFeeBrokerage" value="20" step="1" min="0"></label>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+                  STT 0.0125% on sell turnover \u00B7 Exchange 0.0026% on turnover \u00B7 SEBI 0.0001% \u00B7 GST 18% on (brokerage + exchange).
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Column 3: Visual Analytics ── -->
+            <div class="calc-section">
+              <div class="calc-section__kicker" id="calcChartKicker">M2M Equity Curve</div>
+              <div class="calc-chart-tabs" id="calcChartTabs" role="tablist" aria-label="Chart view">
+                <button type="button" class="calc-chart-tab" role="tab" data-view="equity" aria-pressed="true">Equity</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="daily" aria-pressed="false">Daily P/L</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Margin Util</button>
+              </div>
+              <div class="calc-chart-shell">
+                <canvas id="chartCalcEquity"></canvas>
+              </div>
+              <div class="calc-meta-row" id="calcMetaRow" style="display:none;">
+                <span class="calc-meta-dot" id="calcMetaDot"></span>
+                <span id="calcMetaText">\u2014</span>
+              </div>
+              <div id="calcWarning" class="calc-status calc-status--danger" role="status" aria-live="polite"></div>
+              <div id="calcInfo" class="calc-info">
+                <span>Backtest only \u00B7 entry/exit at exchange close \u00B7 gross figures unless costs are applied.</span>
+              </div>
+              <span id="calcSrAnnounce" class="calc-sr" aria-live="polite"></span>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
@@ -4193,14 +4601,23 @@ async function initCalculator() {
   const body = document.getElementById('calculatorBody');
   const chevron = document.getElementById('calcChevron');
   
-  header.addEventListener('click', async () => {
-    const isCollapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '';
-    body.style.maxHeight = isCollapsed ? '2000px' : '0px';
+  const togglePanel = async (forceOpen) => {
+    const isCollapsed = forceOpen !== undefined ? !forceOpen : !body.classList.contains('is-open');
+    body.classList.toggle('is-open', isCollapsed);
+    header.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
     chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     if (isCollapsed) {
       if (!_lcAllEntries.length) await buildLCDropdown();
       syncCalcSelectors();
-      await window.updateCalc(true); // force reset dates on first expand
+      await window.updateCalc(true);
+      if (typeof attachTooltips === 'function') attachTooltips();
+    }
+  };
+  header.addEventListener('click', () => togglePanel());
+  header.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      togglePanel();
     }
   });
 
@@ -4260,19 +4677,17 @@ async function initCalculator() {
     });
   });
 
-  // Wire direction buttons
-  document.getElementById('calcDirLong').addEventListener('click', () => {
-    _calcDir = 'long';
-    document.getElementById('calcDirLong').classList.add('lc-sym-active');
-    document.getElementById('calcDirShort').classList.remove('lc-sym-active');
+  // Wire direction toggle (radiogroup with sliding pill)
+  const setCalcDir = (d) => {
+    _calcDir = d;
+    const tg = document.querySelector('#calculatorCard .calc-toggle');
+    if (tg) tg.setAttribute('data-value', d);
+    document.getElementById('calcDirLong').setAttribute('aria-checked', d === 'long' ? 'true' : 'false');
+    document.getElementById('calcDirShort').setAttribute('aria-checked', d === 'short' ? 'true' : 'false');
     window.updateCalc();
-  });
-  document.getElementById('calcDirShort').addEventListener('click', () => {
-    _calcDir = 'short';
-    document.getElementById('calcDirShort').classList.add('lc-sym-active');
-    document.getElementById('calcDirLong').classList.remove('lc-sym-active');
-    window.updateCalc();
-  });
+  };
+  document.getElementById('calcDirLong').addEventListener('click', () => setCalcDir('long'));
+  document.getElementById('calcDirShort').addEventListener('click', () => setCalcDir('short'));
 
   document.getElementById('calcLotMode').addEventListener('change', (e) => {
     document.getElementById('customLotRow').style.display = e.target.value === 'custom' ? 'block' : 'none';
@@ -4283,6 +4698,79 @@ async function initCalculator() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => window.updateCalc());
   });
+
+  // Capital quick-preset buttons (replaces inline onclick)
+  document.querySelectorAll('#calculatorCard .calc-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cap = parseInt(btn.dataset.cap, 10) || 0;
+      document.getElementById('calcCapital').value = cap;
+      document.querySelectorAll('#calculatorCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      window.updateCalc();
+    });
+  });
+
+  // Chart view tabs (Equity / Daily P/L / Drawdown / Margin Util)
+  window._calcView = 'equity';
+  const chartTabKickers = {
+    equity: 'M2M Equity Curve',
+    daily: 'Daily P/L',
+    drawdown: 'Drawdown',
+    margin: 'Margin Utilization %'
+  };
+  document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(t => t.setAttribute('aria-pressed', 'false'));
+      tab.setAttribute('aria-pressed', 'true');
+      window._calcView = tab.dataset.view;
+      const k = document.getElementById('calcChartKicker');
+      if (k) k.textContent = chartTabKickers[window._calcView] || 'M2M Equity Curve';
+      window.updateCalc();
+    });
+  });
+
+  // Reset
+  document.getElementById('calcResetBtn')?.addEventListener('click', () => {
+    document.getElementById('calcCapital').value = 500000;
+    document.getElementById('calcLotMode').value = 'max';
+    document.getElementById('customLotRow').style.display = 'none';
+    document.querySelectorAll('#calculatorCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
+    setCalcDir('long');
+    window.updateCalc(true);
+  });
+
+  // Share / Copy Link (URL hash state)
+  document.getElementById('calcShareBtn')?.addEventListener('click', async () => {
+    const params = new URLSearchParams({
+      sym: document.getElementById('calcSymbol').value,
+      exp: document.getElementById('calcExpiry').value,
+      cap: document.getElementById('calcCapital').value,
+      dir: _calcDir,
+      mode: document.getElementById('calcLotMode').value,
+      entry: document.getElementById('calcEntryDate').value || '',
+      exit: document.getElementById('calcExitDate').value || ''
+    });
+    const url = location.origin + location.pathname + '#calc=' + params.toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.getElementById('calcShareBtn');
+      const orig = btn.textContent;
+      btn.classList.add('is-success');
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => { btn.classList.remove('is-success'); btn.textContent = orig; }, 1800);
+    } catch(_) { /* clipboard blocked */ }
+  });
+
+  // Fees panel
+  document.getElementById('calcFeesBtn')?.addEventListener('click', () => {
+    const panel = document.getElementById('calcFeesPanel');
+    const btn = document.getElementById('calcFeesBtn');
+    const open = panel.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  });
+  document.getElementById('calcFeesEnabled')?.addEventListener('change', () => window.updateCalc());
+  document.getElementById('calcFeeBrokerage')?.addEventListener('input', () => window.updateCalc());
 }
 
 window.updateCalc = async function(forceSnap = false) {
@@ -4375,36 +4863,47 @@ window.updateCalc = async function(forceSnap = false) {
     return;
   }
 
+  // Strict on-or-before lookup — never silently substitute a future row for entry data.
+  const findOnOrBefore = (dateStr, dataMap) => {
+    if (dataMap[dateStr]) return { row: dataMap[dateStr], date: dateStr };
+    const targetIdx = allDates.indexOf(dateStr);
+    for (let i = targetIdx - 1; i >= 0; i--) {
+      if (dataMap[allDates[i]]) return { row: dataMap[allDates[i]], date: allDates[i] };
+    }
+    return null;
+  };
   const findNearest = (dateStr, dataMap) => {
     if (dataMap[dateStr]) return dataMap[dateStr];
     const targetIdx = allDates.indexOf(dateStr);
-    for (let i = targetIdx; i < allDates.length; i++) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
-    for (let i = targetIdx; i >= 0; i--) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
+    for (let i = targetIdx - 1; i >= 0; i--) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
+    for (let i = targetIdx + 1; i < allDates.length; i++) if (dataMap[allDates[i]]) return dataMap[allDates[i]];
     return null;
   };
 
-  const entryRow = findNearest(windowDays[0], pByDate);
-  const entryPrice = entryRow?.close;
-  const entryMarginPct = findNearest(windowDays[0], mByDate)?.total_margin_pct;
+  const entryLookup = findOnOrBefore(windowDays[0], pByDate) || (pByDate[windowDays[0]] ? { row: pByDate[windowDays[0]], date: windowDays[0] } : null);
+  const entryPrice = entryLookup?.row?.close;
+  const entryMarginRow = findOnOrBefore(windowDays[0], mByDate)?.row || mByDate[windowDays[0]] || null;
+  const entryMarginPct = entryMarginRow?.total_margin_pct;
   const lotSize = sym === 'ngm' ? 250 : 1250;
-  
+
+  const warnEl = document.getElementById('calcWarning');
   if (!entryPrice || !entryMarginPct) {
-    document.getElementById('calcWarning').textContent = 'Insufficient historical data for selected date range.';
-    document.getElementById('calcWarning').style.display = 'block';
+    warnEl.textContent = 'Insufficient historical data for selected date range.';
+    warnEl.classList.add('is-visible');
+    warnEl.style.display = 'block';
     return;
   }
+  warnEl.classList.remove('is-visible');
+  warnEl.style.display = 'none';
 
   const marginReqPerLot = (entryPrice * lotSize * entryMarginPct) / 100;
   const maxPossibleLots = Math.floor(capital / marginReqPerLot);
-  
-  // Update Lot Intelligence labels
+
+  const lotGuideEl = document.getElementById('lotGuide');
   if (maxPossibleLots > 0) {
-    const l75 = Math.round(maxPossibleLots * 0.75);
-    const l80 = Math.round(maxPossibleLots * 0.80);
-    const l90 = Math.round(maxPossibleLots * 0.90);
-    document.getElementById('lotGuide').textContent = `Max: ${maxPossibleLots} | 50%: ${Math.round(maxPossibleLots * 0.5)} | 75%: ${l75} | 90%: ${l90}`;
+    lotGuideEl.textContent = `Max ${maxPossibleLots} | 50% ${Math.round(maxPossibleLots*0.5)} | 75% ${Math.round(maxPossibleLots*0.75)} | 90% ${Math.round(maxPossibleLots*0.9)}`;
   } else {
-    document.getElementById('lotGuide').textContent = 'Insufficient Capital';
+    lotGuideEl.textContent = 'Insufficient Capital';
   }
 
   let lots = 0;
@@ -4412,129 +4911,346 @@ window.updateCalc = async function(forceSnap = false) {
   else if (lotMode === 'safe') lots = Math.round(maxPossibleLots * 0.5);
   else lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
 
-  if (lots < 1 && lotMode !== 'custom') {
-    document.getElementById('calcWarning').textContent = `Insufficient capital for 1 lot (Req: ₹${fmtNum(marginReqPerLot, 0)}).`;
-    document.getElementById('calcWarning').style.display = 'block';
+  const ribbon = document.getElementById('calcStatusRibbon');
+  ribbon.classList.remove('is-visible', 'calc-status--warn', 'calc-status--danger', 'calc-status--info');
+  ribbon.style.display = 'none';
+  ribbon.innerHTML = '';
+  if (lots < 1) {
+    ribbon.innerHTML = `<span class="calc-status__title">Insufficient capital</span><div class="calc-status__detail">1 lot requires ₹${fmtNum(marginReqPerLot, 0)} at entry margin.</div>`;
+    ribbon.classList.add('is-visible', 'calc-status--warn');
+    ribbon.style.display = 'block';
     lots = 0;
+  } else if (lotMode === 'custom' && lots > maxPossibleLots && maxPossibleLots > 0) {
+    const need = lots * marginReqPerLot;
+    ribbon.innerHTML = `<span class="calc-status__title">Custom lots exceed max sizing</span><div class="calc-status__detail">${lots} lots require ₹${fmtNum(need, 0)} at entry margin (max possible: ${maxPossibleLots}).</div>`;
+    ribbon.classList.add('is-visible', 'calc-status--warn');
+    ribbon.style.display = 'block';
   }
 
-  let totalPL = 0, maxDD = 0, peakMargin = 0, peakEquity = -Infinity;
-  const equityCurve = [], labels = [];
+  // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
+  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], labels = [];
+  let prevPL = 0, runningHigh = 0, maxDD = 0, peakMargin = 0;
+  let marginCallDate = null, marginCallReq = 0;
 
   windowDays.forEach(date => {
-    const row = pByDate[date] || findNearest(date, pByDate);
-    const p = row?.close;
+    const pRow = pByDate[date] || findNearest(date, pByDate);
     const mRow = mByDate[date] || findNearest(date, mByDate);
-    const m = mRow?.total_margin_pct;
+    const p = pRow?.close;
+    const mPct = mRow?.total_margin_pct;
+    if (p == null) return;
 
-    if (p != null) {
-      const pl = _calcDir === 'long' ? (p - entryPrice) * lots * lotSize : (entryPrice - p) * lots * lotSize;
-      totalPL = pl;
-      equityCurve.push(pl);
-      labels.push(date);
-      if (pl > peakEquity) peakEquity = pl;
-      const dd = peakEquity - pl;
-      if (dd > maxDD) maxDD = dd;
-    }
-    if (p != null && m != null) {
-      const curMargin = (p * lotSize * m * lots) / 100;
+    const pl = _calcDir === 'long' ? (p - entryPrice) * lots * lotSize : (entryPrice - p) * lots * lotSize;
+    const dailyChange = pl - prevPL;
+    cumPL.push(pl);
+    dailyPL.push(dailyChange);
+    labels.push(date);
+    prevPL = pl;
+
+    if (pl > runningHigh) runningHigh = pl;
+    const dd = runningHigh - pl;
+    if (dd > maxDD) maxDD = dd;
+    drawdownPath.push(-dd);
+
+    if (mPct != null && lots > 0) {
+      const curMargin = (p * lotSize * mPct * lots) / 100;
+      marginPath.push(curMargin);
+      const util = capital > 0 ? (curMargin / capital) * 100 : 0;
+      marginUtilPath.push(util);
       if (curMargin > peakMargin) peakMargin = curMargin;
+      if (!marginCallDate && curMargin > capital) {
+        marginCallDate = date;
+        marginCallReq = curMargin;
+      }
+    } else {
+      marginPath.push(null);
+      marginUtilPath.push(null);
     }
   });
 
-  const plColor = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  document.getElementById('resPL').textContent = '₹' + fmtNum(totalPL, 0);
-  document.getElementById('resPL').style.color = plColor;
-  document.getElementById('resPLPct').textContent = (capital > 0 ? fmtPct((totalPL / capital) * 100, 2) : '0.00%') + ' ROI';
-  document.getElementById('resDD').textContent = '₹' + fmtNum(maxDD, 0);
-  document.getElementById('resDDPct').textContent = (capital + peakEquity > 0 ? fmtPct((maxDD / (capital + peakEquity)) * 100, 2) : '0.00%') + ' of peak';
-  document.getElementById('resLots').textContent = lots + ' Lots';
-  document.getElementById('resLotInfo').textContent = `₹${fmtNum(marginReqPerLot, 0)} per lot \u00B7 ${windowDays.length} days`;
-  document.getElementById('resMargin').textContent = '₹' + fmtNum(peakMargin, 0);
-  document.getElementById('resMarginPeak').textContent = `Peak Util: ${capital > 0 ? fmtPct((peakMargin / capital) * 100, 1) : '0.0%'}`;
-  
-  let bestDay = -Infinity, worstDay = Infinity, bestDate = '', worstDate = '';
-  for (let i = 0; i < equityCurve.length; i++) {
-    const dailyChange = i === 0 ? equityCurve[i] : equityCurve[i] - equityCurve[i-1];
-    if (dailyChange > bestDay) { bestDay = dailyChange; bestDate = labels[i]; }
-    if (dailyChange < worstDay) { worstDay = dailyChange; worstDate = labels[i]; }
+  const totalPL = cumPL.length ? cumPL[cumPL.length - 1] : 0;
+  const peakPortfolio = Math.max(capital, capital + runningHigh);
+  const ddPctOfPortfolio = peakPortfolio > 0 ? (maxDD / peakPortfolio) * 100 : 0;
+  const roiOnCapital = capital > 0 ? (totalPL / capital) * 100 : 0;
+  const roiOnMargin = peakMargin > 0 ? (totalPL / peakMargin) * 100 : 0;
+
+  let bestDay = 0, worstDay = 0, bestDate = '', worstDate = '';
+  for (let i = 1; i < dailyPL.length; i++) {
+    if (dailyPL[i] > bestDay) { bestDay = dailyPL[i]; bestDate = labels[i]; }
+    if (dailyPL[i] < worstDay) { worstDay = dailyPL[i]; worstDate = labels[i]; }
   }
-  const bestVal = bestDay === -Infinity ? 0 : bestDay;
-  const worstVal = worstDay === Infinity ? 0 : worstDay;
-  
-  document.getElementById('resBest').textContent = '₹' + fmtNum(bestVal, 0);
-  document.getElementById('resBest').style.color = bestVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  document.getElementById('resBestDate').textContent = bestDate || '\u2014';
-  
-  document.getElementById('resWorst').textContent = '₹' + fmtNum(worstVal, 0);
-  document.getElementById('resWorst').style.color = worstVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  document.getElementById('resWorstDate').textContent = worstDate || '\u2014';
-  
-  document.getElementById('calcSummaryBadge').textContent = (totalPL >= 0 ? '+' : '') + fmtNum(totalPL, 0);
-  document.getElementById('calcSummaryBadge').style.background = totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  document.getElementById('calcSummaryBadge').style.display = 'inline-flex';
 
-  if (_calcChart) _calcChart.destroy();
+  // Costs (optional) — STT, exchange, SEBI, brokerage, GST
+  const feesEnabled = !!document.getElementById('calcFeesEnabled')?.checked;
+  const exitRow = findNearest(windowDays[windowDays.length - 1], pByDate);
+  const exitPrice = exitRow?.close ?? entryPrice;
+  let costs = 0, costDetail = 'Costs disabled';
+  if (feesEnabled && lots > 0) {
+    const buyTurn = entryPrice * lotSize * lots;
+    const sellTurn = exitPrice * lotSize * lots;
+    const totalTurn = buyTurn + sellTurn;
+    const stt = sellTurn * 0.000125;
+    const exch = totalTurn * 0.000026;
+    const sebi = totalTurn * 0.000001;
+    const broker = (parseFloat(document.getElementById('calcFeeBrokerage')?.value) || 0) * lots * 2;
+    const gst = (broker + exch) * 0.18;
+    costs = stt + exch + sebi + broker + gst;
+    costDetail = `STT ₹${fmtNum(stt,0)} · Exch ₹${fmtNum(exch,0)} · Brokerage ₹${fmtNum(broker,0)} · GST ₹${fmtNum(gst,0)}`;
+  }
+  const netPL = totalPL - costs;
+
+  // Scope row chips
+  const scopeRow = document.getElementById('calcScopeRow');
+  if (scopeRow) {
+    scopeRow.style.display = 'flex';
+    const fill = (k, v) => { const el = scopeRow.querySelector(`[data-fill="${k}"]`); if (el) el.textContent = v; };
+    fill('contract', `${sym.toUpperCase()} ${_contractLabel(expiry)}`);
+    fill('direction', _calcDir === 'long' ? 'Long' : 'Short');
+    fill('lots', `${lots}`);
+    fill('horizon', `${windowDays.length}d`);
+    const modeLbl = { max: 'Max', safe: 'Risk Safe 50%', custom: 'Custom' }[lotMode] || 'Max';
+    fill('lotmode', modeLbl);
+  }
+
+  // Stat updater with flash animation
+  const setStat = (id, text, opts) => {
+    opts = opts || {};
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.textContent !== text) {
+      el.textContent = text;
+      const card = el.closest('.calc-stat');
+      if (card) {
+        card.classList.remove('is-flashing');
+        void card.offsetWidth;
+        card.classList.add('is-flashing');
+      }
+    }
+    if (opts.cls != null) {
+      el.classList.remove('is-positive', 'is-negative');
+      if (opts.cls === 'pos') el.classList.add('is-positive');
+      else if (opts.cls === 'neg') el.classList.add('is-negative');
+    }
+    if (opts.color != null) el.style.color = opts.color;
+  };
+
+  setStat('resPL', '₹' + fmtNum(totalPL, 0), { cls: totalPL >= 0 ? 'pos' : 'neg', color: totalPL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
+  setStat('resPLPct', `${fmtPct(roiOnCapital, 2)} ROI on Capital`);
+  setStat('resDD', '₹' + fmtNum(maxDD, 0));
+  setStat('resDDPct', `${fmtPct(ddPctOfPortfolio, 2)} of peak portfolio`);
+  setStat('resLots', lots + ' Lots');
+  setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · ${windowDays.length} days`);
+  setStat('resMargin', '₹' + fmtNum(peakMargin, 0));
+  const peakUtil = capital > 0 ? (peakMargin / capital) * 100 : 0;
+  setStat('resMarginPeak', `Peak Util ${fmtPct(peakUtil, 1)}`);
+  setStat('resROIMargin', fmtPct(roiOnMargin, 2), { cls: roiOnMargin >= 0 ? 'pos' : 'neg' });
+  setStat('resROIMarginSub', peakMargin > 0 ? `On ₹${fmtNum(peakMargin,0)} peak deployed` : 'No margin deployed');
+  setStat('resNet', '₹' + fmtNum(netPL, 0), { cls: netPL >= 0 ? 'pos' : 'neg' });
+  setStat('resNetSub', costDetail);
+  setStat('resBest', '₹' + fmtNum(bestDay, 0), { color: bestDay >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
+  setStat('resBestDate', bestDate || '—');
+  setStat('resWorst', '₹' + fmtNum(worstDay, 0), { color: worstDay >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
+  setStat('resWorstDate', worstDate || '—');
+
+  const mcNotice = document.getElementById('calcMarginCallNotice');
+  if (marginCallDate) {
+    mcNotice.innerHTML = `<span class="calc-status__title">Margin call would have triggered on ${marginCallDate}</span><div class="calc-status__detail">Required margin ₹${fmtNum(marginCallReq, 0)} exceeded available capital ₹${fmtNum(capital, 0)}.</div>`;
+    mcNotice.classList.add('is-visible');
+    mcNotice.style.display = 'block';
+  } else {
+    mcNotice.classList.remove('is-visible');
+    mcNotice.style.display = 'none';
+    mcNotice.innerHTML = '';
+  }
+
+  const badge = document.getElementById('calcSummaryBadge');
+  badge.textContent = (totalPL >= 0 ? '+₹' : '−₹') + fmtNum(Math.abs(totalPL), 0);
+  badge.classList.toggle('is-profit', totalPL >= 0);
+  badge.classList.toggle('is-loss', totalPL < 0);
+  badge.style.display = 'inline-flex';
+
+  const sr = document.getElementById('calcSrAnnounce');
+  if (sr) sr.textContent = `Total P/L ₹${fmtNum(totalPL,0)}, ROI ${fmtPct(roiOnCapital,2)} on capital, max drawdown ₹${fmtNum(maxDD,0)}`;
+
+  const metaRow = document.getElementById('calcMetaRow');
+  if (metaRow && labels.length) {
+    metaRow.style.display = 'flex';
+    document.getElementById('calcMetaText').textContent = `${cumPL.length} obs · entry ${labels[0]} · last ${labels[labels.length-1]}`;
+  }
+
+  // Chart render based on selected view
+  if (_calcChart) { _calcChart.destroy(); _calcChart = null; }
   const ctx = document.getElementById('chartCalcEquity').getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-  gradient.addColorStop(0, _hexRgba(totalPL >= 0 ? '#3fb950' : '#f85149', 0.25));
-  gradient.addColorStop(1, 'transparent');
+  const view = window._calcView || 'equity';
 
-  const chartFmt = (v) => {
+  let series, color, gradientTop, label, yFmt;
+  const moneyFmt = (v) => {
+    if (v == null) return '';
     if (Math.abs(v) >= 100000) return (v / 100000).toFixed(1) + 'L';
     if (Math.abs(v) >= 1000) return (v / 1000).toFixed(0) + 'K';
-    return v;
+    return Math.round(v).toString();
   };
+  const pctFmt = (v) => v == null ? '' : v.toFixed(1) + '%';
+
+  if (view === 'daily') {
+    series = dailyPL;
+    color = totalPL >= 0 ? '#3fb950' : '#f85149';
+    gradientTop = _hexRgba(color, 0.30);
+    label = 'Daily P/L';
+    yFmt = moneyFmt;
+  } else if (view === 'drawdown') {
+    series = drawdownPath;
+    color = '#f85149';
+    gradientTop = _hexRgba('#f85149', 0.32);
+    label = 'Drawdown';
+    yFmt = moneyFmt;
+  } else if (view === 'margin') {
+    series = marginUtilPath;
+    color = '#fb8f44';
+    gradientTop = _hexRgba('#fb8f44', 0.32);
+    label = 'Margin Utilization %';
+    yFmt = pctFmt;
+  } else {
+    series = cumPL;
+    color = totalPL >= 0 ? '#3fb950' : '#f85149';
+    gradientTop = _hexRgba(color, 0.28);
+    label = 'M2M Equity';
+    yFmt = moneyFmt;
+  }
+
+  const cssText = (typeof getComputedStyle === 'function')
+    ? (getComputedStyle(document.body).getPropertyValue('--text') || '#e6edf3').trim()
+    : '#e6edf3';
+  const cssMuted = (typeof getComputedStyle === 'function')
+    ? (getComputedStyle(document.body).getPropertyValue('--text-muted') || '#8b949e').trim()
+    : '#8b949e';
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 280);
+  grad.addColorStop(0, gradientTop);
+  grad.addColorStop(1, 'transparent');
+
+  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin')) ? {
+    id: 'mcShade',
+    beforeDatasetsDraw(chart) {
+      const idx = labels.indexOf(marginCallDate);
+      if (idx < 0) return;
+      const x = chart.scales.x.getPixelForValue(idx);
+      const a = chart.chartArea;
+      chart.ctx.save();
+      chart.ctx.fillStyle = 'rgba(248,81,73,0.10)';
+      chart.ctx.fillRect(x, a.top, a.right - x, a.bottom - a.top);
+      chart.ctx.strokeStyle = 'rgba(248,81,73,0.55)';
+      chart.ctx.setLineDash([4, 3]);
+      chart.ctx.beginPath();
+      chart.ctx.moveTo(x, a.top); chart.ctx.lineTo(x, a.bottom);
+      chart.ctx.stroke();
+      chart.ctx.restore();
+    }
+  } : null;
 
   _calcChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: 'M2M P/L',
-        data: equityCurve,
-        borderColor: '#ffffff',
-        backgroundColor: gradient,
+        label,
+        data: series,
+        borderColor: color,
+        backgroundColor: grad,
         fill: true,
         tension: 0.3,
         pointRadius: 0,
-        borderWidth: 2
+        borderWidth: 2,
+        spanGaps: true
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { 
+      animation: { duration: 350, easing: 'easeOutCubic' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
         legend: { display: false },
         tooltip: {
-          mode: 'index', intersect: false,
+          backgroundColor: 'rgba(22,27,34,0.95)',
+          borderColor: 'rgba(56,139,253,0.3)',
+          borderWidth: 1,
+          titleColor: cssText,
+          bodyColor: cssText,
+          padding: 10,
           callbacks: {
-            label: (ctx) => ` P/L: \u20B9${fmtNum(ctx.raw, 0)}`
+            label: (item) => `${label}: ${view === 'margin' ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
           }
         }
       },
       scales: {
-        x: { 
-          display: true,
-          ticks: { color: '#ffffff', font: { size: 8 } },
-          grid: { color: 'rgba(255,255,255,0.1)' }
+        x: {
+          ticks: { color: cssMuted, font: { size: 9 }, maxRotation: 0, autoSkipPadding: 18 },
+          grid: { color: 'rgba(139,148,158,0.10)' }
         },
-        y: { 
-          display: true,
-          ticks: { 
-            font: { size: 9, weight: '600' }, 
-            color: '#ffffff',
-            callback: chartFmt
-          }, 
-          grid: { color: 'rgba(255,255,255,0.1)' } 
+        y: {
+          ticks: { color: cssMuted, font: { size: 10, weight: '600' }, callback: yFmt },
+          grid: { color: 'rgba(139,148,158,0.10)' }
         }
       }
-    }
+    },
+    plugins: mcPlugin ? [mcPlugin] : []
   });
+
 }
 
-// Wire the calculator init to the history tab
+// Wire the calculator init to the history tab + IntersectionObserver for direct deep-link
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
   setTimeout(initCalculator, 150);
+});
+
+(function _calcLazyInit() {
+  const card = document.getElementById('calculatorCard');
+  if (!card || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        initCalculator();
+        io.disconnect();
+        break;
+      }
+    }
+  }, { rootMargin: '200px' });
+  io.observe(card);
+})();
+
+// Restore state from URL hash (#calc=sym=...&exp=...&...)
+window.addEventListener('load', async () => {
+  const hash = location.hash || '';
+  const m = hash.match(/^#calc=(.+)$/);
+  if (!m) return;
+  const params = new URLSearchParams(m[1]);
+  await initCalculator();
+  const tab = document.querySelector('[data-tab="history"]');
+  if (tab) tab.click();
+  const body = document.getElementById('calculatorBody');
+  if (body && !body.classList.contains('is-open')) {
+    document.getElementById('calculatorHeader').click();
+  }
+  setTimeout(() => {
+    const sym = params.get('sym'), exp = params.get('exp');
+    const cap = params.get('cap'), dir = params.get('dir');
+    const mode = params.get('mode'), entry = params.get('entry'), exit_ = params.get('exit');
+    if (sym) document.getElementById('calcSymbol').value = sym;
+    if (cap) document.getElementById('calcCapital').value = cap;
+    if (mode) {
+      document.getElementById('calcLotMode').value = mode;
+      document.getElementById('customLotRow').style.display = mode === 'custom' ? 'block' : 'none';
+    }
+    if (dir === 'short') document.getElementById('calcDirShort')?.click();
+    setTimeout(() => {
+      if (exp) {
+        const expSel = document.getElementById('calcExpiry');
+        if (expSel && [...expSel.options].some(o => o.value === exp)) expSel.value = exp;
+      }
+      if (entry) document.getElementById('calcEntryDate').value = entry;
+      if (exit_) document.getElementById('calcExitDate').value = exit_;
+      window.updateCalc();
+    }, 200);
+  }, 350);
 });
 
 // Market Intelligence Tab
@@ -5548,13 +6264,109 @@ const TOOLTIPS = {
   },
   "Trade Intelligence Calculator": {
     title: "Trade Intelligence & Capital Calculator",
-    body: `<strong>What it is:</strong> A simulation tool to analyze the performance and capital requirements of a specific trade.<br><br>
+    body: `<strong>What it is:</strong> A historical backtest engine that simulates a position in any MCX expiry using actual closing prices and exchange margin requirements for every day in the window.<br><br>
 <strong>How to use:</strong><br>
-1. Select a contract in the Lifecycle Explorer above.<br>
-2. Enter your available capital.<br>
-3. Choose your direction (Long/Short) and lot sizing strategy.<br>
-4. Adjust Entry/Exit dates to see historical performance.<br><br>
-<strong>Calculations:</strong> Uses actual exchange margin requirements and closing prices for every day in the selected window to compute M2M P/L and peak margin utilization.`
+1. Pick a contract (Symbol → Year → Expiry) and a direction.<br>
+2. Set capital and choose lot sizing (Max / Risk Safe / Custom).<br>
+3. Adjust the trade horizon — slider, presets, or exact dates.<br>
+4. Read off P/L, drawdown, margin peak, ROI on margin, and the equity curve.<br><br>
+<strong>Disclosures:</strong> Backtest only · entry/exit at exchange close · gross unless costs are enabled · "margin call" = peak required margin exceeded available capital on that day.`
+  },
+  "calc-capital": {
+    title: "Capital Available",
+    body: `<strong>Total rupees</strong> available to allocate to this trade. Drives lot sizing in Max and Risk Safe modes.<br><br>The presets (5L / 10L / 25L / 50L) snap to common round sizes. ROI on Capital uses this denominator; ROI on Margin uses peak margin actually deployed.`
+  },
+  "calc-capital-presets": {
+    title: "Capital Presets",
+    body: `Quick-snap to common position sizes — 5L, 10L, 25L, 50L (lakhs of rupees). The active preset highlights blue.`
+  },
+  "calc-symbol": {
+    title: "Symbol",
+    body: `<strong>NG</strong> = NATURALGAS (lot size <em>1,250 MMBtu</em>) · <strong>NGM</strong> = NATGASMINI (lot size <em>250 MMBtu</em>).<br><br>NGM offers ~5× capital efficiency for the same directional view but typically less liquidity.`
+  },
+  "calc-year": {
+    title: "Delivery Year",
+    body: `Calendar year of contract delivery. Filters the Expiry dropdown to expiries whose delivery month falls in the selected year.`
+  },
+  "calc-expiry": {
+    title: "Expiry",
+    body: `Specific MCX expiry (month + year). Backtest runs on this contract's actual price/margin history from first observation through expiry.`
+  },
+  "calc-direction": {
+    title: "Trade Direction",
+    body: `<strong>LONG</strong> — buy at entry, sell at exit. Profits when price rises.<br><strong>SHORT</strong> — sell at entry, cover at exit. Profits when price falls.<br><br>Margin requirement is identical for both sides on NATURALGAS unless MCX has imposed an asymmetric Additional Margin (rare).`
+  },
+  "calc-lotmode": {
+    title: "Lot Sizing Mode",
+    body: `<strong>Max Possible</strong> — uses 100% of capital toward initial margin. Highest leverage, highest margin-call risk on hikes.<br><strong>Risk Safe (50% Util)</strong> — sizes to ~50% of max so a margin hike doesn't immediately blow you up.<br><strong>Custom Lots</strong> — you choose the lot count. Calculator warns if it exceeds max.`
+  },
+  "calc-customlots": {
+    title: "Custom Lots",
+    body: `Manually enter the number of lots. The calculator backtests at this exact size, regardless of capital. If your number exceeds Max Possible at entry margin, a warning ribbon will surface.`
+  },
+  "calc-lotguide": {
+    title: "Lot Guide",
+    body: `Reference values: <strong>Max</strong> at 100% util, plus 50% / 75% / 90% utilization tiers — handy for picking a custom size that respects a target margin buffer.`
+  },
+  "calc-horizon": {
+    title: "Trade Horizon",
+    body: `The window of days over which the backtest runs.<br><br><strong>Full</strong> — every observation for this contract.<br><strong>30D / 10D / 5D</strong> — last N trading days before contract end.<br><strong>≤30 DTE</strong> — only the tender window (last ~30 days to expiry).<br><br>Or use the date inputs and the dual range slider for fully custom windows.`
+  },
+  "calc-entrydate": {
+    title: "Entry Date",
+    body: `First trading day of the simulated position. Entry price = exchange close that day. If the chosen date isn't a trading day, the calculator snaps to the most recent prior trading day with a price.`
+  },
+  "calc-exitdate": {
+    title: "Exit Date",
+    body: `Last trading day of the simulated position. Exit price = exchange close that day. Cumulative P/L = (exit price − entry price) × lots × lot size for longs (sign-flipped for shorts).`
+  },
+  "calc-rangeslider": {
+    title: "Range Slider",
+    body: `Drag either thumb to adjust the trade window inside the contract's full history. Updates Entry/Exit dates and re-runs the backtest in real time. Both endpoints stay valid trading days.`
+  },
+  "calc-stat-pl": {
+    title: "Total P/L",
+    body: `<strong>Cumulative mark-to-market profit/loss</strong> over the trade window.<br><br><em>Formula:</em> (exit close − entry close) × lots × lot size for longs; sign-flipped for shorts.<br><br>Sub-line shows ROI on Capital — Total P/L divided by capital allocated. Use ROI on Margin (separate card) for return on what was actually deployed.`
+  },
+  "calc-stat-dd": {
+    title: "Max Drawdown",
+    body: `<strong>Largest peak-to-trough decline</strong> in cumulative P/L during the window.<br><br><em>Formula:</em> max(running_high − cum_PL) where running_high tracks the highest cum P/L observed so far. Anchored at zero so a loss-only trade still produces a meaningful number.<br><br>Sub-line shows DD as a % of peak portfolio value (capital + running high). This is the worst paper loss you would have endured holding the position.`
+  },
+  "calc-stat-lots": {
+    title: "Lots Traded",
+    body: `Number of futures lots used for the backtest. Driven by your Lot Sizing mode + capital.<br><br>Sub-line shows ₹ entry margin per lot (price × lot size × entry margin %) and the number of trading days in the window.`
+  },
+  "calc-stat-margin": {
+    title: "Margin Peak",
+    body: `<strong>Highest required margin</strong> reached at any point during the trade — captures the worst-case capital lock you'd have faced.<br><br><em>Formula:</em> max over window of (close × lot size × total margin % × lots) ÷ 100.<br><br>If this exceeds your capital on any day, the Margin Call notice fires and the equity chart shades the breach window red.`
+  },
+  "calc-stat-roi": {
+    title: "ROI on Margin",
+    body: `<strong>Return on margin actually deployed</strong> — the most honest leverage-aware return number.<br><br><em>Formula:</em> Total P/L ÷ Peak Margin × 100.<br><br>If you're using Risk Safe (50% util) sizing, this number can be ~2× ROI on Capital because half your capital was sitting in cash.`
+  },
+  "calc-stat-net": {
+    title: "Net P/L (after costs)",
+    body: `<strong>Total P/L minus transaction costs</strong>: STT, exchange charges, SEBI turnover fee, brokerage, and GST.<br><br>Costs are <em>off by default</em>. Toggle "Fees & Costs" below to enable. Brokerage rate is configurable — set to your actual broker's per-lot per-side fee.<br><br>Useful for sanity-checking that the gross P/L survives real execution friction.`
+  },
+  "calc-stat-best": {
+    title: "Best Day (M2M)",
+    body: `<strong>Largest positive single-day move</strong> in cumulative P/L during the window. Shows the absolute amount and the date.<br><br>Day 0 is excluded (it's always 0 — the entry day). For longs this is the biggest up day; for shorts the biggest down day.`
+  },
+  "calc-stat-worst": {
+    title: "Worst Day (M2M)",
+    body: `<strong>Largest negative single-day move</strong> in cumulative P/L during the window — the day that hurt the most.<br><br>Day 0 is excluded. Pair this with Margin Peak to understand which day would have been your hardest test of conviction and capital.`
+  },
+  "calc-share": {
+    title: "Copy Link",
+    body: `Encodes the current trade configuration (symbol, expiry, capital, direction, sizing, entry, exit) into a URL hash and copies it to your clipboard. Pasting the link reopens the calculator with the exact same scenario.`
+  },
+  "calc-reset": {
+    title: "Reset",
+    body: `Restores defaults: capital ₹5L, Long, Max sizing, full contract horizon. Doesn't change symbol or expiry.`
+  },
+  "calc-fees": {
+    title: "Fees & Costs",
+    body: `Toggle to apply Indian transaction taxes and broker costs to the P/L:<br><br>• <strong>STT</strong> 0.0125% on sell-side turnover<br>• <strong>Exchange</strong> 0.0026% on full turnover<br>• <strong>SEBI</strong> 0.0001% on full turnover<br>• <strong>Brokerage</strong> ₹/lot/side (you set the rate)<br>• <strong>GST</strong> 18% on (brokerage + exchange)<br><br>Net P/L card updates with the all-in cost.`
   },
   "snap-chg": {
     title: "Chg %",
