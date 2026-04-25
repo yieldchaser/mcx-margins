@@ -19,6 +19,7 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 - **Market Context:** At-a-glance KPIs (Front Close, Return, Volume Shock, OI Change, Liquidity Score) with semantic color-coding.
 - **Price vs Margin Confluence:** A trailing 60-day interactive chart overlaying front-month price action against margin requirements to spot immediate divergences.
 - **Stress & Regime Scoring:** Real-time composite indicators determining if the market is in a structural calm or high-stress, pre-hike regime.
+- **Trade Intelligence & Capital Calculator:** Interactive backtester supporting NG and NGM futures with multiple chart views (Equity, Daily P/L, Drawdown, Margin Utilization), fee modeling (STT, exchange, GST, brokerage), margin call detection, and shareable state via URL hash. Features preset horizons (Full/30D/10D/5D/≤30 DTE), custom lot sizing, and detailed performance metrics (ROI on margin, max drawdown, best/worst days).
 
 ### 2. Term Structure
 - **Historical Forward Curves:** Visualizes the evolution of the margin and price curves. Overlays today's curve against the 1-week, 1-month, and 1-year historical curves to measure structural shifts in maturity expectations.
