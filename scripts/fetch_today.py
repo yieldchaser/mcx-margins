@@ -11,7 +11,6 @@ Exit codes:
 
 import asyncio
 import sys
-import time
 import argparse
 from datetime import date
 from pathlib import Path
@@ -64,11 +63,19 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch today's MCX margin data with retry logic")
     parser.add_argument("--retries", type=int, default=5, help="Max fetch attempts (default: 5)")
     parser.add_argument("--wait", type=int, default=15, help="Minutes between retries (default: 15)")
+    parser.add_argument("--force", action="store_true", help="Ignore weekend check and force fetch")
     args = parser.parse_args()
 
     db.init_db()
-    today = date.today().strftime("%Y-%m-%d")
+    today_dt = date.today()
+    today = today_dt.strftime("%Y-%m-%d")
+
     print(f"[fetch_today] Target date: {today}")
+
+    # Weekend check: MCX doesn't publish on Sat (5) or Sun (6)
+    if not args.force and today_dt.weekday() >= 5:
+        print(f"[fetch_today] Skipping weekend fetch for {today} (Sat/Sun). Use --force to override.")
+        sys.exit(2)
 
     if has_todays_data(today):
         print(f"[fetch_today] Data already exists for {today}, nothing to do.")
@@ -84,6 +91,7 @@ def main():
 
         print(f"[fetch_today] mcxccl.com has not published data for {today} yet.")
         if attempt < args.retries:
+            import time
             print(f"[fetch_today] Waiting {args.wait} minutes before next attempt...")
             time.sleep(args.wait * 60)
 

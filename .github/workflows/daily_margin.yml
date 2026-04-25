@@ -2,11 +2,18 @@ name: Daily Margin Fetch
 
 on:
   schedule:
-    # 03:30 UTC = 09:00 AM IST, Mon–Fri.
-    # MCX CCL typically publishes daily margins before market open (9 AM IST).
-    # fetch_today.py retries every 15 min (up to 5×) so it self-heals if the
-    # site publishes late — covering 9:00 AM to 10:15 AM IST automatically.
+    # Run 1: MORNING (Mon–Fri 03:30 UTC = 09:00 AM IST)
+    # Primary run to catch margins before market open.
     - cron: '30 3 * * 1-5'
+    
+    # Run 2: LATE MORNING (Mon–Fri 06:00 UTC = 11:30 AM IST)
+    # Secondary safety net in case MCX publishes late.
+    - cron: '0 6 * * 1-5'
+
+    # Run 3: WEEKEND SWEEP (Sat 05:00 UTC = 10:30 AM IST)
+    # Final check to ensure any late-Friday margins are captured.
+    - cron: '0 5 * * 6'
+    
   workflow_dispatch:
 
 jobs:
@@ -29,44 +36,44 @@ jobs:
           python -m playwright install chromium
           python -m playwright install-deps chromium
 
-      # ── Step 1: today's data ───────────────────────────────────────────────
-      # Waits up to 5 × 15 min = 75 min for mcxccl.com to publish.
-      # Exit 0 = new records saved.  Exit 2 = not published yet (clean skip).
-      - name: Fetch today's margin data
-        id: fetch_today
-        run: python scripts/fetch_today.py --retries 5 --wait 15
-        continue-on-error: true
-
-      # ── Step 2: gap-fill (safety net) ─────────────────────────────────────
-      # Audits the last 5 weekdays.  Fills any date that's missing in the DB —
-      # e.g. if yesterday's run failed or was skipped entirely.
-      # Runs regardless of Step 1 outcome so gaps are always caught.
-      # Exit 0 = filled ≥1 missing date.  Exit 2 = no gaps (clean skip).
+      # ── Step 1: Lookback gap-fill (last 5 weekdays) ──────────────────────
+      # We run this FIRST so that any missed data from yesterday/past week 
+      # is committed immediately, even if today's fetch takes a long time.
       - name: Lookback gap-fill (last 5 weekdays)
         id: lookback
         run: python scripts/lookback.py --days 5
         continue-on-error: true
 
-      # ── Step 3: export — always on manual trigger; conditional on scheduled ──
+      # ── Step 2: Fetch today's data ──────────────────────────────────────
+      # Target today's date with retry logic.
+      # fetch_today.py now includes a fail-fast weekend check.
+      - name: Fetch today's margin data
+        id: fetch_today
+        run: python scripts/fetch_today.py --retries 5 --wait 15
+        continue-on-error: true
+
+      # ── Step 3: export ──────────────────────────────────────────────────
+      # Regenerate JSON if either fetch step succeeded or if manual trigger.
       - name: Export dashboard JSON
         if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: python scripts/export_json.py
 
-      # ── Step 4: alert — only for genuinely fresh today's data ────────────
+      # ── Step 4: alert ───────────────────────────────────────────────────
+      # Only alert if genuinely fresh today's data was found.
       - name: Check margin change and send alert
         if: steps.fetch_today.outcome == 'success'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python scripts/alert.py
 
-      # ── Step 5: commit — always on manual trigger; conditional on scheduled ──
+      # ── Step 5: commit ──────────────────────────────────────────────────
       - name: Commit and push DB + dashboard data
         if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add data/ docs/data/
-          git diff --staged --quiet || git commit -m "data: daily margin update $(date +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "data: margin update $(date +%Y-%m-%d)"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -63,13 +63,13 @@
       "id": "margin_market_divergence",
       "symbol": "NATURALGAS",
       "label": "Margin-Market Divergence",
-      "score": 0,
+      "score": 41,
       "severity": "LOW",
       "direction": "CONFIRMED",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": -0.73,
-        "margin_change_5d_pct": -2.78
+        "price_return_5d_pct": -4.516,
+        "margin_change_5d_pct": -1.07
       },
       "reason": "Margin and market movement are broadly aligned."
     },
@@ -134,13 +134,13 @@
       "id": "margin_market_divergence",
       "symbol": "NATGASMINI",
       "label": "Margin-Market Divergence",
-      "score": 0,
+      "score": 43,
       "severity": "LOW",
       "direction": "CONFIRMED",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": -0.689,
-        "margin_change_5d_pct": -2.72
+        "price_return_5d_pct": -4.556,
+        "margin_change_5d_pct": -0.98
       },
       "reason": "Margin and market movement are broadly aligned."
     }
