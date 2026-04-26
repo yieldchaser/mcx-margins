@@ -4697,11 +4697,22 @@ async function initCalculator() {
     const yrSel = document.getElementById('calcYear');
     const expSel = document.getElementById('calcExpiry');
     const sym = symSelect.value;
-    
+
+    // Resolve front-month: nearest future expiry, fallback to most-recent past
+    const now = Date.now();
+    let bfe = null, bfd = Infinity, bpe = null, bpd = -Infinity;
+    _lcAllEntries.forEach(e => {
+      const d = _expiryDate(e.expiry) - now;
+      if (d >= 0 && d < bfd) { bfd = d; bfe = e.expiry; }
+      if (d <  0 && d > bpd) { bpd = d; bpe = e.expiry; }
+    });
+    const frontExp = bfe || bpe;
+
     const updateYears = () => {
       const entries = _lcAllEntries.sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
       const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))].sort((a,b) => b-a);
       yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+      if (frontExp) yrSel.value = _contractDeliveryYear(frontExp).toString();
       updateExpiries();
     };
 
@@ -4709,6 +4720,7 @@ async function initCalculator() {
       const year = yrSel.value;
       const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
       expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)}</option>`).join('');
+      if (frontExp && _contractDeliveryYear(frontExp).toString() === year) expSel.value = frontExp;
       window.updateCalc(true); // snap dates on expiry change
     };
 
