@@ -1891,7 +1891,30 @@ class RangeController {
 
     this.inStart.addEventListener('input', () => this.handleInput(true));
     this.inEnd.addEventListener('input', () => this.handleInput(false));
+
+    // Bring active thumb to front so both thumbs are independently draggable
+    this.inStart.addEventListener('pointerdown', () => {
+      this.inStart.style.zIndex = '4';
+      this.inEnd.style.zIndex = '2';
+    });
+    this.inEnd.addEventListener('pointerdown', () => {
+      this.inEnd.style.zIndex = '4';
+      this.inStart.style.zIndex = '2';
+    });
+
     this.updateUI();
+  }
+
+  updateZIndex() {
+    const s = parseInt(this.inStart.value);
+    // When start thumb is near max, bring it forward so user can pull it back
+    if (s >= this.max - 1) {
+      this.inStart.style.zIndex = '4';
+      this.inEnd.style.zIndex = '2';
+    } else {
+      this.inStart.style.zIndex = '2';
+      this.inEnd.style.zIndex = '4';
+    }
   }
 
   handleInput(isStart) {
@@ -1935,6 +1958,7 @@ class RangeController {
 
     this.highlight.style.left = lPercent + '%';
     this.highlight.style.width = Math.max(0, rPercent - lPercent) + '%';
+    this.updateZIndex();
   }
 
   setRange(s, e) {
