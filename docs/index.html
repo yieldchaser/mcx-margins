@@ -1209,10 +1209,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div id="calculatorBody" class="calc-body">
         <div class="calc-body__inner">
           <div id="calcScopeRow" class="scope-row" style="display:none;">
-            <span class="scope-chip"><strong>Contract</strong> <span data-fill="contract">\u2014</span></span>
+            <span class="scope-chip"><strong>Contract</strong> <span data-fill="contract">—</span></span>
             <span class="scope-chip"><strong>Direction</strong> <span data-fill="direction">Long</span></span>
-            <span class="scope-chip"><strong>Lots</strong> <span data-fill="lots">\u2014</span></span>
-            <span class="scope-chip"><strong>Horizon</strong> <span data-fill="horizon">\u2014</span></span>
+            <span class="scope-chip"><strong>Lots</strong> <span data-fill="lots">—</span></span>
+            <span class="scope-chip"><strong>Horizon</strong> <span data-fill="horizon">—</span></span>
             <span class="scope-chip"><strong>Sizing</strong> <span data-fill="lotmode">Max</span></span>
           </div>
 
@@ -1324,43 +1324,43 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <div id="calcResultsGrid" class="calc-stat-grid" aria-live="polite">
                 <div class="calc-stat calc-stat--profit has-tooltip" data-tooltip-key="calc-stat-pl">
                   <div class="calc-stat__label">Total P/L</div>
-                  <div class="calc-stat__value" id="resPL">\u2014</div>
-                  <div class="calc-stat__sub" id="resPLPct">\u2014</div>
+                  <div class="calc-stat__value" id="resPL">—</div>
+                  <div class="calc-stat__sub" id="resPLPct">—</div>
                 </div>
                 <div class="calc-stat calc-stat--risk has-tooltip" data-tooltip-key="calc-stat-dd">
                   <div class="calc-stat__label">Max Drawdown</div>
-                  <div class="calc-stat__value" id="resDD" style="color:var(--accent-red);">\u2014</div>
-                  <div class="calc-stat__sub" id="resDDPct">\u2014</div>
+                  <div class="calc-stat__value" id="resDD" style="color:var(--accent-red);">—</div>
+                  <div class="calc-stat__sub" id="resDDPct">—</div>
                 </div>
                 <div class="calc-stat calc-stat--lots has-tooltip" data-tooltip-key="calc-stat-lots">
                   <div class="calc-stat__label">Lots Traded</div>
-                  <div class="calc-stat__value" id="resLots" style="color:var(--accent);">\u2014</div>
-                  <div class="calc-stat__sub" id="resLotInfo">\u2014</div>
+                  <div class="calc-stat__value" id="resLots" style="color:var(--accent);">—</div>
+                  <div class="calc-stat__sub" id="resLotInfo">—</div>
                 </div>
                 <div class="calc-stat calc-stat--margin has-tooltip" data-tooltip-key="calc-stat-margin">
                   <div class="calc-stat__label">Margin Peak</div>
-                  <div class="calc-stat__value" id="resMargin" style="color:var(--accent-orange);">\u2014</div>
-                  <div class="calc-stat__sub" id="resMarginPeak">\u2014</div>
+                  <div class="calc-stat__value" id="resMargin" style="color:var(--accent-orange);">—</div>
+                  <div class="calc-stat__sub" id="resMarginPeak">—</div>
                 </div>
                 <div class="calc-stat calc-stat--util has-tooltip" data-tooltip-key="calc-stat-roi">
                   <div class="calc-stat__label">ROI on Margin</div>
-                  <div class="calc-stat__value" id="resROIMargin">\u2014</div>
-                  <div class="calc-stat__sub" id="resROIMarginSub">\u2014</div>
+                  <div class="calc-stat__value" id="resROIMargin">—</div>
+                  <div class="calc-stat__sub" id="resROIMarginSub">—</div>
                 </div>
                 <div class="calc-stat has-tooltip" data-tooltip-key="calc-stat-net">
                   <div class="calc-stat__label">Net P/L (after costs)</div>
-                  <div class="calc-stat__value" id="resNet">\u2014</div>
+                  <div class="calc-stat__value" id="resNet">—</div>
                   <div class="calc-stat__sub" id="resNetSub">Costs disabled</div>
                 </div>
                 <div class="calc-stat calc-stat--green has-tooltip" data-tooltip-key="calc-stat-best">
                   <div class="calc-stat__label">Best Day (M2M)</div>
-                  <div class="calc-stat__value" id="resBest" style="color:var(--accent-green);">\u2014</div>
-                  <div class="calc-stat__sub" id="resBestDate">\u2014</div>
+                  <div class="calc-stat__value" id="resBest" style="color:var(--accent-green);">—</div>
+                  <div class="calc-stat__sub" id="resBestDate">—</div>
                 </div>
                 <div class="calc-stat calc-stat--red has-tooltip" data-tooltip-key="calc-stat-worst">
                   <div class="calc-stat__label">Worst Day (M2M)</div>
-                  <div class="calc-stat__value" id="resWorst" style="color:var(--accent-red);">\u2014</div>
-                  <div class="calc-stat__sub" id="resWorstDate">\u2014</div>
+                  <div class="calc-stat__value" id="resWorst" style="color:var(--accent-red);">—</div>
+                  <div class="calc-stat__sub" id="resWorstDate">—</div>
                 </div>
               </div>
               <div id="calcStatusRibbon" class="calc-status" role="status" aria-live="polite"></div>
@@ -1393,7 +1393,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               </div>
               <div class="calc-meta-row" id="calcMetaRow" style="display:none;">
                 <span class="calc-meta-dot" id="calcMetaDot"></span>
-                <span id="calcMetaText">\u2014</span>
+                <span id="calcMetaText">—</span>
               </div>
               <div id="calcWarning" class="calc-status calc-status--danger" role="status" aria-live="polite"></div>
               <div id="calcInfo" class="calc-info">
@@ -3541,7 +3541,7 @@ async function buildLCDropdown() {
 
 function _lcPopulateMonths(year, autoSelectExpiry) {
   const mSel = document.getElementById('lcMonthSelect');
-  mSel.innerHTML = '<option value="">\u2014 Month \u2014</option>';
+  mSel.innerHTML = '<option value="">— Month —</option>';
   if (!year) { renderLifecycle(); return; }
   // Filter entries for chosen year, sort by expiry date newest-first
   const inYear = _lcAllEntries
@@ -3844,14 +3844,14 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   if (!vals.length) { statsEl.style.display = 'none'; return; }
   const peakVal   = Math.max(...vals), troughVal = Math.min(...vals);
   const peakIdx   = yVals.indexOf(peakVal), troughIdx = yVals.indexOf(troughVal);
-  const peakDate   = rows[peakIdx]?.date   || '\u2014';
-  const troughDate = rows[troughIdx]?.date || '\u2014';
-  let corrVal = '\u2014', corrSub = 'Enable HH overlay to compute';
+  const peakDate   = rows[peakIdx]?.date   || '—';
+  const troughDate = rows[troughIdx]?.date || '—';
+  let corrVal = '—', corrSub = 'Enable HH overlay to compute';
   if (hhPairs && hhPairs.length >= 3) {
     const rv = _pearsonR(hhPairs.map(p=>p.m), hhPairs.map(p=>p.h));
     if (rv !== null) { corrVal = rv.toFixed(2); corrSub = 'Pearson vs HH (n=' + hhPairs.length + ')'; }
   }
-  const corrColor = corrVal !== '\u2014' && Math.abs(+corrVal) >= 0.5 ? '#d29922' : 'var(--text-muted)';
+  const corrColor = corrVal !== '—' && Math.abs(+corrVal) >= 0.5 ? '#d29922' : 'var(--text-muted)';
   statsEl.innerHTML =
     '<div class="lc-stat"><div class="lc-stat-label">Peak</div><div class="lc-stat-value" style="color:#ef4444;">' + peakVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + peakDate + '</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">Trough</div><div class="lc-stat-value" style="color:#22c55e;">' + troughVal.toFixed(2) + '%</div><div class="lc-stat-sub">' + troughDate + '</div></div>' +
@@ -4063,7 +4063,7 @@ async function renderSeasonality() {
                     ? `Full: ${r.min}%\u2013${r.max}% | n=${r.n} days`
                     : `P10\u2013P90 range: ${r.p10}%\u2013${r.p90}% | n=${r.n} days`;
                   const lines = [
-                    `${r.month} \u2014 Median: ${r.median}% | Mean: ${r.mean}%`,
+                    `${r.month} — Median: ${r.median}% | Mean: ${r.mean}%`,
                     `IQR: ${r.p25}%\u2013${r.p75}% | Whiskers: ${r.p10}%\u2013${r.p90}%`,
                     minMaxLine,
                   ];
@@ -4071,7 +4071,7 @@ async function renderSeasonality() {
                   if (r.month_num === currentMonth && frontMarginForMonth != null) {
                     const rel = frontMarginForMonth > r.median + r.std * 0.5 ? 'above' :
                                 frontMarginForMonth < r.median - r.std * 0.5 ? 'below' : 'near';
-                    lines.push(`\u2190 Current month \u2014 Today's front-month: ${frontMarginForMonth.toFixed(1)}% (${rel} seasonal median of ${r.median}%)`);
+                    lines.push(`\u2190 Current month — Today's front-month: ${frontMarginForMonth.toFixed(1)}% (${rel} seasonal median of ${r.median}%)`);
                   } else if (r.month_num === currentMonth) {
                     lines.push('\u2190 Current month');
                   }
@@ -4937,12 +4937,16 @@ window.updateCalc = async function(forceSnap = false) {
   document.getElementById('calcRangeSlider').style.display = 'block';
 
   if (forceSnap || !entryDateRaw || !exitDateRaw) {
-    const start = allDates[0], end = allDates[allDates.length - 1];
+    // Snap entry to first date that has BOTH price and margin data; price is required for the backtest.
+    // allDates is the union of both datasets, so allDates[0] may only have margin data.
+    const firstValidIdx = allDates.findIndex(d => pByDate[d] && mByDate[d]);
+    const snapStart = firstValidIdx >= 0 ? firstValidIdx : 0;
+    const start = allDates[snapStart], end = allDates[allDates.length - 1];
     document.getElementById('calcEntryDate').value = start;
     document.getElementById('calcExitDate').value = end;
-    document.getElementById('calcEntryDate').min = start; document.getElementById('calcEntryDate').max = end;
-    document.getElementById('calcExitDate').min = start; document.getElementById('calcExitDate').max = end;
-    _calcRC.setRange(0, allDates.length - 1);
+    document.getElementById('calcEntryDate').min = allDates[0]; document.getElementById('calcEntryDate').max = end;
+    document.getElementById('calcExitDate').min = allDates[0]; document.getElementById('calcExitDate').max = end;
+    _calcRC.setRange(snapStart, allDates.length - 1);
     _calcRC.setLabels(start, end);
     if (forceSnap) return window.updateCalc(false);
   } else {
