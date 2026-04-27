@@ -1225,6 +1225,11 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <span class="scope-chip"><strong>Lots</strong> <span data-fill="lots">—</span></span>
             <span class="scope-chip"><strong>Horizon</strong> <span data-fill="horizon">—</span></span>
             <span class="scope-chip"><strong>Sizing</strong> <span data-fill="lotmode">Max</span></span>
+            <label class="scope-chip has-tooltip" data-tooltip-key="calc-m2m-mode" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+              <strong>M2M Capital</strong>
+              <input type="checkbox" id="calcM2MEnabled" checked style="margin:0; cursor:pointer;">
+              <span class="calc-mode-badge" id="calcM2MBadge" style="margin-left:0;">ON</span>
+            </label>
           </div>
 
           <div class="calc-grid">
@@ -1382,13 +1387,6 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <button type="button" id="calcFeesBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-fees" aria-expanded="false" aria-controls="calcFeesPanel">Fees &amp; Costs</button>
               </div>
               <div id="calcFeesPanel" class="calc-fees-panel" aria-hidden="true">
-                <label class="has-tooltip" data-tooltip-key="calc-m2m-mode">
-                  <span>Dynamic M2M capital accounting <span class="calc-mode-badge" id="calcM2MBadge">ON</span></span>
-                  <input type="checkbox" id="calcM2MEnabled" checked>
-                </label>
-                <div id="calcM2MHint" style="margin-bottom:8px;padding:6px 8px;background:rgba(56,139,253,0.07);border:1px solid rgba(56,139,253,0.18);border-radius:4px;font-size:10px;line-height:1.5;color:var(--text-muted);">
-                  Real-world mode: daily M2M profits/losses adjust your available capital. Margin calls are measured against your live ledger balance, not the fixed initial deposit.
-                </div>
                 <label><span>Apply costs (STT, exchange, GST, brokerage)</span><input type="checkbox" id="calcFeesEnabled"></label>
                 <label><span>Brokerage ₹/lot/side</span><input type="number" id="calcFeeBrokerage" value="20" step="1" min="0"></label>
                 <div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
