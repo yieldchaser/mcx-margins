@@ -445,6 +445,17 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   text-align: right;
 }
 .calc-fees-panel input[type="checkbox"] { accent-color: var(--accent); }
+.calc-mode-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.07em;
+  padding: 1px 5px; border-radius: 3px;
+  background: rgba(56,139,253,0.18); color: var(--accent);
+  margin-left: 5px; vertical-align: middle;
+  transition: background 0.2s, color 0.2s;
+}
+.calc-mode-badge.is-off {
+  background: rgba(139,148,158,0.15); color: var(--text-muted);
+}
 
 .calc-meta-row {
   font-size: 10px; color: var(--text-muted);
@@ -1371,6 +1382,13 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <button type="button" id="calcFeesBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-fees" aria-expanded="false" aria-controls="calcFeesPanel">Fees &amp; Costs</button>
               </div>
               <div id="calcFeesPanel" class="calc-fees-panel" aria-hidden="true">
+                <label class="has-tooltip" data-tooltip-key="calc-m2m-mode">
+                  <span>Dynamic M2M capital accounting <span class="calc-mode-badge" id="calcM2MBadge">ON</span></span>
+                  <input type="checkbox" id="calcM2MEnabled" checked>
+                </label>
+                <div id="calcM2MHint" style="margin-bottom:8px;padding:6px 8px;background:rgba(56,139,253,0.07);border:1px solid rgba(56,139,253,0.18);border-radius:4px;font-size:10px;line-height:1.5;color:var(--text-muted);">
+                  Real-world mode: daily M2M profits/losses adjust your available capital. Margin calls are measured against your live ledger balance, not the fixed initial deposit.
+                </div>
                 <label><span>Apply costs (STT, exchange, GST, brokerage)</span><input type="checkbox" id="calcFeesEnabled"></label>
                 <label><span>Brokerage ₹/lot/side</span><input type="number" id="calcFeeBrokerage" value="20" step="1" min="0"></label>
                 <div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
@@ -4890,6 +4908,14 @@ async function initCalculator() {
   });
   document.getElementById('calcFeesEnabled')?.addEventListener('change', () => window.updateCalc());
   document.getElementById('calcFeeBrokerage')?.addEventListener('input', () => window.updateCalc());
+  document.getElementById('calcM2MEnabled')?.addEventListener('change', () => {
+    const on = !!document.getElementById('calcM2MEnabled')?.checked;
+    const badge = document.getElementById('calcM2MBadge');
+    if (badge) { badge.textContent = on ? 'ON' : 'OFF'; badge.classList.toggle('is-off', !on); }
+    const hint = document.getElementById('calcM2MHint');
+    if (hint) hint.style.display = on ? 'block' : 'none';
+    window.updateCalc();
+  });
 }
 
 window.updateCalc = async function(forceSnap = false) {
@@ -5052,9 +5078,11 @@ window.updateCalc = async function(forceSnap = false) {
   }
 
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
+  // isM2M: real-world mode — daily M2M settlement adjusts the available ledger balance each day
+  const isM2M = !!document.getElementById('calcM2MEnabled')?.checked;
   const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], labels = [];
   let prevPL = 0, runningHigh = 0, maxDD = 0, peakMargin = 0;
-  let marginCallDate = null, marginCallReq = 0;
+  let marginCallDate = null, marginCallReq = 0, marginCallAvail = 0;
 
   windowDays.forEach(date => {
     const pRow = pByDate[date] || findNearest(date, pByDate);
@@ -5077,13 +5105,17 @@ window.updateCalc = async function(forceSnap = false) {
 
     if (mPct != null && lots > 0) {
       const curMargin = (p * lotSize * mPct * lots) / 100;
+      // Dynamic M2M: available capital = initial capital +/- cumulative P/L settled to date.
+      // Math.max(0,...) clamps to zero — a real broker would have squared off before a negative balance.
+      const availableCapital = isM2M ? Math.max(0, capital + pl) : capital;
       marginPath.push(curMargin);
-      const util = capital > 0 ? (curMargin / capital) * 100 : 0;
+      const util = availableCapital > 0 ? (curMargin / availableCapital) * 100 : 999;
       marginUtilPath.push(util);
       if (curMargin > peakMargin) peakMargin = curMargin;
-      if (!marginCallDate && curMargin > capital) {
+      if (!marginCallDate && curMargin > availableCapital) {
         marginCallDate = date;
         marginCallReq = curMargin;
+        marginCallAvail = availableCapital; // snapshot live ledger balance at breach
       }
     } else {
       marginPath.push(null);
@@ -5177,7 +5209,10 @@ window.updateCalc = async function(forceSnap = false) {
 
   const mcNotice = document.getElementById('calcMarginCallNotice');
   if (marginCallDate) {
-    mcNotice.innerHTML = `<span class="calc-status__title">Margin call would have triggered on ${marginCallDate}</span><div class="calc-status__detail">Required margin ₹${fmtNum(marginCallReq, 0)} exceeded available capital ₹${fmtNum(capital, 0)}.</div>`;
+    const callCapStr = isM2M
+      ? `live M2M ledger ₹${fmtNum(marginCallAvail, 0)} (initial ₹${fmtNum(capital, 0)} ${marginCallAvail < capital ? '− loss absorbed' : '+ profit added'})`
+      : `available capital ₹${fmtNum(capital, 0)}`;
+    mcNotice.innerHTML = `<span class="calc-status__title">Margin call would have triggered on ${marginCallDate}</span><div class="calc-status__detail">Required margin ₹${fmtNum(marginCallReq, 0)} exceeded ${callCapStr}.</div>`;
     mcNotice.classList.add('is-visible');
     mcNotice.style.display = 'block';
   } else {
@@ -5194,6 +5229,15 @@ window.updateCalc = async function(forceSnap = false) {
 
   const sr = document.getElementById('calcSrAnnounce');
   if (sr) sr.textContent = `Total P/L ₹${fmtNum(totalPL,0)}, ROI ${fmtPct(roiOnCapital,2)} on capital, max drawdown ₹${fmtNum(maxDD,0)}`;
+
+  // Dynamic mode footnote — updates on every recalc to reflect active capital model
+  const infoEl = document.getElementById('calcInfo');
+  if (infoEl) {
+    const modeNote = isM2M
+      ? 'Dynamic M2M: margin calls measured against your live ledger balance.'
+      : 'Static capital: margin calls measured against fixed initial deposit.';
+    infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em></span>`;
+  }
 
   const metaRow = document.getElementById('calcMetaRow');
   if (metaRow && labels.length) {
@@ -6487,6 +6531,10 @@ const TOOLTIPS = {
   "calc-reset": {
     title: "Reset",
     body: `Restores defaults: capital ₹5L, Long, Max sizing, full contract horizon. Doesn't change symbol or expiry.`
+  },
+  "calc-m2m-mode": {
+    title: "Dynamic M2M Capital Accounting",
+    body: `Controls how margin calls are evaluated in the backtest:<br><br><strong>ON — Real-world (default)</strong><br>Each day, cumulative M2M profit/loss is applied to your ledger. A losing streak shrinks your available capital, so margin calls can fire earlier — exactly as they would on a live MCX/Zerodha account.<br><br><strong>OFF — Conservative (stress-test)</strong><br>Margin is always checked against your fixed initial capital regardless of daily P/L. The more pessimistic model; useful for worst-case position sizing.<br><br><em>Lot sizing is always fixed at entry in both modes — intra-trade gains don't auto-buy more lots.</em>`
   },
   "calc-fees": {
     title: "Fees & Costs",
