@@ -289,13 +289,17 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   display: inline-flex; align-items: center; gap: 4px;
 }
 .calc-stat__value {
-  font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  font-feature-settings: "tnum";
   color: var(--text);
   line-height: 1.15;
   transition: color 0.25s ease;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.calc-stat__unit {
+  font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; opacity: 0.8;
 }
 .calc-stat__value.is-positive { color: var(--accent-green); }
 .calc-stat__value.is-negative { color: var(--accent-red); }
@@ -5170,8 +5174,8 @@ window.updateCalc = async function(forceSnap = false) {
     opts = opts || {};
     const el = document.getElementById(id);
     if (!el) return;
-    if (el.textContent !== text) {
-      el.textContent = text;
+    if (el.innerHTML !== text) {
+      el.innerHTML = text;
       const card = el.closest('.calc-stat');
       if (card) {
         card.classList.remove('is-flashing');
@@ -5191,7 +5195,7 @@ window.updateCalc = async function(forceSnap = false) {
   setStat('resPLPct', `${fmtPct(roiOnCapital, 2)} ROI on Capital`);
   setStat('resDD', '₹' + fmtNum(maxDD, 0));
   setStat('resDDPct', `${fmtPct(ddPctOfPortfolio, 2)} of peak portfolio`);
-  setStat('resLots', lots + ' Lots');
+  setStat('resLots', `${lots}<span class="calc-stat__unit">Lots</span>`);
   setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · ${windowDays.length} days`);
   setStat('resMargin', '₹' + fmtNum(peakMargin, 0));
   const peakUtil = capital > 0 ? (peakMargin / capital) * 100 : 0;
