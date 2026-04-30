@@ -2110,7 +2110,7 @@ window.addEventListener('mouseup', e => {
       const days = i2 - i1;
       const rect = _dragChart.canvas.getBoundingClientRect();
       const midX = rect.left + (_dragStart.x + _dragEnd.x) / 2;
-      const midY = rect.top + _dragChart.chartArea.top;
+      const midY = rect.top + (_dragChart.chartArea.top + _dragChart.chartArea.bottom) / 2;
       
       // Determine formatting based on dataset metadata
       const labelText = ds.label || '';
