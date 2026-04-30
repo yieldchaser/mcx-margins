@@ -2101,12 +2101,10 @@ window.addEventListener('mouseup', e => {
     return;
   }
   else {
-    const ds = _dragChart.data.datasets[0]; // primary dataset
+    const ds = _dragChart.data.datasets[0]; 
     const v1 = ds.data[i1], v2 = ds.data[i2];
     if (v1 != null && v2 != null) {
       const delta = v2 - v1;
-      // Use abs(v1) so the percent change direction matches delta even when v1 < 0
-      // (common for return/flow series).
       const base = Math.abs(v1);
       const pct = base > 0 ? (delta / base) * 100 : null;
       const days = i2 - i1;
@@ -2114,9 +2112,23 @@ window.addEventListener('mouseup', e => {
       const midX = rect.left + (_dragStart.x + _dragEnd.x) / 2;
       const midY = rect.top + _dragChart.chartArea.top;
       
-      let html = `<div class="meas-val">${delta > 0 ? '+' : ''}${delta.toFixed(2)}%</div>`;
+      // Determine formatting based on dataset metadata
+      const labelText = ds.label || '';
+      const isCurrency = labelText.includes('₹') || labelText.includes('P/L') || labelText.includes('Equity') || labelText.includes('Drawdown');
+      const isPercent = labelText.includes('%') || labelText.includes('ROI') || labelText.includes('Util');
+      
+      let valStr = '';
+      if (isCurrency) {
+        valStr = (delta >= 0 ? '+₹' : '−₹') + fmtNum(Math.abs(delta), 0);
+      } else if (isPercent) {
+        valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%';
+      } else {
+        valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+      }
+
+      let html = `<div class="meas-val">${valStr}</div>`;
       html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                ${delta >= 0 ? '\u25b2' : '\u25bc'} ${pct == null ? '-' : Math.abs(pct).toFixed(1) + '%'}
+                ${delta >= 0 ? '▲' : '▼'} ${pct == null ? '-' : Math.abs(pct).toFixed(1) + '%'}
                </div>`;
       html += `<div class="meas-sub">${days} ${days === 1 ? 'day' : 'days'} duration</div>`;
       
@@ -2126,7 +2138,7 @@ window.addEventListener('mouseup', e => {
     }
   }
   
-  clearDragState(); // clear drag bands on all charts
+  clearDragState(); 
 });
 
 window.addEventListener('scroll', () => resetMeasurementState(false), { passive: true });
@@ -6899,16 +6911,13 @@ function placeTooltipAnchored(triggerEl, overlay) {
   const gap = 15;
   const margin = 12;
 
-  // Premium Centering: follow mouse X, stay above mouse Y
   let left = _ttMouseX - ttW / 2;
   let top = _ttMouseY - ttH - gap;
 
-  // Viewport Collision: Flip below if no space above
   if (top < margin) {
     top = _ttMouseY + gap + 10;
   }
   
-  // Boundary constraints
   left = Math.max(margin, Math.min(left, window.innerWidth - ttW - margin));
   top = Math.max(margin, Math.min(top, window.innerHeight - ttH - margin));
 
@@ -6966,48 +6975,53 @@ function hideTooltipNow() {
   _ttActiveTrigger = null;
 }
 
-// ── Tooltip attachment — data-attribute driven, works across lazy tabs ──
-function attachTooltips() {
-  document.querySelectorAll('.has-tooltip').forEach(el => {
-    if (el._tooltipAttached) return; 
-    el._tooltipAttached = true;
-    const key = el.dataset.tooltipKey;
-    el.addEventListener('mouseenter', (e) => {
+/**
+ * Event Delegation for Tooltips
+ * Replaces manual attachTooltips() calls to handle dynamic DOM updates.
+ */
+function initTooltipDelegation() {
+  document.addEventListener('mouseover', (e) => {
+    const trigger = e.target.closest('.has-tooltip');
+    if (trigger) {
+      const key = trigger.dataset.tooltipKey;
       _ttMouseX = e.clientX; _ttMouseY = e.clientY;
-      showTooltip(key, el, e);
-    });
-    el.addEventListener('mousemove', (e) => {
-      _ttMouseX = e.clientX; _ttMouseY = e.clientY;
-      const overlay = document.getElementById('tooltipOverlay');
-      if (overlay && overlay.classList.contains('visible')) {
-        placeTooltipAnchored(el, overlay);
-      }
-    });
-    el.addEventListener('mouseleave', hideTooltip);
-    el.addEventListener('touchstart', (e) => {
+      showTooltip(key, trigger, e);
+    }
+  }, true);
+
+  document.addEventListener('mousemove', (e) => {
+    _ttMouseX = e.clientX; _ttMouseY = e.clientY;
+    const overlay = document.getElementById('tooltipOverlay');
+    if (overlay && overlay.classList.contains('visible') && _ttActiveTrigger) {
+      placeTooltipAnchored(_ttActiveTrigger, overlay);
+    }
+  }, { passive: true });
+
+  document.addEventListener('mouseout', (e) => {
+    const trigger = e.target.closest('.has-tooltip');
+    if (trigger && (!e.relatedTarget || !trigger.contains(e.relatedTarget))) {
+      hideTooltip();
+    }
+  }, true);
+
+  document.addEventListener('touchstart', (e) => {
+    const trigger = e.target.closest('.has-tooltip');
+    if (trigger) {
       const touch = e.touches[0];
       if (touch) { _ttMouseX = touch.clientX; _ttMouseY = touch.clientY; }
-      showTooltip(key, el, e);
-    }, { passive: true });
-  });
+      showTooltip(trigger.dataset.tooltipKey, trigger, e);
+    } else {
+      const overlay = document.getElementById('tooltipOverlay');
+      if (overlay && overlay.classList.contains('visible')) hideTooltipNow();
+    }
+  }, { passive: true });
 }
 
-document.addEventListener('touchstart', () => {
-  const el = document.getElementById('tooltipOverlay');
-  if (el && el.classList.contains('visible')) hideTooltipNow();
-});
+// Initializing delegation
+initTooltipDelegation();
 
-// Run on page load (catches Overview tab)
-attachTooltips();
-
-// Re-run whenever a tab is clicked (catches lazy-loaded tabs)
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    hideTooltipNow();
-    // Small delay to let tab content become visible
-    setTimeout(attachTooltips, 100);
-  });
-});
+// Placeholder for legacy code compatibility
+function attachTooltips() { /* Delegation handles this now */ }
 
 window.addEventListener('resize', () => {
   const el = document.getElementById('tooltipOverlay');
