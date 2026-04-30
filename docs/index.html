@@ -2038,7 +2038,7 @@ const MEASURE = {
   }
 };
 
-let _dragStart = null, _dragEnd = null, _dragChart = null;
+let _dragStart = null, _dragEnd = null, _dragChart = null, _lastMeasurePos = null;
 function clearDragState(redraw = true) {
   _dragStart = _dragChart = _dragEnd = null;
   if (!redraw || typeof Chart === 'undefined') return;
@@ -2050,11 +2050,13 @@ function clearDragState(redraw = true) {
 }
 
 function resetMeasurementState(redraw = true) {
+  _lastMeasurePos = null;
   MEASURE.hide();
   clearDragState(redraw);
 }
 
 window.addEventListener('mousedown', e => {
+  _lastMeasurePos = null;
   if (typeof Chart === 'undefined') return;
   const canvas = e.target;
   if (!canvas || canvas.tagName !== 'CANVAS') {
@@ -2116,20 +2118,30 @@ function getMeasurementHTML(i1, i2, chart) {
 }
 
 window.addEventListener('mousemove', e => {
-  if (typeof Chart === 'undefined' || !_dragStart || !_dragChart) return;
-  const rect = _dragChart.canvas.getBoundingClientRect();
-  const x = Math.max(_dragChart.chartArea.left, Math.min(e.clientX - rect.left, _dragChart.chartArea.right));
-  _dragEnd = { x, idx: _dragChart.scales.x.getValueForPixel(x) };
-  _dragChart.draw(); 
+  if (typeof Chart === 'undefined') return;
+  
+  if (_dragStart && _dragChart) {
+    const rect = _dragChart.canvas.getBoundingClientRect();
+    const x = Math.max(_dragChart.chartArea.left, Math.min(e.clientX - rect.left, _dragChart.chartArea.right));
+    _dragEnd = { x, idx: _dragChart.scales.x.getValueForPixel(x) };
+    _dragChart.draw(); 
 
-  // Show live measurement
-  const i1 = _dragStart.idx;
-  const i2 = _dragEnd.idx;
-  if (i1 !== i2) {
-    const html = getMeasurementHTML(Math.min(i1, i2), Math.max(i1, i2), _dragChart);
-    if (html) MEASURE.show(e.clientX, e.clientY, html);
-  } else {
-    MEASURE.hide();
+    // Show live measurement
+    const i1 = _dragStart.idx;
+    const i2 = _dragEnd.idx;
+    if (i1 !== i2) {
+      const html = getMeasurementHTML(Math.min(i1, i2), Math.max(i1, i2), _dragChart);
+      if (html) MEASURE.show(e.clientX, e.clientY, html);
+    } else {
+      MEASURE.hide();
+    }
+  } else if (_lastMeasurePos) {
+    // Proximity hide: if mouse moves away from measurement end point, hide card
+    const dist = Math.hypot(e.clientX - _lastMeasurePos.x, e.clientY - _lastMeasurePos.y);
+    if (dist > 60) {
+      MEASURE.hide();
+      _lastMeasurePos = null;
+    }
   }
 });
 
@@ -2145,7 +2157,7 @@ window.addEventListener('mouseup', e => {
     return;
   }
   
-  // Card is already shown live by mousemove, just clear drag state
+  _lastMeasurePos = { x: e.clientX, y: e.clientY };
   clearDragState(); 
 });
 
