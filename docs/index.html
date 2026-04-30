@@ -2081,12 +2081,56 @@ window.addEventListener('mousedown', e => {
   }
 });
 
+function getMeasurementHTML(i1, i2, chart) {
+  const ds = chart.data.datasets[0]; 
+  const v1 = ds.data[i1], v2 = ds.data[i2];
+  if (v1 == null || v2 == null) return null;
+
+  const delta = v2 - v1;
+  const base = Math.abs(v1);
+  const pct = base > 0 ? (delta / base) * 100 : null;
+  const days = Math.abs(i2 - i1);
+  
+  const labelText = ds.label || '';
+  const isCurrency = labelText.includes('₹') || labelText.includes('P/L') || labelText.includes('Equity') || labelText.includes('Drawdown');
+  const isPercent = labelText.includes('%') || labelText.includes('ROI') || labelText.includes('Util');
+  
+  let valStr = '';
+  if (isCurrency) {
+    valStr = (delta >= 0 ? '+₹' : '−₹') + fmtNum(Math.abs(delta), 0);
+  } else if (isPercent) {
+    valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%';
+  } else {
+    valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+  }
+
+  let html = `<div class="meas-val">${valStr}</div>`;
+  const showPctChange = labelText.includes('Equity') || labelText.includes('Price') || labelText.includes('Close') || labelText.includes('Capital');
+  if (showPctChange && pct != null) {
+    html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
+              ${delta >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(1) + '%'}
+             </div>`;
+  }
+  html += `<div class="meas-sub">${days} ${days === 1 ? 'day' : 'days'} duration</div>`;
+  return html;
+}
+
 window.addEventListener('mousemove', e => {
   if (typeof Chart === 'undefined' || !_dragStart || !_dragChart) return;
   const rect = _dragChart.canvas.getBoundingClientRect();
   const x = Math.max(_dragChart.chartArea.left, Math.min(e.clientX - rect.left, _dragChart.chartArea.right));
   _dragEnd = { x, idx: _dragChart.scales.x.getValueForPixel(x) };
-  _dragChart.draw(); // trigger redraw to show band
+  _dragChart.draw(); 
+
+  // Show live measurement
+  const i1 = _dragStart.idx;
+  const i2 = _dragEnd.idx;
+  if (i1 !== i2) {
+    const html = getMeasurementHTML(Math.min(i1, i2), Math.max(i1, i2), _dragChart);
+    if (html) MEASURE.show(e.clientX, e.clientY, html);
+  } else {
+    MEASURE.hide();
+  }
 });
 
 window.addEventListener('mouseup', e => {
@@ -2100,50 +2144,8 @@ window.addEventListener('mouseup', e => {
     resetMeasurementState();
     return;
   }
-  else {
-    const ds = _dragChart.data.datasets[0]; 
-    const v1 = ds.data[i1], v2 = ds.data[i2];
-    if (v1 != null && v2 != null) {
-      const delta = v2 - v1;
-      const base = Math.abs(v1);
-      const pct = base > 0 ? (delta / base) * 100 : null;
-      const days = i2 - i1;
-      const rect = _dragChart.canvas.getBoundingClientRect();
-      const midX = rect.left + (_dragStart.x + _dragEnd.x) / 2;
-      const midY = rect.top + (_dragChart.chartArea.top + _dragChart.chartArea.bottom) / 2;
-      
-      // Determine formatting based on dataset metadata
-      const labelText = ds.label || '';
-      const isCurrency = labelText.includes('₹') || labelText.includes('P/L') || labelText.includes('Equity') || labelText.includes('Drawdown');
-      const isPercent = labelText.includes('%') || labelText.includes('ROI') || labelText.includes('Util');
-      
-      let valStr = '';
-      if (isCurrency) {
-        valStr = (delta >= 0 ? '+₹' : '−₹') + fmtNum(Math.abs(delta), 0);
-      } else if (isPercent) {
-        valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%';
-      } else {
-        valStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
-      }
-
-      let html = `<div class="meas-val">${valStr}</div>`;
-      
-      // % change is only contextually relevant for absolute levels like Price or Equity
-      const showPctChange = labelText.includes('Equity') || labelText.includes('Price') || labelText.includes('Close') || labelText.includes('Capital');
-      if (showPctChange && pct != null) {
-        html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                  ${delta >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(1) + '%'}
-                 </div>`;
-      }
-      
-      html += `<div class="meas-sub">${days} ${days === 1 ? 'day' : 'days'} duration</div>`;
-      
-      MEASURE.show(midX, midY, html);
-    } else {
-      MEASURE.hide();
-    }
-  }
   
+  // Card is already shown live by mousemove, just clear drag state
   clearDragState(); 
 });
 
