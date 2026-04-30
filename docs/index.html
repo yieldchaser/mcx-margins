@@ -2127,9 +2127,15 @@ window.addEventListener('mouseup', e => {
       }
 
       let html = `<div class="meas-val">${valStr}</div>`;
-      html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                ${delta >= 0 ? '▲' : '▼'} ${pct == null ? '-' : Math.abs(pct).toFixed(1) + '%'}
-               </div>`;
+      
+      // % change is only contextually relevant for absolute levels like Price or Equity
+      const showPctChange = labelText.includes('Equity') || labelText.includes('Price') || labelText.includes('Close') || labelText.includes('Capital');
+      if (showPctChange && pct != null) {
+        html += `<div class="meas-pct" style="color:${delta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                  ${delta >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(1) + '%'}
+                 </div>`;
+      }
+      
       html += `<div class="meas-sub">${days} ${days === 1 ? 'day' : 'days'} duration</div>`;
       
       MEASURE.show(midX, midY, html);
