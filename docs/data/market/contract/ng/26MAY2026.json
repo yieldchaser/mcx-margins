@@ -3382,6 +3382,37 @@
       "oi_flow_state": "short_build",
       "return_5d_pct": -6.664,
       "return_20d_pct": -12.344
+    },
+    {
+      "date": "2026-04-30",
+      "symbol": "NATURALGAS",
+      "expiry": "26MAY2026",
+      "instrument": "FUTCOM",
+      "open": 252.8,
+      "high": 266.4,
+      "low": 248.2,
+      "close": 263.1,
+      "prev_close": 252.1,
+      "volume_lots": 133625,
+      "volume_kgs": 167031.25,
+      "value_lacs": 428818.13,
+      "open_interest": 28708,
+      "dte": 26,
+      "return_pct": 4.3633,
+      "return_1d_pct": 4.3633,
+      "range_pct": 6.918,
+      "rolling_realized_vol_5d": 46.447,
+      "rolling_realized_vol_20d": 33.504,
+      "volume_z_20d": 3.973,
+      "volume_pct_252d": 100.0,
+      "oi_change": -6143,
+      "oi_change_pct": -17.626,
+      "oi_pct_252d": 98.2,
+      "liquidity_score": 99.3,
+      "turnover_ratio": 4.6546,
+      "oi_flow_state": "short_cover",
+      "return_5d_pct": 1.192,
+      "return_20d_pct": -5.496
     }
   ]
 }
