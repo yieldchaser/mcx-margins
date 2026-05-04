@@ -1,15 +1,15 @@
 {
   "30d": {
     "directional_accuracy": 80.0,
-    "mae": 0.867,
-    "rmse": 1.054,
+    "mae": 0.848,
+    "rmse": 1.045,
     "interval_hit_rate_1sigma": 80.0,
     "interval_hit_rate_2sigma": 90.0,
     "n": 30
   },
   "90d": {
     "directional_accuracy": 74.4,
-    "mae": 2.697,
+    "mae": 2.695,
     "rmse": 6.653,
     "interval_hit_rate_1sigma": 83.3,
     "interval_hit_rate_2sigma": 88.9,
@@ -17,7 +17,7 @@
   },
   "365d": {
     "directional_accuracy": 66.8,
-    "mae": 1.615,
+    "mae": 1.614,
     "rmse": 3.697,
     "interval_hit_rate_1sigma": 71.5,
     "interval_hit_rate_2sigma": 87.7,
