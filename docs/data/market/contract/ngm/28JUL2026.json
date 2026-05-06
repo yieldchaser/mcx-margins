@@ -2111,6 +2111,37 @@
       "oi_flow_state": "long_build",
       "return_5d_pct": 4.772,
       "return_20d_pct": -0.447
+    },
+    {
+      "date": "2026-05-05",
+      "symbol": "NATGASMINI",
+      "expiry": "28JUL2026",
+      "instrument": "FUTCOM",
+      "open": 309.6,
+      "high": 310.5,
+      "low": 301.2,
+      "close": 303.2,
+      "prev_close": 311.8,
+      "volume_lots": 2362,
+      "volume_kgs": 590.5,
+      "value_lacs": 1806.99,
+      "open_interest": 1703,
+      "dte": 84,
+      "return_pct": -2.7582,
+      "return_1d_pct": -2.7582,
+      "range_pct": 3.067,
+      "rolling_realized_vol_5d": 46.438,
+      "rolling_realized_vol_20d": 28.948,
+      "volume_z_20d": 1.612,
+      "volume_pct_252d": 97.1,
+      "oi_change": -354,
+      "oi_change_pct": -17.21,
+      "oi_pct_252d": 98.5,
+      "liquidity_score": 97.7,
+      "turnover_ratio": 1.387,
+      "oi_flow_state": "long_unwind",
+      "return_5d_pct": 2.294,
+      "return_20d_pct": -3.439
     }
   ]
 }
