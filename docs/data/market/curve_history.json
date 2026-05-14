@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-13T08:52:50Z",
+  "generated_at": "2026-05-14T01:24:53Z",
   "symbols": {
     "NATURALGAS": [
       {
@@ -84288,6 +84288,23 @@
         "active_contracts": 6,
         "liquidity_concentration": 86.9,
         "curve_state": "contango"
+      },
+      {
+        "date": "2026-05-13",
+        "series_scope": "active_curve",
+        "front_expiry": "26MAY2026",
+        "second_expiry": "25JUN2026",
+        "back_expiry": "27OCT2026",
+        "front_close": 275.2,
+        "second_close": 294.8,
+        "back_close": 300.0,
+        "front_second_spread": 19.6,
+        "front_back_spread": 24.8,
+        "front_back_tension_pct": 9.012,
+        "roll_yield_pct": -7.122,
+        "active_contracts": 6,
+        "liquidity_concentration": 85.5,
+        "curve_state": "contango"
       }
     ],
     "NATGASMINI": [
@@ -98076,6 +98093,23 @@
         "roll_yield_pct": -8.158,
         "active_contracts": 6,
         "liquidity_concentration": 85.5,
+        "curve_state": "contango"
+      },
+      {
+        "date": "2026-05-13",
+        "series_scope": "active_curve",
+        "front_expiry": "26MAY2026",
+        "second_expiry": "25JUN2026",
+        "back_expiry": "27OCT2026",
+        "front_close": 275.2,
+        "second_close": 294.9,
+        "back_close": 300.0,
+        "front_second_spread": 19.7,
+        "front_back_spread": 24.8,
+        "front_back_tension_pct": 9.012,
+        "roll_yield_pct": -7.158,
+        "active_contracts": 6,
+        "liquidity_concentration": 84.8,
         "curve_state": "contango"
       }
     ]
