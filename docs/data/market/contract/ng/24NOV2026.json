@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "symbol": "NATURALGAS",
+  "expiry": "24NOV2026",
+  "series_scope": "specific_expiry",
+  "rows": [
+    {
+      "date": "2026-05-27",
+      "symbol": "NATURALGAS",
+      "expiry": "24NOV2026",
+      "instrument": "FUTCOM",
+      "open": 0.0,
+      "high": 0.0,
+      "low": 0.0,
+      "close": 386.6,
+      "prev_close": 386.6,
+      "volume_lots": 0,
+      "volume_kgs": 0.0,
+      "value_lacs": 0.0,
+      "open_interest": 0,
+      "dte": 181,
+      "return_pct": 0.0,
+      "return_1d_pct": 0.0,
+      "range_pct": 0.0,
+      "rolling_realized_vol_5d": null,
+      "rolling_realized_vol_20d": null,
+      "volume_z_20d": null,
+      "volume_pct_252d": null,
+      "oi_change": null,
+      "oi_change_pct": null,
+      "oi_pct_252d": null,
+      "liquidity_score": null,
+      "turnover_ratio": null,
+      "oi_flow_state": "neutral",
+      "return_5d_pct": null,
+      "return_20d_pct": null
+    }
+  ]
+}
