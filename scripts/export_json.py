@@ -2205,30 +2205,57 @@ def main():
     )
 
     # ── seasonal_heatmap_contract.json ─────────────────────────────────────────
-    # Group by CONTRACT EXPIRY month/year (not trading date), DTE ≤ 90 only
+    # Group by CONTRACT EXPIRY month/year, supporting both initial/total metrics & DTE ranges
+    DTE_FILTERS = {
+        "all": lambda dte: dte is not None and 0 <= dte <= 90,
+        "no_tender": lambda dte: dte is not None and 5 < dte <= 90,
+        "no_tender_10": lambda dte: dte is not None and 10 < dte <= 90,
+        "lte_60": lambda dte: dte is not None and 0 <= dte <= 60,
+        "lte_30": lambda dte: dte is not None and 0 <= dte <= 30,
+        "tender": lambda dte: dte is not None and 0 <= dte <= 5,
+    }
+
     contract_years_set = set()
-    contract_heatmap_buckets: dict = {}
+    contract_heatmap_buckets = {
+        "initial": {k: {} for k in DTE_FILTERS.keys()},
+        "total": {k: {} for k in DTE_FILTERS.keys()},
+    }
+
     for row in ng_margin_rows:
         expiry = row.get("expiry", "")
         if len(expiry) < 7:
             continue
         dte = row.get("dte")
-        if dte is None or dte < 0 or dte > 90:
+        if dte is None:
             continue
         im = row.get("initial_margin_pct")
-        if im is None:
-            continue
+        tot = row.get("total_margin_pct")
         try:
             exp_month = MONTH_MAP[expiry[2:5]]
             exp_year = expiry[5:]
         except (KeyError, IndexError):
             continue
+
         contract_years_set.add(exp_year)
-        contract_heatmap_buckets.setdefault(exp_year, {}).setdefault(exp_month, []).append(im)
+
+        for f_key, f_func in DTE_FILTERS.items():
+            if f_func(dte):
+                if im is not None:
+                    contract_heatmap_buckets["initial"][f_key].setdefault(exp_year, {}).setdefault(exp_month, []).append(im)
+                if tot is not None:
+                    contract_heatmap_buckets["total"][f_key].setdefault(exp_year, {}).setdefault(exp_month, []).append(tot)
+
     contract_heatmap_raw = {
-        yr: {MONTH_NAMES[mn]: round(statistics.mean(vals), 2) for mn, vals in sorted(months.items())}
-        for yr, months in contract_heatmap_buckets.items()
+        metric: {
+            f_key: {
+                yr: {MONTH_NAMES[mn]: round(statistics.mean(vals), 2) for mn, vals in sorted(months.items())}
+                for yr, months in buckets.items()
+            }
+            for f_key, buckets in metric_buckets.items()
+        }
+        for metric, metric_buckets in contract_heatmap_buckets.items()
     }
+
     save(
         "seasonal_heatmap_contract.json",
         {

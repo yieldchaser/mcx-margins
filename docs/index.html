@@ -1452,8 +1452,30 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
     <div class="card" style="margin-top:16px;">
-      <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Heatmap">Contract Lifecycle Margin Heatmap — Year × Expiry Month (NATURALGAS)</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Average initial margin % per contract (DTE ≤ 90 days only — active trading period)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:12px;">
+        <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Heatmap">Contract Lifecycle Margin Heatmap — Year × Expiry Month (NATURALGAS)</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:var(--text-muted);">Metric:</span>
+            <select id="heatmapContractMetric" style="font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;cursor:pointer;">
+              <option value="total" selected>Total Margin (Actual Capital)</option>
+              <option value="initial">Initial Margin (SPAN Risk)</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:var(--text-muted);">DTE Filter:</span>
+            <select id="heatmapContractFilter" style="font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;cursor:pointer;">
+              <option value="all">Active Life (DTE ≤ 90d)</option>
+              <option value="no_tender" selected>Exclude Tender (5 < DTE ≤ 90d)</option>
+              <option value="no_tender_10">Exclude Tender & Near-Tender (10 < DTE ≤ 90d)</option>
+              <option value="lte_60">Mid-to-Late Life (DTE ≤ 60d)</option>
+              <option value="lte_30">Late Life (DTE ≤ 30d)</option>
+              <option value="tender">Tender Period Only (DTE ≤ 5d)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="heatmapContractSubtitle" style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Average margin % per contract (excluding tender period)</div>
       <div id="heatmapContractContainer" style="overflow-x:auto;overflow-y:auto;max-height:500px;margin-top:8px;border:1px solid var(--border);border-radius:6px;position:relative;"></div>
       <div style="display:flex;gap:24px;margin-top:12px;font-size:11px;color:var(--text-muted);align-items:center;">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -4034,6 +4056,54 @@ function marginToColor(val, minV, maxV) {
   }
 }
 
+function renderContractHeatmap(heatmapContract, metricKey, filterKey) {
+  if (!heatmapContract) return;
+  const cYears = heatmapContract.years;
+  const cMonths = heatmapContract.months;
+  const cData = heatmapContract.data[metricKey]?.[filterKey] || {};
+  
+  let cAllVals = [];
+  cYears.forEach(y => cMonths.forEach(m => { const v = cData[y]?.[m]; if (v != null) cAllVals.push(v); }));
+  const cMinV = Math.min(...cAllVals), cMaxV = Math.max(...cAllVals);
+
+  let cHtml = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
+  cHtml += `<thead><tr>
+    <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
+  cMonths.forEach(m => {
+    cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
+  });
+  cHtml += `</tr></thead><tbody>`;
+
+  const mName = metricKey === 'initial' ? 'Initial Margin' : 'Total Margin';
+  const filterLabel = document.querySelector(`#heatmapContractFilter option[value="${filterKey}"]`)?.textContent || filterKey;
+
+  cYears.forEach(y => {
+    cHtml += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--surface2);padding:5px 8px;font-weight:700;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);white-space:nowrap;">${y}</td>`;
+    cMonths.forEach(m => {
+      const v = cData[y]?.[m];
+      const bg = marginToColor(v, cMinV, cMaxV);
+      const brightness = v == null ? 0 : (v - cMinV) / (cMaxV - cMinV);
+      const textColor = v == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
+
+      let dynTitle = `Contract: ${m} ${y}`;
+      let dynBody = `Avg ${mName} (${filterLabel}): <strong>${v != null ? v.toFixed(1)+'%' : 'No data'}</strong>`;
+      if (v != null) {
+        const cAvg = cAllVals.reduce((s, val) => s + val, 0) / cAllVals.length;
+        const diff = v - cAvg;
+        dynBody += `<br><br>This contract averaged <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-contract average of ${cAvg.toFixed(1)}%.`;
+      }
+
+      cHtml += `<td class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}" 
+style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
+    });
+    cHtml += `</tr>`;
+  });
+
+  cHtml += `</tbody></table>`;
+  document.getElementById('heatmapContractContainer').innerHTML = cHtml;
+  attachTooltips();
+}
+
 let seasonRendered = false;
 async function renderSeasonality() {
   if (seasonRendered) return;
@@ -4255,43 +4325,37 @@ style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};fon
 
     // ── Contract Lifecycle Heatmap ────────────────────────────────────────────
     if (heatmapContract) {
-      const cYears = heatmapContract.years, cMonths = heatmapContract.months, cData = heatmapContract.data;
-      let cAllVals = [];
-      cYears.forEach(y => cMonths.forEach(m => { const v = cData[y]?.[m]; if (v != null) cAllVals.push(v); }));
-      const cMinV = Math.min(...cAllVals), cMaxV = Math.max(...cAllVals);
+      window.cachedHeatmapContract = heatmapContract;
 
-      let cHtml = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
-      cHtml += `<thead><tr>
-        <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
-      cMonths.forEach(m => {
-        cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
-      });
-      cHtml += `</tr></thead><tbody>`;
+      const filterSelect = document.getElementById('heatmapContractFilter');
+      const metricSelect = document.getElementById('heatmapContractMetric');
+      const filterSub = document.getElementById('heatmapContractSubtitle');
 
-      cYears.forEach(y => {
-        cHtml += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--surface2);padding:5px 8px;font-weight:700;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);white-space:nowrap;">${y}</td>`;
-        cMonths.forEach(m => {
-          const v = cData[y]?.[m];
-          const bg = marginToColor(v, cMinV, cMaxV);
-          const brightness = v == null ? 0 : (v - cMinV) / (cMaxV - cMinV);
-          const textColor = v == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
+      const updateSubtitle = (metric, filter) => {
+        const mLabel = metric === 'initial' ? 'Initial Margin % (SPAN Risk)' : 'Total Margin % (Actual Capital)';
+        let fText = '';
+        if (filter === 'all') fText = 'during full active lifecycle (DTE ≤ 90 days)';
+        else if (filter === 'no_tender') fText = 'excluding tender period (5 < DTE ≤ 90 days)';
+        else if (filter === 'no_tender_10') fText = 'excluding tender/near-tender period (10 < DTE ≤ 90 days)';
+        else if (filter === 'lte_60') fText = 'during mid-to-late lifecycle (DTE ≤ 60 days)';
+        else if (filter === 'lte_30') fText = 'during late lifecycle (DTE ≤ 30 days)';
+        else if (filter === 'tender') fText = 'during tender period only (DTE ≤ 5 days)';
 
-          let dynTitle = `Contract: ${m} ${y}`;
-          let dynBody = `Avg Initial Margin (DTE ≤ 90d): <strong>${v != null ? v.toFixed(1)+'%' : 'No data'}</strong>`;
-          if (v != null) {
-            const cAvg = cAllVals.reduce((s, val) => s + val, 0) / cAllVals.length;
-            const diff = v - cAvg;
-            dynBody += `<br><br>This contract averaged <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-contract average of ${cAvg.toFixed(1)}%.`;
-          }
+        filterSub.textContent = `Average ${mLabel} per contract ${fText}`;
+      };
 
-          cHtml += `<td class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}" 
-style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
-        });
-        cHtml += `</tr>`;
-      });
+      const handleToggle = () => {
+        const metric = metricSelect.value;
+        const filter = filterSelect.value;
+        updateSubtitle(metric, filter);
+        renderContractHeatmap(window.cachedHeatmapContract, metric, filter);
+      };
 
-      cHtml += `</tbody></table>`;
-      document.getElementById('heatmapContractContainer').innerHTML = cHtml;
+      filterSelect.addEventListener('change', handleToggle);
+      metricSelect.addEventListener('change', handleToggle);
+
+      // Initial render with defaults
+      handleToggle();
     }
 
     attachTooltips();
