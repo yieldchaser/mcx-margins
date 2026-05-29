@@ -1456,14 +1456,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Heatmap">Contract Lifecycle Margin Heatmap — Year × Expiry Month (NATURALGAS)</div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:11px;color:var(--text-muted);">Metric:</span>
+            <span class="has-tooltip" data-tooltip-key="heatmap-contract-metric" style="font-size:11px;color:var(--text-muted);">Metric:</span>
             <select id="heatmapContractMetric" style="font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;cursor:pointer;">
               <option value="total" selected>Total Margin (Actual Capital)</option>
               <option value="initial">Initial Margin (SPAN Risk)</option>
             </select>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:11px;color:var(--text-muted);">DTE Filter:</span>
+            <span class="has-tooltip" data-tooltip-key="heatmap-contract-dte-filter" style="font-size:11px;color:var(--text-muted);">DTE Filter:</span>
             <select id="heatmapContractFilter" style="font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;cursor:pointer;">
               <option value="all">Active Life (DTE ≤ 90d)</option>
               <option value="no_tender" selected>Exclude Tender (5 < DTE ≤ 90d)</option>
@@ -6845,6 +6845,22 @@ Unlike the trading-date heatmap above, this groups by <strong>contract identity<
 🟡 <em>Yellow</em> = Moderate capital requirements.<br>
 🔴 <em>Red</em> = Expensive contract — high margin throughout its active life.<br><br>
 <strong>Compare with the heatmap above:</strong> Differences reveal whether high margins were a market-wide phenomenon (same color in both) or contract-specific (different colors).`
+  },
+  "heatmap-contract-metric": {
+    title: "Heatmap Metric Selection",
+    body: `Selects which margin metric is aggregated in the contract lifecycle heatmap:<br><br>
+<strong>• Total Margin (Actual Capital):</strong> Initial + ELM + Tender + Additional margin. Represents the total overnight cash required to hold the contract.<br>
+<strong>• Initial Margin (SPAN Risk):</strong> SPAN risk margin only. Excludes tender margins and additional margins, showing the core volatility-based risk requirements.`
+  },
+  "heatmap-contract-dte-filter": {
+    title: "Days to Expiry (DTE) Filters",
+    body: `Filters which portion of each contract's lifecycle is averaged into the cell:<br><br>
+<strong>• Active Life (DTE ≤ 90d):</strong> The entire active trading window.<br>
+<strong>• Exclude Tender (5 &lt; DTE ≤ 90d):</strong> Disregards the final 5 days before expiry when tender margins spike.<br>
+<strong>• Exclude Tender &amp; Near-Tender (10 &lt; DTE ≤ 90d):</strong> Excludes the final 10 days to show clean, non-expiry margin levels.<br>
+<strong>• Mid-to-Late Life (DTE ≤ 60d):</strong> Focuses on the final 2 months of the contract.<br>
+<strong>• Late Life (DTE ≤ 30d):</strong> Focuses on the final month, when margins typically begin heating up.<br>
+<strong>• Tender Period Only (DTE ≤ 5d):</strong> Isolates the extreme margin spike zone in the final 5 days.`
   },
   "DTE vs Margin": {
     title: "Days to Expiry vs Margin — The Expiry Curve",
