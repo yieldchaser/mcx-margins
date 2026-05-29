@@ -1451,6 +1451,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <span>Blank = no data</span>
       </div>
     </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title has-tooltip" data-tooltip-key="Contract Lifecycle Heatmap">Contract Lifecycle Margin Heatmap — Year × Expiry Month (NATURALGAS)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Average initial margin % per contract (DTE ≤ 90 days only — active trading period)</div>
+      <div id="heatmapContractContainer" style="overflow-x:auto;overflow-y:auto;max-height:500px;margin-top:8px;border:1px solid var(--border);border-radius:6px;position:relative;"></div>
+      <div style="display:flex;gap:24px;margin-top:12px;font-size:11px;color:var(--text-muted);align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:100px;height:10px;background:linear-gradient(to right,#0d4a1a,#d29922,#7f1d1d);border-radius:2px;"></div>
+          <span>Low → Mid → High Margin</span>
+        </div>
+        <span>Blank = no data</span>
+      </div>
+    </div>
   </div>
 
   <div id="tab-analytics" class="tab-content">
@@ -4027,8 +4039,9 @@ async function renderSeasonality() {
   if (seasonRendered) return;
   seasonRendered = true;
   try {
-    const [monthly, yearly, heatmap] = await Promise.all([
-      loadJSON('seasonal_month'), loadJSON('seasonal_year'), loadJSON('seasonal_heatmap')
+    const [monthly, yearly, heatmap, heatmapContract] = await Promise.all([
+      loadJSON('seasonal_month'), loadJSON('seasonal_year'), loadJSON('seasonal_heatmap'),
+      loadJSON('seasonal_heatmap_contract').catch(() => null)
     ]);
 
     // Item 7: Box plot (using floating bars for IQR + whiskers)
@@ -4239,6 +4252,48 @@ style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};fon
 
     html += `</tbody></table>`;
     document.getElementById('heatmapContainer').innerHTML = html;
+
+    // ── Contract Lifecycle Heatmap ────────────────────────────────────────────
+    if (heatmapContract) {
+      const cYears = heatmapContract.years, cMonths = heatmapContract.months, cData = heatmapContract.data;
+      let cAllVals = [];
+      cYears.forEach(y => cMonths.forEach(m => { const v = cData[y]?.[m]; if (v != null) cAllVals.push(v); }));
+      const cMinV = Math.min(...cAllVals), cMaxV = Math.max(...cAllVals);
+
+      let cHtml = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
+      cHtml += `<thead><tr>
+        <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
+      cMonths.forEach(m => {
+        cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
+      });
+      cHtml += `</tr></thead><tbody>`;
+
+      cYears.forEach(y => {
+        cHtml += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--surface2);padding:5px 8px;font-weight:700;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);white-space:nowrap;">${y}</td>`;
+        cMonths.forEach(m => {
+          const v = cData[y]?.[m];
+          const bg = marginToColor(v, cMinV, cMaxV);
+          const brightness = v == null ? 0 : (v - cMinV) / (cMaxV - cMinV);
+          const textColor = v == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
+
+          let dynTitle = `Contract: ${m} ${y}`;
+          let dynBody = `Avg Initial Margin (DTE ≤ 90d): <strong>${v != null ? v.toFixed(1)+'%' : 'No data'}</strong>`;
+          if (v != null) {
+            const cAvg = cAllVals.reduce((s, val) => s + val, 0) / cAllVals.length;
+            const diff = v - cAvg;
+            dynBody += `<br><br>This contract averaged <strong>${Math.abs(diff).toFixed(1)}% ${diff > 0 ? 'above' : 'below'}</strong> the all-contract average of ${cAvg.toFixed(1)}%.`;
+          }
+
+          cHtml += `<td class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}" 
+style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
+        });
+        cHtml += `</tr>`;
+      });
+
+      cHtml += `</tbody></table>`;
+      document.getElementById('heatmapContractContainer').innerHTML = cHtml;
+    }
+
     attachTooltips();
   } catch(e) { console.error('Seasonality render error:', e); }
 }
@@ -6717,6 +6772,15 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 🔴 <em>Red</em> = High (30%+) — capital-intensive, margin call risk.<br><br>
 <strong>Read rows</strong> for full-year stress (2022–2023 almost entirely red).<br>
 <strong>Read columns</strong> for seasonal patterns (JAN column redder than AUG every year).`
+  },
+  "Contract Lifecycle Heatmap": {
+    title: "Contract Lifecycle Heatmap — Year × Expiry Month",
+    body: `Each cell = average initial margin % for the contract expiring in that month/year, measured only during its <strong>active trading period</strong> (DTE ≤ 90 days).<br><br>
+Unlike the trading-date heatmap above, this groups by <strong>contract identity</strong>. The JAN 2025 cell shows the avg margin for the JAN 2025 contract across all days it was within 90 days of expiry.<br><br>
+🟢 <em>Dark green</em> = Low-cost contract lifecycle.<br>
+🟡 <em>Yellow</em> = Moderate capital requirements.<br>
+🔴 <em>Red</em> = Expensive contract — high margin throughout its active life.<br><br>
+<strong>Compare with the heatmap above:</strong> Differences reveal whether high margins were a market-wide phenomenon (same color in both) or contract-specific (different colors).`
   },
   "DTE vs Margin": {
     title: "Days to Expiry vs Margin — The Expiry Curve",

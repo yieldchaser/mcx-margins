@@ -2204,6 +2204,41 @@ def main():
         },
     )
 
+    # ── seasonal_heatmap_contract.json ─────────────────────────────────────────
+    # Group by CONTRACT EXPIRY month/year (not trading date), DTE ≤ 90 only
+    contract_years_set = set()
+    contract_heatmap_buckets: dict = {}
+    for row in ng_margin_rows:
+        expiry = row.get("expiry", "")
+        if len(expiry) < 7:
+            continue
+        dte = row.get("dte")
+        if dte is None or dte < 0 or dte > 90:
+            continue
+        im = row.get("initial_margin_pct")
+        if im is None:
+            continue
+        try:
+            exp_month = MONTH_MAP[expiry[2:5]]
+            exp_year = expiry[5:]
+        except (KeyError, IndexError):
+            continue
+        contract_years_set.add(exp_year)
+        contract_heatmap_buckets.setdefault(exp_year, {}).setdefault(exp_month, []).append(im)
+    contract_heatmap_raw = {
+        yr: {MONTH_NAMES[mn]: round(statistics.mean(vals), 2) for mn, vals in sorted(months.items())}
+        for yr, months in contract_heatmap_buckets.items()
+    }
+    save(
+        "seasonal_heatmap_contract.json",
+        {
+            "years": sorted(contract_years_set),
+            "months": ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                       "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+            "data": contract_heatmap_raw,
+        },
+    )
+
     # ── dte_curve.json — all-time + trailing 5Y ───────────────────────────────
     from datetime import datetime as _dt, timedelta as _td
     _cutoff_5y = (_dt.strptime(max_date, "%Y-%m-%d") - _td(days=5 * 365)).strftime("%Y-%m-%d")
