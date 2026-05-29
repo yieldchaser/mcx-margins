@@ -6935,22 +6935,22 @@ A sudden spike here is almost always a leading indicator of a margin hike within
 Higher average year = MCX in tight risk mode. Traders need proportionally more capital for the same lot size.`
   },
   "Monthly Margin Heatmap": {
-    title: "Heatmap — Year × Month",
-    body: `The most information-dense view in the dashboard. Each cell = average initial margin % for that month/year.<br><br>
-🟢 <em>Dark green</em> = Very low (5–10%) — cheap, easy capital environment.<br>
-🟡 <em>Yellow</em> = Elevated (15–25%) — normal active market.<br>
-🔴 <em>Red</em> = High (30%+) — capital-intensive, margin call risk.<br><br>
-<strong>Read rows</strong> for full-year stress (2022–2023 almost entirely red).<br>
-<strong>Read columns</strong> for seasonal patterns (JAN column redder than AUG every year).`
+    title: "Monthly Margin Heatmap — Year × Calendar Month",
+    body: `Averages the margins of whatever contract was the **active front-month** on each trading day *during that calendar month*.<br><br>
+<strong>Example:</strong> The Jan 2022 cell averages the daily front-month margins from January 1 to January 31, 2022. It represents the actual market stress during that exact calendar window.<br><br>
+🟢 <em>Dark green</em> = Calm, low-margin market environment.<br>
+🟡 <em>Yellow</em> = Normal active market.<br>
+🔴 <em>Red</em> = High market-wide stress (e.g. 2022–2023).<br><br>
+<strong>Key Difference:</strong> Unlike the Contract Lifecycle Heatmap below, this shows calendar-month conditions (when you traded), not a specific contract's lifecycle (which contract you traded).`
   },
   "Contract Lifecycle Heatmap": {
     title: "Contract Lifecycle Heatmap — Year × Expiry Month",
-    body: `Each cell = average initial margin % for the contract expiring in that month/year, measured only during its <strong>active trading period</strong> (DTE ≤ 90 days).<br><br>
-Unlike the trading-date heatmap above, this groups by <strong>contract identity</strong>. The JAN 2025 cell shows the avg margin for the JAN 2025 contract across all days it was within 90 days of expiry.<br><br>
+    body: `Each cell represents the average margin for a **single specific contract** across its active lifespan (DTE ≤ 90 days), regardless of which calendar months those days fell in.<br><br>
+<strong>Example:</strong> The Jan 2022 cell isolates the Jan 2022 contract and averages its margins from its active life (e.g. DTE ≤ 90d, spanning Nov 2021, Dec 2021, and Jan 2022).<br><br>
 🟢 <em>Dark green</em> = Low-cost contract lifecycle.<br>
 🟡 <em>Yellow</em> = Moderate capital requirements.<br>
 🔴 <em>Red</em> = Expensive contract — high margin throughout its active life.<br><br>
-<strong>Compare with the heatmap above:</strong> Differences reveal whether high margins were a market-wide phenomenon (same color in both) or contract-specific (different colors).`
+<strong>Key Difference:</strong> Unlike the Monthly Margin Heatmap above, this groups by **contract identity** (which contract you traded). For instance, a sudden panic in Jan 2022 will be diluted in the Jan 2022 contract average by the calm months of Nov/Dec, but will show up fully red in the calendar-month view above.`
   },
   "heatmap-contract-metric": {
     title: "Heatmap Metric Selection",
