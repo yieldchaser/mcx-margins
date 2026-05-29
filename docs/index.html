@@ -4066,12 +4066,70 @@ function renderContractHeatmap(heatmapContract, metricKey, filterKey) {
   cYears.forEach(y => cMonths.forEach(m => { const v = cData[y]?.[m]; if (v != null) cAllVals.push(v); }));
   const cMinV = Math.min(...cAllVals), cMaxV = Math.max(...cAllVals);
 
+  // 1. Compute yearly averages (row averages)
+  const yearlyAverages = {};
+  cYears.forEach(y => {
+    let sum = 0, count = 0;
+    cMonths.forEach(m => {
+      const v = cData[y]?.[m];
+      if (v != null) {
+        sum += v;
+        count++;
+      }
+    });
+    yearlyAverages[y] = count > 0 ? (sum / count) : null;
+  });
+
+  // 2. Compute relative deviations per month to isolate seasonality (normalized index)
+  const monthlyDeviations = {};
+  cMonths.forEach(m => { monthlyDeviations[m] = []; });
+  cYears.forEach(y => {
+    const yrAvg = yearlyAverages[y];
+    if (yrAvg != null && yrAvg > 0) {
+      cMonths.forEach(m => {
+        const v = cData[y]?.[m];
+        if (v != null) {
+          monthlyDeviations[m].push((v - yrAvg) / yrAvg);
+        }
+      });
+    }
+  });
+  const seasonalIndices = {};
+  cMonths.forEach(m => {
+    const devs = monthlyDeviations[m];
+    seasonalIndices[m] = devs.length > 0 ? (devs.reduce((s, d) => s + d, 0) / devs.length) * 100 : null;
+  });
+
+  // 3. Compute Trailing 5-Year Monthly Averages (column averages over last 5 years)
+  const last5Years = cYears.slice(-5);
+  const monthly5YAverages = {};
+  cMonths.forEach(m => {
+    let sum = 0, count = 0;
+    last5Years.forEach(y => {
+      const v = cData[y]?.[m];
+      if (v != null) {
+        sum += v;
+        count++;
+      }
+    });
+    monthly5YAverages[m] = count > 0 ? (sum / count) : null;
+  });
+
+  // Grand 5Y average (intersection)
+  let gSum = 0, gCount = 0;
+  cMonths.forEach(m => {
+    const v = monthly5YAverages[m];
+    if (v != null) { gSum += v; gCount++; }
+  });
+  const grand5YAverage = gCount > 0 ? (gSum / gCount) : null;
+
   let cHtml = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
   cHtml += `<thead><tr>
     <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
   cMonths.forEach(m => {
     cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
   });
+  cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:700;border-left:2px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;width:50px;">AVG</th>`;
   cHtml += `</tr></thead><tbody>`;
 
   const mName = metricKey === 'initial' ? 'Initial Margin' : 'Total Margin';
@@ -4096,10 +4154,58 @@ function renderContractHeatmap(heatmapContract, metricKey, filterKey) {
       cHtml += `<td class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}" 
 style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};font-weight:600;font-size:10px;white-space:nowrap;cursor:help;">${v != null ? v.toFixed(1) : ''}</td>`;
     });
+
+    // Yearly Average cell (far right)
+    const yAvg = yearlyAverages[y];
+    const yBg = marginToColor(yAvg, cMinV, cMaxV);
+    const yBrightness = yAvg == null ? 0 : (yAvg - cMinV) / (cMaxV - cMinV);
+    const yTextColor = yAvg == null ? 'transparent' : (yBrightness > 0.3 && yBrightness < 0.72) ? '#111' : '#fff';
+    
+    let dynYTitle = `Yearly Average: ${y}`;
+    let dynYBody = `Average ${mName} across all contracts expiring in ${y}: <strong>${yAvg != null ? yAvg.toFixed(1)+'%' : 'No data'}</strong><br><br>This represents the overall baseline stress level for this year.`;
+    
+    cHtml += `<td class="has-tooltip" data-dyn-title="${dynYTitle}" data-dyn-body="${escAttr(dynYBody)}"
+style="padding:5px 2px;background:${yBg};text-align:center;color:${yTextColor};font-weight:700;font-size:10px;white-space:nowrap;cursor:help;border-left:2px solid var(--border);">${yAvg != null ? yAvg.toFixed(1) : ''}</td>`;
+    
     cHtml += `</tr>`;
   });
 
-  cHtml += `</tbody></table>`;
+  // AVG (5Y) row at the bottom
+  cHtml += `<tr style="border-top:2px solid var(--border);">
+    <td style="position:sticky;left:0;z-index:1;background:var(--surface2);padding:6px 8px;font-weight:700;font-size:9px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);white-space:nowrap;">AVG (5Y)</td>`;
+  
+  cMonths.forEach(m => {
+    const v5y = monthly5YAverages[m];
+    const dev = seasonalIndices[m];
+    const bg = marginToColor(v5y, cMinV, cMaxV);
+    const brightness = v5y == null ? 0 : (v5y - cMinV) / (cMaxV - cMinV);
+    const textColor = v5y == null ? 'transparent' : (brightness > 0.3 && brightness < 0.72) ? '#111' : '#fff';
+    
+    let dynTitle = `Seasonality: ${m} (Trailing 5Y Average)`;
+    let dynBody = `Average ${mName} (${filterLabel}): <strong>${v5y != null ? v5y.toFixed(1)+'%' : 'No data'}</strong>`;
+    
+    if (dev != null) {
+      const devText = dev >= 0 ? `+${dev.toFixed(1)}%` : `${dev.toFixed(1)}%`;
+      const devLabel = dev >= 0 ? 'premium' : 'discount';
+      dynBody += `<br><br><strong>Normalized Seasonal Bias:</strong> ${devText} ${devLabel} relative to the yearly average baseline.<br><br><em>Note:</em> The normalized seasonal bias compares this month to its own year's baseline, removing the distortion of high/low margin regimes.`;
+    }
+    
+    cHtml += `<td class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}" 
+style="padding:6px 2px;background:${bg};text-align:center;color:${textColor};font-weight:700;font-size:10px;white-space:nowrap;cursor:help;">${v5y != null ? v5y.toFixed(1) : ''}</td>`;
+  });
+
+  // Bottom-Right intersection cell (Grand Average 5Y)
+  const gBg = marginToColor(grand5YAverage, cMinV, cMaxV);
+  const gBrightness = grand5YAverage == null ? 0 : (grand5YAverage - cMinV) / (cMaxV - cMinV);
+  const gTextColor = grand5YAverage == null ? 'transparent' : (gBrightness > 0.3 && gBrightness < 0.72) ? '#111' : '#fff';
+  
+  let dynGTitle = `Grand Average (5Y)`;
+  let dynGBody = `Overall baseline margin for the selected filter & metric combination over the last 5 years: <strong>${grand5YAverage != null ? grand5YAverage.toFixed(1)+'%' : 'No data'}</strong>`;
+  
+  cHtml += `<td class="has-tooltip" data-dyn-title="${dynGTitle}" data-dyn-body="${escAttr(dynGBody)}"
+style="padding:6px 2px;background:${gBg};text-align:center;color:${gTextColor};font-weight:700;font-size:10px;white-space:nowrap;cursor:help;border-left:2px solid var(--border);">${grand5YAverage != null ? grand5YAverage.toFixed(1) : ''}</td>`;
+
+  cHtml += `</tr></tbody></table>`;
   document.getElementById('heatmapContractContainer').innerHTML = cHtml;
   attachTooltips();
 }
