@@ -1469,6 +1469,8 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <option value="no_tender" selected>Exclude Tender (5 < DTE ≤ 90d)</option>
               <option value="no_tender_10">Exclude Tender & Near-Tender (10 < DTE ≤ 90d)</option>
               <option value="lte_60">Mid-to-Late Life (DTE ≤ 60d)</option>
+              <option value="lte_60_no_tender">Mid-to-Late Life — Exclude Tender (5 < DTE ≤ 60d)</option>
+              <option value="lte_60_no_tender_10">Mid-to-Late Life — Exclude Tender & Near-Tender (10 < DTE ≤ 60d)</option>
               <option value="lte_30">Late Life (DTE ≤ 30d)</option>
               <option value="tender">Tender Period Only (DTE ≤ 5d)</option>
             </select>
@@ -4444,6 +4446,8 @@ style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};fon
         else if (filter === 'no_tender') fText = 'excluding tender period (5 < DTE ≤ 90 days)';
         else if (filter === 'no_tender_10') fText = 'excluding tender/near-tender period (10 < DTE ≤ 90 days)';
         else if (filter === 'lte_60') fText = 'during mid-to-late lifecycle (DTE ≤ 60 days)';
+        else if (filter === 'lte_60_no_tender') fText = 'during mid-to-late lifecycle excluding tender (5 < DTE ≤ 60 days)';
+        else if (filter === 'lte_60_no_tender_10') fText = 'during mid-to-late lifecycle excluding tender & near-tender (10 < DTE ≤ 60 days)';
         else if (filter === 'lte_30') fText = 'during late lifecycle (DTE ≤ 30 days)';
         else if (filter === 'tender') fText = 'during tender period only (DTE ≤ 5 days)';
 
@@ -6965,6 +6969,8 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 <strong>• Exclude Tender (5 &lt; DTE ≤ 90d):</strong> Disregards the final 5 days before expiry when tender margins spike.<br>
 <strong>• Exclude Tender &amp; Near-Tender (10 &lt; DTE ≤ 90d):</strong> Excludes the final 10 days to show clean, non-expiry margin levels.<br>
 <strong>• Mid-to-Late Life (DTE ≤ 60d):</strong> Focuses on the final 2 months of the contract.<br>
+<strong>• Mid-to-Late Life — Exclude Tender (5 &lt; DTE ≤ 60d):</strong> Focuses on the 60-day DTE window but excludes the final 5 days.<br>
+<strong>• Mid-to-Late Life — Exclude Tender &amp; Near-Tender (10 &lt; DTE ≤ 60d):</strong> Focuses on the 60-day DTE window but excludes the final 10 days.<br>
 <strong>• Late Life (DTE ≤ 30d):</strong> Focuses on the final month, when margins typically begin heating up.<br>
 <strong>• Tender Period Only (DTE ≤ 5d):</strong> Isolates the extreme margin spike zone in the final 5 days.`
   },

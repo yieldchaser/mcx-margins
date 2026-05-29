@@ -2211,6 +2211,8 @@ def main():
         "no_tender": lambda dte: dte is not None and 5 < dte <= 90,
         "no_tender_10": lambda dte: dte is not None and 10 < dte <= 90,
         "lte_60": lambda dte: dte is not None and 0 <= dte <= 60,
+        "lte_60_no_tender": lambda dte: dte is not None and 5 < dte <= 60,
+        "lte_60_no_tender_10": lambda dte: dte is not None and 10 < dte <= 60,
         "lte_30": lambda dte: dte is not None and 0 <= dte <= 30,
         "tender": lambda dte: dte is not None and 0 <= dte <= 5,
     }
