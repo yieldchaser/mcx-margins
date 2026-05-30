@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-05-29T11:31:47Z",
+  "generated_at": "2026-05-30T06:36:02Z",
   "sources": {
     "margins": {
       "name": "MCX CCL margins",
-      "db_path": "data\\margins.db",
+      "db_path": "data/margins.db",
       "tables": [
         "margins"
       ],
@@ -19,12 +19,12 @@
       },
       "freshness": {
         "label": "LIVE",
-        "age_days": 0
+        "age_days": 1
       }
     },
     "market_futures": {
       "name": "MCX futures bhavcopy",
-      "db_path": "data\\prices.db",
+      "db_path": "data/prices.db",
       "tables": [
         "prices"
       ],
@@ -33,10 +33,10 @@
       "filter": "instrument='FUTCOM'",
       "exists": true,
       "bytes": 5251072,
-      "row_count": 25797,
+      "row_count": 25815,
       "date_range": {
         "from": "2007-01-01",
-        "to": "2026-05-28"
+        "to": "2026-05-29"
       },
       "freshness": {
         "label": "LIVE",
@@ -50,3955 +50,3948 @@
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 6415,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11120,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10895,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10732,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11390,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11576,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23FEB2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11210,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/23NOV2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10777,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24FEB2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10976,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24FEB2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11051,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24FEB2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10856,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24FEB2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22967,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24NOV2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10606,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:43Z"
     },
     {
       "path": "data/contract/ng/24NOV2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10729,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/24NOV2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11394,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/24NOV2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11575,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/24NOV2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22942,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/24NOV2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 624,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10780,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10586,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10428,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10520,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10424,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10536,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11041,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11570,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25APR2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23042,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25FEB2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10768,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25FEB2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11153,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25FEB2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10756,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25FEB2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11137,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25FEB2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23162,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 2998,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11107,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11074,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10654,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11190,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11016,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11385,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11767,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11767,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JAN2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11941,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10958,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11101,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10774,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10948,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10866,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10900,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11549,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 17355,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23283,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25JUN2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 19704,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAR2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10776,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAR2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11579,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10965,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10956,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10968,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 7722,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10836,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10606,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11554,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11576,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25MAY2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11558,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11016,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10600,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11301,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10885,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11745,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25NOV2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22966,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25OCT2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10903,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25OCT2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10881,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10999,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11116,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11098,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11292,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10945,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11301,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11938,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23494,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23323,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/25SEP2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 8191,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26APR2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10780,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26APR2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 8746,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26APR2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11403,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11476,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11270,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10945,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11290,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11807,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11930,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 12117,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11937,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23192,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26AUG2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 12307,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10947,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10771,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10815,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10818,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11017,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11085,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11357,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23351,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26DEC2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23243,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26FEB2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11754,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11115,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11344,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11282,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10784,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11143,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11106,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11243,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11745,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11936,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUL2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 21491,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUN2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11003,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26JUN2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10785,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10284,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10950,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10896,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10810,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10900,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11110,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11387,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23206,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAR2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22946,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAY2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10949,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAY2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10764,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26MAY2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23131,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11111,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10952,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11119,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10934,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10984,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11754,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11753,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26OCT2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11531,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26SEP2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10795,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/26SEP2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11574,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27APR2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10947,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27APR2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10828,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27APR2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10244,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27APR2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11582,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27APR2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22924,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27AUG2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10947,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27AUG2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11113,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27AUG2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23304,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27DEC2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11114,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27DEC2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11031,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27DEC2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11324,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27DEC2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11749,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JAN2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10844,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JAN2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22928,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUL2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11133,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUL2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11736,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUN2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10944,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUN2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 8231,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUN2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10959,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUN2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11580,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27JUN2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11574,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27MAR2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10985,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27MAY2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10771,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27MAY2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23426,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27NOV2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10949,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27NOV2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10952,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27NOV2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10989,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27NOV2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11510,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27OCT2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10939,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27OCT2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11567,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27OCT2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 4419,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27SEP2010.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11280,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27SEP2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11107,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27SEP2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11289,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27SEP2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11937,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/27SEP2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11755,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28AUG2012.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11199,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28AUG2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11166,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28AUG2018.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11281,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28AUG2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11938,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28DEC2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10929,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28DEC2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11574,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28DEC2021.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11930,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JAN2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11118,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JAN2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11113,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JAN2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11249,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JAN2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11467,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JAN2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23343,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JUL2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11284,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JUL2015.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11289,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JUL2020.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11927,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JUL2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23230,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28JUL2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 15765,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAR2011.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10954,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAR2016.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10637,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAR2017.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10902,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAR2022.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11399,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAR2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11382,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAY2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11081,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAY2019.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11003,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28MAY2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 13722,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28OCT2013.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10776,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28OCT2014.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 10781,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28OCT2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23509,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ng/28OCT2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23500,
-      "generated_at": "2026-05-29T11:31:06Z"
+      "generated_at": "2026-05-30T06:35:44Z"
     },
     {
       "path": "data/contract/ngm/24FEB2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22974,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/24NOV2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22943,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/24NOV2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 628,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25APR2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 5470,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25APR2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11394,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25APR2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23031,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25FEB2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23147,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25JAN2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11574,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25JUN2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 17322,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25JUN2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23276,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25JUN2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 19667,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25MAR2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11391,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25MAY2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 9398,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25NOV2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22961,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25SEP2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23492,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25SEP2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23339,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/25SEP2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 8222,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26AUG2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23181,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26AUG2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 12348,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26DEC2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11354,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26DEC2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23351,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26DEC2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23241,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26FEB2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11403,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26JUL2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11913,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26JUL2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 21497,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26MAR2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23195,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26MAR2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22945,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26MAY2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23131,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26OCT2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11530,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/26SEP2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11573,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27APR2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22925,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27AUG2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23313,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27JAN2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 22942,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27JUN2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11571,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27MAY2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23415,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27NOV2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11499,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/27OCT2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 4419,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28AUG2023.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 11945,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28JAN2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23328,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28JUL2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23229,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28JUL2026.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 15750,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28MAY2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 13728,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28OCT2024.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23523,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract/ngm/28OCT2025.json",
       "source": "margins",
       "schema_version": "legacy",
       "bytes": 23513,
-      "generated_at": "2026-05-29T11:31:07Z"
-    },
-    {
-      "path": "data/contract_history.json",
-      "source": "margins",
-      "schema_version": "legacy",
-      "bytes": 35562571,
-      "generated_at": "2026-04-21T09:35:12Z"
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/contract_index.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 78094,
-      "generated_at": "2026-05-29T11:31:07Z"
+      "bytes": 75617,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/current.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 5676,
-      "generated_at": "2026-05-29T11:31:03Z"
+      "bytes": 5490,
+      "generated_at": "2026-05-30T06:35:42Z"
     },
     {
       "path": "data/curve_cone.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 2217,
-      "generated_at": "2026-05-29T11:31:11Z"
+      "bytes": 2123,
+      "generated_at": "2026-05-30T06:35:47Z"
     },
     {
       "path": "data/decomposition.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 46828,
-      "generated_at": "2026-05-29T11:31:11Z"
+      "bytes": 44627,
+      "generated_at": "2026-05-30T06:35:47Z"
     },
     {
       "path": "data/delta_distribution.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 3680,
-      "generated_at": "2026-05-29T11:31:10Z"
+      "bytes": 3444,
+      "generated_at": "2026-05-30T06:35:46Z"
     },
     {
       "path": "data/dte_curve.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 1777,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 1696,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/event_probabilities.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 1819,
-      "generated_at": "2026-05-29T11:31:12Z"
+      "bytes": 1731,
+      "generated_at": "2026-05-30T06:35:48Z"
     },
     {
       "path": "data/forecast_bands.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 1783,
-      "generated_at": "2026-05-29T11:31:10Z"
+      "bytes": 1701,
+      "generated_at": "2026-05-30T06:35:46Z"
     },
     {
       "path": "data/forward_curve.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 2604,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 2502,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/hh_price.json",
       "source": "external_henry_hub",
       "schema_version": "legacy",
-      "bytes": 288643,
-      "generated_at": "2026-05-29T11:31:47Z"
+      "bytes": 271055,
+      "generated_at": "2026-05-30T06:36:02Z"
     },
     {
       "path": "data/history_ng.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 1236701,
-      "generated_at": "2026-05-29T11:31:04Z"
+      "bytes": 1186516,
+      "generated_at": "2026-05-30T06:35:42Z"
     },
     {
       "path": "data/history_ngm.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 250010,
-      "generated_at": "2026-05-29T11:31:04Z"
+      "bytes": 240121,
+      "generated_at": "2026-05-30T06:35:42Z"
     },
     {
       "path": "data/market/contract/ng/18APR2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55616,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53625,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/18JAN2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55766,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53775,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/18JUL2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56359,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54337,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/18MAY2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55027,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53067,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/19DEC2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54511,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52551,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/19JAN2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 13213,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 12741,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/19JUN2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55140,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53180,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/19OCT2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54953,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52993,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/19SEP2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55382,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53391,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20APR2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55915,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53924,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20APR2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54886,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52926,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20AUG2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57637,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55584,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20AUG2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57003,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54950,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20AUG2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58838,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 56754,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20DEC2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56613,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54591,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20FEB2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 31583,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 30460,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20FEB2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57391,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55338,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20FEB2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54902,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52942,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20JAN2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56253,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54231,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20JUL2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56678,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54656,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20JUL2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56993,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54971,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20JUN2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57561,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55508,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20JUN2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56380,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54358,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20MAR2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 48917,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 47174,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20MAR2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56534,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54512,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20MAR2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54936,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52976,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20MAY2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55719,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53728,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20MAY2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54207,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52278,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20NOV2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57513,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55460,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20NOV2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57131,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55078,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20OCT2008.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56468,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54446,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/contract/ng/20SEP2007.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57639,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55586,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56910,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54888,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57878,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55825,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54278,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52349,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54458,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52529,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55263,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53303,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56194,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54203,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23FEB2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55557,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53597,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23NOV2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58764,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 56680,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/23NOV2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56164,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54173,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24FEB2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56341,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54350,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24FEB2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57094,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55072,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24FEB2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56080,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54089,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24FEB2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110534,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 106590,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55197,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53237,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55195,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53235,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55334,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53374,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56247,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54256,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109864,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 105920,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/24NOV2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 1806,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 2554,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56258,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54267,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55402,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53442,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54409,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52480,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54283,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52354,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54259,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52330,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54160,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52231,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 54564,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 52635,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56300,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54309,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25APR2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109373,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 105429,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25FEB2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56216,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54225,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25FEB2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57945,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55892,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25FEB2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55149,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53189,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25FEB2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57259,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55237,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25FEB2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110082,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 106107,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56140,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54149,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57932,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55879,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58035,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55982,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55297,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53337,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 51751,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 49915,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56227,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54236,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55344,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53384,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57092,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55070,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57210,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55188,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JAN2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58039,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55986,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56035,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54044,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58024,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 55971,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56056,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54065,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56863,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54841,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55034,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 53074,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 53634,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 51736,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56208,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54217,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 83457,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 80474,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110186,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 106211,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25JUN2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 92161,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 89685,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAR2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56214,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54223,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAR2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56384,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54393,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 52604,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 50737,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56872,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54850,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56223,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54232,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56071,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 54080,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56040,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54049,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55883,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53892,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56202,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54211,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56076,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54085,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25MAY2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56316,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54325,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57028,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55006,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56055,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54064,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 52611,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 50744,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55339,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53379,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57159,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55137,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25NOV2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109564,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 105620,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25OCT2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56938,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54916,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25OCT2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55259,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53299,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 61585,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 59408,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57120,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55098,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57790,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55737,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57732,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55679,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58582,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 56498,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55839,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53848,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56959,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54937,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57935,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55882,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111545,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 107508,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111163,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 107157,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/25SEP2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 36881,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 36341,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26APR2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56026,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54035,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26APR2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56026,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54035,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26APR2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55326,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53366,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 59573,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 57458,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57818,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55765,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56906,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54884,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58590,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 56506,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57822,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55769,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57924,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55871,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58876,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 56792,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57862,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55809,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109948,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 105973,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26AUG2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56196,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54987,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57162,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55140,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56940,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54918,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56179,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54188,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55182,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53222,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56152,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54161,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56253,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54262,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55451,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53491,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111337,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 107331,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26DEC2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 112727,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 108721,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26FEB2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57234,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55212,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57773,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55720,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58783,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 56699,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58003,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55950,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56883,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54861,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57848,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55795,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57683,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55630,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56842,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54820,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57064,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55042,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58034,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55981,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUL2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 102745,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 99049,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUN2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57069,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55047,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26JUN2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56788,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54766,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 50849,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 49044,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57101,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55079,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56091,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54100,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55232,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53272,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55958,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53967,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57154,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55132,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55365,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53405,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110032,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106057,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAR2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109956,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106012,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAY2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56847,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54825,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAY2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 53556,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 51658,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26MAY2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110514,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106539,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58011,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55958,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56275,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54284,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56960,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54938,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55954,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53963,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55960,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53969,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57160,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55138,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57065,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55043,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26OCT2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56294,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54303,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26SEP2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55982,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 53991,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/26SEP2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56270,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54279,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27APR2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 52602,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 50735,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27APR2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56031,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54040,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27APR2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 52674,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 50807,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27APR2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56221,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54230,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27APR2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 108866,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 104953,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27AUG2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57039,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55017,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27AUG2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56164,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54173,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27AUG2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110991,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106985,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27DEC2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57927,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55874,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27DEC2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57881,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55828,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27DEC2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 51730,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 49894,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27DEC2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57089,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55067,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JAN2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56285,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54294,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JAN2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109981,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106037,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUL2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57797,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55744,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUL2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57078,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55056,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUN2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56868,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54846,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUN2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56917,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54895,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUN2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56172,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54181,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUN2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56228,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54237,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27JUN2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56281,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54290,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27MAR2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57189,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55167,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27MAY2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56110,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54119,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27MAY2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110982,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 106976,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27NOV2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57109,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55087,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27NOV2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56039,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54048,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27NOV2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56143,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54152,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27NOV2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56357,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54366,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27OCT2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 62342,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 60134,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27OCT2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56080,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54089,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27OCT2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56221,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54230,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27OCT2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 19311,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 19397,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27SEP2010.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58771,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 56687,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27SEP2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57816,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55763,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27SEP2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56965,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54943,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27SEP2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58009,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 55956,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/27SEP2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56924,
-      "generated_at": "2026-05-29T11:31:27Z"
+      "bytes": 54902,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28AUG2012.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58006,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55953,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28AUG2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57802,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55749,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28AUG2018.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57659,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55606,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28AUG2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58076,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56023,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28DEC2009.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57017,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54995,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28DEC2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56171,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54180,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28DEC2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56241,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54250,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28DEC2021.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58058,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56005,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JAN2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58015,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55962,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JAN2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57882,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55829,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JAN2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57009,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54987,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JAN2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58097,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56044,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JAN2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111056,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107050,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JUL2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58654,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56570,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JUL2015.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58585,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56501,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JUL2020.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58023,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55970,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JUL2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110117,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106142,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28JUL2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 73581,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 71752,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAR2011.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57030,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55008,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAR2016.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55211,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53251,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAR2017.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56120,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54129,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAR2022.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55322,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53362,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAR2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56388,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54397,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAY2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 58072,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 56019,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAY2019.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55896,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53905,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28MAY2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 66534,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 64171,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28OCT2013.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56981,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54959,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28OCT2014.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56022,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54031,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28OCT2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111837,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107800,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ng/28OCT2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111778,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107741,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/24FEB2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110713,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106769,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/24NOV2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110108,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106164,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/24NOV2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 1845,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 2595,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25APR2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 26385,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 25448,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25APR2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55328,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53368,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25APR2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109424,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 105480,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25FEB2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110234,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106259,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25JAN2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56243,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54252,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25JUN2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 83497,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 80514,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25JUN2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110400,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106425,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25JUN2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 93081,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 90607,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25MAR2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55380,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53420,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25MAY2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 45556,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 43937,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25NOV2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109461,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 105517,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25SEP2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111366,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107329,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25SEP2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111216,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107210,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/25SEP2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 37440,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 36904,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26AUG2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110085,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106110,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26AUG2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56723,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55513,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26DEC2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55299,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53339,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26DEC2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111114,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107108,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26DEC2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 112422,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 108416,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26FEB2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55409,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53449,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26JUL2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57769,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55716,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26JUL2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 102746,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 99050,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26MAR2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110001,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106026,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26MAR2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110309,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106365,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26MAY2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111066,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107091,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26OCT2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56055,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54064,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/26SEP2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56096,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54105,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27APR2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 109339,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 105426,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27AUG2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110621,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106615,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27JAN2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110173,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106229,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27JUN2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 55922,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 53931,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27MAY2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111261,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107255,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27NOV2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 56145,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 54154,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/27OCT2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 19653,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 19773,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28AUG2023.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 57823,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 55770,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28JAN2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111358,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107352,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28JUL2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 110452,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 106477,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28JUL2026.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 74396,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 72569,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28MAY2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 66413,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 64050,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28OCT2024.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 111975,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 107938,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract/ngm/28OCT2025.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 112196,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 108159,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract_crosswalk.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 154784,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 150530,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/contract_index.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 89650,
-      "generated_at": "2026-05-29T11:31:28Z"
+      "bytes": 86813,
+      "generated_at": "2026-05-30T06:35:55Z"
     },
     {
       "path": "data/market/cross_regimes.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 2405420,
-      "generated_at": "2026-05-29T11:31:44Z"
+      "bytes": 2336790,
+      "generated_at": "2026-05-30T06:36:01Z"
     },
     {
       "path": "data/market/current.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 11609,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 11218,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/curve_history.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 3232221,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 3134812,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/forward_curve.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 12943,
-      "generated_at": "2026-05-29T11:31:26Z"
+      "bytes": 12534,
+      "generated_at": "2026-05-30T06:35:54Z"
     },
     {
       "path": "data/market/history_ng.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 4374310,
-      "generated_at": "2026-05-29T11:31:16Z"
+      "bytes": 4221082,
+      "generated_at": "2026-05-30T06:35:50Z"
     },
     {
       "path": "data/market/history_ngm.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 724281,
-      "generated_at": "2026-05-29T11:31:16Z"
+      "bytes": 699614,
+      "generated_at": "2026-05-30T06:35:50Z"
     },
     {
       "path": "data/market/margin_joined_front.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 6383440,
-      "generated_at": "2026-05-29T11:31:44Z"
+      "bytes": 6198245,
+      "generated_at": "2026-05-30T06:36:01Z"
     },
     {
       "path": "data/market/meta.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 1791,
-      "generated_at": "2026-05-29T11:31:13Z"
+      "bytes": 1719,
+      "generated_at": "2026-05-30T06:35:48Z"
     },
     {
       "path": "data/market/signals.json",
       "source": "market_futures",
       "schema_version": "1.0.0",
-      "bytes": 4411,
-      "generated_at": "2026-05-29T11:31:44Z"
+      "bytes": 4273,
+      "generated_at": "2026-05-30T06:36:01Z"
     },
     {
       "path": "data/meta.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 140,
-      "generated_at": "2026-05-29T11:31:03Z"
+      "bytes": 133,
+      "generated_at": "2026-05-30T06:35:42Z"
     },
     {
       "path": "data/model_health.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 554,
-      "generated_at": "2026-05-29T11:31:10Z"
+      "bytes": 529,
+      "generated_at": "2026-05-30T06:35:46Z"
     },
     {
       "path": "data/panic_spread.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 1578,
-      "generated_at": "2026-05-29T11:31:09Z"
+      "bytes": 1514,
+      "generated_at": "2026-05-30T06:35:46Z"
     },
     {
       "path": "data/regime_model.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 339,
-      "generated_at": "2026-05-29T11:31:10Z"
+      "bytes": 321,
+      "generated_at": "2026-05-30T06:35:46Z"
     },
     {
       "path": "data/seasonal_heatmap.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 4817,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 4550,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/seasonal_heatmap_contract.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 86846,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 83048,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/seasonal_month.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 2411,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 2290,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/seasonal_year.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 2577,
-      "generated_at": "2026-05-29T11:31:08Z"
+      "bytes": 2440,
+      "generated_at": "2026-05-30T06:35:45Z"
     },
     {
       "path": "data/seasonality_boxplot.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 6449,
-      "generated_at": "2026-05-29T11:31:11Z"
+      "bytes": 6108,
+      "generated_at": "2026-05-30T06:35:47Z"
     },
     {
       "path": "data/stress_score.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 92,
-      "generated_at": "2026-05-29T11:31:11Z"
+      "bytes": 87,
+      "generated_at": "2026-05-30T06:35:47Z"
     },
     {
       "path": "data/volatility_correlation.json",
       "source": "margins",
       "schema_version": "legacy",
-      "bytes": 523401,
-      "generated_at": "2026-05-29T11:31:09Z"
+      "bytes": 498290,
+      "generated_at": "2026-05-30T06:35:46Z"
     }
   ]
 }
