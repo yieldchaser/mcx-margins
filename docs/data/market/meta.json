@@ -2,15 +2,15 @@
   "schema_version": "1.0.0",
   "source": "market_futures",
   "status": "warn",
-  "generated_at": "2026-06-06T07:44:11Z",
+  "generated_at": "2026-06-08T01:39:08Z",
   "latest_date": "2026-06-05",
   "date_range": {
     "from": "2007-01-01",
     "to": "2026-06-05"
   },
   "freshness": {
-    "label": "LIVE",
-    "age_days": 1
+    "label": "DELAYED",
+    "age_days": 3
   },
   "row_count": 21057,
   "symbols": {
@@ -53,8 +53,8 @@
       {
         "name": "stale_source",
         "status": "ok",
-        "message": "Market data freshness: LIVE.",
-        "count": 1
+        "message": "Market data freshness: DELAYED.",
+        "count": 3
       },
       {
         "name": "weekday_gaps_naturalgas",
