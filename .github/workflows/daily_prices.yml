@@ -72,6 +72,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git add data/prices.db docs/data/market docs/data/manifest.json docs/data/hh_price.json
           git diff --staged --quiet || git commit -m "data: price update $(date +%Y-%m-%d-%H%M)"
+          git pull --rebase origin main
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
