@@ -76,7 +76,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git add data/ docs/data/
           git diff --staged --quiet || git commit -m "data: margin update $(date +%Y-%m-%d)"
+          git stash --include-untracked
           git pull --rebase origin main
+          git stash pop || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
