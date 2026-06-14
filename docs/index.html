@@ -1436,7 +1436,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               </div>
               <div id="calcStatusRibbon" class="calc-status" role="status" aria-live="polite"></div>
               <div id="calcMarginCallNotice" class="calc-status calc-status--danger" role="alert"></div>
-              <div id="calcLiquidationPanel" class="calc-liquidation-panel" style="display:none;">
+              <div id="calcLiquidationPanel" class="calc-liquidation-panel has-tooltip" data-tooltip-key="calc-liq-shield" style="display:none;">
                 <div class="calc-liq-header">
                   <span class="calc-liq-title">Risk &amp; Liquidation Shield</span>
                   <span id="calcLiqValue" class="calc-liq-badge">—</span>
@@ -5764,7 +5764,7 @@ window.updateCalc = async function(forceSnap = false) {
           bodyColor: cssText,
           padding: 10,
           callbacks: {
-            label: (item) => `${label}: ${(view === 'margin' || view === 'marginPct') ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
+            label: (item) => `${label}: ${(view === 'margin' || view === 'marginPct' || view === 'shield') ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
           }
         }
       },
@@ -6958,6 +6958,16 @@ const TOOLTIPS = {
   "calc-fees": {
     title: "Fees & Costs",
     body: `Toggle to apply Indian transaction taxes and broker costs to the P/L:<br><br>• <strong>STT</strong> 0.0125% on sell-side turnover<br>• <strong>Exchange</strong> 0.0026% on full turnover<br>• <strong>SEBI</strong> 0.0001% on full turnover<br>• <strong>Brokerage</strong> ₹/lot/side (you set the rate)<br>• <strong>GST</strong> 18% on (brokerage + exchange)<br><br>Net P/L card updates with the all-in cost.`
+  },
+  "calc-liq-shield": {
+    title: "Risk & Liquidation Shield",
+    body: `<strong>What it is:</strong> Your safety buffer against forced broker liquidation (auto-squareoff) by the Risk Management System (RMS).<br><br>
+<strong>Formula:</strong><br>
+<em>Shield % = Internal Margin % − Exchange Required Margin %</em><br><br>
+Where <strong>Internal Margin %</strong> is your account equity relative to position size. If Shield % drops to <strong>0% or below</strong>, your free cash buffer is completely gone, triggering immediate auto-squareoff by the broker.<br><br>
+• <strong>Entry Shield:</strong> Your safety cushion at the entry price.<br>
+• <strong>Worst-Case:</strong> The lowest cushion level reached during the trade's history.<br>
+• <strong>At Exit:</strong> The remaining cushion at the end of the backtest.`
   },
   "snap-chg": {
     title: "Chg %",
