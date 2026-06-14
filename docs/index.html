@@ -345,7 +345,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .calc-chart-shell:hover { border-color: rgba(56,139,253,0.35); }
 .calc-chart-tabs {
-  display: flex; gap: 4px; flex-wrap: wrap;
+  display: flex; gap: 2px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -354,8 +354,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-chart-tab {
   flex: 1 1 auto;
   background: transparent; border: none; cursor: pointer;
-  padding: 5px 10px;
-  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  padding: 4px 6px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--text-muted);
   border-radius: 4px;
@@ -1462,11 +1462,11 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <div class="calc-section__kicker" id="calcChartKicker">M2M Equity Curve</div>
               <div class="calc-chart-tabs" id="calcChartTabs" role="tablist" aria-label="Chart view">
                 <button type="button" class="calc-chart-tab" role="tab" data-view="equity" aria-pressed="true">Equity</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="daily" aria-pressed="false">Daily P/L</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="daily" aria-pressed="false">Daily</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Margin Util</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin %</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="freeCash" aria-pressed="false">Free Cash</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Util</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="freeCash" aria-pressed="false">Shield</button>
               </div>
               <div class="calc-chart-shell">
                 <canvas id="chartCalcEquity"></canvas>
