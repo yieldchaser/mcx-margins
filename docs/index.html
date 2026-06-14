@@ -1466,6 +1466,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Margin Util</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin %</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="freeCash" aria-pressed="false">Free Cash</button>
               </div>
               <div class="calc-chart-shell">
                 <canvas id="chartCalcEquity"></canvas>
@@ -5169,14 +5170,15 @@ async function initCalculator() {
     });
   });
 
-  // Chart view tabs (Equity / Daily P/L / Drawdown / Margin Util / Margin %)
+  // Chart view tabs (Equity / Daily P/L / Drawdown / Margin Util / Margin % / Free Cash)
   window._calcView = 'equity';
   const chartTabKickers = {
     equity: 'M2M Equity Curve',
     daily: 'Daily P/L',
     drawdown: 'Drawdown',
     margin: 'Margin Utilization %',
-    marginPct: 'Contract Margin %'
+    marginPct: 'Contract Margin %',
+    freeCash: 'Free Cash Shield (₹)'
   };
   document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -5412,7 +5414,7 @@ window.updateCalc = async function(forceSnap = false) {
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
   // isM2M: real-world mode — daily M2M settlement adjusts the available ledger balance each day
   const isM2M = !!document.getElementById('calcM2MEnabled')?.checked;
-  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], marginPctPath = [], labels = [];
+  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], marginPctPath = [], freeCashPath = [], labels = [];
   let prevPL = 0, runningHigh = 0, maxDD = 0, peakMargin = 0;
   let marginCallDate = null, marginCallReq = 0, marginCallAvail = 0;
 
@@ -5445,6 +5447,7 @@ window.updateCalc = async function(forceSnap = false) {
       marginPath.push(curMargin);
       const util = availableCapital > 0 ? (curMargin / availableCapital) * 100 : 999;
       marginUtilPath.push(util);
+      freeCashPath.push(availableCapital - curMargin);
       if (curMargin > peakMargin) peakMargin = curMargin;
       if (!marginCallDate && curMargin > availableCapital) {
         marginCallDate = date;
@@ -5454,6 +5457,7 @@ window.updateCalc = async function(forceSnap = false) {
     } else {
       marginPath.push(null);
       marginUtilPath.push(null);
+      freeCashPath.push(isM2M ? Math.max(0, capital + pl) : capital);
     }
   });
 
@@ -5654,6 +5658,12 @@ window.updateCalc = async function(forceSnap = false) {
     gradientTop = _hexRgba('#a371f7', 0.32);
     label = 'Total Margin %';
     yFmt = pctFmt;
+  } else if (view === 'freeCash') {
+    series = freeCashPath;
+    color = '#58a6ff'; // Light Blue/Cyan accent
+    gradientTop = _hexRgba('#58a6ff', 0.28);
+    label = 'Free Cash Shield';
+    yFmt = moneyFmt;
   } else {
     series = cumPL;
     color = totalPL >= 0 ? '#3fb950' : '#f85149';
@@ -5673,7 +5683,7 @@ window.updateCalc = async function(forceSnap = false) {
   grad.addColorStop(0, gradientTop);
   grad.addColorStop(1, 'transparent');
 
-  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin' || view === 'marginPct')) ? {
+  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin' || view === 'marginPct' || view === 'freeCash')) ? {
     id: 'mcShade',
     beforeDatasetsDraw(chart) {
       const idx = labels.indexOf(marginCallDate);
