@@ -1466,7 +1466,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Util</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="freeCash" aria-pressed="false">Shield</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="shield" aria-pressed="false">Shield</button>
               </div>
               <div class="calc-chart-shell">
                 <canvas id="chartCalcEquity"></canvas>
@@ -5178,7 +5178,7 @@ async function initCalculator() {
     drawdown: 'Drawdown',
     margin: 'Margin Utilization %',
     marginPct: 'Contract Margin %',
-    freeCash: 'Free Cash Shield (₹)'
+    shield: 'Risk & Liquidation Shield %'
   };
   document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -5414,9 +5414,10 @@ window.updateCalc = async function(forceSnap = false) {
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
   // isM2M: real-world mode — daily M2M settlement adjusts the available ledger balance each day
   const isM2M = !!document.getElementById('calcM2MEnabled')?.checked;
-  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], marginPctPath = [], freeCashPath = [], labels = [];
+  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], marginPctPath = [], shieldPath = [], labels = [];
   let prevPL = 0, runningHigh = 0, maxDD = 0, peakMargin = 0;
   let marginCallDate = null, marginCallReq = 0, marginCallAvail = 0;
+  let minShield = Infinity, minShieldDate = '';
 
   windowDays.forEach(date => {
     const pRow = pByDate[date] || findNearest(date, pByDate);
@@ -5439,6 +5440,19 @@ window.updateCalc = async function(forceSnap = false) {
 
     marginPctPath.push(mPct != null ? mPct : null);
 
+    let dailyShield = null;
+    if (lots > 0 && p != null && mPct != null) {
+      const positionSize_t = lots * lotSize * p;
+      const availableCapital_t = isM2M ? Math.max(0, capital + pl) : capital;
+      const internalMarginPct_t = positionSize_t > 0 ? (availableCapital_t / positionSize_t) * 100 : 0;
+      dailyShield = internalMarginPct_t - mPct;
+      if (dailyShield < minShield) {
+        minShield = dailyShield;
+        minShieldDate = date;
+      }
+    }
+    shieldPath.push(dailyShield);
+
     if (mPct != null && lots > 0) {
       const curMargin = (p * lotSize * mPct * lots) / 100;
       // Dynamic M2M: available capital = initial capital +/- cumulative P/L settled to date.
@@ -5447,7 +5461,6 @@ window.updateCalc = async function(forceSnap = false) {
       marginPath.push(curMargin);
       const util = availableCapital > 0 ? (curMargin / availableCapital) * 100 : 999;
       marginUtilPath.push(util);
-      freeCashPath.push(availableCapital - curMargin);
       if (curMargin > peakMargin) peakMargin = curMargin;
       if (!marginCallDate && curMargin > availableCapital) {
         marginCallDate = date;
@@ -5457,7 +5470,6 @@ window.updateCalc = async function(forceSnap = false) {
     } else {
       marginPath.push(null);
       marginUtilPath.push(null);
-      freeCashPath.push(isM2M ? Math.max(0, capital + pl) : capital);
     }
   });
 
@@ -5577,6 +5589,21 @@ window.updateCalc = async function(forceSnap = false) {
     infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em></span>`;
   }
 
+  // Calculate dynamic exit shield
+  let exitShield = 0;
+  if (lots > 0 && windowDays.length > 0) {
+    const lastDate = windowDays[windowDays.length - 1];
+    const lastPriceRow = pByDate[lastDate] || findNearest(lastDate, pByDate);
+    const lastMarginRow = mByDate[lastDate] || findNearest(lastDate, mByDate);
+    const lastP = lastPriceRow?.close ?? entryPrice;
+    const lastM = lastMarginRow?.total_margin_pct ?? entryMarginPct;
+    const lastPL = cumPL.length ? cumPL[cumPL.length - 1] : 0;
+    const lastEquity = isM2M ? Math.max(0, capital + lastPL) : capital;
+    const lastPositionSize = lots * lotSize * lastP;
+    const lastInternalMarginPct = lastPositionSize > 0 ? (lastEquity / lastPositionSize) * 100 : 0;
+    exitShield = lastInternalMarginPct - lastM;
+  }
+
   // Dynamic Risk & Liquidation Shield Calculations
   const liqPanel = document.getElementById('calcLiquidationPanel');
   if (liqPanel) {
@@ -5584,29 +5611,34 @@ window.updateCalc = async function(forceSnap = false) {
       const positionSize = lots * lotSize * entryPrice;
       const internalMarginPct = (capital / positionSize) * 100;
       const exchangeMarginPct = entryMarginPct;
-      const adverseMove = internalMarginPct - exchangeMarginPct;
+      const entryShield = internalMarginPct - exchangeMarginPct;
 
       liqPanel.style.display = 'flex';
       const badge = document.getElementById('calcLiqValue');
       const body = document.getElementById('calcLiqBody');
 
       badge.className = 'calc-liq-badge';
-      if (adverseMove <= 0) {
-        badge.textContent = 'OVERLEVERAGED';
+      const directionWord = _calcDir === 'long' ? 'drop' : 'rally';
+
+      if (minShield <= 0 || marginCallDate) {
+        badge.textContent = 'BREACHED';
         badge.classList.add('is-danger');
-        body.innerHTML = `Your position size (₹${fmtNum(positionSize, 0)}) exceeds safety limits. Internal Margin (${internalMarginPct.toFixed(1)}%) is less than the Exchange Required Margin (${exchangeMarginPct.toFixed(1)}%). <strong>Immediate liquidation risk!</strong>`;
+        body.innerHTML = `
+          <strong>Entry Shield:</strong> ${entryShield.toFixed(1)}% (Adverse ${directionWord} of ${entryShield.toFixed(1)}% to liquidate)<br>
+          <strong>Worst-Case:</strong> ${minShield.toFixed(1)}% (Breached on ${minShieldDate || 'N/A'})<br>
+          <strong>At Exit:</strong> ${exitShield.toFixed(1)}%
+        `;
       } else {
-        badge.textContent = `${adverseMove.toFixed(1)}% Shield`;
-        if (adverseMove >= 20) {
+        badge.textContent = `${minShield.toFixed(1)}% Min Shield`;
+        if (minShield >= 20) {
           badge.classList.add('is-safe');
         } else {
           badge.classList.add('is-warn');
         }
-        const directionWord = _calcDir === 'long' ? 'drop' : 'rally';
         body.innerHTML = `
-          <strong>Internal Margin:</strong> ${internalMarginPct.toFixed(1)}% (capital vs size)<br>
-          <strong>Exchange Required:</strong> ${exchangeMarginPct.toFixed(1)}%<br>
-          An adverse price ${directionWord} of <strong>${adverseMove.toFixed(1)}%</strong> will wipe out your free cash buffer and trigger an automatic square-off by the broker's Risk Management System (RMS).
+          <strong>Entry Shield:</strong> ${entryShield.toFixed(1)}% (Adverse ${directionWord} of ${entryShield.toFixed(1)}% to liquidate)<br>
+          <strong>Worst-Case:</strong> ${minShield.toFixed(1)}% (Lowest cushion on ${minShieldDate})<br>
+          <strong>At Exit:</strong> ${exitShield.toFixed(1)}%
         `;
       }
     } else {
@@ -5658,12 +5690,12 @@ window.updateCalc = async function(forceSnap = false) {
     gradientTop = _hexRgba('#a371f7', 0.32);
     label = 'Total Margin %';
     yFmt = pctFmt;
-  } else if (view === 'freeCash') {
-    series = freeCashPath;
+  } else if (view === 'shield') {
+    series = shieldPath;
     color = '#58a6ff'; // Light Blue/Cyan accent
     gradientTop = _hexRgba('#58a6ff', 0.28);
-    label = 'Free Cash Shield';
-    yFmt = moneyFmt;
+    label = 'Risk & Liquidation Shield %';
+    yFmt = pctFmt;
   } else {
     series = cumPL;
     color = totalPL >= 0 ? '#3fb950' : '#f85149';
@@ -5683,7 +5715,7 @@ window.updateCalc = async function(forceSnap = false) {
   grad.addColorStop(0, gradientTop);
   grad.addColorStop(1, 'transparent');
 
-  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin' || view === 'marginPct' || view === 'freeCash')) ? {
+  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin' || view === 'marginPct' || view === 'shield')) ? {
     id: 'mcShade',
     beforeDatasetsDraw(chart) {
       const idx = labels.indexOf(marginCallDate);
