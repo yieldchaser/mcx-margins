@@ -715,7 +715,8 @@ td.has-tooltip, th.has-tooltip { display: table-cell; }
 div.card.has-tooltip, div.mkt-card.has-tooltip { display: block; }
 .heatmap-cell.has-tooltip { display: flex; }
 tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.has-tooltip::after, div.mkt-card.has-tooltip::after, .heatmap-cell.has-tooltip::after,
-.calc-stat.has-tooltip::after, .calc-quick-btns.has-tooltip::after, #calcRangeSlider.has-tooltip::after, .calc-share-btn.has-tooltip::after {
+.calc-stat.has-tooltip::after, .calc-quick-btns.has-tooltip::after, #calcRangeSlider.has-tooltip::after, .calc-share-btn.has-tooltip::after,
+.calc-chart-tab.has-tooltip::after, .calc-liquidation-panel.has-tooltip::after {
   content: none;
   display: none;
 }
@@ -1461,12 +1462,12 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <div class="calc-section">
               <div class="calc-section__kicker" id="calcChartKicker">M2M Equity Curve</div>
               <div class="calc-chart-tabs" id="calcChartTabs" role="tablist" aria-label="Chart view">
-                <button type="button" class="calc-chart-tab" role="tab" data-view="equity" aria-pressed="true">Equity</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="daily" aria-pressed="false">Daily</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Util</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin</button>
-                <button type="button" class="calc-chart-tab" role="tab" data-view="shield" aria-pressed="false">Shield</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="equity" data-tooltip-key="calc-tab-equity" aria-pressed="true">Equity</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="daily" data-tooltip-key="calc-tab-daily" aria-pressed="false">Daily</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="drawdown" data-tooltip-key="calc-tab-drawdown" aria-pressed="false">Drawdown</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="margin" data-tooltip-key="calc-tab-margin" aria-pressed="false">Util</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="marginPct" data-tooltip-key="calc-tab-marginpct" aria-pressed="false">Margin</button>
+                <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="shield" data-tooltip-key="calc-tab-shield" aria-pressed="false">Shield</button>
               </div>
               <div class="calc-chart-shell">
                 <canvas id="chartCalcEquity"></canvas>
@@ -6968,6 +6969,30 @@ Where <strong>Internal Margin %</strong> is your account equity relative to posi
 • <strong>Entry Shield:</strong> Your safety cushion at the entry price.<br>
 • <strong>Worst-Case:</strong> The lowest cushion level reached during the trade's history.<br>
 • <strong>At Exit:</strong> The remaining cushion at the end of the backtest.`
+  },
+  "calc-tab-equity": {
+    title: "M2M Equity",
+    body: `Shows your net ledger capital over the backtest window (Initial Capital ± cumulative Mark-to-Market P/L).`
+  },
+  "calc-tab-daily": {
+    title: "Daily P/L",
+    body: `Shows the single-day P/L fluctuations (daily changes in mark-to-market).`
+  },
+  "calc-tab-drawdown": {
+    title: "Drawdown",
+    body: `Shows the peak-to-trough paper loss from the highest ledger capital reached during the trade.`
+  },
+  "calc-tab-margin": {
+    title: "Margin Utilization",
+    body: `Shows the percentage of your ledger capital locked up in exchange required margin on each day (Required Margin ÷ Ledger Capital × 100).`
+  },
+  "calc-tab-marginpct": {
+    title: "Contract Margin %",
+    body: `Shows the historical daily exchange total margin rate percentage required for this contract.`
+  },
+  "calc-tab-shield": {
+    title: "Risk & Liquidation Shield %",
+    body: `Shows your dynamic percentage safety buffer on each day (Internal Margin % − Exchange Required Margin %). If this reaches 0% or below, your position is forcefully squared off.`
   },
   "snap-chg": {
     title: "Chg %",
