@@ -369,6 +369,57 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .calc-chart-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* Risk & Liquidation Shield Panel */
+.calc-liquidation-panel {
+  font-size: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(56,139,253,0.05) 0%, rgba(22,27,34,0.3) 100%);
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.calc-liq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.calc-liq-title {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.calc-liq-badge {
+  font-weight: 700;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.calc-liq-badge.is-safe {
+  background: rgba(63,185,80,0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(63,185,80,0.25);
+}
+.calc-liq-badge.is-danger {
+  background: rgba(248,81,73,0.12);
+  color: var(--accent-red);
+  border: 1px solid rgba(248,81,73,0.25);
+}
+.calc-liq-badge.is-warn {
+  background: rgba(210,153,34,0.12);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(210,153,34,0.25);
+}
+.calc-liq-body {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 /* Status ribbon (warning, margin call) */
 .calc-status {
   font-size: 12px;
@@ -1385,6 +1436,13 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               </div>
               <div id="calcStatusRibbon" class="calc-status" role="status" aria-live="polite"></div>
               <div id="calcMarginCallNotice" class="calc-status calc-status--danger" role="alert"></div>
+              <div id="calcLiquidationPanel" class="calc-liquidation-panel" style="display:none;">
+                <div class="calc-liq-header">
+                  <span class="calc-liq-title">Risk &amp; Liquidation Shield</span>
+                  <span id="calcLiqValue" class="calc-liq-badge">—</span>
+                </div>
+                <div class="calc-liq-body" id="calcLiqBody"></div>
+              </div>
               <div class="calc-share-strip">
                 <button type="button" id="calcShareBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-share">Copy Link</button>
                 <button type="button" id="calcResetBtn" class="calc-share-btn has-tooltip" data-tooltip-key="calc-reset">Reset</button>
@@ -1407,6 +1465,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 <button type="button" class="calc-chart-tab" role="tab" data-view="daily" aria-pressed="false">Daily P/L</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="drawdown" aria-pressed="false">Drawdown</button>
                 <button type="button" class="calc-chart-tab" role="tab" data-view="margin" aria-pressed="false">Margin Util</button>
+                <button type="button" class="calc-chart-tab" role="tab" data-view="marginPct" aria-pressed="false">Margin %</button>
               </div>
               <div class="calc-chart-shell">
                 <canvas id="chartCalcEquity"></canvas>
@@ -5110,13 +5169,14 @@ async function initCalculator() {
     });
   });
 
-  // Chart view tabs (Equity / Daily P/L / Drawdown / Margin Util)
+  // Chart view tabs (Equity / Daily P/L / Drawdown / Margin Util / Margin %)
   window._calcView = 'equity';
   const chartTabKickers = {
     equity: 'M2M Equity Curve',
     daily: 'Daily P/L',
     drawdown: 'Drawdown',
-    margin: 'Margin Utilization %'
+    margin: 'Margin Utilization %',
+    marginPct: 'Contract Margin %'
   };
   document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -5136,6 +5196,15 @@ async function initCalculator() {
     document.getElementById('customLotRow').style.display = 'none';
     document.querySelectorAll('#calculatorCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
     setCalcDir('long');
+    
+    // Reset visual tabs to Equity
+    document.querySelectorAll('#calcChartTabs .calc-chart-tab').forEach(t => {
+      t.setAttribute('aria-pressed', t.dataset.view === 'equity' ? 'true' : 'false');
+    });
+    window._calcView = 'equity';
+    const k = document.getElementById('calcChartKicker');
+    if (k) k.textContent = 'M2M Equity Curve';
+
     window.updateCalc(true);
   });
 
@@ -5343,7 +5412,7 @@ window.updateCalc = async function(forceSnap = false) {
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
   // isM2M: real-world mode — daily M2M settlement adjusts the available ledger balance each day
   const isM2M = !!document.getElementById('calcM2MEnabled')?.checked;
-  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], labels = [];
+  const cumPL = [], dailyPL = [], drawdownPath = [], marginPath = [], marginUtilPath = [], marginPctPath = [], labels = [];
   let prevPL = 0, runningHigh = 0, maxDD = 0, peakMargin = 0;
   let marginCallDate = null, marginCallReq = 0, marginCallAvail = 0;
 
@@ -5365,6 +5434,8 @@ window.updateCalc = async function(forceSnap = false) {
     const dd = runningHigh - pl;
     if (dd > maxDD) maxDD = dd;
     drawdownPath.push(-dd);
+
+    marginPctPath.push(mPct != null ? mPct : null);
 
     if (mPct != null && lots > 0) {
       const curMargin = (p * lotSize * mPct * lots) / 100;
@@ -5502,6 +5573,43 @@ window.updateCalc = async function(forceSnap = false) {
     infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em></span>`;
   }
 
+  // Dynamic Risk & Liquidation Shield Calculations
+  const liqPanel = document.getElementById('calcLiquidationPanel');
+  if (liqPanel) {
+    if (lots > 0 && entryPrice && entryMarginPct) {
+      const positionSize = lots * lotSize * entryPrice;
+      const internalMarginPct = (capital / positionSize) * 100;
+      const exchangeMarginPct = entryMarginPct;
+      const adverseMove = internalMarginPct - exchangeMarginPct;
+
+      liqPanel.style.display = 'flex';
+      const badge = document.getElementById('calcLiqValue');
+      const body = document.getElementById('calcLiqBody');
+
+      badge.className = 'calc-liq-badge';
+      if (adverseMove <= 0) {
+        badge.textContent = 'OVERLEVERAGED';
+        badge.classList.add('is-danger');
+        body.innerHTML = `Your position size (₹${fmtNum(positionSize, 0)}) exceeds safety limits. Internal Margin (${internalMarginPct.toFixed(1)}%) is less than the Exchange Required Margin (${exchangeMarginPct.toFixed(1)}%). <strong>Immediate liquidation risk!</strong>`;
+      } else {
+        badge.textContent = `${adverseMove.toFixed(1)}% Shield`;
+        if (adverseMove >= 20) {
+          badge.classList.add('is-safe');
+        } else {
+          badge.classList.add('is-warn');
+        }
+        const directionWord = _calcDir === 'long' ? 'drop' : 'rally';
+        body.innerHTML = `
+          <strong>Internal Margin:</strong> ${internalMarginPct.toFixed(1)}% (capital vs size)<br>
+          <strong>Exchange Required:</strong> ${exchangeMarginPct.toFixed(1)}%<br>
+          An adverse price ${directionWord} of <strong>${adverseMove.toFixed(1)}%</strong> will wipe out your free cash buffer and trigger an automatic square-off by the broker's Risk Management System (RMS).
+        `;
+      }
+    } else {
+      liqPanel.style.display = 'none';
+    }
+  }
+
   const metaRow = document.getElementById('calcMetaRow');
   if (metaRow && labels.length) {
     metaRow.style.display = 'flex';
@@ -5540,6 +5648,12 @@ window.updateCalc = async function(forceSnap = false) {
     gradientTop = _hexRgba('#fb8f44', 0.32);
     label = 'Margin Utilization %';
     yFmt = pctFmt;
+  } else if (view === 'marginPct') {
+    series = marginPctPath;
+    color = '#a371f7'; // Standardized Purple for Total Margin %
+    gradientTop = _hexRgba('#a371f7', 0.32);
+    label = 'Total Margin %';
+    yFmt = pctFmt;
   } else {
     series = cumPL;
     color = totalPL >= 0 ? '#3fb950' : '#f85149';
@@ -5559,7 +5673,7 @@ window.updateCalc = async function(forceSnap = false) {
   grad.addColorStop(0, gradientTop);
   grad.addColorStop(1, 'transparent');
 
-  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin')) ? {
+  const mcPlugin = (marginCallDate && (view === 'equity' || view === 'margin' || view === 'marginPct')) ? {
     id: 'mcShade',
     beforeDatasetsDraw(chart) {
       const idx = labels.indexOf(marginCallDate);
@@ -5608,7 +5722,7 @@ window.updateCalc = async function(forceSnap = false) {
           bodyColor: cssText,
           padding: 10,
           callbacks: {
-            label: (item) => `${label}: ${view === 'margin' ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
+            label: (item) => `${label}: ${(view === 'margin' || view === 'marginPct') ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
           }
         }
       },
