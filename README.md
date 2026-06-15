@@ -42,6 +42,31 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 ### 7. Data Explorer
 - **Raw Exportable Data:** A high-density, searchable, and sortable tabular interface of the combined margin + market payloads for quantitative researchers who need raw numbers.
 
+## The Volatility-Adjusted Margin Buffer (VAMB) Engine
+
+The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** position-sizing rules inside the interactive Capital Calculator to defend retail accounts against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas.
+
+### 1. Sizing Formula
+$$\text{Safety Shield} = \min(35\%, \max(10\%, 25\% \times \sigma_{\text{ann}}))$$
+$$\text{Total Required Margin} = \text{SPAN Margin} + \text{Safety Shield}$$
+$$\text{Position Lots (Raw)} = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times \text{Total Required Margin}} \right\rfloor$$
+$$\text{Position Lots (Clamped)} = \min\left( \text{Position Lots (Raw)}, \left\lfloor \frac{\text{Capital} \times 2.5}{\text{Price} \times \text{Lot Size}} \right\rfloor \right)$$
+
+*Note: The **2.5× leverage ceiling** acts as a hard stop to prevent over-leverage in artificially low-margin regimes.*
+
+### 2. Empirical Performance & Stress Testing (Feb 2026 Crash)
+Based on a systematic day-by-day simulation of the extreme February 2026 contract collapse, entering long on Dec 29, 2025 at ₹305.20 with ₹5L capital:
+* **Max Sizing (6 lots, 4.58× leverage):** Liquidated on Dec 31, 2025 (Day 2 of trade) at ₹288.50. Final P&L: **-55.3%** (₹-2,76,750).
+* **VAMB Sizing (3 lots, 2.29× leverage):** Survived 24 additional trading days through a 20% crash, a full V-shaped recovery to ₹390.50, and only hit margin call on Feb 3, 2026 when MCX overnight hiked SPAN margins from 34% to 66%. Final P&L: **-27.7%** (₹-138,375).
+
+*VAMB successfully converted account destruction into a survivable drawdown.*
+
+### 3. Core Limitations
+* **Lagging Indicator:** Safety Shield relies on historical realized volatility ($\sigma_{\text{ann}}$), meaning it cannot anticipate forward-looking regime changes (e.g., overnight exchange margin hikes).
+* **Expiry Tender Surcharges:** Expiry-week tender margin add-ons (DTE $\le 7$ days) are ignored by the standard formula.
+
+---
+
 ## Architecture
 
 The project is split into a robust Python data pipeline and a stateless frontend:
