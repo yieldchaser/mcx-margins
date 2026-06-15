@@ -61,9 +61,6 @@ async def scrape_margin(date_str: str) -> list[dict]:
 
     print(f"[scraper] Fetching data for {date_str} (hidden: {date_yyyymmdd}, display: {date_display})")
 
-    api_result = None
-    api_event = asyncio.Event()
-
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -85,20 +82,6 @@ async def scrape_margin(date_str: str) -> list[dict]:
         await context.add_init_script(STEALTH_SCRIPT)
 
         page = await context.new_page()
-
-        async def handle_response(response):
-            nonlocal api_result
-            if "GetDailyMargin" in response.url:
-                try:
-                    body = await response.text()
-                    print(f"[scraper] API response: status={response.status}, len={len(body)}")
-                    api_result = body
-                    api_event.set()
-                except Exception as e:
-                    print(f"[scraper] Error reading API response: {e}")
-                    api_event.set()
-
-        page.on("response", handle_response)
 
         try:
             # Step 1: Visit homepage to bypass Akamai bot detection
@@ -123,52 +106,28 @@ async def scrape_margin(date_str: str) -> list[dict]:
                 print("[scraper] Daily margin page blocked")
                 return []
 
-            await asyncio.sleep(2)
+            # Step 3: Wait for page load selector (new ID is #fromDate)
+            await page.wait_for_selector("#fromDate", timeout=15000)
 
-            # Step 3: Fill the date display field
-            await page.wait_for_selector("#txtDate", timeout=15000)
-            await page.fill("#txtDate", date_display)
-            print(f"[scraper] Filled display date: {date_display}")
-
-            # Step 4: Set the hidden field to YYYYMMDD format (this is what the API uses)
-            await page.evaluate(f"""
-                var hiddenField = document.getElementById('cph_InnerContainerRight_C001_txtDate_hid_val');
-                if (hiddenField) {{
-                    hiddenField.value = '{date_yyyymmdd}';
+            # Step 4: Fetch daily margin directly via browser evaluate
+            print(f"[scraper] Fetching daily margin directly via API...")
+            api_result = await page.evaluate(f"""
+                async () => {{
+                    try {{
+                        const resp = await fetch('/risk-management/daily-margin/GetDailyMargin?symbol=ALL&fromDate=' + encodeURIComponent('{date_display}') + '&expiryDate=ALL&fileID=ALL&pageNumber=1&pageSize=10000&isExport=false', {{
+                            headers: {{
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/json',
+                                'Referer': 'https://www.mcxccl.com/risk-management/daily-margin'
+                            }}
+                        }});
+                        return await resp.text();
+                    }} catch (e) {{
+                        return null;
+                    }}
                 }}
             """)
 
-            # Verify hidden field
-            hidden_val = await page.evaluate("""
-                (() => {
-                    var el = document.getElementById('cph_InnerContainerRight_C001_txtDate_hid_val');
-                    return el ? el.value : 'NOT FOUND';
-                })()
-            """)
-            print(f"[scraper] Hidden field value: {hidden_val}")
-
-            # Step 5: Click Show button
-            await page.wait_for_selector("#btnShow", timeout=10000)
-            await page.click("#btnShow")
-            print("[scraper] Clicked Show button")
-
-            # Step 6: Wait for API response
-            try:
-                await asyncio.wait_for(api_event.wait(), timeout=30.0)
-                print("[scraper] API response received")
-            except asyncio.TimeoutError:
-                print("[scraper] Timeout waiting for API response")
-
-            # Step 7: Wait for overlay to disappear
-            try:
-                await page.wait_for_selector(".overlay2", state="hidden", timeout=15000)
-                print("[scraper] Overlay hidden")
-            except PlaywrightTimeoutError:
-                pass
-
-            await asyncio.sleep(1)
-
-            # Step 8: Parse the API response
             if api_result:
                 records = parse_api_response(api_result)
                 print(f"[scraper] Parsed {len(records)} records")
@@ -191,23 +150,14 @@ def parse_api_response(response_text: str) -> list[dict]:
     try:
         data = json.loads(response_text)
 
-        # ASP.NET Web Services pattern: {"d": {"Summary": {...}, "Data": [...]}}
-        if isinstance(data, dict) and "d" in data:
-            inner = data["d"]
-            if isinstance(inner, str):
-                inner = json.loads(inner)
-
-            summary = inner.get("Summary", {})
-            count = summary.get("Count", 0)
-            records = inner.get("Data")
-
-            print(f"[scraper] API summary: Count={count}")
-
-            if not records:
-                print("[scraper] API returned no data (Data=null)")
-                return []
-
-            return records
+        if isinstance(data, dict):
+            if "Data" in data:
+                return data["Data"]
+            if "d" in data:
+                inner = data["d"]
+                if isinstance(inner, str):
+                    inner = json.loads(inner)
+                return inner.get("Data") or []
 
         # Direct list
         if isinstance(data, list):
@@ -231,7 +181,7 @@ def normalize_row(raw_row: dict, date_str: str) -> dict | None:
     if not isinstance(raw_row, dict):
         return None
 
-    symbol = raw_row.get("Symbol", "").strip()
+    symbol = (raw_row.get("symbol") or raw_row.get("Symbol") or "").strip()
     if not symbol:
         return None
 
@@ -239,28 +189,32 @@ def normalize_row(raw_row: dict, date_str: str) -> dict | None:
     if symbol.lower() in ("symbol", "contract", "commodity", ""):
         return None
 
-    expiry = raw_row.get("ExpiryDate", "").strip()
+    expiry = (raw_row.get("expiryDate") or raw_row.get("ExpiryDate") or "").strip()
 
-    # Use ELMLong as the ELM value (ELMShort is usually the same)
-    elm = raw_row.get("ELMLong") or raw_row.get("ELMShort")
+    # Use elmLong/elmShort or ELMLong/ELMShort
+    elm = raw_row.get("elmLong") or raw_row.get("elmShort") or raw_row.get("ELMLong") or raw_row.get("ELMShort")
+
+    # Volatility keys (note: spelling in new API is 'aailyVolatility'!)
+    daily_vol = raw_row.get("dailyVolatility") or raw_row.get("aailyVolatility") or raw_row.get("DailyVolatility")
+    ann_vol = raw_row.get("annualizedVolatility") or raw_row.get("AnnualizedVolatility")
 
     return {
         "date": date_str,
         "symbol": symbol,
         "expiry": expiry,
-        "instrument_id": raw_row.get("InstrumentID", ""),
-        "file_id": raw_row.get("FileID"),
-        "initial_margin_pct": raw_row.get("InitialMargin"),
+        "instrument_id": raw_row.get("instrumentID") or raw_row.get("InstrumentID") or "",
+        "file_id": raw_row.get("fileID") or raw_row.get("FileID"),
+        "initial_margin_pct": raw_row.get("initialMargin") or raw_row.get("InitialMargin"),
         "elm_pct": elm,
-        "tender_margin_pct": raw_row.get("TenderMargin"),
-        "total_margin_pct": raw_row.get("TotalMargin"),
-        "additional_long_margin_pct": raw_row.get("AdditionalLongMargin"),
-        "additional_short_margin_pct": raw_row.get("AdditionalShortMargin"),
-        "special_long_margin_pct": raw_row.get("SpecialLongMargin"),
-        "special_short_margin_pct": raw_row.get("SpecialShortMargin"),
-        "delivery_margin_pct": raw_row.get("DeliveryMargin"),
-        "daily_volatility": raw_row.get("DailyVolatility"),
-        "annualized_volatility": raw_row.get("AnnualizedVolatility"),
+        "tender_margin_pct": raw_row.get("tenderMargin") or raw_row.get("TenderMargin"),
+        "total_margin_pct": raw_row.get("totalMargin") or raw_row.get("TotalMargin"),
+        "additional_long_margin_pct": raw_row.get("additionalLongMargin") or raw_row.get("AdditionalLongMargin"),
+        "additional_short_margin_pct": raw_row.get("additionalShortMargin") or raw_row.get("AdditionalShortMargin"),
+        "special_long_margin_pct": raw_row.get("specialLongMargin") or raw_row.get("SpecialLongMargin"),
+        "special_short_margin_pct": raw_row.get("specialShortMargin") or raw_row.get("SpecialShortMargin"),
+        "delivery_margin_pct": raw_row.get("deliveryMargin") or raw_row.get("DeliveryMargin"),
+        "daily_volatility": daily_vol,
+        "annualized_volatility": ann_vol,
     }
 
 

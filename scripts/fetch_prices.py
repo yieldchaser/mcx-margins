@@ -60,7 +60,7 @@ HOME_URL          = "https://www.mcxindia.com/"
 BHAVCOPY_URL      = "https://www.mcxindia.com/market-data/bhavcopy"
 INTERCEPT_KEYWORD = "GetDateWiseBhavCopy"
 
-DATE_INPUT_SELECTOR  = "#txtDate"
+DATE_INPUT_SELECTOR  = "#bhavCopyDateWise"
 DATE_HIDDEN_SELECTOR = "#txtDate_hid_val"
 SUBMIT_BTN_SELECTOR  = "#btnShow"
 
@@ -204,7 +204,7 @@ def save_records(conn: sqlite3.Connection, records: list[dict]) -> int:
 def parse_response(text: str) -> list[dict]:
     """
     Parse the intercepted API body.
-    Expected: {"d": {"Summary": {...}, "Data": [...]}}
+    Expected: {"Data": [...]} or {"d": {"Summary": {...}, "Data": [...]}}
     """
     text = text.strip()
     try:
@@ -213,17 +213,22 @@ def parse_response(text: str) -> list[dict]:
         print(f"[parser] JSON error: {e}  first_200={text[:200]}")
         return []
 
-    if isinstance(data, dict) and "d" in data:
-        inner = data["d"]
-        if isinstance(inner, str):
-            inner = json.loads(inner)
-        if isinstance(inner, dict):
-            records = inner.get("Data") or []
-            count   = inner.get("Summary", {}).get("Count", len(records))
-            print(f"[parser] Count={count}  Data rows={len(records)}")
+    if isinstance(data, dict):
+        if "Data" in data:
+            records = data["Data"]
+            print(f"[parser] Data rows={len(records)}")
             return records if isinstance(records, list) else []
-        if isinstance(inner, list):
-            return inner
+        if "d" in data:
+            inner = data["d"]
+            if isinstance(inner, str):
+                inner = json.loads(inner)
+            if isinstance(inner, dict):
+                records = inner.get("Data") or []
+                count   = inner.get("Summary", {}).get("Count", len(records))
+                print(f"[parser] Count={count}  Data rows={len(records)}")
+                return records if isinstance(records, list) else []
+            if isinstance(inner, list):
+                return inner
 
     if isinstance(data, list):
         return data
@@ -367,20 +372,38 @@ class BhavSession:
             raise RuntimeError("Session not started — call start() first")
 
         dt          = datetime.strptime(date_str, "%Y-%m-%d")
-        date_hidden = dt.strftime(DATE_HIDDEN_FMT)
+        date_display = dt.strftime("%d/%m/%Y")
 
+        # 1. Get the Request Verification Token from the meta tag
+        token = await self.page.evaluate("""
+            () => {
+                const meta = document.querySelector('meta[name="X-XSRF-Token"]');
+                if (!meta) return null;
+                const content = meta.getAttribute('content');
+                const div = document.createElement('div');
+                div.innerHTML = content;
+                const input = div.querySelector('input');
+                return input ? input.value : null;
+            }
+        """)
+        if not token:
+            raise RuntimeError("Request verification token not found in meta tag")
+
+        # 2. Perform direct GET fetch to the new endpoint with the token header
         result = await self.page.evaluate(f"""
             async () => {{
-                const resp = await fetch('/backpage.aspx/GetDateWiseBhavCopy', {{
-                    method: 'POST',
-                    headers: {{
-                        'Content-Type': 'application/json; charset=utf-8',
-                        'Accept': 'application/json, text/javascript, */*; q=0.01',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }},
-                    body: JSON.stringify({{ Date: '{date_hidden}', InstrumentName: 'ALL' }})
-                }});
-                return await resp.text();
+                try {{
+                    const resp = await fetch('/market-data/bhavcopy/GetDateWiseBhavCopy?InstrumentName=ALL&fromDate=' + encodeURIComponent('{date_display}'), {{
+                        headers: {{
+                            '__requestverificationtoken': '{token}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/json'
+                        }}
+                    }});
+                    return await resp.text();
+                }} catch (e) {{
+                    return null;
+                }}
             }}
         """)
 
