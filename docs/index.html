@@ -3002,17 +3002,17 @@ async function renderPriceMarginConfluence() {
     const front = ng.filter(c => c.dte >= 0).sort((a,b) => a.dte - b.dte)[0] || ng[0];
     if (!front) return;
 
-    document.getElementById('kpiFrontMargin').textContent = front.initial_margin_pct.toFixed(2) + '%';
-    document.getElementById('kpiElm').textContent = front.elm_pct.toFixed(2) + '%';
-    document.getElementById('kpiDailyVol').textContent = (front.daily_volatility * 100).toFixed(2) + '%';
-    document.getElementById('kpiAnnVol').textContent = (front.annualized_volatility * 100).toFixed(1) + '%';
-    document.getElementById('kpiDTE').textContent = front.dte + 'd';
+    document.getElementById('kpiFrontMargin').textContent = front.initial_margin_pct != null ? front.initial_margin_pct.toFixed(2) + '%' : '—';
+    document.getElementById('kpiElm').textContent = front.elm_pct != null ? front.elm_pct.toFixed(2) + '%' : '—';
+    document.getElementById('kpiDailyVol').textContent = front.daily_volatility != null ? (front.daily_volatility * 100).toFixed(2) + '%' : '—';
+    document.getElementById('kpiAnnVol').textContent = front.annualized_volatility != null ? (front.annualized_volatility * 100).toFixed(1) + '%' : '—';
+    document.getElementById('kpiDTE').textContent = front.dte != null ? front.dte + 'd' : '—';
 
     // Day-over-day change
     if (histNG && histNG.length >= 2) {
       const sorted = [...histNG].sort((a,b) => new Date(b.date) - new Date(a.date));
-      const mChange = sorted[0].initial_margin_pct - sorted[1].initial_margin_pct;
-      const vChange = ((sorted[0].daily_volatility || 0) - (sorted[1].daily_volatility || 0)) * 100;
+      const mChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
+      const vChange = ((sorted[0]?.daily_volatility ?? 0) - (sorted[1]?.daily_volatility ?? 0)) * 100;
       const mEl = document.getElementById('kpiMarginChange');
       const vEl = document.getElementById('kpiVolChange');
 
