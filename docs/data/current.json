@@ -14,7 +14,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.025768,
-      "annualized_volatility": 0.407428
+      "annualized_volatility": 0.407428,
+      "vamb_safety_shield_pct": 0.1019,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 33,
+      "live_vamb_lots_100l": 67
     },
     {
       "expiry": "28JUL2026",
@@ -29,7 +35,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.02514,
-      "annualized_volatility": 0.397498
+      "annualized_volatility": 0.397498,
+      "vamb_safety_shield_pct": 0.1,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 33,
+      "live_vamb_lots_100l": 66
     },
     {
       "expiry": "26AUG2026",
@@ -44,7 +56,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.023324,
-      "annualized_volatility": 0.368785
+      "annualized_volatility": 0.368785,
+      "vamb_safety_shield_pct": 0.1,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 33,
+      "live_vamb_lots_100l": 66
     },
     {
       "expiry": "25SEP2026",
@@ -59,7 +77,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.026721,
-      "annualized_volatility": 0.422496
+      "annualized_volatility": 0.422496,
+      "vamb_safety_shield_pct": 0.1056,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 32,
+      "live_vamb_lots_100l": 65
     },
     {
       "expiry": "27OCT2026",
@@ -74,7 +98,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.028249,
-      "annualized_volatility": 0.446656
+      "annualized_volatility": 0.446656,
+      "vamb_safety_shield_pct": 0.1117,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 32,
+      "live_vamb_lots_100l": 64
     },
     {
       "expiry": "24NOV2026",
@@ -89,7 +119,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.038262,
-      "annualized_volatility": 0.604975
+      "annualized_volatility": 0.604975,
+      "vamb_safety_shield_pct": 0.1512,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 2,
+      "live_vamb_lots_10l": 6,
+      "live_vamb_lots_50l": 31,
+      "live_vamb_lots_100l": 62
     }
   ],
   "NATGASMINI": [
@@ -106,7 +142,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.025417,
-      "annualized_volatility": 0.401878
+      "annualized_volatility": 0.401878,
+      "vamb_safety_shield_pct": 0.1005,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 11,
+      "live_vamb_lots_10l": 33,
+      "live_vamb_lots_50l": 168,
+      "live_vamb_lots_100l": 336
     },
     {
       "expiry": "28JUL2026",
@@ -121,7 +163,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.024658,
-      "annualized_volatility": 0.389877
+      "annualized_volatility": 0.389877,
+      "vamb_safety_shield_pct": 0.1,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 11,
+      "live_vamb_lots_10l": 33,
+      "live_vamb_lots_50l": 165,
+      "live_vamb_lots_100l": 331
     },
     {
       "expiry": "26AUG2026",
@@ -136,7 +184,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.023875,
-      "annualized_volatility": 0.377497
+      "annualized_volatility": 0.377497,
+      "vamb_safety_shield_pct": 0.1,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 11,
+      "live_vamb_lots_10l": 33,
+      "live_vamb_lots_50l": 166,
+      "live_vamb_lots_100l": 333
     },
     {
       "expiry": "25SEP2026",
@@ -151,7 +205,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.021886,
-      "annualized_volatility": 0.346048
+      "annualized_volatility": 0.346048,
+      "vamb_safety_shield_pct": 0.1,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 11,
+      "live_vamb_lots_10l": 32,
+      "live_vamb_lots_50l": 164,
+      "live_vamb_lots_100l": 329
     },
     {
       "expiry": "27OCT2026",
@@ -166,7 +226,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.029547,
-      "annualized_volatility": 0.467179
+      "annualized_volatility": 0.467179,
+      "vamb_safety_shield_pct": 0.1168,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 10,
+      "live_vamb_lots_10l": 30,
+      "live_vamb_lots_50l": 153,
+      "live_vamb_lots_100l": 306
     },
     {
       "expiry": "24NOV2026",
@@ -181,7 +247,13 @@
       "special_short_margin_pct": 0.0,
       "delivery_margin_pct": 0.0,
       "daily_volatility": 0.028723,
-      "annualized_volatility": 0.454151
+      "annualized_volatility": 0.454151,
+      "vamb_safety_shield_pct": 0.1135,
+      "vamb_leverage_ceiling": 2.5,
+      "live_vamb_lots_35l": 9,
+      "live_vamb_lots_10l": 26,
+      "live_vamb_lots_50l": 133,
+      "live_vamb_lots_100l": 267
     }
   ]
 }

@@ -1343,6 +1343,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                   <select id="calcLotMode" class="calc-select">
                     <option value="max">Max Possible</option>
                     <option value="safe">Risk Safe (50% Util)</option>
+                    <option value="vamb">Volatility-Adjusted (VAMB)</option>
                     <option value="custom">Custom Lots</option>
                   </select>
                 </div>
@@ -5396,9 +5397,26 @@ window.updateCalc = async function(forceSnap = false) {
   }
 
   let lots = 0;
-  if (lotMode === 'max') lots = maxPossibleLots;
-  else if (lotMode === 'safe') lots = Math.round(maxPossibleLots * 0.5);
-  else lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
+  if (lotMode === 'max') {
+    lots = maxPossibleLots;
+  } else if (lotMode === 'safe') {
+    lots = Math.round(maxPossibleLots * 0.5);
+  } else if (lotMode === 'vamb') {
+    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
+    const initMargin = (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? entryMarginRow.initial_margin_pct : (entryMarginPct || 20.0);
+    const spanPct = initMargin / 100;
+    const totalMarginReq = spanPct + shield;
+    const lotValue = entryPrice * lotSize;
+    if (lotValue > 0) {
+      const rawLots = Math.floor(capital / (lotValue * totalMarginReq));
+      const maxSafeLots = Math.floor((capital * 2.5) / lotValue);
+      lots = Math.max(0, Math.min(rawLots, maxSafeLots));
+    } else {
+      lots = 0;
+    }
+  } else {
+    lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
+  }
 
   const ribbon = document.getElementById('calcStatusRibbon');
   ribbon.classList.remove('is-visible', 'calc-status--warn', 'calc-status--danger', 'calc-status--info');
@@ -5413,6 +5431,18 @@ window.updateCalc = async function(forceSnap = false) {
     const need = lots * marginReqPerLot;
     ribbon.innerHTML = `<span class="calc-status__title">Custom lots exceed max sizing</span><div class="calc-status__detail">${lots} lots require ₹${fmtNum(need, 0)} at entry margin (max possible: ${maxPossibleLots}).</div>`;
     ribbon.classList.add('is-visible', 'calc-status--warn');
+    ribbon.style.display = 'block';
+  } else if (lotMode === 'vamb' && lots >= 1) {
+    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
+    const initMargin = (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? entryMarginRow.initial_margin_pct : (entryMarginPct || 20.0);
+    const totalMarginReq = (initMargin / 100) + shield;
+    const lotValue = entryPrice * lotSize;
+    const rawLots = Math.floor(capital / (lotValue * totalMarginReq));
+    const maxSafeLots = Math.floor((capital * 2.5) / lotValue);
+    const isLeverageCeilingActive = rawLots > maxSafeLots;
+    
+    ribbon.innerHTML = `<span class="calc-status__title">Volatility-Adjusted Margin Buffer (VAMB) Active</span><div class="calc-status__detail">Safety Shield: <strong>${(shield * 100).toFixed(2)}%</strong> · Total Req: <strong>${(totalMarginReq * 100).toFixed(2)}%</strong> · Leverage Ceiling (2.5x max): <strong>${isLeverageCeilingActive ? 'ACTIVE (Clamped)' : 'Inactive'}</strong></div>`;
+    ribbon.classList.add('is-visible', 'calc-status--info');
     ribbon.style.display = 'block';
   }
 
@@ -5549,7 +5579,12 @@ window.updateCalc = async function(forceSnap = false) {
   setStat('resDD', '₹' + fmtNum(maxDD, 0));
   setStat('resDDPct', `${fmtPct(ddPctOfPortfolio, 2)} of peak portfolio`);
   setStat('resLots', `${lots}<span class="calc-stat__unit">Lots</span>`);
-  setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · ${windowDays.length} days`);
+  if (lotMode === 'vamb') {
+    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
+    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · Safety Shield: ${(shield*100).toFixed(2)}%`);
+  } else {
+    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · ${windowDays.length} days`);
+  }
   setStat('resMargin', '₹' + fmtNum(peakMargin, 0));
   const peakUtil = capital > 0 ? (peakMargin / capital) * 100 : 0;
   setStat('resMarginPeak', `Peak Util ${fmtPct(peakUtil, 1)}`);

@@ -209,6 +209,15 @@ def _load_margin_rows(cur, where_sql="1=1", params=(), order_by="date ASC, symbo
 
 
 def _normalize_margin_row(row):
+    ann_vol = row.get("annualized_volatility")
+    # Calculate safety shield
+    shield = 0.10
+    if ann_vol is not None:
+        vol = ann_vol
+        if vol > 3.0:
+            vol = vol / 100.0
+        shield = min(0.35, max(0.10, 0.25 * vol))
+        
     return {
         "date": row.get("date"),
         "symbol": row.get("symbol"),
@@ -219,7 +228,9 @@ def _normalize_margin_row(row):
         "elm_pct": row.get("elm_pct"),
         "tender_margin_pct": row.get("tender_margin_pct"),
         "daily_volatility": row.get("daily_volatility"),
-        "annualized_volatility": row.get("annualized_volatility"),
+        "annualized_volatility": ann_vol,
+        "vamb_safety_shield_pct": round(shield, 4),
+        "vamb_leverage_ceiling": 2.5,
     }
 
 
@@ -249,6 +260,14 @@ def _build_margin_contract_histories(cur, symbol):
             continue
         dv = row.get("daily_volatility")
         av = row.get("annualized_volatility")
+        # Calculate safety shield
+        shield = 0.10
+        if av is not None:
+            vol = av
+            if vol > 3.0:
+                vol = vol / 100.0
+            shield = min(0.35, max(0.10, 0.25 * vol))
+            
         by_expiry.setdefault(expiry, []).append({
             "date": row.get("date"),
             "dte": compute_dte(expiry, row.get("date")),
@@ -258,6 +277,8 @@ def _build_margin_contract_histories(cur, symbol):
             "tender_margin_pct": row.get("tender_margin_pct"),
             "daily_volatility": round(dv * 100, 4) if dv is not None else None,
             "annualized_volatility": round(av * 100, 4) if av is not None else None,
+            "vamb_safety_shield_pct": round(shield, 4),
+            "vamb_leverage_ceiling": 2.5,
         })
     return by_expiry
 
@@ -592,15 +613,30 @@ def _build_market_signals(symbol, history_rows, joined_rows):
 
 
 def _build_margin_front_series_for_symbol(cur, symbol):
-    rows = [
-        _normalize_margin_row(row)
-        for row in _load_margin_rows(
-            cur,
-            "symbol = ? AND initial_margin_pct IS NOT NULL",
-            (symbol,),
-            "date ASC, expiry ASC",
-        )
-    ]
+    raw_rows = _load_margin_rows(
+        cur,
+        "symbol = ? AND initial_margin_pct IS NOT NULL",
+        (symbol,),
+        "date ASC, expiry ASC",
+    )
+    rows = []
+    for row in raw_rows:
+        norm = _normalize_margin_row(row)
+        if norm is not None:
+            dte = norm.get("dte")
+            initial_margin = norm.get("initial_margin_pct")
+            ann_vol = norm.get("annualized_volatility")
+            
+            # Encapsulated analytical boundaries
+            if dte is not None and dte > 90:
+                continue
+            if initial_margin is not None and initial_margin >= 99.0:
+                continue
+            if ann_vol is not None and ann_vol > 3.0:
+                continue
+                
+            rows.append(norm)
+            
     by_date = {}
     for row in rows:
         by_date.setdefault(row["date"], []).append(row)
@@ -862,6 +898,11 @@ def _export_market_intelligence(margin_cur):
             symbol: _build_margin_contract_histories(margin_cur, symbol)
             for symbol in MARKET_SYMBOLS
         }
+        margin_lookup = {}
+        for sym in MARKET_SYMBOLS:
+            for exp, hist in margin_contract_histories[sym].items():
+                for m_row in hist:
+                    margin_lookup[(sym, exp, m_row["date"])] = m_row
         for symbol in MARKET_SYMBOLS:
             by_expiry = {}
             for row in rows:
@@ -902,6 +943,39 @@ def _export_market_intelligence(margin_cur):
                 liquidity_score = None
                 if volume_pct is not None or oi_pct is not None:
                     liquidity_score = round((volume_pct or 0) * 0.6 + (oi_pct or 0) * 0.4, 1)
+
+                m_row = margin_lookup.get((symbol, row["expiry"], row["date"]))
+                shield = 0.10
+                vamb_leverage_ceiling = 2.5
+                live_vamb_lots_35l = 0
+                live_vamb_lots_10l = 0
+                live_vamb_lots_50l = 0
+                live_vamb_lots_100l = 0
+                
+                if m_row:
+                    shield = m_row.get("vamb_safety_shield_pct") or 0.10
+                    init_margin_pct = m_row.get("initial_margin_pct") or 20.0
+                    total_margin_req = (init_margin_pct / 100.0) + shield
+                    price = row.get("close")
+                    if price and price > 0:
+                        lot_size = 250 if symbol == "NATGASMINI" else 1250
+                        
+                        lots_35 = math.floor(350000 / (price * lot_size * total_margin_req))
+                        max_35 = math.floor((350000 * 2.5) / (price * lot_size))
+                        live_vamb_lots_35l = max(0, min(lots_35, max_35))
+                        
+                        lots_10 = math.floor(1000000 / (price * lot_size * total_margin_req))
+                        max_10 = math.floor((1000000 * 2.5) / (price * lot_size))
+                        live_vamb_lots_10l = max(0, min(lots_10, max_10))
+                        
+                        lots_50 = math.floor(5000000 / (price * lot_size * total_margin_req))
+                        max_50 = math.floor((5000000 * 2.5) / (price * lot_size))
+                        live_vamb_lots_50l = max(0, min(lots_50, max_50))
+                        
+                        lots_100 = math.floor(10000000 / (price * lot_size * total_margin_req))
+                        max_100 = math.floor((10000000 * 2.5) / (price * lot_size))
+                        live_vamb_lots_100l = max(0, min(lots_100, max_100))
+
                 entry = {
                     **row,
                     "return_1d_pct": flow_row.get("return_1d_pct"),
@@ -920,6 +994,12 @@ def _export_market_intelligence(margin_cur):
                     "spread_vs_next": _round(active[idx + 1]["close"] - row["close"], 4) if idx + 1 < len(active) and row.get("close") is not None and active[idx + 1].get("close") is not None else None,
                     "roll_yield_pct": _round(((row["close"] - active[idx + 1]["close"]) / row["close"]) * 100, 3) if idx + 1 < len(active) and row.get("close") not in (None, 0) and active[idx + 1].get("close") is not None else None,
                     "liquidity_score": liquidity_score,
+                    "vamb_safety_shield_pct": round(shield, 4),
+                    "vamb_leverage_ceiling": vamb_leverage_ceiling,
+                    "live_vamb_lots_35l": live_vamb_lots_35l,
+                    "live_vamb_lots_10l": live_vamb_lots_10l,
+                    "live_vamb_lots_50l": live_vamb_lots_50l,
+                    "live_vamb_lots_100l": live_vamb_lots_100l,
                 }
                 curve.append(entry)
             ranked = sorted(
@@ -1220,9 +1300,22 @@ def _export_market_intelligence(margin_cur):
         outputs.append("market/margin_joined_front.json")
         save("market/cross_regimes.json", cross_regimes); outputs.append("market/cross_regimes.json")
 
+        short_latency_risk = "NORMAL"
+        ng_history = histories.get("NATURALGAS", [])
+        if len(ng_history) >= 2:
+            for r in ng_history[-2:]:
+                high = r.get("high")
+                low = r.get("low")
+                prev_close = r.get("prev_close") or r.get("open")
+                if high is not None and low is not None and prev_close:
+                    range_pct = ((high - low) / prev_close) * 100
+                    if range_pct > 5.5:
+                        short_latency_risk = "HIGH"
+
         signals = {
             "schema_version": MARKET_SCHEMA_VERSION,
             "as_of": latest_date,
+            "short_latency_risk_score": short_latency_risk,
             "signals": [],
         }
         for symbol in MARKET_SYMBOLS:
@@ -2021,6 +2114,199 @@ def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
     })
 
 
+def _export_vamb_analytics(cur, fm_series):
+    """
+    Computes Volatility-Adjusted Margin Buffer (VAMB) position sizing metrics.
+    Backtests against the Feb 2, 2026 peak margin shock of 66.05%.
+    """
+    print("  [VAMB] Computing Volatility-Adjusted Margin Buffer Sizing...")
+    
+    # 1. Backtest Feb 2, 2026 stress test conditions (Long and Short)
+    # NATURALGAS 24FEB2026 on 2026-02-02
+    prev_close = 404.80
+    close = 294.90
+    price_change = close - prev_close  # -109.90 (long loss, short profit)
+    lot_size = 1250
+    span_margin_pct = 0.6605
+    ann_vol = 1.45936  # Peak annualized volatility
+    
+    # Safety shield calculation: Safety% = min(0.35, max(0.10, 0.25 * ann_vol))
+    safety_shield_pct = min(0.35, max(0.10, 0.25 * ann_vol))  # 0.35
+    total_margin_req_pct = span_margin_pct + safety_shield_pct  # 1.0105
+    
+    capitals = [3500000, 4300000, 5000000]
+    feb_2_results = []
+    feb_2_short_results = []
+    
+    for cap in capitals:
+        # VAMB Notional Exposure
+        target_notional = cap / total_margin_req_pct
+        lot_value = close * lot_size
+        vamb_lots_raw = max(0, int(math.floor(target_notional / lot_value)))
+        
+        # Hard Leverage Ceiling: Never let notional exposure exceed 2.5x active capital, and cap at 31 lots standard risk allocation
+        max_safe_lots = max(1, int(math.floor((cap * 2.5) / lot_value)))
+        vamb_lots = min(vamb_lots_raw, max_safe_lots, 31)
+        
+        # ── Long Side Sizing & Solvency ──
+        m2m_loss = vamb_lots * price_change * lot_size
+        new_ledger = cap + m2m_loss
+        req_margin_close = vamb_lots * close * lot_size * span_margin_pct
+        margin_surplus = new_ledger - req_margin_close
+        solvency = "SAFE" if margin_surplus >= 0 else "LIQUIDATED"
+        
+        feb_2_results.append({
+            "capital_base": cap,
+            "vamb_lots": vamb_lots,
+            "target_notional": round(target_notional, 2),
+            "m2m_loss": round(m2m_loss, 2),
+            "new_ledger": round(new_ledger, 2),
+            "req_margin_close": round(req_margin_close, 2),
+            "margin_surplus": round(margin_surplus, 2),
+            "solvency": solvency
+        })
+        
+        # ── Short Side Sizing & Solvency (with Latency Hardcoding) ──
+        # Real short M2M profit = vamb_lots * -price_change * lot_size
+        # BUT intraday clearing latency means short-side profit evaluates as ₹0 for RMS margin check.
+        m2m_profit_real = vamb_lots * -price_change * lot_size
+        m2m_profit_intraday_rms = 0.0  # Latency Hardcoding
+        new_ledger_rms = cap + m2m_profit_intraday_rms
+        
+        margin_surplus_short = new_ledger_rms - req_margin_close
+        solvency_short = "SAFE" if margin_surplus_short >= 0 else "LIQUIDATED"
+        
+        feb_2_short_results.append({
+            "capital_base": cap,
+            "vamb_lots": vamb_lots,
+            "target_notional": round(target_notional, 2),
+            "m2m_profit_real": round(m2m_profit_real, 2),
+            "m2m_profit_intraday_rms": m2m_profit_intraday_rms,
+            "new_ledger_rms": round(new_ledger_rms, 2),
+            "req_margin_close": round(req_margin_close, 2),
+            "margin_surplus_rms": round(margin_surplus_short, 2),
+            "solvency": solvency_short
+        })
+        
+    # 2. Historical Backtest over Liquid Contract Legs (Volume >= 500 lots)
+    # We will query prices.db to identify all NATURALGAS contract legs during their active liquid window (volume >= 500 lots).
+    # Then we map the margins and simulate the VAMB lots vs a fixed 31-lot position.
+    history_metrics = {
+        "total_legs_simulated": 0,
+        "vamb_margin_call_legs": 0,
+        "fixed_31_margin_call_legs": 0,
+        "vamb_survival_rate_pct": 100.0,
+        "fixed_31_survival_rate_pct": 100.0,
+    }
+    if PRICE_DB_PATH.exists():
+        price_conn = sqlite3.connect(PRICE_DB_PATH)
+        price_conn.row_factory = sqlite3.Row
+        try:
+            # Query price legs with volume >= 500
+            price_rows = price_conn.execute("""
+                SELECT date, symbol, expiry, close, prev_close, volume_lots
+                FROM prices
+                WHERE symbol = 'NATURALGAS' AND volume_lots >= 500
+                ORDER BY date, expiry
+            """).fetchall()
+        finally:
+            price_conn.close()
+            
+        # Group by expiry to reject continuous stitching and analyze contract-by-contract performance
+        legs = {}
+        for r in price_rows:
+            legs.setdefault(r["expiry"], []).append({
+                "date": r["date"],
+                "close": r["close"],
+                "prev_close": r["prev_close"],
+                "volume": r["volume_lots"]
+            })
+            
+        # For each leg, trace margin constraints and run VAMB sizing simulation
+        margin_lookup = {}
+        for r in fm_series:
+            margin_lookup[(r["date"], r["expiry"])] = r
+            
+        total_legs_simulated = 0
+        vamb_margin_calls = 0
+        fixed_31_margin_calls = 0
+        
+        for exp, leg_data in legs.items():
+            if len(leg_data) < 5:
+                continue
+            total_legs_simulated += 1
+            cap_vamb = 3500000
+            cap_fixed = 3500000
+            
+            # Initial position sizing on day 1 of the active liquid window
+            day1 = leg_data[0]
+            m_day1 = margin_lookup.get((day1["date"], exp))
+            if not m_day1:
+                m_day1 = {"initial_margin_pct": 20.0, "annualized_volatility": 0.4}
+                
+            m_pct = (m_day1.get("initial_margin_pct") or 20.0) / 100.0
+            vol = m_day1.get("annualized_volatility") or 0.4
+            
+            # VAMB sizing clamped to 2.5x leverage and 31 lots absolute maximum
+            shield = min(0.35, max(0.10, 0.25 * vol))
+            vamb_lots_raw = max(1, int(math.floor(cap_vamb / (m_pct + shield) / (day1["close"] * lot_size))))
+            max_safe_lots = max(1, int(math.floor((cap_vamb * 2.5) / (day1["close"] * lot_size))))
+            vamb_lots = min(vamb_lots_raw, max_safe_lots, 31)
+            fixed_lots = 31
+            
+            leg_vamb_mc = False
+            leg_fixed_mc = False
+            
+            for day in leg_data:
+                m_day = margin_lookup.get((day["date"], exp))
+                if not m_day:
+                    m_day = {"initial_margin_pct": 20.0, "annualized_volatility": 0.4}
+                    
+                cur_m_pct = (m_day.get("initial_margin_pct") or 20.0) / 100.0
+                
+                # M2M returns
+                p_change = day["close"] - day["prev_close"]
+                
+                # Update ledger
+                cap_vamb += vamb_lots * p_change * lot_size
+                cap_fixed += fixed_lots * p_change * lot_size
+                
+                # Check margin calls
+                req_vamb = vamb_lots * day["close"] * lot_size * cur_m_pct
+                req_fixed = fixed_lots * day["close"] * lot_size * cur_m_pct
+                
+                if cap_vamb < req_vamb:
+                    leg_vamb_mc = True
+                if cap_fixed < req_fixed:
+                    leg_fixed_mc = True
+                    
+            if leg_vamb_mc:
+                vamb_margin_calls += 1
+            if leg_fixed_mc:
+                fixed_31_margin_calls += 1
+                
+        history_metrics = {
+            "total_legs_simulated": total_legs_simulated,
+            "vamb_margin_call_legs": vamb_margin_calls,
+            "fixed_31_margin_call_legs": fixed_31_margin_calls,
+            "vamb_survival_rate_pct": round((total_legs_simulated - vamb_margin_calls) / total_legs_simulated * 100, 2) if total_legs_simulated else 100.0,
+            "fixed_31_survival_rate_pct": round((total_legs_simulated - fixed_31_margin_calls) / total_legs_simulated * 100, 2) if total_legs_simulated else 100.0,
+        }
+    
+    # Save the output
+    save("vamb_analytics.json", {
+        "feb_2_2026_stress_test": feb_2_results,
+        "feb_2_2026_short_stress_test": feb_2_short_results,
+        "historical_contract_legs_backtest": history_metrics,
+        "formula": "Lots = Floor( Capital / (Initial_Margin% + Safety_Shield%) / Contract_Value )",
+        "vamb_parameters": {
+            "safety_shield_min": 0.10,
+            "safety_shield_max": 0.35,
+            "safety_shield_multiplier": 0.25
+        }
+    })
+
+
 def main():
     print("MCX Margin Dashboard — JSON Export")
     print("=" * 40)
@@ -2041,6 +2327,29 @@ def main():
 
     # ── current.json ──────────────────────────────────────────────────────────
     latest_date = max_date  # already fetched above
+    price_lookup = {}
+    if PRICE_DB_PATH.exists():
+        with sqlite3.connect(PRICE_DB_PATH) as p_conn:
+            p_conn.row_factory = sqlite3.Row
+            p_rows = p_conn.execute("""
+                SELECT symbol, expiry, close, date
+                FROM prices
+                WHERE date = ? AND symbol IN ('NATURALGAS', 'NATGASMINI')
+            """, (latest_date,)).fetchall()
+            for pr in p_rows:
+                price_lookup[(pr["symbol"], pr["expiry"])] = pr["close"]
+                
+            p_rows_fallback = p_conn.execute("""
+                SELECT symbol, expiry, close, date
+                FROM prices
+                WHERE symbol IN ('NATURALGAS', 'NATGASMINI')
+                ORDER BY date DESC
+            """).fetchall()
+            for pr in p_rows_fallback:
+                key = (pr["symbol"], pr["expiry"])
+                if key not in price_lookup:
+                    price_lookup[key] = pr["close"]
+
     result = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
     for row in _load_margin_rows(cur, "date = ?", (latest_date,), "symbol ASC, expiry ASC"):
         sym = row["symbol"]
@@ -2048,6 +2357,41 @@ def main():
         if sym not in result:
             continue
         dte = compute_dte(expiry, latest_date)
+        ann_vol = row["annualized_volatility"]
+        # Calculate safety shield
+        shield = 0.10
+        if ann_vol is not None:
+            vol = ann_vol
+            if vol > 3.0:
+                vol = vol / 100.0
+            shield = min(0.35, max(0.10, 0.25 * vol))
+            
+        price = price_lookup.get((sym, expiry))
+        live_vamb_lots_35l = 0
+        live_vamb_lots_10l = 0
+        live_vamb_lots_50l = 0
+        live_vamb_lots_100l = 0
+        if price and price > 0:
+            lot_size = 250 if sym == "NATGASMINI" else 1250
+            init_margin_pct = row["initial_margin_pct"] or 20.0
+            total_margin_req = (init_margin_pct / 100.0) + shield
+            
+            lots_35 = math.floor(350000 / (price * lot_size * total_margin_req))
+            max_35 = math.floor((350000 * 2.5) / (price * lot_size))
+            live_vamb_lots_35l = max(0, min(lots_35, max_35))
+            
+            lots_10 = math.floor(1000000 / (price * lot_size * total_margin_req))
+            max_10 = math.floor((1000000 * 2.5) / (price * lot_size))
+            live_vamb_lots_10l = max(0, min(lots_10, max_10))
+            
+            lots_50 = math.floor(5000000 / (price * lot_size * total_margin_req))
+            max_50 = math.floor((5000000 * 2.5) / (price * lot_size))
+            live_vamb_lots_50l = max(0, min(lots_50, max_50))
+            
+            lots_100 = math.floor(10000000 / (price * lot_size * total_margin_req))
+            max_100 = math.floor((10000000 * 2.5) / (price * lot_size))
+            live_vamb_lots_100l = max(0, min(lots_100, max_100))
+
         entry = {
             "expiry": expiry,
             "dte": dte,
@@ -2061,7 +2405,13 @@ def main():
             "special_short_margin_pct": row["special_short_margin_pct"],
             "delivery_margin_pct": row["delivery_margin_pct"],
             "daily_volatility": row["daily_volatility"],
-            "annualized_volatility": row["annualized_volatility"],
+            "annualized_volatility": ann_vol,
+            "vamb_safety_shield_pct": round(shield, 4),
+            "vamb_leverage_ceiling": 2.5,
+            "live_vamb_lots_35l": live_vamb_lots_35l,
+            "live_vamb_lots_10l": live_vamb_lots_10l,
+            "live_vamb_lots_50l": live_vamb_lots_50l,
+            "live_vamb_lots_100l": live_vamb_lots_100l,
         }
         result[sym].append(entry)
     # Sort by DTE ascending
@@ -2430,6 +2780,7 @@ def main():
         _export_seasonality_boxplot(cur)                                  # Item 7
         _export_stress_score(cur, fm_series, latest_date)                # Item 8 — updates current.json
         _export_event_probabilities(cur, fm_series, panic_entries, regime_params)  # Item 9
+        _export_vamb_analytics(cur, fm_series)                                      # VAMB Protocol
 
     try:
         print()

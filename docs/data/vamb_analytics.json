@@ -1,0 +1,82 @@
+{
+  "feb_2_2026_stress_test": [
+    {
+      "capital_base": 3500000,
+      "vamb_lots": 9,
+      "target_notional": 3463631.87,
+      "m2m_loss": -1236375.0,
+      "new_ledger": 2263625.0,
+      "req_margin_close": 2191291.31,
+      "margin_surplus": 72333.69,
+      "solvency": "SAFE"
+    },
+    {
+      "capital_base": 4300000,
+      "vamb_lots": 11,
+      "target_notional": 4255319.15,
+      "m2m_loss": -1511125.0,
+      "new_ledger": 2788875.0,
+      "req_margin_close": 2678244.94,
+      "margin_surplus": 110630.06,
+      "solvency": "SAFE"
+    },
+    {
+      "capital_base": 5000000,
+      "vamb_lots": 13,
+      "target_notional": 4948045.52,
+      "m2m_loss": -1785875.0,
+      "new_ledger": 3214125.0,
+      "req_margin_close": 3165198.56,
+      "margin_surplus": 48926.44,
+      "solvency": "SAFE"
+    }
+  ],
+  "feb_2_2026_short_stress_test": [
+    {
+      "capital_base": 3500000,
+      "vamb_lots": 9,
+      "target_notional": 3463631.87,
+      "m2m_profit_real": 1236375.0,
+      "m2m_profit_intraday_rms": 0.0,
+      "new_ledger_rms": 3500000.0,
+      "req_margin_close": 2191291.31,
+      "margin_surplus_rms": 1308708.69,
+      "solvency": "SAFE"
+    },
+    {
+      "capital_base": 4300000,
+      "vamb_lots": 11,
+      "target_notional": 4255319.15,
+      "m2m_profit_real": 1511125.0,
+      "m2m_profit_intraday_rms": 0.0,
+      "new_ledger_rms": 4300000.0,
+      "req_margin_close": 2678244.94,
+      "margin_surplus_rms": 1621755.06,
+      "solvency": "SAFE"
+    },
+    {
+      "capital_base": 5000000,
+      "vamb_lots": 13,
+      "target_notional": 4948045.52,
+      "m2m_profit_real": 1785875.0,
+      "m2m_profit_intraday_rms": 0.0,
+      "new_ledger_rms": 5000000.0,
+      "req_margin_close": 3165198.56,
+      "margin_surplus_rms": 1834801.44,
+      "solvency": "SAFE"
+    }
+  ],
+  "historical_contract_legs_backtest": {
+    "total_legs_simulated": 271,
+    "vamb_margin_call_legs": 29,
+    "fixed_31_margin_call_legs": 57,
+    "vamb_survival_rate_pct": 89.3,
+    "fixed_31_survival_rate_pct": 78.97
+  },
+  "formula": "Lots = Floor( Capital / (Initial_Margin% + Safety_Shield%) / Contract_Value )",
+  "vamb_parameters": {
+    "safety_shield_min": 0.1,
+    "safety_shield_max": 0.35,
+    "safety_shield_multiplier": 0.25
+  }
+}
