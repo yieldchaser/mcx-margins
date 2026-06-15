@@ -61,12 +61,10 @@ jobs:
         continue-on-error: true
 
       - name: Export dashboard JSON
-        if: github.event_name == 'workflow_dispatch' || steps.backfill.outcome == 'success'
         run: python scripts/export_json.py
 
       # ── Step 2: commit prices DB ────────────────────────────────────────────
       - name: Commit and push prices DB
-        if: github.event_name == 'workflow_dispatch' || steps.backfill.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"

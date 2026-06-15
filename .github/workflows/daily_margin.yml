@@ -57,7 +57,6 @@ jobs:
       # ── Step 3: export ──────────────────────────────────────────────────
       # Regenerate JSON if either fetch step succeeded or if manual trigger.
       - name: Export dashboard JSON
-        if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: python scripts/export_json.py
 
       # ── Step 4: alert ───────────────────────────────────────────────────
@@ -70,7 +69,6 @@ jobs:
 
       # ── Step 5: commit ──────────────────────────────────────────────────
       - name: Commit and push DB + dashboard data
-        if: github.event_name == 'workflow_dispatch' || steps.fetch_today.outcome == 'success' || steps.lookback.outcome == 'success'
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
