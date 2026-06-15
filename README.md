@@ -42,11 +42,11 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 ### 7. Data Explorer
 - **Raw Exportable Data:** A high-density, searchable, and sortable tabular interface of the combined margin + market payloads for quantitative researchers who need raw numbers.
 
-## The Volatility-Adjusted Margin Buffer (VAMB) Engine
+## The Volatility-Adjusted Margin Buffer (VAMB) & Regime-Shifting Alpha Engine (RSAE v2.0)
 
-The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** position-sizing rules inside the interactive Capital Calculator to defend retail accounts against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas.
+The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** and its evolutionary upgrade, the **Regime-Shifting Alpha Engine (RSAE v2.0)**, to protect trading capital against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas.
 
-### 1. Sizing Formula
+### 1. Classical VAMB Sizing Formula
 $$\text{Safety Shield} = \min(35\%, \max(10\%, 25\% \times \sigma_{\text{ann}}))$$
 $$\text{Total Required Margin} = \text{SPAN Margin} + \text{Safety Shield}$$
 $$\text{Position Lots (Raw)} = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times \text{Total Required Margin}} \right\rfloor$$
@@ -54,22 +54,50 @@ $$\text{Position Lots (Clamped)} = \min\left( \text{Position Lots (Raw)}, \left\
 
 *Note: The **2.5× leverage ceiling** acts as a hard stop to prevent over-leverage in artificially low-margin regimes.*
 
-### 2. Empirical Performance & Stress Testing (Feb 2026 Crash)
+### 2. RSAE v2.0 Asymmetric Sizing Engine
+RSAE v2.0 upgrades classical VAMB by introducing direction-decoupled volatility parameters, near-expiry tender week surcharges, path-dependent portfolio drawdown brakes, and dynamic margin-skew contraction.
+
+#### A. Direction-Decoupled Asymmetric Safety Shield
+Short positions face unbounded upside risk during short squeezes, requiring a wider buffer:
+$$\text{Shield} = \min\left(40\%, \max\left(s_{\text{Min}}, c_{\text{Co}} \times \sigma_{\text{ann}}\right)\right)$$
+$$\text{where } s_{\text{Min}} = \begin{cases} 0.10 & \text{for LONG} \\ 0.18 & \text{for SHORT} \end{cases}, \quad c_{\text{Co}} = \begin{cases} 0.25 & \text{for LONG} \\ 0.40 & \text{for SHORT} \end{cases}$$
+
+#### B. Near-Expiry Tender Surcharge & Taper
+To prevent near-expiry physical delivery/cash-settlement margin spikes, a linear surcharge $\tau$ and a leverage multiplier $\psi_{DTE}$ are applied during the final 7 DTE:
+$$\tau = \begin{cases} 0.08 \times \frac{8 - \max(\text{DTE}, 0)}{7} & \text{for } \text{DTE} \le 7 \\ 0 & \text{otherwise} \end{cases}$$
+$$\psi_{DTE} = \begin{cases} 0.50 & \text{for } \text{DTE} \le 3 \\ 0.75 & \text{for } \text{DTE} \le 7 \\ 1.00 & \text{otherwise} \end{cases}$$
+
+#### C. Corporate Portfolio Drawdown Brake
+To protect capital from path-dependent ruin, a risk-taper brake is applied based on portfolio drawdowns:
+$$\text{portfolioBrake} = \begin{cases} 0.40 & \text{for } \text{Drawdown} \ge 10\% \\ 0.65 & \text{for } \text{Drawdown} \ge 5\% \\ 1.00 & \text{otherwise} \end{cases}$$
+
+#### D. Compound Margin Sufficiency
+$$\text{Margin Requirement } (m_{\text{Req}}) = \text{SPAN Margin} + \text{Shield} + \tau$$
+$$\text{Raw Sized Lots } (\text{Lots}_{\text{Raw}}) = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
+
+#### E. Asymmetric Leverage Ceilings & Skew Contraction
+The effective leverage ceiling $l_{\text{eff}}$ adjusts dynamically according to market regime parameters:
+$$l_{\text{eff}} = l_{\text{Base}} \times \kappa_{OI} \times \phi_{\text{Skew}} \times \psi_{DTE} \times \text{portfolioBrake}$$
+* **Base Leverage ($l_{\text{Base}}$):** $3.25$ for LONG, $1.75$ for SHORT.
+* **OI Accumulation Boost ($\kappa_{OI}$):** $1.20$ if LONG and the 5-day continuous aggregate Open Interest trend (`oi_aggregate_build_5d`) is positive, else $1.0$.
+* **Margin-Skew Contraction ($\phi_{\text{Skew}}$):** Compresses leverage when initial margin exceeds realized volatility (clearinghouse positioning skew):
+  $$\phi_{\text{Skew}} = \min\left(1.0, \max\left(0.40, 1 - 0.15 \times \max(0, \text{marginGap} - 2.0)\right)\right)$$
+  $$\text{where } \text{marginGap} = \text{Initial Margin \%} - (\text{Realized Volatility} \times \sqrt{252})$$
+
+#### F. Dual-Firewall Clamp
+$$\text{Ceiling Lots } (\text{Lots}_{\text{Ceil}}) = \left\lfloor \frac{\text{Capital} \times l_{\text{eff}}}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
+$$\text{Final Position Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
+
+### 3. Empirical Performance & Stress Testing (Feb 2026 Crash)
 Based on a systematic day-by-day simulation of the extreme February 2026 contract collapse, entering long on Dec 29, 2025 at ₹305.20 with ₹5L capital:
 * **Max Sizing (6 lots, 4.58× leverage):** Liquidated on Dec 31, 2025 (Day 2 of trade) at ₹288.50. Final P&L: **-55.3%** (₹-2,76,750).
-* **VAMB Sizing (3 lots, 2.29× leverage):** Survived 24 additional trading days through a 20% crash, a full V-shaped recovery to ₹390.50, and only hit margin call on Feb 3, 2026 when MCX overnight hiked SPAN margins from 34% to 66%. Final P&L: **-27.7%** (₹-138,375).
+* **Classical VAMB Sizing (3 lots, 2.29× leverage):** Survived 24 additional trading days through a 20% crash, a full V-shaped recovery to ₹390.50, and only hit margin call on Feb 3, 2026 when MCX overnight hiked SPAN margins from 34% to 66%. Final P&L: **-27.7%** (₹-138,375).
+* **RSAE v2.0 Sizing:** Dynamic adjustments for drawdown thresholds and tender margins further optimize surviving lots to lock in risk reduction as drawdown boundaries are crossed.
 
-*VAMB successfully converted account destruction into a survivable drawdown.*
-
-### 3. Core Limitations
-* **Lagging Indicator:** Safety Shield relies on historical realized volatility ($\sigma_{\text{ann}}$), meaning it cannot anticipate forward-looking regime changes (e.g., overnight exchange margin hikes).
-* **Expiry Tender Surcharges:** Expiry-week tender margin add-ons (DTE $\le 7$ days) are ignored by the standard formula.
-
-### 4. Quantitative Design Critique
+### 4. Quantitative Design Critique & Opinion
 * **The $4\sigma$ Statistical Cushion:** The 25% coefficient is mathematically calibrated to absorb a $\approx 4\sigma$ daily price shock under a Gaussian framework (since $0.25 \times \sqrt{252} \approx 3.97$). Given Natural Gas's leptokurtic (fat-tailed) returns, this is an appropriate baseline, whereas lower multipliers would fail during volatility-expansion regimes.
-* **Firewall Role of the 2.5x Ceiling:** Under standard retail capital constraints (e.g., ₹5L), the 2.5x leverage ceiling binds first in most calm-market conditions. This design acts as a physical firewall, preventing over-exposure when lagged historical volatility estimators contract the Safety Shield.
-* **The Volatility-Expansion Trap:** Because the shield relies on backward-looking rolling realized volatility, it suffers from phase lag. When entering trades during extreme vol-compression (calm periods), VAMB will recommend maximum position sizes, exposing the trader just before vol-expansion crashes occur.
-* **Asymmetry Neglect:** VAMB treats longs and shorts symmetrically. However, Natural Gas short positions have mathematically unbounded risk and should be capped at lower leverage levels (1.5x–2.0x max) compared to longs.
+* **Firewall Role of the Leverage Ceiling:** The dynamic $l_{\text{eff}}$ ceiling acts as a physical firewall, preventing over-exposure when lagged historical volatility estimators contract the Safety Shield.
+* **Asymmetry and Tail-Risk Management:** Decoupling long and short parameters resolves the unbounded tail risk of short commodity squeeze events. Symmetrically sized engines are fundamentally flawed because commodity price distributions exhibit positive skewness (right-tailed risk). RSAE v2.0 addresses this directly by scaling down short base leverage to $1.75\times$ and widening the short safety shield cushion ($18\%$ floor).
 
 ---
 
