@@ -1991,7 +1991,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 </style>
 
 <script>
-let _ttTimer; let _ttMouseX = 0, _ttMouseY = 0; let _ttActiveTrigger = null;
+let _ttTimer; let _ttMouseX = 0, _ttMouseY = 0; let _ttActiveTrigger = null; let _ttShowScrollTop = 0, _ttShowScrollLeft = 0;
 
 // Escape double quotes so HTML content is safe inside data-attr="..."
 function escAttr(s) { return s ? s.replace(/"/g, '&quot;') : ''; }
@@ -7548,6 +7548,8 @@ function showTooltip(key, triggerEl, event) {
   if (!el) return;
   clearTimeout(_ttTimer);
   _ttActiveTrigger = triggerEl || null;
+  _ttShowScrollTop = window.scrollY || document.documentElement.scrollTop;
+  _ttShowScrollLeft = window.scrollX || document.documentElement.scrollLeft;
   document.getElementById('ttTitle').textContent = titleText;
   document.getElementById('ttBody').innerHTML = bodyText;
   el.classList.add('visible');
@@ -7627,7 +7629,13 @@ window.addEventListener('resize', () => {
 
 window.addEventListener('scroll', () => {
   const el = document.getElementById('tooltipOverlay');
-  if (el && el.classList.contains('visible')) hideTooltipNow();
+  if (el && el.classList.contains('visible')) {
+    const curScrollTop = window.scrollY || document.documentElement.scrollTop;
+    const curScrollLeft = window.scrollX || document.documentElement.scrollLeft;
+    if (Math.abs(curScrollTop - _ttShowScrollTop) > 8 || Math.abs(curScrollLeft - _ttShowScrollLeft) > 8) {
+      hideTooltipNow();
+    }
+  }
 }, { passive: true });
 
 // Back to top
