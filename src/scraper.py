@@ -172,6 +172,13 @@ def parse_api_response(response_text: str) -> list[dict]:
         return []
 
 
+def get_any(d: dict, *keys):
+    for k in keys:
+        if k in d and d[k] is not None:
+            return d[k]
+    return None
+
+
 def normalize_row(raw_row: dict, date_str: str) -> dict | None:
     """
     Normalize a raw API row into a standard format.
@@ -181,7 +188,7 @@ def normalize_row(raw_row: dict, date_str: str) -> dict | None:
     if not isinstance(raw_row, dict):
         return None
 
-    symbol = (raw_row.get("symbol") or raw_row.get("Symbol") or "").strip()
+    symbol = (get_any(raw_row, "symbol", "Symbol") or "").strip()
     if not symbol:
         return None
 
@@ -189,33 +196,34 @@ def normalize_row(raw_row: dict, date_str: str) -> dict | None:
     if symbol.lower() in ("symbol", "contract", "commodity", ""):
         return None
 
-    expiry = (raw_row.get("expiryDate") or raw_row.get("ExpiryDate") or "").strip()
+    expiry = (get_any(raw_row, "expiryDate", "ExpiryDate") or "").strip()
 
     # Use elmLong/elmShort or ELMLong/ELMShort
-    elm = raw_row.get("elmLong") or raw_row.get("elmShort") or raw_row.get("ELMLong") or raw_row.get("ELMShort")
+    elm = get_any(raw_row, "elmLong", "elmShort", "ELMLong", "ELMShort")
 
     # Volatility keys (note: spelling in new API is 'aailyVolatility'!)
-    daily_vol = raw_row.get("dailyVolatility") or raw_row.get("aailyVolatility") or raw_row.get("DailyVolatility")
-    ann_vol = raw_row.get("annualizedVolatility") or raw_row.get("AnnualizedVolatility")
+    daily_vol = get_any(raw_row, "dailyVolatility", "aailyVolatility", "DailyVolatility")
+    ann_vol = get_any(raw_row, "annualizedVolatility", "AnnualizedVolatility")
 
     return {
         "date": date_str,
         "symbol": symbol,
         "expiry": expiry,
-        "instrument_id": raw_row.get("instrumentID") or raw_row.get("InstrumentID") or "",
-        "file_id": raw_row.get("fileID") or raw_row.get("FileID"),
-        "initial_margin_pct": raw_row.get("initialMargin") or raw_row.get("InitialMargin"),
+        "instrument_id": get_any(raw_row, "instrumentID", "InstrumentID", "instrumentId") or "",
+        "file_id": get_any(raw_row, "fileID", "FileID"),
+        "initial_margin_pct": get_any(raw_row, "initialMargin", "InitialMargin"),
         "elm_pct": elm,
-        "tender_margin_pct": raw_row.get("tenderMargin") or raw_row.get("TenderMargin"),
-        "total_margin_pct": raw_row.get("totalMargin") or raw_row.get("TotalMargin"),
-        "additional_long_margin_pct": raw_row.get("additionalLongMargin") or raw_row.get("AdditionalLongMargin"),
-        "additional_short_margin_pct": raw_row.get("additionalShortMargin") or raw_row.get("AdditionalShortMargin"),
-        "special_long_margin_pct": raw_row.get("specialLongMargin") or raw_row.get("SpecialLongMargin"),
-        "special_short_margin_pct": raw_row.get("specialShortMargin") or raw_row.get("SpecialShortMargin"),
-        "delivery_margin_pct": raw_row.get("deliveryMargin") or raw_row.get("DeliveryMargin"),
+        "tender_margin_pct": get_any(raw_row, "tenderMargin", "TenderMargin"),
+        "total_margin_pct": get_any(raw_row, "totalMargin", "TotalMargin"),
+        "additional_long_margin_pct": get_any(raw_row, "additionalLongMargin", "AdditionalLongMargin"),
+        "additional_short_margin_pct": get_any(raw_row, "additionalShortMargin", "AdditionalShortMargin"),
+        "special_long_margin_pct": get_any(raw_row, "specialLongMargin", "SpecialLongMargin"),
+        "special_short_margin_pct": get_any(raw_row, "specialShortMargin", "SpecialShortMargin"),
+        "delivery_margin_pct": get_any(raw_row, "deliveryMargin", "DeliveryMargin"),
         "daily_volatility": daily_vol,
         "annualized_volatility": ann_vol,
     }
+
 
 
 def parse_pct(val) -> float | None:
