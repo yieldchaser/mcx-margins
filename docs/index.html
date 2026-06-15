@@ -8725,7 +8725,8 @@ function _runMacroSimulationCore() {
   }
 
   const targetScaleType = isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet') ? 'logarithmic' : 'linear';
-  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView || _macroChart.options.scales.y.type !== targetScaleType;
+  const currentScaleType = (_macroChart && _macroChart.scales && _macroChart.scales.y) ? _macroChart.scales.y.type : null;
+  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView || currentScaleType !== targetScaleType;
   if (viewNeedsNewChart) {
     if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
     const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
