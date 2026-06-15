@@ -3491,6 +3491,9 @@ chartScript.onload = () => {
   });
 
   renderOverview();
+  if (typeof runMacroSimulation === 'function') {
+    runMacroSimulation();
+  }
 };
 document.head.appendChild(chartScript);
 
@@ -8246,6 +8249,7 @@ let _macroChart = null;
 let _macroTaxModeVal = 'annual';
 let _macroActiveView = 'corpus';
 let _macroInited = false;
+let _macroDebounceTimer = null;
 
 // Read CSS vars once (they never change after page load)
 const _macroCssText  = (typeof getComputedStyle === 'function') ? (getComputedStyle(document.body).getPropertyValue('--text')      || '#e6edf3').trim() : '#e6edf3';
@@ -8455,7 +8459,9 @@ function runMacroSimulation() {
 }
 
 function _runMacroSimulationCore() {
-  const els = getMacroSimEls();
+  if (typeof Chart === 'undefined') return;
+  try {
+    const els = getMacroSimEls();
   const initCap = Math.max(0, parseFloat(els.initCap.value) || 0);
   const freq = Math.max(0, parseFloat(els.freq.value) || 1.8);
   const horizonYears = Math.max(1, parseInt(els.horizon.value, 10) || 15);
@@ -8814,6 +8820,9 @@ function _runMacroSimulationCore() {
       else _macroChart.data.datasets.push(dataset);
     });
     _macroChart.update('none');
+  }
+  } catch (err) {
+    console.error("Macro Sim Error:", err);
   }
 }
 
