@@ -47,9 +47,13 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** and its evolutionary upgrade, the **Regime-Shifting Alpha Engine (RSAE v2.0)**, to protect trading capital against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas.
 
 ### 1. Classical VAMB Sizing Formula
-$$\text{Safety Shield} = \min(35\%, \max(10\%, 25\% \times \sigma_{\text{ann}}))$$
+
+$$\text{Safety Shield} = \min(0.35, \max(0.10, 0.25 \times \sigma_{\text{ann}}))$$
+
 $$\text{Total Required Margin} = \text{SPAN Margin} + \text{Safety Shield}$$
+
 $$\text{Position Lots (Raw)} = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times \text{Total Required Margin}} \right\rfloor$$
+
 $$\text{Position Lots (Clamped)} = \min\left( \text{Position Lots (Raw)}, \left\lfloor \frac{\text{Capital} \times 2.5}{\text{Price} \times \text{Lot Size}} \right\rfloor \right)$$
 
 *Note: The **2.5× leverage ceiling** acts as a hard stop to prevent over-leverage in artificially low-margin regimes.*
@@ -59,33 +63,46 @@ RSAE v2.0 upgrades classical VAMB by introducing direction-decoupled volatility 
 
 #### A. Direction-Decoupled Asymmetric Safety Shield
 Short positions face unbounded upside risk during short squeezes, requiring a wider buffer:
-$$\text{Shield} = \min\left(40\%, \max\left(s_{\text{Min}}, c_{\text{Co}} \times \sigma_{\text{ann}}\right)\right)$$
+
+$$\text{Shield} = \min\left(0.40, \max\left(s_{\text{Min}}, c_{\text{Co}} \times \sigma_{\text{ann}}\right)\right)$$
+
 $$\text{where } s_{\text{Min}} = \begin{cases} 0.10 & \text{for LONG} \\ 0.18 & \text{for SHORT} \end{cases}, \quad c_{\text{Co}} = \begin{cases} 0.25 & \text{for LONG} \\ 0.40 & \text{for SHORT} \end{cases}$$
 
 #### B. Near-Expiry Tender Surcharge & Taper
-To prevent near-expiry physical delivery/cash-settlement margin spikes, a linear surcharge $\tau$ and a leverage multiplier $\psi_{DTE}$ are applied during the final 7 DTE:
+To prevent near-expiry physical delivery/cash-settlement margin spikes, a linear surcharge $\tau$ and a leverage multiplier $\psi_{\text{DTE}}$ are applied during the final 7 DTE:
+
 $$\tau = \begin{cases} 0.08 \times \frac{8 - \max(\text{DTE}, 0)}{7} & \text{for } \text{DTE} \le 7 \\ 0 & \text{otherwise} \end{cases}$$
-$$\psi_{DTE} = \begin{cases} 0.50 & \text{for } \text{DTE} \le 3 \\ 0.75 & \text{for } \text{DTE} \le 7 \\ 1.00 & \text{otherwise} \end{cases}$$
+
+$$\psi_{\text{DTE}} = \begin{cases} 0.50 & \text{for } \text{DTE} \le 3 \\ 0.75 & \text{for } \text{DTE} \le 7 \\ 1.00 & \text{otherwise} \end{cases}$$
 
 #### C. Corporate Portfolio Drawdown Brake
 To protect capital from path-dependent ruin, a risk-taper brake is applied based on portfolio drawdowns:
-$$\text{portfolioBrake} = \begin{cases} 0.40 & \text{for } \text{Drawdown} \ge 10\% \\ 0.65 & \text{for } \text{Drawdown} \ge 5\% \\ 1.00 & \text{otherwise} \end{cases}$$
+
+$$\text{portfolioBrake} = \begin{cases} 0.40 & \text{for } \text{Drawdown} \ge 0.10 \\ 0.65 & \text{for } \text{Drawdown} \ge 0.05 \\ 1.00 & \text{otherwise} \end{cases}$$
 
 #### D. Compound Margin Sufficiency
+
 $$\text{Margin Requirement } (m_{\text{Req}}) = \text{SPAN Margin} + \text{Shield} + \tau$$
+
 $$\text{Raw Sized Lots } (\text{Lots}_{\text{Raw}}) = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
 
 #### E. Asymmetric Leverage Ceilings & Skew Contraction
 The effective leverage ceiling $l_{\text{eff}}$ adjusts dynamically according to market regime parameters:
-$$l_{\text{eff}} = l_{\text{Base}} \times \kappa_{OI} \times \phi_{\text{Skew}} \times \psi_{DTE} \times \text{portfolioBrake}$$
+
+$$l_{\text{eff}} = l_{\text{Base}} \times \kappa_{\text{OI}} \times \phi_{\text{Skew}} \times \psi_{\text{DTE}} \times \text{portfolioBrake}$$
+
 * **Base Leverage ($l_{\text{Base}}$):** $3.25$ for LONG, $1.75$ for SHORT.
-* **OI Accumulation Boost ($\kappa_{OI}$):** $1.20$ if LONG and the 5-day continuous aggregate Open Interest trend (`oi_aggregate_build_5d`) is positive, else $1.0$.
+* **OI Accumulation Boost ($\kappa_{\text{OI}}$):** $1.20$ if LONG and the 5-day continuous aggregate Open Interest trend (`oi_aggregate_build_5d`) is positive, else $1.0$.
 * **Margin-Skew Contraction ($\phi_{\text{Skew}}$):** Compresses leverage when initial margin exceeds realized volatility (clearinghouse positioning skew):
+
   $$\phi_{\text{Skew}} = \min\left(1.0, \max\left(0.40, 1 - 0.15 \times \max(0, \text{marginGap} - 2.0)\right)\right)$$
-  $$\text{where } \text{marginGap} = \text{Initial Margin \%} - (\text{Realized Volatility} \times \sqrt{252})$$
+
+  $$\text{where } \text{marginGap} = \text{Initial Margin Percent} - (\text{Realized Volatility} \times \sqrt{252})$$
 
 #### F. Dual-Firewall Clamp
+
 $$\text{Ceiling Lots } (\text{Lots}_{\text{Ceil}}) = \left\lfloor \frac{\text{Capital} \times l_{\text{eff}}}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
+
 $$\text{Final Position Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
 
 ### 3. Empirical Performance & Stress Testing (Feb 2026 Crash)
