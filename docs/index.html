@@ -1570,16 +1570,30 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
           <div class="calc-field" style="margin-bottom: 12px;">
             <label class="calc-field__label" for="macroInitCap">Starting Capital (₹)</label>
-            <input type="number" id="macroInitCap" class="calc-input calc-input--mono" value="3500000" step="100000" min="0" inputmode="numeric">
+            <div class="calc-capital-row">
+              <input type="number" id="macroInitCap" class="calc-input calc-input--mono" value="3500000" step="100000" min="0" inputmode="numeric">
+              <div class="calc-quick-btns has-tooltip" data-tooltip-key="macro-capital-presets" role="group" aria-label="Capital presets">
+                <button type="button" class="calc-quick-btn is-active" data-cap="3500000">35L</button>
+                <button type="button" class="calc-quick-btn" data-cap="10000000">1Cr</button>
+                <button type="button" class="calc-quick-btn" data-cap="50000000">5Cr</button>
+                <button type="button" class="calc-quick-btn" data-cap="100000000">10Cr</button>
+              </div>
+            </div>
           </div>
 
           <div class="calc-grid--duo" style="margin-bottom: 12px;">
             <div class="calc-field">
               <label class="calc-field__label" for="macroFreq">Frequency (Trades/Year)</label>
               <select id="macroFreq" class="calc-select">
-                <option value="1.0">1.0 Trades/Yr</option>
-                <option value="1.8" selected>1.8 Trades/Yr</option>
+                <option value="0.5">0.5 Trades/Yr (Bi-annual)</option>
+                <option value="1.0">1.0 Trades/Yr (Annual)</option>
+                <option value="1.5">1.5 Trades/Yr</option>
+                <option value="1.8" selected>1.8 Trades/Yr (Baseline)</option>
                 <option value="2.0">2.0 Trades/Yr</option>
+                <option value="3.0">3.0 Trades/Yr</option>
+                <option value="4.0">4.0 Trades/Yr (Quarterly)</option>
+                <option value="6.0">6.0 Trades/Yr (Bi-monthly)</option>
+                <option value="12.0">12.0 Trades/Yr (Monthly)</option>
               </select>
             </div>
             <div class="calc-field">
@@ -1691,7 +1705,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
         <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-auditing" style="cursor: help;">Reality &amp; Compliance Auditing</div>
         <div class="compliance-note compliance-note--danger has-tooltip" data-tooltip-key="macro-auditing">
-          <strong>LRS &amp; Leverage Compliance:</strong> Reserve Bank of India LRS margin guidelines bar margin/leveraged trading for retail outward remittances. Corporate accounts structured under Section 115BAA with approved trading charters must verify that MCX leverage parameters align with corporate treasury guidelines.
+          <strong>SEBI Peak Margin Compliance:</strong> SEBI mandates 100% upfront margin collection (Initial Margin + ELM) by clearing members. Peak margin requirements are monitored intraday; any overnight deficit triggers mandatory short-collection penalties. Corporate treasury guidelines must align with SEBI peak buffers.
         </div>
         <div class="compliance-note compliance-note--warn has-tooltip" data-tooltip-key="macro-surcharge-thresholds">
           <strong>Taxation Surcharge Thresholds:</strong> The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply under classical Indian tax brackets.
@@ -7898,8 +7912,16 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
     body: `Configure the initial conditions: starting capital, trading frequency, margin requirements, captured price swings, and the catastrophic gap-risk buffer.`
   },
   "macro-auditing": {
-    title: "LRS & Leverage Compliance Audit",
-    body: `Reserve Bank of India LRS margin guidelines bar margin/leveraged trading for retail outward remittances. Corporate accounts structured under Section 115BAA with approved trading charters must verify that MCX leverage parameters align with corporate treasury guidelines.`
+    title: "SEBI Peak Margin Compliance",
+    body: `SEBI mandates 100% upfront margin collection (Initial Margin + ELM) by clearing members. Peak margin requirements are monitored intraday; any overnight deficit triggers mandatory short-collection penalties. Corporate accounts must ensure adequate treasury buffers to prevent clearing penalty strikes.`
+  },
+  "macro-capital-presets": {
+    title: "Capital Presets",
+    body: `Select a starting capital amount:<br>
+• <strong>35L:</strong> baseline model capital (₹35 Lakhs)<br>
+• <strong>1Cr:</strong> corporate treasury start (₹1 Crore)<br>
+• <strong>5Cr:</strong> large-scale commodity fund (₹5 Crores)<br>
+• <strong>10Cr:</strong> high-volume institutional allocation (₹10 Crores).`
   },
   "macro-surcharge-thresholds": {
     title: "Taxation Surcharge Thresholds",
@@ -8085,6 +8107,21 @@ function initMacroSimulator() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => runMacroSimulation());
     if (el && el.tagName === 'SELECT') el.addEventListener('change', () => runMacroSimulation());
+  });
+
+  // Capital quick-preset buttons for Macro Simulator
+  document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cap = parseInt(btn.dataset.cap, 10) || 0;
+      document.getElementById('macroInitCap').value = cap;
+      document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      runMacroSimulation();
+    });
+  });
+
+  document.getElementById('macroInitCap')?.addEventListener('input', () => {
+    document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
   });
 
   // Sliders with value label updates
