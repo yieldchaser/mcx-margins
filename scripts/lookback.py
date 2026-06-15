@@ -109,9 +109,9 @@ def main():
             print(f"[lookback] {date_str}: API returned 0 records — treating as holiday/non-trading day")
             holidays.append(date_str)
 
-    # ── Summary ──────────────────────────────────────────────────────────────
+    # -- Summary --------------------------------------------------------------
     print()
-    print("[lookback] ── Summary ──────────────────────────────────────────")
+    print("[lookback] -- Summary ------------------------------------------")
     print(f"[lookback]   Weekdays audited : {len(dates)}")
     print(f"[lookback]   Already present  : {len(dates) - len(gaps)}")
     print(f"[lookback]   Gaps found       : {len(gaps)}")
@@ -120,7 +120,7 @@ def main():
         print(f"[lookback]   Filled           : {filled} ({total_filled} records)")
         if holidays:
             print(f"[lookback]   Holidays/empty   : {holidays}")
-    print("[lookback] ─────────────────────────────────────────────────────")
+    print("[lookback] -----------------------------------------------------")
 
     sys.exit(0 if total_filled > 0 else 2)
 
