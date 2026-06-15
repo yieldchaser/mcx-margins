@@ -11666,13 +11666,27 @@
     "symbol": "NATGASMINI",
     "expiry": "25JUN2026",
     "dte": 13,
-    "initial_margin_pct": 16.11,
-    "total_margin_pct": 16.11,
+    "initial_margin_pct": 16.17,
+    "total_margin_pct": 16.17,
     "elm_pct": 1.25,
-    "tender_margin_pct": 0.0,
-    "daily_volatility": 0.025417,
-    "annualized_volatility": 0.401878,
-    "vamb_safety_shield_pct": 0.1005,
+    "tender_margin_pct": null,
+    "daily_volatility": null,
+    "annualized_volatility": 0.403111,
+    "vamb_safety_shield_pct": 0.1008,
+    "vamb_leverage_ceiling": 2.5
+  },
+  {
+    "date": "2026-06-15",
+    "symbol": "NATGASMINI",
+    "expiry": "25JUN2026",
+    "dte": 10,
+    "initial_margin_pct": 16.32,
+    "total_margin_pct": 16.32,
+    "elm_pct": 1.25,
+    "tender_margin_pct": null,
+    "daily_volatility": null,
+    "annualized_volatility": 0.406811,
+    "vamb_safety_shield_pct": 0.1017,
     "vamb_leverage_ceiling": 2.5
   }
 ]

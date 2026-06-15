@@ -58678,13 +58678,27 @@
     "symbol": "NATURALGAS",
     "expiry": "25JUN2026",
     "dte": 13,
-    "initial_margin_pct": 16.35,
-    "total_margin_pct": 16.35,
+    "initial_margin_pct": 16.4,
+    "total_margin_pct": 16.4,
     "elm_pct": 1.25,
-    "tender_margin_pct": 0.0,
-    "daily_volatility": 0.025768,
-    "annualized_volatility": 0.407428,
-    "vamb_safety_shield_pct": 0.1019,
+    "tender_margin_pct": null,
+    "daily_volatility": null,
+    "annualized_volatility": 0.408661,
+    "vamb_safety_shield_pct": 0.1022,
+    "vamb_leverage_ceiling": 2.5
+  },
+  {
+    "date": "2026-06-15",
+    "symbol": "NATURALGAS",
+    "expiry": "25JUN2026",
+    "dte": 10,
+    "initial_margin_pct": 16.53,
+    "total_margin_pct": 16.53,
+    "elm_pct": 1.25,
+    "tender_margin_pct": null,
+    "daily_volatility": null,
+    "annualized_volatility": 0.411697,
+    "vamb_safety_shield_pct": 0.1029,
     "vamb_leverage_ceiling": 2.5
   }
 ]
