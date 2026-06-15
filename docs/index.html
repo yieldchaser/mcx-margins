@@ -6925,7 +6925,7 @@ const TOOLTIPS = {
   },
   "calc-lotmode": {
     title: "Lot Sizing Mode",
-    body: `<strong>Max Possible</strong> — uses 100% of capital toward initial margin. Highest leverage, highest margin-call risk on hikes.<br><strong>Risk Safe (50% Util)</strong> — sizes to ~50% of max so a margin hike doesn't immediately blow you up.<br><strong>Custom Lots</strong> — you choose the lot count. Calculator warns if it exceeds max.`
+    body: `<strong>Max Possible</strong> — uses 100% of capital toward initial margin. Highest leverage, highest margin-call risk on hikes.<br><strong>Risk Safe (50% Util)</strong> — sizes to ~50% of max so a margin hike doesn't immediately blow you up.<br><strong>Volatility-Adjusted (VAMB)</strong> — sizes lots using a dynamic safety buffer on top of the exchange SPAN margin. The buffer (Safety Shield) is calibrated to annualized volatility:<br><br>&nbsp;&nbsp;<em>Shield = min(35%, max(10%, 25% × Ann.Vol))</em><br>&nbsp;&nbsp;<em>Total Req% = SPAN Margin% + Shield%</em><br>&nbsp;&nbsp;<em>Lots = Floor( Capital ÷ (Price × LotSize × Total Req%) )</em><br><br>A hard <strong>2.5× leverage ceiling</strong> then clamps the result — so even in low-margin regimes the notional exposure never exceeds 2.5× your capital. When the ceiling bites, the ribbon shows <em>ACTIVE (Clamped)</em>.<br><br>This is the recommended mode for volatile contracts like NATURALGAS. It automatically reduces position size when volatility spikes (expanding the shield) and allows larger size when the market is calm.<br><strong>Custom Lots</strong> — you choose the lot count. Calculator warns if it exceeds max.`
   },
   "calc-customlots": {
     title: "Custom Lots",
