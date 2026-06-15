@@ -1499,6 +1499,192 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
 
+    <!-- ── 10-Year Multi-Regime Macro Compounding Simulator ── -->
+    <div class="card" style="margin-top:24px;" id="macroCompoundingCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0; font-size: 13px;">10-Year Multi-Regime Macro Simulator</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none;">
+            <input type="checkbox" id="macroLogScaleToggle" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;">
+            Logarithmic Scale
+          </label>
+        </div>
+      </div>
+
+      <!-- High-Density KPI Header Cards -->
+      <div class="macro-grid-kpis">
+        <div class="macro-kpi-card macro-kpi-card--success">
+          <div class="macro-kpi-label">Terminal Wealth</div>
+          <div class="macro-kpi-value" id="kpiMacroTerminalWealth">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">10y horizon</div>
+        </div>
+        <div class="macro-kpi-card macro-kpi-card--success">
+          <div class="macro-kpi-label">After-Tax CAGR</div>
+          <div class="macro-kpi-value" id="kpiMacroCAGR">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroCAGRSub">Net compound return</div>
+        </div>
+        <div class="macro-kpi-card macro-kpi-card--accent">
+          <div class="macro-kpi-label">Total Tax Paid</div>
+          <div class="macro-kpi-value" id="kpiMacroTotalTax">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroTotalTaxSub">Corporate tax swept</div>
+        </div>
+        <div class="macro-kpi-card macro-kpi-card--accent">
+          <div class="macro-kpi-label">Leverage Firewall</div>
+          <div class="macro-kpi-value" id="kpiMacroLeverage">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroLeverageSub">L<sub>max</sub> ceiling</div>
+        </div>
+        <div class="macro-kpi-card macro-kpi-card--orange">
+          <div class="macro-kpi-label">Liquid Shield</div>
+          <div class="macro-kpi-value" id="kpiMacroShield">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroShieldSub">Idle cash cushion</div>
+        </div>
+        <div class="macro-kpi-card macro-kpi-card--orange">
+          <div class="macro-kpi-label">ADV Saturation</div>
+          <div class="macro-kpi-value" id="kpiMacroSaturation">—</div>
+          <div class="macro-kpi-sub" id="kpiMacroSaturationSub">Capacity limit check</div>
+        </div>
+      </div>
+
+      <!-- Main Columns Grid -->
+      <div class="calc-grid">
+        <!-- Column 1: Control Panel -->
+        <div class="calc-section">
+          <div class="calc-section__kicker">Simulator Setup</div>
+
+          <div class="calc-field" style="margin-bottom: 12px;">
+            <label class="calc-field__label" for="macroInitCap">Starting Capital (₹)</label>
+            <input type="number" id="macroInitCap" class="calc-input calc-input--mono" value="3500000" step="100000" min="0" inputmode="numeric">
+          </div>
+
+          <div class="calc-grid--duo" style="margin-bottom: 12px;">
+            <div class="calc-field">
+              <label class="calc-field__label" for="macroFreq">Frequency (Trades/Year)</label>
+              <select id="macroFreq" class="calc-select">
+                <option value="1.0">1.0 Trades/Yr</option>
+                <option value="1.8" selected>1.8 Trades/Yr</option>
+                <option value="2.0">2.0 Trades/Yr</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label class="calc-field__label" for="macroMargin">Base Margin (%)</label>
+              <input type="number" id="macroMargin" class="calc-input calc-input--mono" value="30" step="1" min="1" max="100" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="calc-field" style="margin-bottom: 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label class="calc-field__label" for="macroMove">Captured Swing (ΔP<sub>move</sub>)</label>
+              <span id="macroMoveVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">18%</span>
+            </div>
+            <input type="range" id="macroMove" min="5" max="50" value="18" style="accent-color:var(--accent);width:100%;cursor:pointer;">
+          </div>
+
+          <div class="calc-field" style="margin-bottom: 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label class="calc-field__label" for="macroBuffer">Catastrophic Buffer (ΔP<sub>adverse</sub>)</label>
+              <span id="macroBufferVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">25%</span>
+            </div>
+            <input type="range" id="macroBuffer" min="5" max="40" value="25" style="accent-color:var(--accent);width:100%;cursor:pointer;">
+          </div>
+
+          <div class="calc-field" style="margin-bottom: 16px;">
+            <label class="calc-field__label">Taxation Mode</label>
+            <div class="calc-toggle" id="macroTaxMode" data-value="annual" role="radiogroup" aria-label="Tax mode" style="width:100%; max-width: 260px;">
+              <span class="calc-toggle__pill" style="width: calc(50% - 2px);" aria-hidden="true"></span>
+              <button type="button" id="macroTaxModeAnnual" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="true" data-mode="annual">Annual Sweep</button>
+              <button type="button" id="macroTaxModePerTrade" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="false" data-mode="pertrade">Per-Trade Drag</button>
+            </div>
+          </div>
+
+          <div class="calc-field" style="margin-bottom: 16px; flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="macroCompareUnlevered" style="accent-color:var(--accent); width:14px; height:14px; cursor:pointer;">
+            <label for="macroCompareUnlevered" style="font-size: 12px; color: var(--text-muted); cursor: pointer;">Compare vs. Unlevered Equivalent</label>
+          </div>
+
+          <!-- Collapsible Advanced Section -->
+          <details id="macroAdvancedDetails" style="width: 100%; margin-bottom: 12px;">
+            <summary class="advanced-summary">
+              <span>Advanced Constants</span>
+              <span id="macroAdvancedChevron">▾</span>
+            </summary>
+            <div class="advanced-details">
+              <div class="calc-field">
+                <label class="calc-field__label" for="macroConstRoll">Roll Cost (%)</label>
+                <input type="number" id="macroConstRoll" class="calc-input calc-input--mono" value="0.50" step="0.05" min="0">
+              </div>
+              <div class="calc-field">
+                <label class="calc-field__label" for="macroConstTxn">Transaction Cost (%)</label>
+                <input type="number" id="macroConstTxn" class="calc-input calc-input--mono" value="0.06" step="0.01" min="0">
+              </div>
+              <div class="calc-field">
+                <label class="calc-field__label" for="macroConstYield">Idle Fund Yield (%)</label>
+                <input type="number" id="macroConstYield" class="calc-input calc-input--mono" value="6.50" step="0.10" min="0">
+              </div>
+              <div class="calc-field">
+                <label class="calc-field__label" for="macroConstTax">Corporate Tax Rate (%)</label>
+                <input type="number" id="macroConstTax" class="calc-input calc-input--mono" value="25.168" step="0.01" min="0">
+              </div>
+            </div>
+          </details>
+
+        </div>
+
+        <!-- Column 2 & 3: Tabs & Chart & Table -->
+        <div class="calc-section" style="grid-column: span 2;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+            <div class="calc-section__kicker" id="macroChartTitle">Ledger Value Projection</div>
+            <!-- Chart Tabs -->
+            <div class="calc-chart-tabs" id="macroChartTabs" role="tablist" aria-label="Simulator chart view">
+              <button type="button" class="calc-chart-tab" role="tab" data-view="corpus" aria-pressed="true" style="padding: 4px 8px; font-size: 11px;">Corpus Growth</button>
+              <button type="button" class="calc-chart-tab" role="tab" data-view="drag" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Annual Drag</button>
+              <button type="button" class="calc-chart-tab" role="tab" data-view="grossnet" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Gross vs Net</button>
+              <button type="button" class="calc-chart-tab" role="tab" data-view="leverage" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Leverage Path</button>
+            </div>
+          </div>
+
+          <div class="calc-chart-shell" style="height: 320px; position: relative;">
+            <canvas id="chartMacroSimulation"></canvas>
+          </div>
+
+          <!-- Compounding Schedule Table -->
+          <div style="margin-top: 24px;">
+            <div class="calc-section__kicker">Compounding Schedule &amp; Year-Wise Goals</div>
+            <div class="macro-table-wrapper">
+              <table class="macro-table" id="macroScheduleTable">
+                <thead>
+                  <tr>
+                    <th>Year</th>
+                    <th>Trades</th>
+                    <th>Gross Return</th>
+                    <th>Tax Paid</th>
+                    <th>Expenses</th>
+                    <th>Ending Corpus</th>
+                  </tr>
+                </thead>
+                <tbody id="macroScheduleBody">
+                  <!-- Generated Dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reality & Compliance Notes -->
+      <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <div class="calc-section__kicker">Reality &amp; Compliance Auditing</div>
+        <div class="compliance-note compliance-note--danger">
+          <strong>LRS &amp; Leverage Compliance:</strong> Reserve Bank of India LRS margin guidelines bar margin/leveraged trading for retail outward remittances. Corporate accounts structured under Section 115BAA with approved trading charters must verify that MCX leverage parameters align with corporate treasury guidelines.
+        </div>
+        <div class="compliance-note compliance-note--warn">
+          <strong>Taxation Surcharge Thresholds:</strong> The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply under classical Indian tax brackets.
+        </div>
+        <div class="compliance-note compliance-note--info">
+          <strong>Capacity Sizing Firewall:</strong> The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div id="tab-seasonality" class="tab-content">
@@ -1987,6 +2173,164 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   display: flex; justify-content: space-between;
   margin-top: 18px; margin-bottom: 16px;
   font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--text);
+}
+
+/* ── Macro Compounding Simulator Styling ── */
+#macroCompoundingCard {
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, rgba(33,38,45,0.7) 0%, rgba(22,27,34,0.7) 100%);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  margin-top: 24px;
+}
+#macroCompoundingCard:hover {
+  border-color: rgba(56,139,253,0.4);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.macro-grid-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.macro-kpi-card {
+  background: rgba(33,38,45,0.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: all 0.2s ease;
+}
+.macro-kpi-card:hover {
+  border-color: rgba(56,139,253,0.25);
+  transform: translateY(-1px);
+}
+.macro-kpi-card--success {
+  border-left: 3px solid var(--accent-green);
+}
+.macro-kpi-card--accent {
+  border-left: 3px solid var(--accent);
+}
+.macro-kpi-card--orange {
+  border-left: 3px solid var(--accent-orange);
+}
+.macro-kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.macro-kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.macro-kpi-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.macro-table-wrapper {
+  overflow-x: auto;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(22,27,34,0.2);
+}
+.macro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.macro-table th, .macro-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.macro-table th {
+  background: rgba(33,38,45,0.6);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.macro-table tr:last-child td {
+  border-bottom: none;
+}
+.macro-table tr:hover td {
+  background: rgba(56,139,253,0.05);
+}
+.macro-table tr.total-row td {
+  font-weight: 700;
+  background: rgba(33,38,45,0.4);
+  border-top: 2px solid var(--border);
+}
+#macroTaxMode[data-value="annual"] .calc-toggle__pill {
+  transform: translateX(0);
+}
+#macroTaxMode[data-value="pertrade"] .calc-toggle__pill {
+  transform: translateX(100%);
+}
+.compliance-note {
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-left: 4px solid transparent;
+}
+.compliance-note--danger {
+  background: rgba(248,81,73,0.06);
+  border: 1px solid rgba(248,81,73,0.15);
+  border-left: 4px solid var(--accent-red);
+  color: var(--text);
+}
+.compliance-note--warn {
+  background: rgba(210,153,34,0.06);
+  border: 1px solid rgba(210,153,34,0.15);
+  border-left: 4px solid var(--accent-yellow);
+  color: var(--text);
+}
+.compliance-note--info {
+  background: rgba(56,139,253,0.06);
+  border: 1px solid rgba(56,139,253,0.15);
+  border-left: 4px solid var(--accent);
+  color: var(--text);
+}
+.advanced-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+}
+.advanced-summary:hover {
+  border-color: rgba(139,148,158,0.3);
+}
+.advanced-details {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  padding: 12px;
+  background: rgba(33,38,45,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.advanced-details .calc-field {
+  margin-bottom: 4px;
 }
 </style>
 
@@ -7652,6 +7996,549 @@ if (bttBtn) {
   });
   bttBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
 }
+
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 8 — 10-Year Multi-Regime Macro Compounding Simulator
+// ═══════════════════════════════════════════════════════════════════
+
+let _macroChart = null;
+let _macroTaxModeVal = 'annual';
+let _macroActiveView = 'corpus';
+let _macroInited = false;
+
+// Initialize macro compounding simulator
+function initMacroSimulator() {
+  if (_macroInited) return;
+  _macroInited = true;
+
+  // Bind input and change listeners
+  const inputIds = [
+    'macroInitCap', 'macroFreq', 'macroMargin', 
+    'macroCompareUnlevered', 'macroLogScaleToggle',
+    'macroConstRoll', 'macroConstTxn', 'macroConstYield', 'macroConstTax'
+  ];
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => runMacroSimulation());
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', () => runMacroSimulation());
+  });
+
+  // Sliders with value label updates
+  const moveSlider = document.getElementById('macroMove');
+  if (moveSlider) {
+    moveSlider.addEventListener('input', (e) => {
+      document.getElementById('macroMoveVal').textContent = e.target.value + '%';
+      runMacroSimulation();
+    });
+  }
+
+  const bufferSlider = document.getElementById('macroBuffer');
+  if (bufferSlider) {
+    bufferSlider.addEventListener('input', (e) => {
+      document.getElementById('macroBufferVal').textContent = e.target.value + '%';
+      runMacroSimulation();
+    });
+  }
+
+  // Taxation Mode toggle buttons
+  const setMacroTaxMode = (mode) => {
+    _macroTaxModeVal = mode;
+    const tg = document.getElementById('macroTaxMode');
+    if (tg) tg.setAttribute('data-value', mode);
+    document.getElementById('macroTaxModeAnnual').setAttribute('aria-checked', mode === 'annual' ? 'true' : 'false');
+    document.getElementById('macroTaxModePerTrade').setAttribute('aria-checked', mode === 'pertrade' ? 'true' : 'false');
+    runMacroSimulation();
+  };
+  document.getElementById('macroTaxModeAnnual').addEventListener('click', () => setMacroTaxMode('annual'));
+  document.getElementById('macroTaxModePerTrade').addEventListener('click', () => setMacroTaxMode('pertrade'));
+
+  // Chart View tab buttons
+  document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(t => t.setAttribute('aria-pressed', 'false'));
+      tab.setAttribute('aria-pressed', 'true');
+      _macroActiveView = tab.dataset.view;
+      
+      const titles = {
+        corpus: 'Ledger Value Projection',
+        drag: 'Annual Drag Breakout (Tax & Expenses)',
+        grossnet: 'Gross Returns vs. Net Corpus',
+        leverage: 'Effective Leverage & Cash Shield Path'
+      };
+      document.getElementById('macroChartTitle').textContent = titles[_macroActiveView] || 'Ledger Value Projection';
+      runMacroSimulation();
+    });
+  });
+
+  // Advanced collapsible details chevron rotation
+  const advDetails = document.getElementById('macroAdvancedDetails');
+  if (advDetails) {
+    advDetails.addEventListener('toggle', () => {
+      const chevron = document.getElementById('macroAdvancedChevron');
+      if (chevron) {
+        chevron.textContent = advDetails.open ? '▴' : '▾';
+      }
+    });
+  }
+
+  // Trigger initial run
+  runMacroSimulation();
+}
+
+// Main Simulation Engine
+function runMacroSimulation() {
+  const initCap = parseFloat(document.getElementById('macroInitCap').value) || 0;
+  const freq = parseFloat(document.getElementById('macroFreq').value) || 1.8;
+  const marginPct = (parseFloat(document.getElementById('macroMargin').value) || 30) / 100;
+  const swingPct = (parseFloat(document.getElementById('macroMove').value) || 18) / 100;
+  const bufferPct = (parseFloat(document.getElementById('macroBuffer').value) || 25) / 100;
+  const isLog = !!document.getElementById('macroLogScaleToggle').checked;
+  const compareUnlevered = !!document.getElementById('macroCompareUnlevered').checked;
+
+  // Retrieve advanced settings
+  const rollCost = (parseFloat(document.getElementById('macroConstRoll').value) || 0.50) / 100;
+  const txnCost = (parseFloat(document.getElementById('macroConstTxn').value) || 0.06) / 100;
+  const idleYield = (parseFloat(document.getElementById('macroConstYield').value) || 6.50) / 100;
+  const taxRate = (parseFloat(document.getElementById('macroConstTax').value) || 25.168) / 100;
+
+  // 1. Cushion Sizing Firewall
+  const lMax = 1.0 / (marginPct + bufferPct);
+  const looseCashShieldPct = (1.0 - (lMax * marginPct)) * 100;
+  const catastrophicLossPct = bufferPct * lMax * 100;
+
+  // Update Ribbon / KPI readouts
+  document.getElementById('macroCeilingReadout').textContent = lMax.toFixed(2) + 'x';
+  document.getElementById('kpiMacroLeverage').textContent = lMax.toFixed(2) + 'x';
+  
+  document.getElementById('macroShieldReadout').textContent = looseCashShieldPct.toFixed(1) + '%';
+  document.getElementById('kpiMacroShield').textContent = looseCashShieldPct.toFixed(1) + '%';
+  
+  document.getElementById('macroLossReadout').textContent = catastrophicLossPct.toFixed(1) + '%';
+
+  // Indian currency formatter
+  const cFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+  const formatCrore = (val) => {
+    const absVal = Math.abs(val);
+    if (absVal >= 10000000) return '₹' + (val / 10000000).toFixed(2) + ' Cr';
+    if (absVal >= 100000) return '₹' + (val / 100000).toFixed(2) + ' L';
+    return '₹' + cFmt.format(val);
+  };
+
+  // Run simulation loops
+  const N_legs = Math.round(10 * freq);
+  const delta_t = 1.0 / freq;
+
+  // Yearly Matrix Expenses Tiers
+  const getExpenseForYear = (yr) => {
+    if (yr <= 2) return 75000;
+    if (yr <= 4) return 187500; // corrected geometric progression (75k -> 187.5k -> 375k -> 750k)
+    if (yr <= 7) return 375000;
+    return 750000;
+  };
+
+  const simulate = (leverageMultiplier) => {
+    let capital = initCap;
+    const history = [{ step: 0, year: 0, capital, grossReturn: 0, taxPaid: 0, expenses: 0, netProfit: 0, notional: 0, saturated: false }];
+    let yearlyProfit = 0;
+    let cumTax = 0;
+    let cumExpenses = 0;
+
+    for (let c = 1; c <= N_legs; c++) {
+      const year = Math.ceil(c / freq);
+      const capPrev = capital;
+
+      // Sizing Ceiling (ADV ₹378 Cr = 3,780,000,000)
+      const rawNotional = capPrev * leverageMultiplier;
+      const notional = Math.min(rawNotional, 3780000000);
+      const saturated = rawNotional >= 3780000000;
+
+      const frozen = notional * marginPct;
+      const shield = Math.max(0, capPrev - frozen);
+
+      // Return
+      const tradeGain = notional * (swingPct - rollCost - txnCost);
+      const idleGain = shield * idleYield * delta_t;
+      const gross = tradeGain + idleGain;
+
+      let stepTax = 0;
+      let stepExpense = 0;
+
+      if (_macroTaxModeVal === 'pertrade') {
+        stepTax = Math.max(0, gross) * taxRate; // drag mode pays tax per leg
+        capital = capPrev + gross - stepTax;
+      } else {
+        yearlyProfit += gross;
+        capital = capPrev + gross;
+      }
+
+      // Check Year End
+      const nextYear = Math.ceil((c + 1) / freq);
+      const isYearEnd = nextYear > year || c === N_legs;
+
+      if (isYearEnd) {
+        stepExpense = getExpenseForYear(year);
+        cumExpenses += stepExpense;
+
+        if (_macroTaxModeVal === 'annual') {
+          // tax shield on corporate expense
+          const taxableProfit = Math.max(0, yearlyProfit - stepExpense);
+          stepTax = taxableProfit * taxRate;
+          capital -= (stepTax + stepExpense);
+          yearlyProfit = 0; // reset for next year
+        } else {
+          // per trade mode: expense reduces total tax liability, net cash outflow is expense * (1 - T)
+          const netExpense = stepExpense * (1 - taxRate);
+          capital -= netExpense;
+          stepTax = 0; // tax was already paid per trade
+        }
+        cumTax += stepTax;
+      }
+
+      history.push({
+        step: c,
+        year: c / freq,
+        capital,
+        grossReturn: gross,
+        taxPaid: stepTax,
+        expenses: stepExpense,
+        notional,
+        saturated
+      });
+    }
+
+    return { history, totalTax: cumTax, totalExpenses: cumExpenses };
+  };
+
+  const simMain = simulate(lMax);
+  const simUnlevered = compareUnlevered ? simulate(1.0) : null;
+
+  // Calculate terminal metrics
+  const terminalCapital = simMain.history[simMain.history.length - 1].capital;
+  const initialCapital = simMain.history[0].capital;
+  
+  // CAGR = (Terminal / Initial) ^ (1 / 10) - 1
+  const cagr = initialCapital > 0 ? (Math.pow(terminalCapital / initialCapital, 0.1) - 1) * 100 : 0;
+  
+  // Update KPI Metrics Cards
+  document.getElementById('kpiMacroTerminalWealth').textContent = formatCrore(terminalCapital);
+  document.getElementById('kpiMacroCAGR').textContent = cagr.toFixed(1) + '%';
+  document.getElementById('kpiMacroTotalTax').textContent = formatCrore(simMain.totalTax);
+
+  // Check capacity saturation
+  let saturationStepIdx = simMain.history.findIndex(h => h.saturated);
+  const saturationReadout = document.getElementById('macroCapacityReadout');
+  const saturationKpiSub = document.getElementById('kpiMacroSaturationSub');
+
+  if (saturationStepIdx !== -1) {
+    const satYear = simMain.history[saturationStepIdx].year.toFixed(1);
+    saturationReadout.textContent = '[CAPACITY SATURATED - LIQUID OVERFLOW ACTIVE]';
+    saturationReadout.style.color = 'var(--accent-orange)';
+    document.getElementById('kpiMacroSaturation').textContent = `Year ${satYear}`;
+    document.getElementById('kpiMacroSaturation').style.color = 'var(--accent-orange)';
+    saturationKpiSub.textContent = `Saturated at ₹378 Cr notional limit`;
+  } else {
+    saturationReadout.textContent = '[UNCONSTRAINED LIQUIDITY]';
+    saturationReadout.style.color = 'var(--accent-green)';
+    document.getElementById('kpiMacroSaturation').textContent = 'Unconstrained';
+    document.getElementById('kpiMacroSaturation').style.color = 'var(--accent-green)';
+    saturationKpiSub.textContent = `Trading within capacity limits`;
+  }
+
+  // Populate compounding schedule table
+  const tbody = document.getElementById('macroScheduleBody');
+  tbody.innerHTML = '';
+
+  let totalGross = 0;
+  let totalTax = 0;
+  let totalExpenses = 0;
+
+  for (let y = 1; y <= 10; y++) {
+    // Filter steps belonging to year Y
+    const stepsInYear = simMain.history.filter(h => Math.ceil(h.year) === y && h.step > 0);
+    const tradesCount = stepsInYear.length;
+    const yearGross = stepsInYear.reduce((sum, h) => sum + h.grossReturn, 0);
+    const yearTax = stepsInYear.reduce((sum, h) => sum + h.taxPaid, 0);
+    const yearExpenses = stepsInYear.reduce((sum, h) => sum + h.expenses, 0);
+    const endCorpus = stepsInYear.length ? stepsInYear[stepsInYear.length - 1].capital : initialCapital;
+
+    totalGross += yearGross;
+    totalTax += yearTax;
+    totalExpenses += yearExpenses;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>Year ${y}</strong></td>
+      <td>${tradesCount}</td>
+      <td>${formatCrore(yearGross)}</td>
+      <td style="color:var(--accent-red);">${yearTax > 0 ? formatCrore(yearTax) : '—'}</td>
+      <td style="color:var(--text-muted);">${yearExpenses > 0 ? formatCrore(yearExpenses) : '—'}</td>
+      <td style="font-weight:600; color:var(--accent-green);">${formatCrore(endCorpus)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Append Total Row
+  const totalTr = document.createElement('tr');
+  totalTr.className = 'total-row';
+  totalTr.innerHTML = `
+    <td>TOTAL (10Y)</td>
+    <td>${N_legs}</td>
+    <td>${formatCrore(totalGross)}</td>
+    <td style="color:var(--accent-red);">${formatCrore(totalTax)}</td>
+    <td style="color:var(--text-muted);">${formatCrore(totalExpenses)}</td>
+    <td style="color:var(--accent-green);">${formatCrore(terminalCapital)}</td>
+  `;
+  tbody.appendChild(totalTr);
+
+  // ── Chart Rendering ──
+  if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
+  const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
+
+  const cssText = (typeof getComputedStyle === 'function')
+    ? (getComputedStyle(document.body).getPropertyValue('--text') || '#e6edf3').trim()
+    : '#e6edf3';
+  const cssMuted = (typeof getComputedStyle === 'function')
+    ? (getComputedStyle(document.body).getPropertyValue('--text-muted') || '#8b949e').trim()
+    : '#8b949e';
+
+  // Construct datasets
+  const labels = simMain.history.map(h => {
+    if (h.step === 0) return 'Yr 0';
+    if (Number.isInteger(h.year)) return 'Yr ' + h.year;
+    return h.year.toFixed(1);
+  });
+
+  const datasets = [];
+
+  if (_macroActiveView === 'drag') {
+    // Breakout of yearly tax & expense (using bar chart view)
+    const taxes = [0];
+    const expenses = [0];
+    for (let c = 1; c <= N_legs; c++) {
+      taxes.push(simMain.history[c].taxPaid);
+      expenses.push(simMain.history[c].expenses);
+    }
+    datasets.push({
+      label: 'Tax Swept',
+      data: taxes,
+      backgroundColor: 'rgba(248,81,73,0.7)',
+      borderColor: 'rgba(248,81,73,1)',
+      borderWidth: 1,
+      type: 'bar'
+    });
+    datasets.push({
+      label: 'Expenses',
+      data: expenses,
+      backgroundColor: 'rgba(139,148,158,0.5)',
+      borderColor: 'rgba(139,148,158,1)',
+      borderWidth: 1,
+      type: 'bar'
+    });
+  } else if (_macroActiveView === 'grossnet') {
+    // Compares Gross returns vs Net
+    const grossPath = [initialCapital];
+    let runningGross = initialCapital;
+    for (let c = 1; c <= N_legs; c++) {
+      runningGross += simMain.history[c].grossReturn;
+      grossPath.push(runningGross);
+    }
+    const netPath = simMain.history.map(h => h.capital);
+
+    datasets.push({
+      label: 'Gross Return Path',
+      data: grossPath,
+      borderColor: 'rgba(56,139,253,0.85)',
+      backgroundColor: 'rgba(56,139,253,0.1)',
+      fill: false,
+      tension: 0.2,
+      pointRadius: 0
+    });
+    datasets.push({
+      label: 'Net Corpus (Post-Tax/Exp)',
+      data: netPath,
+      borderColor: 'rgba(63,185,80,0.85)',
+      backgroundColor: 'rgba(63,185,80,0.1)',
+      fill: false,
+      tension: 0.2,
+      pointRadius: 0
+    });
+  } else if (_macroActiveView === 'leverage') {
+    // Tracks effective leverage and cash shield
+    const leveragePath = simMain.history.map(h => {
+      if (h.step === 0) return lMax;
+      return h.capital > 0 ? h.notional / h.capital : 0;
+    });
+    const shieldPath = simMain.history.map(h => {
+      const frozen = h.notional * marginPct;
+      return h.capital > 0 ? (Math.max(0, h.capital - frozen) / h.capital) * 100 : 0;
+    });
+
+    datasets.push({
+      label: 'Effective Leverage Used (Left Y)',
+      data: leveragePath,
+      borderColor: 'rgba(163,113,247,0.85)',
+      backgroundColor: 'rgba(163,113,247,0.1)',
+      fill: false,
+      tension: 0.2,
+      pointRadius: 2,
+      yAxisID: 'y'
+    });
+    datasets.push({
+      label: 'Liquid Cash Shield % (Right Y)',
+      data: shieldPath,
+      borderColor: 'rgba(251,143,68,0.85)',
+      backgroundColor: 'rgba(251,143,68,0.1)',
+      fill: false,
+      tension: 0.2,
+      pointRadius: 2,
+      yAxisID: 'y1'
+    });
+  } else {
+    // Corpus growth view (main view)
+    const mainCorpus = simMain.history.map(h => h.capital);
+    
+    // Create point colors array to highlight capacity saturation
+    const pointColors = simMain.history.map(h => h.saturated ? '#fb8f44' : '#388bfd');
+    const pointRadii = simMain.history.map(h => h.saturated ? 5 : 3);
+
+    datasets.push({
+      label: 'Leveraged Corpus (Lmax)',
+      data: mainCorpus,
+      borderColor: '#3fb950',
+      backgroundColor: 'rgba(63,185,80,0.1)',
+      fill: true,
+      tension: 0.2,
+      pointRadius: pointRadii,
+      pointBackgroundColor: pointColors,
+      pointBorderColor: pointColors,
+      pointHoverRadius: 6
+    });
+
+    if (compareUnlevered && simUnlevered) {
+      const unleveredCorpus = simUnlevered.history.map(h => h.capital);
+      datasets.push({
+        label: 'Unlevered Corpus (1.0x)',
+        data: unleveredCorpus,
+        borderColor: 'rgba(139,148,158,0.65)',
+        borderDash: [5, 5],
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.2,
+        pointRadius: 0
+      });
+    }
+  }
+
+  // Dynamic Y-axis scale configs
+  const moneyTickFmt = (v) => {
+    if (v == null) return '';
+    const absVal = Math.abs(v);
+    if (absVal >= 10000000) return (v / 10000000).toFixed(1) + 'Cr';
+    if (absVal >= 100000) return (v / 100000).toFixed(0) + 'L';
+    if (absVal >= 1000) return (v / 1000).toFixed(0) + 'K';
+    return v.toString();
+  };
+
+  const scaleYConfig = {
+    ticks: { color: cssMuted, font: { size: 9, weight: '600' }, callback: moneyTickFmt },
+    grid: { color: 'rgba(139,148,158,0.1)' }
+  };
+
+  if (_macroActiveView === 'leverage') {
+    scaleYConfig.title = { display: true, text: 'Leverage Multiplier', color: cssMuted, font: { size: 10 } };
+    scaleYConfig.ticks.callback = (v) => v.toFixed(2) + 'x';
+  } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
+    scaleYConfig.type = 'logarithmic';
+  }
+
+  const scales = {
+    x: {
+      ticks: {
+        color: cssMuted,
+        font: { size: 9 },
+        maxRotation: 0,
+        autoSkip: false,
+        callback: function(val, index) {
+          const lbl = labels[index];
+          if (lbl.startsWith('Yr ')) return lbl;
+          return ''; // hide intermediate decimals on x-axis blocks
+        }
+      },
+      grid: { color: 'rgba(139,148,158,0.1)' }
+    },
+    y: scaleYConfig
+  };
+
+  // Dual axis support for leverage view
+  if (_macroActiveView === 'leverage') {
+    scales.y1 = {
+      type: 'linear',
+      position: 'right',
+      ticks: { color: cssMuted, font: { size: 9 }, callback: (v) => v.toFixed(0) + '%' },
+      grid: { drawOnChartArea: false },
+      title: { display: true, text: 'Liquid Shield %', color: cssMuted, font: { size: 10 } }
+    };
+  }
+
+  _macroChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: cssText, font: { size: 10 }, boxWidth: 12, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(22,27,34,0.95)',
+          borderColor: 'rgba(56,139,253,0.3)',
+          borderWidth: 1,
+          titleColor: cssText,
+          bodyColor: cssText,
+          padding: 8,
+          callbacks: {
+            label: (item) => {
+              const val = item.raw;
+              if (_macroActiveView === 'leverage') {
+                if (item.datasetIndex === 0) return `${item.dataset.label}: ${val.toFixed(2)}x`;
+                return `${item.dataset.label}: ${val.toFixed(1)}%`;
+              }
+              return `${item.dataset.label}: ₹` + cFmt.format(val);
+            }
+          }
+        }
+      },
+      scales
+    }
+  });
+}
+
+// Wire the macro simulator init to the history tab + lazy scroll observer
+document.querySelector('[data-tab="history"]').addEventListener('click', () => {
+  setTimeout(initMacroSimulator, 180);
+});
+
+(function _macroLazyInit() {
+  const card = document.getElementById('macroCompoundingCard');
+  if (!card || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        initMacroSimulator();
+        io.disconnect();
+        break;
+      }
+    }
+  }, { rootMargin: '200px' });
+  io.observe(card);
+})();
 
 // Keyboard tab navigation
 const allTabBtns = Array.from(document.querySelectorAll('.tab-btn'));
