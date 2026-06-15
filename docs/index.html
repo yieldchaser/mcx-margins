@@ -767,12 +767,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   .tab-btn { padding:12px 14px; font-size:12px; flex-shrink:0; }
   .tab-content { padding:12px; }
   .grid-2, .grid-3 { grid-template-columns:1fr; gap:12px; }
+  .macro-grid-kpis { grid-template-columns: repeat(3, 1fr); overflow-x: visible; }
 }
 @media (max-width:640px) {
   .stat-value { font-size:20px; }
   .chart-container { height:240px; }
   #tooltipOverlay { padding:20px; max-width:92vw; }
   .data-table th, .data-table td { padding:8px; font-size:11px; }
+  .macro-grid-kpis { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Contract Lifecycle Explorer ── */
@@ -2222,9 +2224,11 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 }
 .macro-grid-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
   margin-bottom: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .macro-kpi-card {
   background: rgba(33,38,45,0.4);
@@ -2234,7 +2238,6 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
   transition: all 0.2s ease;
   min-width: 0;
-  overflow: hidden;
 }
 .macro-kpi-card:hover {
   border-color: rgba(56,139,253,0.25);
