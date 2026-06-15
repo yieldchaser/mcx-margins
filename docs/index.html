@@ -7932,51 +7932,47 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   },
   "macro-simulator": {
     title: "15-Year Multi-Regime Macro Simulator",
-    body: `Models corporate portfolio growth under multi-regime risk conditions, applying leverage firewalls, tax sweeps, transaction costs, and ADV capacity limits over a 15-year default horizon with annual scheduling.`
+    body: `<strong>What it is:</strong> A long-horizon portfolio simulator that projects the growth of a commodity trading corpus over 15 years under actual margin, tax, and exchange volume capacity limits.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Simulation Scope:</strong> Compounds returns across multi-regime risk conditions, applying leverage firewalls, transaction drag, and the ₹378 Crore Average Daily Volume (ADV) capacity threshold.`
   },
   "macro-terminal-wealth": {
     title: "Terminal Wealth",
-    body: `The final portfolio net asset value (NAV) at the end of the selected compounding horizon, net of taxes, expenses, rolls, transaction costs, and capacity constraints.`
+    body: `<strong>The end-state portfolio value (NAV)</strong> at the end of the 15-year compounding horizon.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Calculation:</strong> It is the fully reconciled final ledger balance after accounting for:<br>• Cumulative trading profits & compound yields<br>• Scaled corporate overhead/operating expenses<br>• Fully swept corporate income taxes (net of loss carry-forwards)`
   },
   "macro-cagr": {
     title: "After-Tax CAGR",
-    body: `The net compound annual growth rate (CAGR) of the portfolio over the selected horizon, reflecting the fully net-of-tax compounded return.`
+    body: `<strong>Compound Annual Growth Rate (Net of All Drag)</strong>.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Formula:</strong> <em>CAGR = (Terminal / Initial) ^ (1 / Horizon) − 1</em><br><br>Represents the annualized geometric progression rate of the capital, serving as the benchmark return indicator after fully deducting corporate taxes and execution friction.`
   },
   "macro-tax-paid": {
     title: "Total Tax Paid",
-    body: `The cumulative corporate income tax paid over the full simulation, modeled under Section 115BAA corporate rates (25.168% default) and net of any expense shield in the chosen tax mode.`
+    body: `<strong>Cumulative Corporate Tax Outflow</strong> over the 15-year simulation.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Tax Engine:</strong> Modeled using Section 115BAA corporate rates (25.168% default). Now fully integrates <strong>Net Operating Loss (NOL) carry-forward</strong>: losses are carried forward to offset future profitable years before tax calculations.`
   },
   "macro-leverage-firewall": {
     title: "Leverage Firewall (Lmax)",
-    body: `The maximum safe leverage limit applied to prevent ruin. Calculated as: <em>Lmax = 1 / (Base Margin + Catastrophic Buffer)</em>. Exceeding this ceiling risks margin-call liquidation on a single adverse gap move.`
+    body: `<strong>Maximum Safe Leverage Threshold</strong> to prevent portfolio ruin.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Math:</strong> <em>Lmax = 1 / (Base Margin + Catastrophic Buffer)</em><br><br>Exceeding this multiplier risks total capital wipeout/liquidation during a single worst-case adverse price shock equal to the catastrophic buffer.`
   },
   "macro-liquid-shield": {
-    title: "Liquid Shield",
-    body: `The portion of the portfolio kept in cash or liquid yield equivalents (default 6.50%) to act as a buffer against adverse price shocks and margin hikes. A larger shield reduces max safe leverage but enhances survival probability.`
+    title: "Liquid Shield (%)",
+    body: `<strong>The Cash Reserve Ratio</strong> kept in liquid yield instruments.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Survival Math:</strong> <em>Shield % = 100 − (Lmax × Base Margin %)</em><br><br>This capital never enters active futures positions, acting as a buffer to fund margin calls. Higher shields increase safety but decrease maximum leverage and compounding rate.`
   },
   "macro-adv-saturation": {
-    title: "Average Daily Volume (ADV) Saturation",
-    body: `Capacity gate monitoring. If the required position size exceeds 10% of the contract's Average Daily Volume (ADV), the excess capital is redirected to liquid yields, preventing execution slippage and market impact drag.`
+    title: "ADV Saturation Gate",
+    body: `<strong>Market Liquidity Capacity Limit</strong> based on Average Daily Volume.<br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Constraint:</strong> Caps active position size to a maximum notional of <strong>₹378 Crore</strong> (representing 10% of standard ADV). Excess capital above this limit is dynamically redirected to the Liquid Shield (earning 6.50% yield), representing natural scale drag.`
   },
   "macro-setup": {
     title: "Simulator Parameters",
-    body: `Configure the initial conditions: starting capital, trading frequency, margin requirements, captured price swings, and the catastrophic gap-risk buffer.`
+    body: `Configure the initial conditions of the 15-year compounding simulation, including initial capital, trade frequency, base exchange margin, target directional price swing, and the catastrophic gap-risk buffer.`
   },
   "macro-auditing": {
     title: "SEBI Peak Margin Compliance",
-    body: `SEBI mandates 100% upfront margin collection (Initial Margin + ELM) by clearing members. Peak margin requirements are monitored intraday; any overnight deficit triggers mandatory short-collection penalties. Corporate accounts must ensure adequate treasury buffers to prevent clearing penalty strikes.`
+    body: `SEBI requires 100% upfront margin collection by brokers. Peak margins are checked intraday. The simulator assumes compliance by enforcing that required margin never exceeds available capital, ensuring no penalty strikes occur.`
   },
   "macro-capital-presets": {
     title: "Capital Presets",
-    body: `Select a starting capital amount:<br>
-• <strong>35L:</strong> baseline model capital (₹35 Lakhs)<br>
-• <strong>1Cr:</strong> corporate treasury start (₹1 Crore)<br>
-• <strong>5Cr:</strong> large-scale commodity fund (₹5 Crores)<br>
-• <strong>10Cr:</strong> high-volume institutional allocation (₹10 Crores).`
+    body: `Quickly snap starting capital to common benchmark sizes:<br>• <strong>35L:</strong> baseline model capital (₹35 Lakhs)<br>• <strong>1Cr:</strong> corporate treasury start (₹1 Crore)<br>• <strong>5Cr:</strong> large-scale commodity fund (₹5 Crores)<br>• <strong>10Cr:</strong> high-volume institutional allocation (₹10 Crores).`
   },
   "macro-surcharge-thresholds": {
     title: "Taxation Surcharge Thresholds",
-    body: `The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply.`
+    body: `The corporate tax rate of 25.168% matches Section 115BAA (22% base + 10% surcharge + 4% cess). Surcharges are modeled as consolidated corporate tax obligations settled annually.`
   },
   "macro-capacity-sizing": {
     title: "Capacity Sizing Firewall",
@@ -7984,95 +7980,95 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   },
   "macro-starting-capital": {
     title: "Starting Capital",
-    body: "The initial investment capital allocated to the compounding strategy (e.g. ₹35 Lakhs, ₹1 Crore)."
+    body: `<strong>The initial compounding root.</strong> Represents the initial capital allocation at Year 0 (snaps to presets like 35L, 1Cr, etc. or supports custom inputs).`
   },
   "macro-trade-frequency": {
     title: "Trade Frequency",
-    body: "Average number of complete trades executed per calendar year. Baseline is 1.8 trades/year."
+    body: `<strong>Average number of complete trade cycles per year.</strong> Determines how many trades are distributed across the 15 compounding years (e.g. 1.8 trades/yr leads to exactly 27 trades over 15 years).`
   },
   "macro-base-margin": {
     title: "Base Margin (%)",
-    body: "The percentage of contract value required as overnight margin collateral for the strategy."
+    body: `<strong>Standard exchange margin requirement.</strong> The percentage of position notional that must be locked as collateral. Drives leverage ceilings and liquid shield capacity.`
   },
   "macro-captured-swing": {
     title: "Captured Swing (ΔP move)",
-    body: "The target price move captured per trade, expressed as a percentage of contract value."
+    body: `<strong>Average gross price profit captured per trade.</strong> Expressed as a percentage of contract notional (e.g. capturing an 18% swing in contract price).`
   },
   "macro-catastrophic-buffer": {
     title: "Catastrophic Buffer (ΔP adverse)",
-    body: "The maximum adverse price gap (drawdown) the strategy must survive without hitting ruin/liquidation."
+    body: `<strong>The maximum single-session adverse price gap</strong> the strategy must survive. Determines the safe leverage firewall (Lmax) to protect the portfolio from liquidation.`
   },
   "macro-taxation-mode": {
     title: "Taxation Mode",
-    body: "<strong>Annual Sweep:</strong> Tax is calculated and paid at the end of each year.<br><strong>Per-Trade Drag:</strong> Tax is deducted immediately from the profits of each individual trade."
+    body: `<strong>Annual Sweep:</strong> Tax is settled and swept at the end of each year on net profits.<br><strong>Per-Trade Drag:</strong> Tax is deducted from profits immediately on each trade.<br><br>Both modes now use a unified <strong>Loss Carry-Forward (NOL)</strong> engine: annual net losses carry forward to offset future profits, and per-trade overpayments are reconciled and refunded at year-end.`
   },
   "macro-compare-unlevered": {
     title: "Compare vs. Unlevered Equivalent",
-    body: "Plots a secondary dashed line on the chart representing portfolio growth at 1.0x leverage (no margin usage)."
+    body: `Plots a secondary dashed line on the chart representing portfolio growth at 1.0x leverage (no margin usage). Demonstrates the compounding edge generated by leverage after accounting for tax and expense drag.`
   },
   "macro-log-scale": {
     title: "Logarithmic Scale",
-    body: "Toggles the chart's vertical Y-axis between linear and logarithmic scale, which is useful for visualizing exponential compounding over long horizons."
+    body: `Toggles the Y-axis between linear and logarithmic scale. Essential for visualizing exponential compounding over long horizons, allowing realistic visual comparisons of early vs late-stage growth.`
   },
   "macro-roll-cost": {
     title: "Roll Cost (%)",
-    body: "The estimated premium, execution slippage, or bid-ask spread loss incurred when rolling positions to the next expiry contract."
+    body: `The estimated premium, execution slippage, or bid-ask spread loss incurred when rolling positions to the next expiry contract.`
   },
   "macro-txn-cost": {
     title: "Transaction Cost (%)",
-    body: "Exchange fees, brokerage, clearing charges, GST, and securities transaction tax (STT) paid per trade round-trip."
+    body: `Exchange fees, brokerage, clearing charges, GST, and securities transaction tax (STT) paid per trade round-trip.`
   },
   "macro-idle-yield": {
     title: "Idle Fund Yield (%)",
-    body: "The annual interest yield earned on the Liquid Shield cash buffer (held in liquid funds, treasury bills, or sovereign gold bonds)."
+    body: `The annual interest yield earned on the Liquid Shield cash buffer (held in liquid funds, treasury bills, or sovereign gold bonds).`
   },
   "macro-tax-rate": {
     title: "Corporate Tax Rate (%)",
-    body: "The corporate tax rate applied to net trading profits. Defaults to Section 115BAA rate of 25.168% (22% base + 10% surcharge + 4% cess)."
+    body: `The corporate tax rate applied to net trading profits. Defaults to Section 115BAA rate of 25.168% (22% base + 10% surcharge + 4% cess).`
   },
   "macro-breach-loss": {
     title: "Breach Loss",
-    body: "The realized loss incurred if the catastrophic adverse swing buffer is breached, triggering emergency risk square-off."
+    body: `<strong>Realized capital loss on buffer breach.</strong><br><hr style="border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;"><strong>Math:</strong> <em>Buffer % × Leverage Multiple</em><br><br>Represents the percentage of capital lost if the adverse swing reaches the catastrophic buffer, triggering emergency position close-out.`
   },
   "macro-tab-corpus": {
     title: "Corpus Growth",
-    body: "Shows the projected growth of the net compounding portfolio corpus over the simulation horizon."
+    body: `Shows the projected growth of the net compounding portfolio corpus over the simulation horizon.`
   },
   "macro-tab-drag": {
     title: "Annual Drag",
-    body: "Visualizes the annual capital drag caused by taxes swept and transaction/roll expenses paid."
+    body: `Visualizes the annual capital drag caused by taxes swept and transaction/roll expenses paid.`
   },
   "macro-tab-grossnet": {
     title: "Gross vs Net",
-    body: "Compares the gross trading ledger balance against the net corpus (after tax sweeps and expenses)."
+    body: `Compares the gross trading ledger balance against the net corpus (after tax sweeps and expenses).`
   },
   "macro-tab-leverage": {
     title: "Leverage Path",
-    body: "Tracks the average leverage used and cash shield percentage maintained by the strategy over time."
+    body: `Tracks the average leverage used and cash shield percentage maintained by the strategy over time.`
   },
   "macro-th-year": {
     title: "Compounding Year",
-    body: "The progressive year of the macro simulation."
+    body: `The progressive year of the macro simulation.`
   },
   "macro-th-trades": {
     title: "Trades Executed",
-    body: "The number of trades executed in that year based on the configured frequency."
+    body: `The number of trades executed in that year based on the configured frequency.`
   },
   "macro-th-gross": {
     title: "Gross Return",
-    body: "The gross profit generated before subtracting taxes, transaction costs, and roll expenses."
+    body: `The gross profit generated before subtracting taxes, transaction costs, and roll expenses.`
   },
   "macro-th-tax": {
     title: "Tax Paid",
-    body: "The total corporate income tax swept and paid in that year."
+    body: `The total corporate income tax swept and paid in that year.`
   },
   "macro-th-expenses": {
     title: "Expenses Paid",
-    body: "The sum of transaction costs and roll costs incurred during the year."
+    body: `The sum of transaction costs and roll costs incurred during the year.`
   },
   "macro-th-corpus": {
     title: "Ending Corpus",
-    body: "The final net portfolio value at the end of the year, which serves as the starting capital for the next year."
+    body: `The final net portfolio value at the end of the year, which serves as the starting capital for the next year.`
   }
 };
 
@@ -8256,457 +8252,6 @@ const _macroCssText  = (typeof getComputedStyle === 'function') ? (getComputedSt
 const _macroCssMuted = (typeof getComputedStyle === 'function') ? (getComputedStyle(document.body).getPropertyValue('--text-muted') || '#8b949e').trim() : '#8b949e';
 const _macroCFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
-
-// Initialize macro compounding simulator
-function initMacroSimulator() {
-  if (_macroInited) return;
-  _macroInited = true;
-
-  // Bind input and change listeners
-  const inputIds = [
-    'macroInitCap', 'macroFreq', 'macroMargin', 
-    'macroCompareUnlevered', 'macroLogScaleToggle',
-    'macroConstRoll', 'macroConstTxn', 'macroConstYield', 'macroConstTax'
-  ];
-  inputIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => runMacroSimulation());
-    if (el && el.tagName === 'SELECT') el.addEventListener('change', () => runMacroSimulation());
-  });
-
-  // Capital quick-preset buttons for Macro Simulator
-  document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cap = parseInt(btn.dataset.cap, 10) || 0;
-      document.getElementById('macroInitCap').value = cap;
-      document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      runMacroSimulation();
-    });
-  });
-
-  document.getElementById('macroInitCap')?.addEventListener('input', () => {
-    document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(b => b.classList.remove('is-active'));
-  });
-
-  // Sliders with value label updates
-  const moveSlider = document.getElementById('macroMove');
-  if (moveSlider) {
-    moveSlider.addEventListener('input', (e) => {
-      document.getElementById('macroMoveVal').textContent = e.target.value + '%';
-      runMacroSimulation();
-    });
-  }
-
-  const bufferSlider = document.getElementById('macroBuffer');
-  if (bufferSlider) {
-    bufferSlider.addEventListener('input', (e) => {
-      document.getElementById('macroBufferVal').textContent = e.target.value + '%';
-      runMacroSimulation();
-    });
-  }
-
-  // Taxation Mode toggle buttons
-  const setMacroTaxMode = (mode) => {
-    _macroTaxModeVal = mode;
-    const tg = document.getElementById('macroTaxMode');
-    if (tg) tg.setAttribute('data-value', mode);
-    document.getElementById('macroTaxModeAnnual').setAttribute('aria-checked', mode === 'annual' ? 'true' : 'false');
-    document.getElementById('macroTaxModePerTrade').setAttribute('aria-checked', mode === 'pertrade' ? 'true' : 'false');
-    runMacroSimulation();
-  };
-  document.getElementById('macroTaxModeAnnual').addEventListener('click', () => setMacroTaxMode('annual'));
-  document.getElementById('macroTaxModePerTrade').addEventListener('click', () => setMacroTaxMode('pertrade'));
-
-  // Chart View tab buttons
-  document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(t => t.setAttribute('aria-pressed', 'false'));
-      tab.setAttribute('aria-pressed', 'true');
-      _macroActiveView = tab.dataset.view;
-      
-      const titles = {
-        corpus: 'Ledger Value Projection',
-        drag: 'Annual Drag Breakout (Tax & Expenses)',
-        grossnet: 'Gross Returns vs. Net Corpus',
-        leverage: 'Effective Leverage & Cash Shield Path'
-      };
-      document.getElementById('macroChartTitle').textContent = titles[_macroActiveView] || 'Ledger Value Projection';
-      runMacroSimulation();
-    });
-  });
-
-  // Advanced collapsible details chevron rotation
-  const advDetails = document.getElementById('macroAdvancedDetails');
-  if (advDetails) {
-    advDetails.addEventListener('toggle', () => {
-      const chevron = document.getElementById('macroAdvancedChevron');
-      if (chevron) {
-        chevron.textContent = advDetails.open ? '▴' : '▾';
-      }
-    });
-  }
-
-  // Trigger initial run
-  runMacroSimulation();
-}
-
-// Debounced wrapper — batches rapid slider/input changes into a single redraw
-let _macroDebounceTimer = null;
-function runMacroSimulation() {
-  clearTimeout(_macroDebounceTimer);
-  _macroDebounceTimer = setTimeout(_runMacroSimulationCore, 80);
-}
-function _runMacroSimulationCore() {
-  const initCap = parseFloat(document.getElementById('macroInitCap').value) || 0;
-  const freq = parseFloat(document.getElementById('macroFreq').value) || 1.8;
-  const marginPct = (parseFloat(document.getElementById('macroMargin').value) || 30) / 100;
-  const swingPct = (parseFloat(document.getElementById('macroMove').value) || 18) / 100;
-  const bufferPct = (parseFloat(document.getElementById('macroBuffer').value) || 25) / 100;
-  const isLog = !!document.getElementById('macroLogScaleToggle').checked;
-  const compareUnlevered = !!document.getElementById('macroCompareUnlevered').checked;
-
-  // Retrieve advanced settings
-  const rollCost = (parseFloat(document.getElementById('macroConstRoll').value) || 0.50) / 100;
-  const txnCost = (parseFloat(document.getElementById('macroConstTxn').value) || 0.06) / 100;
-  const idleYield = (parseFloat(document.getElementById('macroConstYield').value) || 6.50) / 100;
-  const taxRate = (parseFloat(document.getElementById('macroConstTax').value) || 25.168) / 100;
-
-  // 1. Cushion Sizing Firewall
-  const lMax = 1.0 / (marginPct + bufferPct);
-  const looseCashShieldPct = (1.0 - (lMax * marginPct)) * 100;
-  const catastrophicLossPct = bufferPct * lMax * 100;
-
-  // Update Ribbon / KPI readouts
-  document.getElementById('macroCeilingReadout').textContent = lMax.toFixed(2) + 'x';
-  document.getElementById('kpiMacroLeverage').textContent = lMax.toFixed(2) + 'x';
-  
-  document.getElementById('macroShieldReadout').textContent = looseCashShieldPct.toFixed(1) + '%';
-  document.getElementById('kpiMacroShield').textContent = looseCashShieldPct.toFixed(1) + '%';
-  
-  document.getElementById('macroLossReadout').textContent = catastrophicLossPct.toFixed(1) + '%';
-
-  // Indian currency formatter (cFmt hoisted to module level as _macroCFmt)
-  const cFmt = _macroCFmt;
-  const formatCrore = (val) => {
-    const absVal = Math.abs(val);
-    if (absVal >= 10000000) return '₹' + (val / 10000000).toFixed(2) + ' Cr';
-    if (absVal >= 100000) return '₹' + (val / 100000).toFixed(2) + ' L';
-    return '₹' + cFmt.format(val);
-  };
-
-  // Run simulation loops
-  const N_legs = Math.round(10 * freq);
-  const delta_t = 1.0 / freq;
-
-  // Yearly Matrix Expenses Tiers
-  const getExpenseForYear = (yr) => {
-    if (yr <= 2) return 75000;
-    if (yr <= 4) return 187500; // corrected geometric progression (75k -> 187.5k -> 375k -> 750k)
-    if (yr <= 7) return 375000;
-    return 750000;
-  };
-
-  const simulate = (leverageMultiplier) => {
-    let capital = initCap;
-    const history = [{ step: 0, year: 0, capital, grossReturn: 0, taxPaid: 0, expenses: 0, netProfit: 0, notional: 0, saturated: false }];
-    let yearlyProfit = 0;
-    let cumTax = 0;
-    let cumExpenses = 0;
-
-    for (let c = 1; c <= N_legs; c++) {
-      const year = Math.ceil(c / freq);
-      const capPrev = capital;
-
-      // Sizing Ceiling (ADV ₹378 Cr = 3,780,000,000)
-      const rawNotional = capPrev * leverageMultiplier;
-      const notional = Math.min(rawNotional, 3780000000);
-      const saturated = rawNotional >= 3780000000;
-
-      const frozen = notional * marginPct;
-      const shield = Math.max(0, capPrev - frozen);
-
-      // Return
-      const tradeGain = notional * (swingPct - rollCost - txnCost);
-      const idleGain = shield * idleYield * delta_t;
-      const gross = tradeGain + idleGain;
-
-      let stepTax = 0;
-      let stepExpense = 0;
-
-      if (_macroTaxModeVal === 'pertrade') {
-        stepTax = Math.max(0, gross) * taxRate; // drag mode pays tax per leg
-        capital = capPrev + gross - stepTax;
-      } else {
-        yearlyProfit += gross;
-        capital = capPrev + gross;
-      }
-
-      // Check Year End
-      const nextYear = Math.ceil((c + 1) / freq);
-      const isYearEnd = nextYear > year || c === N_legs;
-
-      if (isYearEnd) {
-        stepExpense = getExpenseForYear(year);
-        cumExpenses += stepExpense;
-
-        if (_macroTaxModeVal === 'annual') {
-          // tax shield on corporate expense
-          const taxableProfit = Math.max(0, yearlyProfit - stepExpense);
-          stepTax = taxableProfit * taxRate;
-          capital -= (stepTax + stepExpense);
-          yearlyProfit = 0; // reset for next year
-        } else {
-          // per trade mode: expense reduces total tax liability, net cash outflow is expense * (1 - T)
-          const netExpense = stepExpense * (1 - taxRate);
-          capital -= netExpense;
-          stepTax = 0; // tax was already paid per trade
-        }
-        cumTax += stepTax;
-      }
-
-      history.push({
-        step: c,
-        year: c / freq,
-        capital,
-        grossReturn: gross,
-        taxPaid: stepTax,
-        expenses: stepExpense,
-        notional,
-        saturated
-      });
-    }
-
-    return { history, totalTax: cumTax, totalExpenses: cumExpenses };
-  };
-
-  const simMain = simulate(lMax);
-  const simUnlevered = compareUnlevered ? simulate(1.0) : null;
-
-  // Calculate terminal metrics
-  const terminalCapital = simMain.history[simMain.history.length - 1].capital;
-  const initialCapital = simMain.history[0].capital;
-  
-  // CAGR = (Terminal / Initial) ^ (1 / 10) - 1
-  const cagr = initialCapital > 0 ? (Math.pow(terminalCapital / initialCapital, 0.1) - 1) * 100 : 0;
-  
-  // Update KPI Metrics Cards
-  document.getElementById('kpiMacroTerminalWealth').textContent = formatCrore(terminalCapital);
-  document.getElementById('kpiMacroCAGR').textContent = cagr.toFixed(1) + '%';
-  document.getElementById('kpiMacroTotalTax').textContent = formatCrore(simMain.totalTax);
-
-  // Check capacity saturation
-  let saturationStepIdx = simMain.history.findIndex(h => h.saturated);
-  const saturationReadout = document.getElementById('macroCapacityReadout');
-  const saturationKpiSub = document.getElementById('kpiMacroSaturationSub');
-
-  if (saturationStepIdx !== -1) {
-    const satYear = simMain.history[saturationStepIdx].year.toFixed(1);
-    saturationReadout.textContent = '[CAPACITY SATURATED - LIQUID OVERFLOW ACTIVE]';
-    saturationReadout.style.color = 'var(--accent-orange)';
-    document.getElementById('kpiMacroSaturation').textContent = `Year ${satYear}`;
-    document.getElementById('kpiMacroSaturation').style.color = 'var(--accent-orange)';
-    saturationKpiSub.textContent = `Saturated at ₹378 Cr notional limit`;
-  } else {
-    saturationReadout.textContent = '[UNCONSTRAINED LIQUIDITY]';
-    saturationReadout.style.color = 'var(--accent-green)';
-    document.getElementById('kpiMacroSaturation').textContent = 'Unconstrained';
-    document.getElementById('kpiMacroSaturation').style.color = 'var(--accent-green)';
-    saturationKpiSub.textContent = `Trading within capacity limits`;
-  }
-
-  // ── Table: single innerHTML pass (avoid repeated DOM mutations) ──
-  let tableRows = '';
-  let totalGross = 0, totalTax = 0, totalExpenses = 0;
-
-  for (let y = 1; y <= 10; y++) {
-    let tradesCount = 0, yearGross = 0, yearTax = 0, yearExpenses = 0, endCorpus = initialCapital;
-    for (let i = 1; i < simMain.history.length; i++) {
-      const h = simMain.history[i];
-      if (Math.ceil(h.year) !== y) continue;
-      tradesCount++;
-      yearGross += h.grossReturn;
-      yearTax += h.taxPaid;
-      yearExpenses += h.expenses;
-      endCorpus = h.capital;
-    }
-    totalGross += yearGross; totalTax += yearTax; totalExpenses += yearExpenses;
-    tableRows += `<tr>
-      <td><strong>Year ${y}</strong></td>
-      <td>${tradesCount}</td>
-      <td>${formatCrore(yearGross)}</td>
-      <td style="color:var(--accent-red);">${yearTax > 0 ? formatCrore(yearTax) : '—'}</td>
-      <td style="color:var(--text-muted);">${yearExpenses > 0 ? formatCrore(yearExpenses) : '—'}</td>
-      <td style="font-weight:600; color:var(--accent-green);">${formatCrore(endCorpus)}</td>
-    </tr>`;
-  }
-  tableRows += `<tr class="total-row">
-    <td>TOTAL (10Y)</td><td>${N_legs}</td>
-    <td>${formatCrore(totalGross)}</td>
-    <td style="color:var(--accent-red);">${formatCrore(totalTax)}</td>
-    <td style="color:var(--text-muted);">${formatCrore(totalExpenses)}</td>
-    <td style="color:var(--accent-green);">${formatCrore(terminalCapital)}</td>
-  </tr>`;
-  document.getElementById('macroScheduleBody').innerHTML = tableRows;
-
-  // ── Chart Rendering ─────────────────────────────────────────────────────────
-  // Key strategy: use chart.update('none') (zero-animation in-place update) when
-  // the active view hasn't changed — same pattern as the Market Intelligence tab.
-  // Only destroy+recreate when the view type changes (different axes / dataset count).
-
-  const cssText = _macroCssText || '#e6edf3';
-  const cssMuted = _macroCssMuted || '#8b949e';
-
-  const labels = simMain.history.map(h => {
-    if (h.step === 0) return 'Yr 0';
-    if (Number.isInteger(h.year)) return 'Yr ' + h.year;
-    return h.year.toFixed(1);
-  });
-
-  // Build dataset arrays (reused whether creating or updating)
-  let newDatasets = [];
-
-  if (_macroActiveView === 'drag') {
-    const taxes = [0], expenses = [0];
-    for (let c = 1; c <= N_legs; c++) {
-      taxes.push(simMain.history[c].taxPaid);
-      expenses.push(simMain.history[c].expenses);
-    }
-    newDatasets = [
-      { label: 'Tax Swept',  data: taxes,    backgroundColor: 'rgba(248,81,73,0.7)',   borderColor: 'rgba(248,81,73,1)',   borderWidth: 1, type: 'bar' },
-      { label: 'Expenses',   data: expenses, backgroundColor: 'rgba(139,148,158,0.5)', borderColor: 'rgba(139,148,158,1)', borderWidth: 1, type: 'bar' }
-    ];
-  } else if (_macroActiveView === 'grossnet') {
-    const grossPath = [initialCapital];
-    let runningGross = initialCapital;
-    for (let c = 1; c <= N_legs; c++) { runningGross += simMain.history[c].grossReturn; grossPath.push(runningGross); }
-    newDatasets = [
-      { label: 'Gross Return Path',         data: grossPath,                          borderColor: 'rgba(56,139,253,0.85)',  backgroundColor: 'rgba(56,139,253,0.1)',  fill: false, tension: 0.2, pointRadius: 0 },
-      { label: 'Net Corpus (Post-Tax/Exp)', data: simMain.history.map(h => h.capital), borderColor: 'rgba(63,185,80,0.85)',   backgroundColor: 'rgba(63,185,80,0.1)',   fill: false, tension: 0.2, pointRadius: 0 }
-    ];
-  } else if (_macroActiveView === 'leverage') {
-    const leveragePath = simMain.history.map(h => h.step === 0 ? lMax : (h.capital > 0 ? h.notional / h.capital : 0));
-    const shieldPath   = simMain.history.map(h => { const f = h.notional * marginPct; return h.capital > 0 ? (Math.max(0, h.capital - f) / h.capital) * 100 : 0; });
-    newDatasets = [
-      { label: 'Effective Leverage Used (Left Y)',  data: leveragePath, borderColor: 'rgba(163,113,247,0.85)', backgroundColor: 'rgba(163,113,247,0.1)', fill: false, tension: 0.2, pointRadius: 2, yAxisID: 'y' },
-      { label: 'Liquid Cash Shield % (Right Y)',    data: shieldPath,   borderColor: 'rgba(251,143,68,0.85)',  backgroundColor: 'rgba(251,143,68,0.1)',  fill: false, tension: 0.2, pointRadius: 2, yAxisID: 'y1' }
-    ];
-  } else {
-    // corpus (default)
-    const pointColors = simMain.history.map(h => h.saturated ? '#fb8f44' : '#388bfd');
-    const pointRadii  = simMain.history.map(h => h.saturated ? 5 : 3);
-    newDatasets = [
-      { label: 'Leveraged Corpus (Lmax)', data: simMain.history.map(h => h.capital),
-        borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.1)', fill: true,
-        tension: 0.2, pointRadius: pointRadii, pointBackgroundColor: pointColors,
-        pointBorderColor: pointColors, pointHoverRadius: 6 }
-    ];
-    if (compareUnlevered && simUnlevered) {
-      newDatasets.push({
-        label: 'Unlevered Corpus (1.0x)', data: simUnlevered.history.map(h => h.capital),
-        borderColor: 'rgba(139,148,158,0.65)', borderDash: [5,5],
-        backgroundColor: 'transparent', fill: false, tension: 0.2, pointRadius: 0
-      });
-    }
-  }
-
-  // Y-axis tick formatter
-  const moneyTickFmt = (v) => {
-    if (v == null) return '';
-    const a = Math.abs(v);
-    if (a >= 10000000) return (v / 10000000).toFixed(1) + 'Cr';
-    if (a >= 100000)   return (v / 100000).toFixed(0) + 'L';
-    if (a >= 1000)     return (v / 1000).toFixed(0) + 'K';
-    return v.toString();
-  };
-
-  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView;
-
-  if (viewNeedsNewChart) {
-    // Full destroy + recreate — only happens when tab changes (4 possible views)
-    if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
-    const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
-
-    const scaleYConfig = {
-      ticks: { color: cssMuted, font: { size: 9, weight: '600' }, callback: moneyTickFmt },
-      grid:  { color: 'rgba(139,148,158,0.1)' }
-    };
-    if (_macroActiveView === 'leverage') {
-      scaleYConfig.title = { display: true, text: 'Leverage Multiplier', color: cssMuted, font: { size: 10 } };
-      scaleYConfig.ticks.callback = (v) => v.toFixed(2) + 'x';
-    } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
-      scaleYConfig.type = 'logarithmic';
-    }
-
-    const scales = {
-      x: { ticks: { color: cssMuted, font: { size: 9 }, maxRotation: 0, autoSkip: false,
-            callback: (val, idx) => { const l = labels[idx]; return (l && l.startsWith('Yr ')) ? l : ''; } },
-           grid: { color: 'rgba(139,148,158,0.1)' } },
-      y: scaleYConfig
-    };
-    if (_macroActiveView === 'leverage') {
-      scales.y1 = {
-        type: 'linear', position: 'right',
-        ticks: { color: cssMuted, font: { size: 9 }, callback: (v) => v.toFixed(0) + '%' },
-        grid:  { drawOnChartArea: false },
-        title: { display: true, text: 'Liquid Shield %', color: cssMuted, font: { size: 10 } }
-      };
-    }
-
-    _macroChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: newDatasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        animation: false,                         // ← zero animation, like Market tab
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: true, position: 'top',
-            labels: { color: cssText, font: { size: 10 }, boxWidth: 12, padding: 10 } },
-          tooltip: {
-            backgroundColor: 'rgba(22,27,34,0.95)', borderColor: 'rgba(56,139,253,0.3)',
-            borderWidth: 1, titleColor: cssText, bodyColor: cssText, padding: 8,
-            callbacks: {
-              label: (item) => {
-                const val = item.raw;
-                if (_macroActiveView === 'leverage') {
-                  return item.datasetIndex === 0
-                    ? `${item.dataset.label}: ${val.toFixed(2)}x`
-                    : `${item.dataset.label}: ${val.toFixed(1)}%`;
-                }
-                return `${item.dataset.label}: ₹` + cFmt.format(val);
-              }
-            }
-          }
-        },
-        scales
-      }
-    });
-    _macroChart._macroViewKey = _macroActiveView; // tag so we know which view it holds
-
-  } else {
-    // ── In-place update: just swap data arrays, no destroy/recreate ──
-    _macroChart.data.labels = labels;
-    // Sync dataset count (e.g. unlevered toggle adds/removes a dataset)
-    while (_macroChart.data.datasets.length > newDatasets.length) _macroChart.data.datasets.pop();
-    newDatasets.forEach((ds, i) => {
-      if (_macroChart.data.datasets[i]) {
-        // Update only the data + per-point visual arrays; keep styling
-        Object.assign(_macroChart.data.datasets[i], ds);
-      } else {
-        _macroChart.data.datasets.push(ds);
-      }
-    });
-    // Update log scale toggle without recreating
-    const yScale = _macroChart.options.scales.y;
-    if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
-      yScale.type = 'logarithmic';
-    } else if (yScale.type === 'logarithmic') {
-      yScale.type = 'linear';
-    }
-    _macroChart.update('none'); // 'none' = skip animation entirely
-  }
-}
 
 const MACRO_SIM_ADV_CAP = 3780000000;
 const MACRO_SIM_TITLES = {
@@ -8947,6 +8492,7 @@ function _runMacroSimulationCore() {
     let totalTax = 0;
     let totalExpenses = 0;
     let firstSaturationYear = null;
+    let carryForwardLoss = 0;
     const yearRows = [];
     const netPath = [initCap];
     const grossPath = [initCap];
@@ -8998,13 +8544,37 @@ function _runMacroSimulationCore() {
       }
 
       const yearExpenses = macroSimExpense(year);
+      let taxableProfit = yearGross - yearExpenses;
+
       if (_macroTaxModeVal === 'annual') {
-        yearTaxPaid = Math.max(0, yearGross - yearExpenses) * taxRate;
-        capital = Math.max(0, capital - yearTaxPaid - yearExpenses);
+        if (taxableProfit < 0) {
+          carryForwardLoss += Math.abs(taxableProfit);
+          yearTaxPaid = 0;
+          capital = Math.max(0, capital - yearExpenses);
+        } else {
+          const offset = Math.min(taxableProfit, carryForwardLoss);
+          taxableProfit -= offset;
+          carryForwardLoss -= offset;
+          yearTaxPaid = taxableProfit * taxRate;
+          capital = Math.max(0, capital - yearTaxPaid - yearExpenses);
+        }
       } else {
-        const expenseShieldCredit = Math.min(yearTaxPaid, yearExpenses * taxRate);
-        yearTaxPaid = Math.max(0, yearTaxPaid - expenseShieldCredit);
-        capital = Math.max(0, capital - (yearExpenses - expenseShieldCredit));
+        // pertrade mode: reconcile the trade-level tax paid against consolidated annual net profit
+        if (taxableProfit < 0) {
+          // net loss for the year: all tax paid per trade is refunded, and the net loss is carried forward
+          carryForwardLoss += Math.abs(taxableProfit);
+          capital = Math.max(0, capital + yearTaxPaid - yearExpenses);
+          yearTaxPaid = 0;
+        } else {
+          const offset = Math.min(taxableProfit, carryForwardLoss);
+          taxableProfit -= offset;
+          carryForwardLoss -= offset;
+          
+          const targetTax = taxableProfit * taxRate;
+          const adjustment = targetTax - yearTaxPaid;
+          capital = Math.max(0, capital - yearExpenses - adjustment);
+          yearTaxPaid = targetTax;
+        }
       }
 
       totalTax += yearTaxPaid;
@@ -9154,7 +8724,8 @@ function _runMacroSimulationCore() {
     }
   }
 
-  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView;
+  const targetScaleType = isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet') ? 'logarithmic' : 'linear';
+  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView || _macroChart.options.scales.y.type !== targetScaleType;
   if (viewNeedsNewChart) {
     if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
     const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
@@ -9165,7 +8736,7 @@ function _runMacroSimulationCore() {
     if (_macroActiveView === 'leverage') {
       scaleYConfig.title = { display: true, text: 'Average Leverage', color: _macroCssMuted, font: { size: 10 } };
       scaleYConfig.ticks.callback = (v) => `${Number(v).toFixed(2)}x`;
-    } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
+    } else if (targetScaleType === 'logarithmic') {
       scaleYConfig.type = 'logarithmic';
     }
 
@@ -9241,9 +8812,6 @@ function _runMacroSimulationCore() {
       if (_macroChart.data.datasets[idx]) Object.assign(_macroChart.data.datasets[idx], dataset);
       else _macroChart.data.datasets.push(dataset);
     });
-    const yScale = _macroChart.options.scales.y;
-    if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) yScale.type = 'logarithmic';
-    else if (yScale.type === 'logarithmic') yScale.type = 'linear';
     _macroChart.update('none');
   }
 }
