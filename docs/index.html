@@ -767,14 +767,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   .tab-btn { padding:12px 14px; font-size:12px; flex-shrink:0; }
   .tab-content { padding:12px; }
   .grid-2, .grid-3 { grid-template-columns:1fr; gap:12px; }
-  .macro-grid-kpis { grid-template-columns: repeat(3, 1fr); overflow-x: visible; }
+  .macro-grid-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width:640px) {
   .stat-value { font-size:20px; }
   .chart-container { height:240px; }
   #tooltipOverlay { padding:20px; max-width:92vw; }
   .data-table th, .data-table td { padding:8px; font-size:11px; }
-  .macro-grid-kpis { grid-template-columns: repeat(2, 1fr); }
+  .macro-grid-kpis { grid-template-columns: 1fr; }
+  .macro-kpi-card { min-height: 0; }
 }
 
 /* ── Contract Lifecycle Explorer ── */
@@ -1501,10 +1502,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
 
-    <!-- ── 10-Year Multi-Regime Macro Compounding Simulator ── -->
+    <!-- ── 15-Year Multi-Regime Macro Compounding Simulator ── -->
     <div class="card" style="margin-top:24px;" id="macroCompoundingCard">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div class="card-title has-tooltip" data-tooltip-key="macro-simulator" style="margin-bottom:0; font-size: 13px; cursor: help;">10-Year Multi-Regime Macro Simulator</div>
+        <div class="card-title has-tooltip" data-tooltip-key="macro-simulator" id="macroTitle" style="margin-bottom:0; font-size: 13px; cursor: help;">15-Year Multi-Regime Macro Simulator</div>
         <div style="display:flex;gap:12px;align-items:center;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none;">
             <input type="checkbox" id="macroLogScaleToggle" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;">
@@ -1518,7 +1519,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-terminal-wealth">
           <div class="macro-kpi-label">Terminal Wealth</div>
           <div class="macro-kpi-value" id="kpiMacroTerminalWealth">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">10y horizon</div>
+          <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">15y horizon</div>
         </div>
         <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-cagr">
           <div class="macro-kpi-label">After-Tax CAGR</div>
@@ -1599,9 +1600,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               </select>
             </div>
             <div class="calc-field">
-              <label class="calc-field__label" for="macroMargin">Base Margin (%)</label>
-              <input type="number" id="macroMargin" class="calc-input calc-input--mono" value="30" step="1" min="1" max="100" inputmode="numeric">
+              <label class="calc-field__label" for="macroHorizon">Horizon (Years)</label>
+              <select id="macroHorizon" class="calc-select">
+                <option value="10">10 Years</option>
+                <option value="15" selected>15 Years</option>
+                <option value="20">20 Years</option>
+              </select>
             </div>
+          </div>
+
+          <div class="calc-field" style="margin-bottom: 12px;">
+            <label class="calc-field__label" for="macroMargin">Base Margin (%)</label>
+            <input type="number" id="macroMargin" class="calc-input calc-input--mono" value="30" step="1" min="1" max="100" inputmode="numeric">
           </div>
 
           <div class="calc-field" style="margin-bottom: 12px;">
@@ -1681,7 +1691,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
           <!-- Compounding Schedule Table -->
           <div style="margin-top: 24px;">
-            <div class="calc-section__kicker">Compounding Schedule &amp; Year-Wise Goals</div>
+            <div class="calc-section__kicker">Compounding Schedule &amp; Annual Audit</div>
             <div class="macro-table-wrapper">
               <table class="macro-table" id="macroScheduleTable">
                 <thead>
@@ -2224,20 +2234,23 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 }
 .macro-grid-kpis {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin-bottom: 20px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 .macro-kpi-card {
   background: rgba(33,38,45,0.4);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 14px 16px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
   transition: all 0.2s ease;
   min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: 8px;
 }
 .macro-kpi-card:hover {
   border-color: rgba(56,139,253,0.25);
@@ -2253,33 +2266,28 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   border-left: 3px solid var(--accent-orange);
 }
 .macro-kpi-label {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 4px;
   font-weight: 600;
 }
 .macro-kpi-value {
-  font-size: 16px;
+  font-size: clamp(1.45rem, 1.15rem + 0.95vw, 2rem);
   font-weight: 700;
   color: var(--text);
   font-family: 'SF Mono', 'Fira Code', monospace;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
   display: block;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 }
 .macro-kpi-sub {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
   display: block;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .macro-table-wrapper {
   overflow-x: auto;
@@ -7895,24 +7903,24 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
     body: `Heightened market stress. Volatility or risk factors have pushed margins above the usual baseline.`
   },
   "macro-simulator": {
-    title: "10-Year Multi-Regime Macro Simulator",
-    body: `Models corporate portfolio growth under multi-regime risk conditions, applying leverage firewalls, tax sweeps, transaction costs, and ADV capacity limits over a 10-year horizon.`
+    title: "15-Year Multi-Regime Macro Simulator",
+    body: `Models corporate portfolio growth under multi-regime risk conditions, applying leverage firewalls, tax sweeps, transaction costs, and ADV capacity limits over a 15-year default horizon with annual scheduling.`
   },
   "macro-terminal-wealth": {
     title: "Terminal Wealth",
-    body: `The final portfolio net asset value (NAV) at the end of the 10-year compounding horizon, net of all taxes, rolls, transaction costs, and breach losses.`
+    body: `The final portfolio net asset value (NAV) at the end of the selected compounding horizon, net of taxes, expenses, rolls, transaction costs, and capacity constraints.`
   },
   "macro-cagr": {
     title: "After-Tax CAGR",
-    body: `The net compound annual growth rate (CAGR) of the portfolio over the 10-year horizon, reflecting the net-of-tax compounded return.`
+    body: `The net compound annual growth rate (CAGR) of the portfolio over the selected horizon, reflecting the fully net-of-tax compounded return.`
   },
   "macro-tax-paid": {
     title: "Total Tax Paid",
-    body: `The cumulative corporate income tax paid over the 10-year period, modeled under Section 115BAA corporate rates (25.168% default) with selected sweep frequency.`
+    body: `The cumulative corporate income tax paid over the full simulation, modeled under Section 115BAA corporate rates (25.168% default) and net of any expense shield in the chosen tax mode.`
   },
   "macro-leverage-firewall": {
     title: "Leverage Firewall (Lmax)",
-    body: `The maximum safe leverage limit applied to prevent ruin. Calculated as: <em>Liquid Shield / (Base Margin + Catastrophic Buffer)</em>. Exceeding this ceiling risks margin call liquidation on a single adverse gap move.`
+    body: `The maximum safe leverage limit applied to prevent ruin. Calculated as: <em>Lmax = 1 / (Base Margin + Catastrophic Buffer)</em>. Exceeding this ceiling risks margin-call liquidation on a single adverse gap move.`
   },
   "macro-liquid-shield": {
     title: "Liquid Shield",
@@ -8577,6 +8585,511 @@ function _runMacroSimulationCore() {
       yScale.type = 'linear';
     }
     _macroChart.update('none'); // 'none' = skip animation entirely
+  }
+}
+
+const MACRO_SIM_ADV_CAP = 3780000000;
+const MACRO_SIM_TITLES = {
+  corpus: 'Net Corpus Growth',
+  drag: 'Annual Drag Breakout (Tax & Expenses)',
+  grossnet: 'Gross Ledger vs. Net Corpus',
+  leverage: 'Leverage & Cash Shield Path'
+};
+let _macroElsCache = null;
+let _macroTableCache = '';
+
+function getMacroSimEls() {
+  if (_macroElsCache) return _macroElsCache;
+  _macroElsCache = {
+    title: document.getElementById('macroTitle'),
+    initCap: document.getElementById('macroInitCap'),
+    freq: document.getElementById('macroFreq'),
+    horizon: document.getElementById('macroHorizon'),
+    margin: document.getElementById('macroMargin'),
+    move: document.getElementById('macroMove'),
+    moveVal: document.getElementById('macroMoveVal'),
+    buffer: document.getElementById('macroBuffer'),
+    bufferVal: document.getElementById('macroBufferVal'),
+    logToggle: document.getElementById('macroLogScaleToggle'),
+    compareUnlevered: document.getElementById('macroCompareUnlevered'),
+    constRoll: document.getElementById('macroConstRoll'),
+    constTxn: document.getElementById('macroConstTxn'),
+    constYield: document.getElementById('macroConstYield'),
+    constTax: document.getElementById('macroConstTax'),
+    taxMode: document.getElementById('macroTaxMode'),
+    taxModeAnnual: document.getElementById('macroTaxModeAnnual'),
+    taxModePerTrade: document.getElementById('macroTaxModePerTrade'),
+    chartTitle: document.getElementById('macroChartTitle'),
+    capacityReadout: document.getElementById('macroCapacityReadout'),
+    scheduleBody: document.getElementById('macroScheduleBody'),
+    ceilingReadout: document.getElementById('macroCeilingReadout'),
+    shieldReadout: document.getElementById('macroShieldReadout'),
+    lossReadout: document.getElementById('macroLossReadout'),
+    kpiTerminal: document.getElementById('kpiMacroTerminalWealth'),
+    kpiTerminalSub: document.getElementById('kpiMacroTerminalWealthSub'),
+    kpiCagr: document.getElementById('kpiMacroCAGR'),
+    kpiCagrSub: document.getElementById('kpiMacroCAGRSub'),
+    kpiTax: document.getElementById('kpiMacroTotalTax'),
+    kpiTaxSub: document.getElementById('kpiMacroTotalTaxSub'),
+    kpiLeverage: document.getElementById('kpiMacroLeverage'),
+    kpiLeverageSub: document.getElementById('kpiMacroLeverageSub'),
+    kpiShield: document.getElementById('kpiMacroShield'),
+    kpiShieldSub: document.getElementById('kpiMacroShieldSub'),
+    kpiSaturation: document.getElementById('kpiMacroSaturation'),
+    kpiSaturationSub: document.getElementById('kpiMacroSaturationSub')
+  };
+  return _macroElsCache;
+}
+
+function macroSimMoney(value) {
+  const absVal = Math.abs(value);
+  if (absVal >= 10000000) return '\u20B9' + (value / 10000000).toFixed(2) + ' Cr';
+  if (absVal >= 100000) return '\u20B9' + (value / 100000).toFixed(2) + ' L';
+  return '\u20B9' + _macroCFmt.format(Math.round(value));
+}
+
+function macroSimTick(value) {
+  if (value == null) return '';
+  const absVal = Math.abs(value);
+  if (absVal >= 10000000) return (value / 10000000).toFixed(1) + 'Cr';
+  if (absVal >= 100000) return (value / 100000).toFixed(0) + 'L';
+  if (absVal >= 1000) return (value / 1000).toFixed(0) + 'K';
+  return value.toString();
+}
+
+function macroSimExpense(year) {
+  if (year <= 2) return 75000;
+  if (year <= 4) return 187500;
+  if (year <= 7) return 375000;
+  return 750000;
+}
+
+function macroSimBuildTradeSchedule(horizonYears, frequency) {
+  const totalTrades = Math.max(0, Math.round(horizonYears * frequency));
+  const tradesByYear = [];
+  let assigned = 0;
+  for (let year = 1; year <= horizonYears; year++) {
+    const cumulativeTarget = Math.floor((year * totalTrades) / horizonYears + 1e-9);
+    const tradesThisYear = Math.max(0, cumulativeTarget - assigned);
+    tradesByYear.push(tradesThisYear);
+    assigned += tradesThisYear;
+  }
+  while (assigned < totalTrades) {
+    tradesByYear[tradesByYear.length - 1] += 1;
+    assigned += 1;
+  }
+  return { totalTrades, tradesByYear };
+}
+
+function macroSimSetQuickButtons(value) {
+  document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(btn => {
+    btn.classList.toggle('is-active', Number(btn.dataset.cap) === value);
+  });
+}
+
+function initMacroSimulator() {
+  if (_macroInited) return;
+  _macroInited = true;
+  const els = getMacroSimEls();
+
+  const inputIds = [
+    'macroInitCap', 'macroFreq', 'macroHorizon', 'macroMargin',
+    'macroCompareUnlevered', 'macroLogScaleToggle',
+    'macroConstRoll', 'macroConstTxn', 'macroConstYield', 'macroConstTax'
+  ];
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => runMacroSimulation());
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', () => runMacroSimulation());
+  });
+
+  document.querySelectorAll('#macroCompoundingCard .calc-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cap = parseInt(btn.dataset.cap, 10) || 0;
+      els.initCap.value = cap;
+      macroSimSetQuickButtons(cap);
+      runMacroSimulation();
+    });
+  });
+
+  els.initCap?.addEventListener('input', () => {
+    macroSimSetQuickButtons(parseInt(els.initCap.value, 10) || 0);
+  });
+
+  els.move?.addEventListener('input', (e) => {
+    els.moveVal.textContent = e.target.value + '%';
+    runMacroSimulation();
+  });
+  els.buffer?.addEventListener('input', (e) => {
+    els.bufferVal.textContent = e.target.value + '%';
+    runMacroSimulation();
+  });
+
+  const setMacroTaxMode = (mode) => {
+    _macroTaxModeVal = mode;
+    els.taxMode?.setAttribute('data-value', mode);
+    els.taxModeAnnual?.setAttribute('aria-checked', mode === 'annual' ? 'true' : 'false');
+    els.taxModePerTrade?.setAttribute('aria-checked', mode === 'pertrade' ? 'true' : 'false');
+    runMacroSimulation();
+  };
+  els.taxModeAnnual?.addEventListener('click', () => setMacroTaxMode('annual'));
+  els.taxModePerTrade?.addEventListener('click', () => setMacroTaxMode('pertrade'));
+
+  document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#macroChartTabs .calc-chart-tab').forEach(t => t.setAttribute('aria-pressed', 'false'));
+      tab.setAttribute('aria-pressed', 'true');
+      _macroActiveView = tab.dataset.view;
+      els.chartTitle.textContent = MACRO_SIM_TITLES[_macroActiveView] || MACRO_SIM_TITLES.corpus;
+      runMacroSimulation();
+    });
+  });
+
+  const advDetails = document.getElementById('macroAdvancedDetails');
+  if (advDetails) {
+    advDetails.addEventListener('toggle', () => {
+      const chevron = document.getElementById('macroAdvancedChevron');
+      if (chevron) chevron.textContent = advDetails.open ? '▴' : '▾';
+    });
+  }
+
+  macroSimSetQuickButtons(parseInt(els.initCap.value, 10) || 0);
+  els.chartTitle.textContent = MACRO_SIM_TITLES[_macroActiveView] || MACRO_SIM_TITLES.corpus;
+  runMacroSimulation();
+}
+
+function runMacroSimulation() {
+  clearTimeout(_macroDebounceTimer);
+  _macroDebounceTimer = setTimeout(_runMacroSimulationCore, 48);
+}
+
+function _runMacroSimulationCore() {
+  const els = getMacroSimEls();
+  const initCap = Math.max(0, parseFloat(els.initCap.value) || 0);
+  const freq = Math.max(0, parseFloat(els.freq.value) || 1.8);
+  const horizonYears = Math.max(1, parseInt(els.horizon.value, 10) || 15);
+  const marginPct = Math.max(0, (parseFloat(els.margin.value) || 30) / 100);
+  const swingPct = Math.max(0, (parseFloat(els.move.value) || 18) / 100);
+  const bufferPct = Math.max(0, (parseFloat(els.buffer.value) || 25) / 100);
+  const rollCost = Math.max(0, (parseFloat(els.constRoll.value) || 0.50) / 100);
+  const txnCost = Math.max(0, (parseFloat(els.constTxn.value) || 0.06) / 100);
+  const idleYield = Math.max(0, (parseFloat(els.constYield.value) || 6.50) / 100);
+  const taxRate = Math.max(0, (parseFloat(els.constTax.value) || 25.168) / 100);
+  const isLog = !!els.logToggle.checked;
+  const compareUnlevered = !!els.compareUnlevered.checked;
+  const leverageDenominator = marginPct + bufferPct;
+  const lMax = leverageDenominator > 0 ? 1 / leverageDenominator : 0;
+  const liquidShieldPct = Math.max(0, (1 - (lMax * marginPct)) * 100);
+  const breachLossPct = bufferPct * lMax * 100;
+  const netSwingPct = swingPct - rollCost - txnCost;
+  const schedule = macroSimBuildTradeSchedule(horizonYears, freq);
+
+  els.title.textContent = `${horizonYears}-Year Multi-Regime Macro Simulator`;
+  els.moveVal.textContent = `${Math.round(swingPct * 100)}%`;
+  els.bufferVal.textContent = `${Math.round(bufferPct * 100)}%`;
+  els.ceilingReadout.textContent = `${lMax.toFixed(2)}x`;
+  els.shieldReadout.textContent = `${liquidShieldPct.toFixed(1)}%`;
+  els.lossReadout.textContent = `${breachLossPct.toFixed(1)}%`;
+  els.kpiLeverage.textContent = `${lMax.toFixed(2)}x`;
+  els.kpiLeverageSub.textContent = `${(marginPct * 100).toFixed(0)}% margin + ${(bufferPct * 100).toFixed(0)}% shock buffer`;
+  els.kpiShield.textContent = `${liquidShieldPct.toFixed(1)}%`;
+
+  const simulate = (leverageMultiplier) => {
+    let capital = initCap;
+    let grossCorpus = initCap;
+    let totalGross = 0;
+    let totalTax = 0;
+    let totalExpenses = 0;
+    let firstSaturationYear = null;
+    const yearRows = [];
+    const netPath = [initCap];
+    const grossPath = [initCap];
+    const leveragePath = [leverageMultiplier];
+    const shieldPath = [leverageMultiplier > 0 ? Math.max(0, 100 - (leverageMultiplier * marginPct * 100)) : 100];
+
+    for (let year = 1; year <= horizonYears; year++) {
+      const trades = schedule.tradesByYear[year - 1];
+      let yearGross = 0;
+      let yearTaxPaid = 0;
+      let sumLeverage = 0;
+      let sumShield = 0;
+      let saturationCount = 0;
+
+      if (trades === 0) {
+        const idleOnlyGain = capital * idleYield;
+        yearGross += idleOnlyGain;
+        totalGross += idleOnlyGain;
+        grossCorpus = Math.max(0, grossCorpus + idleOnlyGain);
+        capital = Math.max(0, capital + idleOnlyGain);
+        sumShield = 100;
+      } else {
+        for (let trade = 0; trade < trades; trade++) {
+          const capitalBeforeTrade = Math.max(0, capital);
+          const rawNotional = capitalBeforeTrade * leverageMultiplier;
+          const notional = Math.min(rawNotional, MACRO_SIM_ADV_CAP);
+          const saturated = rawNotional > MACRO_SIM_ADV_CAP + 1;
+          const frozenMargin = notional * marginPct;
+          const shield = Math.max(0, capitalBeforeTrade - frozenMargin);
+          const tradeGain = notional * netSwingPct;
+          const idleGain = shield * idleYield / trades;
+          const gross = tradeGain + idleGain;
+
+          yearGross += gross;
+          totalGross += gross;
+          grossCorpus = Math.max(0, grossCorpus + gross);
+          sumLeverage += capitalBeforeTrade > 0 ? notional / capitalBeforeTrade : 0;
+          sumShield += capitalBeforeTrade > 0 ? (shield / capitalBeforeTrade) * 100 : 100;
+          if (saturated) saturationCount += 1;
+
+          if (_macroTaxModeVal === 'pertrade') {
+            const stepTax = Math.max(0, gross) * taxRate;
+            yearTaxPaid += stepTax;
+            capital = Math.max(0, capitalBeforeTrade + gross - stepTax);
+          } else {
+            capital = Math.max(0, capitalBeforeTrade + gross);
+          }
+        }
+      }
+
+      const yearExpenses = macroSimExpense(year);
+      if (_macroTaxModeVal === 'annual') {
+        yearTaxPaid = Math.max(0, yearGross - yearExpenses) * taxRate;
+        capital = Math.max(0, capital - yearTaxPaid - yearExpenses);
+      } else {
+        const expenseShieldCredit = Math.min(yearTaxPaid, yearExpenses * taxRate);
+        yearTaxPaid = Math.max(0, yearTaxPaid - expenseShieldCredit);
+        capital = Math.max(0, capital - (yearExpenses - expenseShieldCredit));
+      }
+
+      totalTax += yearTaxPaid;
+      totalExpenses += yearExpenses;
+      if (saturationCount > 0 && firstSaturationYear == null) firstSaturationYear = year;
+
+      const avgLeverageUsed = trades > 0 ? sumLeverage / trades : 0;
+      const avgShieldPct = trades > 0 ? sumShield / trades : 100;
+      yearRows.push({
+        year,
+        trades,
+        grossReturn: yearGross,
+        taxPaid: yearTaxPaid,
+        expenses: yearExpenses,
+        endingCorpus: capital,
+        grossCorpus,
+        avgLeverageUsed,
+        avgShieldPct,
+        saturated: saturationCount > 0
+      });
+      netPath.push(capital);
+      grossPath.push(grossCorpus);
+      leveragePath.push(avgLeverageUsed);
+      shieldPath.push(avgShieldPct);
+    }
+
+    return {
+      yearRows,
+      totalGross,
+      totalTax,
+      totalExpenses,
+      terminalCapital: capital,
+      firstSaturationYear,
+      netPath,
+      grossPath,
+      leveragePath,
+      shieldPath
+    };
+  };
+
+  const simMain = simulate(lMax);
+  const simUnlevered = compareUnlevered ? simulate(1.0) : null;
+  const terminalCapital = simMain.terminalCapital;
+  const cagr = initCap > 0 ? (Math.pow(Math.max(terminalCapital, 0) / initCap, 1 / horizonYears) - 1) * 100 : 0;
+  const yearOne = simMain.yearRows[0];
+
+  els.kpiTerminal.textContent = macroSimMoney(terminalCapital);
+  els.kpiTerminalSub.textContent = `${horizonYears}y horizon · ${schedule.totalTrades} scheduled trades`;
+  els.kpiCagr.textContent = Number.isFinite(cagr) ? `${cagr.toFixed(1)}%` : '0.0%';
+  els.kpiCagrSub.textContent = `${freq.toFixed(1)} trades/yr average · ${_macroTaxModeVal === 'annual' ? 'annual sweep' : 'per-trade drag'}`;
+  els.kpiTax.textContent = macroSimMoney(simMain.totalTax);
+  els.kpiTaxSub.textContent = `${macroSimMoney(simMain.totalExpenses)} operating drag`;
+  els.kpiShieldSub.textContent = yearOne ? `Yr 1 average reserve ${yearOne.avgShieldPct.toFixed(1)}%` : 'Idle cash cushion';
+
+  if (simMain.firstSaturationYear != null) {
+    els.capacityReadout.textContent = `[CAPACITY SATURATES IN YEAR ${simMain.firstSaturationYear}]`;
+    els.capacityReadout.style.color = 'var(--accent-orange)';
+    els.kpiSaturation.textContent = `Year ${simMain.firstSaturationYear}`;
+    els.kpiSaturation.style.color = 'var(--accent-orange)';
+    els.kpiSaturationSub.textContent = 'Excess capital is redirected into liquid yield';
+  } else {
+    els.capacityReadout.textContent = '[UNCONSTRAINED LIQUIDITY]';
+    els.capacityReadout.style.color = 'var(--accent-green)';
+    els.kpiSaturation.textContent = 'Clear';
+    els.kpiSaturation.style.color = 'var(--accent-green)';
+    els.kpiSaturationSub.textContent = 'Trading runway stays below the ADV gate';
+  }
+
+  let tableRows = '';
+  simMain.yearRows.forEach((row) => {
+    tableRows += `<tr>
+      <td><strong>Year ${row.year}</strong></td>
+      <td>${row.trades}</td>
+      <td>${macroSimMoney(row.grossReturn)}</td>
+      <td style="color:var(--accent-red);">${row.taxPaid > 0 ? macroSimMoney(row.taxPaid) : '—'}</td>
+      <td style="color:var(--text-muted);">${row.expenses > 0 ? macroSimMoney(row.expenses) : '—'}</td>
+      <td style="font-weight:600; color:var(--accent-green);">${macroSimMoney(row.endingCorpus)}</td>
+    </tr>`;
+  });
+  tableRows += `<tr class="total-row">
+    <td>TOTAL (${horizonYears}Y)</td>
+    <td>${schedule.totalTrades}</td>
+    <td>${macroSimMoney(simMain.totalGross)}</td>
+    <td style="color:var(--accent-red);">${macroSimMoney(simMain.totalTax)}</td>
+    <td style="color:var(--text-muted);">${macroSimMoney(simMain.totalExpenses)}</td>
+    <td style="color:var(--accent-green);">${macroSimMoney(terminalCapital)}</td>
+  </tr>`;
+  if (tableRows !== _macroTableCache) {
+    els.scheduleBody.innerHTML = tableRows;
+    _macroTableCache = tableRows;
+  }
+
+  const labels = ['Yr 0', ...simMain.yearRows.map(row => `Yr ${row.year}`)];
+  let newDatasets = [];
+  if (_macroActiveView === 'drag') {
+    newDatasets = [
+      { label: 'Tax Swept', data: [0, ...simMain.yearRows.map(row => row.taxPaid)], backgroundColor: 'rgba(248,81,73,0.72)', borderColor: 'rgba(248,81,73,1)', borderWidth: 1, type: 'bar' },
+      { label: 'Expenses', data: [0, ...simMain.yearRows.map(row => row.expenses)], backgroundColor: 'rgba(139,148,158,0.55)', borderColor: 'rgba(139,148,158,1)', borderWidth: 1, type: 'bar' }
+    ];
+  } else if (_macroActiveView === 'grossnet') {
+    newDatasets = [
+      { label: 'Gross Ledger', data: simMain.grossPath, borderColor: 'rgba(56,139,253,0.88)', backgroundColor: 'rgba(56,139,253,0.08)', fill: false, tension: 0.22, pointRadius: 2 },
+      { label: 'Net Corpus', data: simMain.netPath, borderColor: 'rgba(63,185,80,0.9)', backgroundColor: 'rgba(63,185,80,0.12)', fill: false, tension: 0.22, pointRadius: 2 }
+    ];
+  } else if (_macroActiveView === 'leverage') {
+    newDatasets = [
+      { label: 'Average Leverage Used (Left Y)', data: simMain.leveragePath, borderColor: 'rgba(163,113,247,0.9)', backgroundColor: 'rgba(163,113,247,0.1)', fill: false, tension: 0.22, pointRadius: 2, yAxisID: 'y' },
+      { label: 'Average Cash Shield % (Right Y)', data: simMain.shieldPath, borderColor: 'rgba(251,143,68,0.9)', backgroundColor: 'rgba(251,143,68,0.1)', fill: false, tension: 0.22, pointRadius: 2, yAxisID: 'y1' }
+    ];
+  } else {
+    const pointColors = ['#388bfd', ...simMain.yearRows.map(row => row.saturated ? '#fb8f44' : '#3fb950')];
+    const pointRadii = [3, ...simMain.yearRows.map(row => row.saturated ? 5 : 3)];
+    newDatasets = [
+      {
+        label: 'Leveraged Corpus (Lmax)',
+        data: simMain.netPath,
+        borderColor: '#3fb950',
+        backgroundColor: 'rgba(63,185,80,0.12)',
+        fill: true,
+        tension: 0.22,
+        pointRadius: pointRadii,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
+        pointHoverRadius: 6
+      }
+    ];
+    if (compareUnlevered && simUnlevered) {
+      newDatasets.push({
+        label: 'Unlevered Corpus (1.0x)',
+        data: simUnlevered.netPath,
+        borderColor: 'rgba(139,148,158,0.7)',
+        borderDash: [5, 5],
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.22,
+        pointRadius: 0
+      });
+    }
+  }
+
+  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView;
+  if (viewNeedsNewChart) {
+    if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
+    const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
+    const scaleYConfig = {
+      ticks: { color: _macroCssMuted, font: { size: 9, weight: '600' }, callback: macroSimTick },
+      grid: { color: 'rgba(139,148,158,0.1)' }
+    };
+    if (_macroActiveView === 'leverage') {
+      scaleYConfig.title = { display: true, text: 'Average Leverage', color: _macroCssMuted, font: { size: 10 } };
+      scaleYConfig.ticks.callback = (v) => `${Number(v).toFixed(2)}x`;
+    } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
+      scaleYConfig.type = 'logarithmic';
+    }
+
+    const scales = {
+      x: {
+        ticks: {
+          color: _macroCssMuted,
+          font: { size: 9 },
+          maxRotation: 0,
+          autoSkip: false,
+          callback: (val, idx) => {
+            const label = labels[idx];
+            if (!label) return '';
+            if (idx === 0 || idx === labels.length - 1) return label;
+            if (horizonYears > 15 && idx % 2 !== 0) return '';
+            return label;
+          }
+        },
+        grid: { color: 'rgba(139,148,158,0.1)' }
+      },
+      y: scaleYConfig
+    };
+
+    if (_macroActiveView === 'leverage') {
+      scales.y1 = {
+        type: 'linear',
+        position: 'right',
+        ticks: { color: _macroCssMuted, font: { size: 9 }, callback: (v) => `${Number(v).toFixed(0)}%` },
+        grid: { drawOnChartArea: false },
+        title: { display: true, text: 'Cash Shield %', color: _macroCssMuted, font: { size: 10 } }
+      };
+    }
+
+    _macroChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: newDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        normalized: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: _macroCssText, font: { size: 10 }, boxWidth: 12, padding: 10 } },
+          tooltip: {
+            backgroundColor: 'rgba(22,27,34,0.95)',
+            borderColor: 'rgba(56,139,253,0.3)',
+            borderWidth: 1,
+            titleColor: _macroCssText,
+            bodyColor: _macroCssText,
+            padding: 8,
+            callbacks: {
+              label: (item) => {
+                const val = item.raw;
+                if (_macroActiveView === 'leverage') {
+                  return item.datasetIndex === 0
+                    ? `${item.dataset.label}: ${Number(val).toFixed(2)}x`
+                    : `${item.dataset.label}: ${Number(val).toFixed(1)}%`;
+                }
+                return `${item.dataset.label}: \u20B9${_macroCFmt.format(Math.round(val))}`;
+              }
+            }
+          }
+        },
+        scales
+      }
+    });
+    _macroChart._macroViewKey = _macroActiveView;
+  } else {
+    _macroChart.data.labels = labels;
+    while (_macroChart.data.datasets.length > newDatasets.length) _macroChart.data.datasets.pop();
+    newDatasets.forEach((dataset, idx) => {
+      if (_macroChart.data.datasets[idx]) Object.assign(_macroChart.data.datasets[idx], dataset);
+      else _macroChart.data.datasets.push(dataset);
+    });
+    const yScale = _macroChart.options.scales.y;
+    if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) yScale.type = 'logarithmic';
+    else if (yScale.type === 'logarithmic') yScale.type = 'linear';
+    _macroChart.update('none');
   }
 }
 
