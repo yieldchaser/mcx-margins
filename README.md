@@ -65,6 +65,12 @@ Based on a systematic day-by-day simulation of the extreme February 2026 contrac
 * **Lagging Indicator:** Safety Shield relies on historical realized volatility ($\sigma_{\text{ann}}$), meaning it cannot anticipate forward-looking regime changes (e.g., overnight exchange margin hikes).
 * **Expiry Tender Surcharges:** Expiry-week tender margin add-ons (DTE $\le 7$ days) are ignored by the standard formula.
 
+### 4. Quantitative Design Critique
+* **The $4\sigma$ Statistical Cushion:** The 25% coefficient is mathematically calibrated to absorb a $\approx 4\sigma$ daily price shock under a Gaussian framework (since $0.25 \times \sqrt{252} \approx 3.97$). Given Natural Gas's leptokurtic (fat-tailed) returns, this is an appropriate baseline, whereas lower multipliers would fail during volatility-expansion regimes.
+* **Firewall Role of the 2.5x Ceiling:** Under standard retail capital constraints (e.g., ₹5L), the 2.5x leverage ceiling binds first in most calm-market conditions. This design acts as a physical firewall, preventing over-exposure when lagged historical volatility estimators contract the Safety Shield.
+* **The Volatility-Expansion Trap:** Because the shield relies on backward-looking rolling realized volatility, it suffers from phase lag. When entering trades during extreme vol-compression (calm periods), VAMB will recommend maximum position sizes, exposing the trader just before vol-expansion crashes occur.
+* **Asymmetry Neglect:** VAMB treats longs and shorts symmetrically. However, Natural Gas short positions have mathematically unbounded risk and should be capped at lower leverage levels (1.5x–2.0x max) compared to longs.
+
 ---
 
 ## Architecture
