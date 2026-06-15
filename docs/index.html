@@ -1504,226 +1504,235 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- ── 15-Year Multi-Regime Macro Compounding Simulator ── -->
     <div class="card" style="margin-top:24px;" id="macroCompoundingCard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div class="card-title has-tooltip" data-tooltip-key="macro-simulator" id="macroTitle" style="margin-bottom:0; font-size: 13px; cursor: help;">15-Year Multi-Regime Macro Simulator</div>
-        <div style="display:flex;gap:12px;align-items:center;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none;">
-            <input type="checkbox" id="macroLogScaleToggle" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;">
-            Logarithmic Scale
-          </label>
+      <div id="macroCompoundingHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="macroCompoundingBody">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="card-title has-tooltip" data-tooltip-key="macro-simulator" id="macroTitle" style="margin-bottom:0; font-size: 13px; cursor: help;">15-Year Multi-Regime Macro Simulator</div>
+          <span id="macroSummaryBadge" class="scope-chip" aria-live="polite"></span>
         </div>
+        <span id="macroChevron" aria-hidden="true">&#x25BE;</span>
       </div>
 
-      <!-- High-Density KPI Header Cards -->
-      <div class="macro-grid-kpis">
-        <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-terminal-wealth">
-          <div class="macro-kpi-label">Terminal Wealth</div>
-          <div class="macro-kpi-value" id="kpiMacroTerminalWealth">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">15y horizon</div>
-        </div>
-        <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-cagr">
-          <div class="macro-kpi-label">After-Tax CAGR</div>
-          <div class="macro-kpi-value" id="kpiMacroCAGR">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroCAGRSub">Net compound return</div>
-        </div>
-        <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-tax-paid">
-          <div class="macro-kpi-label">Total Tax Paid</div>
-          <div class="macro-kpi-value" id="kpiMacroTotalTax">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroTotalTaxSub">Corporate tax swept</div>
-        </div>
-        <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-leverage-firewall">
-          <div class="macro-kpi-label">Leverage Firewall</div>
-          <div class="macro-kpi-value" id="kpiMacroLeverage">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroLeverageSub">L<sub>max</sub> ceiling</div>
-        </div>
-        <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-liquid-shield">
-          <div class="macro-kpi-label">Liquid Shield</div>
-          <div class="macro-kpi-value" id="kpiMacroShield">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroShieldSub">Idle cash cushion</div>
-        </div>
-        <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-adv-saturation">
-          <div class="macro-kpi-label">ADV Saturation</div>
-          <div class="macro-kpi-value" id="kpiMacroSaturation">—</div>
-          <div class="macro-kpi-sub" id="kpiMacroSaturationSub">Capacity limit check</div>
-        </div>
-      </div>
+      <div id="macroCompoundingBody" class="calc-body">
+        <div class="calc-body__inner">
 
-      <!-- Parameter Readout Ribbon -->
-      <div class="calc-status calc-status--info is-visible" style="display: block; margin-bottom: 20px; margin-top: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <span class="calc-status__title">Macro Compounding Firewall Metrics</span>
-            <div class="calc-status__detail" style="margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap;">
-              <span>Max Safe Leverage (L<sub>max</sub>): <strong id="macroCeilingReadout">—</strong></span>
-              <span>Day-1 Liquid Shield: <strong id="macroShieldReadout">—</strong></span>
-              <span>Breach Loss: <strong id="macroLossReadout">—</strong></span>
+          <!-- High-Density KPI Header Cards -->
+          <div class="macro-grid-kpis">
+            <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-terminal-wealth">
+              <div class="macro-kpi-label">Terminal Wealth</div>
+              <div class="macro-kpi-value" id="kpiMacroTerminalWealth">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">15y horizon</div>
+            </div>
+            <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-cagr">
+              <div class="macro-kpi-label">After-Tax CAGR</div>
+              <div class="macro-kpi-value" id="kpiMacroCAGR">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroCAGRSub">Net compound return</div>
+            </div>
+            <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-tax-paid">
+              <div class="macro-kpi-label">Total Tax Paid</div>
+              <div class="macro-kpi-value" id="kpiMacroTotalTax">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroTotalTaxSub">Corporate tax swept</div>
+            </div>
+            <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-leverage-firewall">
+              <div class="macro-kpi-label">Leverage Firewall</div>
+              <div class="macro-kpi-value" id="kpiMacroLeverage">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroLeverageSub">L<sub>max</sub> ceiling</div>
+            </div>
+            <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-liquid-shield">
+              <div class="macro-kpi-label">Liquid Shield</div>
+              <div class="macro-kpi-value" id="kpiMacroShield">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroShieldSub">Idle cash cushion</div>
+            </div>
+            <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-adv-saturation">
+              <div class="macro-kpi-label">ADV Saturation</div>
+              <div class="macro-kpi-value" id="kpiMacroSaturation">—</div>
+              <div class="macro-kpi-sub" id="kpiMacroSaturationSub">Capacity limit check</div>
             </div>
           </div>
-          <div style="text-align: right;">
-            <span id="macroCapacityReadout" style="font-weight: 700; font-size: 11px;">—</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Main Columns Grid -->
-      <div class="calc-grid">
-        <!-- Column 1: Control Panel -->
-        <div class="calc-section">
-          <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-setup" style="cursor: help;">Simulator Setup</div>
-
-          <div class="calc-field" style="margin-bottom: 12px;">
-            <label class="calc-field__label" for="macroInitCap">Starting Capital (₹)</label>
-            <div class="calc-capital-row">
-              <input type="number" id="macroInitCap" class="calc-input calc-input--mono" value="3500000" step="100000" min="0" inputmode="numeric">
-              <div class="calc-quick-btns has-tooltip" data-tooltip-key="macro-capital-presets" role="group" aria-label="Capital presets">
-                <button type="button" class="calc-quick-btn is-active" data-cap="3500000">35L</button>
-                <button type="button" class="calc-quick-btn" data-cap="10000000">1Cr</button>
-                <button type="button" class="calc-quick-btn" data-cap="50000000">5Cr</button>
-                <button type="button" class="calc-quick-btn" data-cap="100000000">10Cr</button>
+          <!-- Parameter Readout Ribbon -->
+          <div class="calc-status calc-status--info is-visible" style="display: block; margin-bottom: 20px; margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <span class="calc-status__title">Macro Compounding Firewall Metrics</span>
+                <div class="calc-status__detail" style="margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap;">
+                  <span>Max Safe Leverage (L<sub>max</sub>): <strong id="macroCeilingReadout">—</strong></span>
+                  <span>Day-1 Liquid Shield: <strong id="macroShieldReadout">—</strong></span>
+                  <span>Breach Loss: <strong id="macroLossReadout" class="has-tooltip" data-tooltip-key="macro-breach-loss" style="cursor:help;">—</strong></span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span id="macroCapacityReadout" style="font-weight: 700; font-size: 11px;">—</span>
               </div>
             </div>
           </div>
 
-          <div class="calc-grid--duo" style="margin-bottom: 12px;">
-            <div class="calc-field">
-              <label class="calc-field__label" for="macroFreq">Frequency (Trades/Year)</label>
-              <select id="macroFreq" class="calc-select">
-                <option value="0.5">0.5 Trades/Yr (Bi-annual)</option>
-                <option value="1.0">1.0 Trades/Yr (Annual)</option>
-                <option value="1.5">1.5 Trades/Yr</option>
-                <option value="1.8" selected>1.8 Trades/Yr (Baseline)</option>
-                <option value="2.0">2.0 Trades/Yr</option>
-                <option value="3.0">3.0 Trades/Yr</option>
-                <option value="4.0">4.0 Trades/Yr (Quarterly)</option>
-                <option value="6.0">6.0 Trades/Yr (Bi-monthly)</option>
-                <option value="12.0">12.0 Trades/Yr (Monthly)</option>
-              </select>
-            </div>
-            <div class="calc-field">
-              <label class="calc-field__label" for="macroHorizon">Horizon (Years)</label>
-              <select id="macroHorizon" class="calc-select">
-                <option value="10">10 Years</option>
-                <option value="15" selected>15 Years</option>
-                <option value="20">20 Years</option>
-              </select>
-            </div>
-          </div>
+          <!-- Main Columns Grid -->
+          <div class="calc-grid">
+            <!-- Column 1: Control Panel -->
+            <div class="calc-section">
+              <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-setup" style="cursor: help;">Simulator Setup</div>
 
-          <div class="calc-field" style="margin-bottom: 12px;">
-            <label class="calc-field__label" for="macroMargin">Base Margin (%)</label>
-            <input type="number" id="macroMargin" class="calc-input calc-input--mono" value="30" step="1" min="1" max="100" inputmode="numeric">
-          </div>
-
-          <div class="calc-field" style="margin-bottom: 12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label class="calc-field__label" for="macroMove">Captured Swing (ΔP<sub>move</sub>)</label>
-              <span id="macroMoveVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">18%</span>
-            </div>
-            <input type="range" id="macroMove" min="5" max="50" value="18" style="accent-color:var(--accent);width:100%;cursor:pointer;">
-          </div>
-
-          <div class="calc-field" style="margin-bottom: 12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label class="calc-field__label" for="macroBuffer">Catastrophic Buffer (ΔP<sub>adverse</sub>)</label>
-              <span id="macroBufferVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">25%</span>
-            </div>
-            <input type="range" id="macroBuffer" min="5" max="40" value="25" style="accent-color:var(--accent);width:100%;cursor:pointer;">
-          </div>
-
-          <div class="calc-field" style="margin-bottom: 16px;">
-            <label class="calc-field__label">Taxation Mode</label>
-            <div class="calc-toggle" id="macroTaxMode" data-value="annual" role="radiogroup" aria-label="Tax mode" style="width:100%; max-width: 260px;">
-              <span class="calc-toggle__pill" style="width: calc(50% - 2px);" aria-hidden="true"></span>
-              <button type="button" id="macroTaxModeAnnual" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="true" data-mode="annual">Annual Sweep</button>
-              <button type="button" id="macroTaxModePerTrade" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="false" data-mode="pertrade">Per-Trade Drag</button>
-            </div>
-          </div>
-
-          <div class="calc-field" style="margin-bottom: 16px; flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
-            <input type="checkbox" id="macroCompareUnlevered" style="accent-color:var(--accent); width:14px; height:14px; cursor:pointer;">
-            <label for="macroCompareUnlevered" style="font-size: 12px; color: var(--text-muted); cursor: pointer;">Compare vs. Unlevered Equivalent</label>
-          </div>
-
-          <!-- Collapsible Advanced Section -->
-          <details id="macroAdvancedDetails" style="width: 100%; margin-bottom: 12px;">
-            <summary class="advanced-summary">
-              <span>Advanced Constants</span>
-              <span id="macroAdvancedChevron">▾</span>
-            </summary>
-            <div class="advanced-details">
-              <div class="calc-field">
-                <label class="calc-field__label" for="macroConstRoll">Roll Cost (%)</label>
-                <input type="number" id="macroConstRoll" class="calc-input calc-input--mono" value="0.50" step="0.05" min="0">
+              <div class="calc-field" style="margin-bottom: 12px;">
+                <label class="calc-field__label has-tooltip" data-tooltip-key="macro-starting-capital" for="macroInitCap">Starting Capital (₹)</label>
+                <div class="calc-capital-row">
+                  <input type="number" id="macroInitCap" class="calc-input calc-input--mono" value="3500000" step="100000" min="0" inputmode="numeric">
+                  <div class="calc-quick-btns has-tooltip" data-tooltip-key="macro-capital-presets" role="group" aria-label="Capital presets">
+                    <button type="button" class="calc-quick-btn is-active" data-cap="3500000">35L</button>
+                    <button type="button" class="calc-quick-btn" data-cap="10000000">1Cr</button>
+                    <button type="button" class="calc-quick-btn" data-cap="50000000">5Cr</button>
+                    <button type="button" class="calc-quick-btn" data-cap="100000000">10Cr</button>
+                  </div>
+                </div>
               </div>
-              <div class="calc-field">
-                <label class="calc-field__label" for="macroConstTxn">Transaction Cost (%)</label>
-                <input type="number" id="macroConstTxn" class="calc-input calc-input--mono" value="0.06" step="0.01" min="0">
+
+              <div class="calc-grid--duo" style="margin-bottom: 12px;">
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="macro-trade-frequency" for="macroFreq">Frequency (Trades/Year)</label>
+                  <select id="macroFreq" class="calc-select">
+                    <option value="0.5">0.5 Trades/Yr (Bi-annual)</option>
+                    <option value="1.0">1.0 Trades/Yr (Annual)</option>
+                    <option value="1.5">1.5 Trades/Yr</option>
+                    <option value="1.8" selected>1.8 Trades/Yr (Baseline)</option>
+                    <option value="2.0">2.0 Trades/Yr</option>
+                    <option value="3.0">3.0 Trades/Yr</option>
+                    <option value="4.0">4.0 Trades/Yr (Quarterly)</option>
+                    <option value="6.0">6.0 Trades/Yr (Bi-monthly)</option>
+                    <option value="12.0">12.0 Trades/Yr (Monthly)</option>
+                  </select>
+                </div>
+                <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="macro-simulator" for="macroHorizon">Horizon (Years)</label>
+                  <select id="macroHorizon" class="calc-select">
+                    <option value="10">10 Years</option>
+                    <option value="15" selected>15 Years</option>
+                    <option value="20">20 Years</option>
+                  </select>
+                </div>
               </div>
-              <div class="calc-field">
-                <label class="calc-field__label" for="macroConstYield">Idle Fund Yield (%)</label>
-                <input type="number" id="macroConstYield" class="calc-input calc-input--mono" value="6.50" step="0.10" min="0">
+
+              <div class="calc-field" style="margin-bottom: 12px;">
+                <label class="calc-field__label has-tooltip" data-tooltip-key="macro-base-margin" for="macroMargin">Base Margin (%)</label>
+                <input type="number" id="macroMargin" class="calc-input calc-input--mono" value="30" step="1" min="1" max="100" inputmode="numeric">
               </div>
-              <div class="calc-field">
-                <label class="calc-field__label" for="macroConstTax">Corporate Tax Rate (%)</label>
-                <input type="number" id="macroConstTax" class="calc-input calc-input--mono" value="25.168" step="0.01" min="0">
+
+              <div class="calc-field" style="margin-bottom: 12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="macro-captured-swing" for="macroMove">Captured Swing (ΔP<sub>move</sub>)</label>
+                  <span id="macroMoveVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">18%</span>
+                </div>
+                <input type="range" id="macroMove" min="5" max="50" value="18" style="accent-color:var(--accent);width:100%;cursor:pointer;">
               </div>
+
+              <div class="calc-field" style="margin-bottom: 12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <label class="calc-field__label has-tooltip" data-tooltip-key="macro-catastrophic-buffer" for="macroBuffer">Catastrophic Buffer (ΔP<sub>adverse</sub>)</label>
+                  <span id="macroBufferVal" style="font-size:12px;color:var(--text-muted);font-family:monospace;">25%</span>
+                </div>
+                <input type="range" id="macroBuffer" min="5" max="40" value="25" style="accent-color:var(--accent);width:100%;cursor:pointer;">
+              </div>
+
+              <div class="calc-field" style="margin-bottom: 16px;">
+                <label class="calc-field__label has-tooltip" data-tooltip-key="macro-taxation-mode">Taxation Mode</label>
+                <div class="calc-toggle" id="macroTaxMode" data-value="annual" role="radiogroup" aria-label="Tax mode" style="width:100%; max-width: 260px;">
+                  <span class="calc-toggle__pill" style="width: calc(50% - 2px);" aria-hidden="true"></span>
+                  <button type="button" id="macroTaxModeAnnual" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="true" data-mode="annual">Annual Sweep</button>
+                  <button type="button" id="macroTaxModePerTrade" class="calc-toggle__option" style="width: 50%; font-size: 11px;" role="radio" aria-checked="false" data-mode="pertrade">Per-Trade Drag</button>
+                </div>
+              </div>
+
+              <div class="calc-field has-tooltip" data-tooltip-key="macro-compare-unlevered" style="margin-bottom: 12px; flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="macroCompareUnlevered" style="accent-color:var(--accent); width:14px; height:14px; cursor:pointer;">
+                <label for="macroCompareUnlevered" style="font-size: 12px; color: var(--text-muted); cursor: pointer;">Compare vs. Unlevered Equivalent</label>
+              </div>
+
+              <div class="calc-field has-tooltip" data-tooltip-key="macro-log-scale" style="margin-bottom: 16px; flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="macroLogScaleToggle" style="accent-color:var(--accent); width:14px; height:14px; cursor:pointer;">
+                <label for="macroLogScaleToggle" style="font-size: 12px; color: var(--text-muted); cursor: pointer;">Logarithmic Scale</label>
+              </div>
+
+              <!-- Collapsible Advanced Section -->
+              <details id="macroAdvancedDetails" style="width: 100%; margin-bottom: 12px;">
+                <summary class="advanced-summary">
+                  <span>Advanced Constants</span>
+                  <span id="macroAdvancedChevron">▾</span>
+                </summary>
+                <div class="advanced-details">
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="macro-roll-cost" for="macroConstRoll">Roll Cost (%)</label>
+                    <input type="number" id="macroConstRoll" class="calc-input calc-input--mono" value="0.50" step="0.05" min="0">
+                  </div>
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="macro-txn-cost" for="macroConstTxn">Transaction Cost (%)</label>
+                    <input type="number" id="macroConstTxn" class="calc-input calc-input--mono" value="0.06" step="0.01" min="0">
+                  </div>
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="macro-idle-yield" for="macroConstYield">Idle Fund Yield (%)</label>
+                    <input type="number" id="macroConstYield" class="calc-input calc-input--mono" value="6.50" step="0.10" min="0">
+                  </div>
+                  <div class="calc-field">
+                    <label class="calc-field__label has-tooltip" data-tooltip-key="macro-tax-rate" for="macroConstTax">Corporate Tax Rate (%)</label>
+                    <input type="number" id="macroConstTax" class="calc-input calc-input--mono" value="25.168" step="0.01" min="0">
+                  </div>
+                </div>
+              </details>
+
             </div>
-          </details>
 
-        </div>
+            <!-- Column 2 & 3: Tabs & Chart & Table -->
+            <div class="calc-section" style="grid-column: span 2;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+                <div class="calc-section__kicker" id="macroChartTitle">Ledger Value Projection</div>
+                <!-- Chart Tabs -->
+                <div class="calc-chart-tabs" id="macroChartTabs" role="tablist" aria-label="Simulator chart view">
+                  <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="corpus" data-tooltip-key="macro-tab-corpus" aria-pressed="true" style="padding: 4px 8px; font-size: 11px;">Corpus Growth</button>
+                  <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="drag" data-tooltip-key="macro-tab-drag" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Annual Drag</button>
+                  <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="grossnet" data-tooltip-key="macro-tab-grossnet" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Gross vs Net</button>
+                  <button type="button" class="calc-chart-tab has-tooltip" role="tab" data-view="leverage" data-tooltip-key="macro-tab-leverage" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Leverage Path</button>
+                </div>
+              </div>
 
-        <!-- Column 2 & 3: Tabs & Chart & Table -->
-        <div class="calc-section" style="grid-column: span 2;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
-            <div class="calc-section__kicker" id="macroChartTitle">Ledger Value Projection</div>
-            <!-- Chart Tabs -->
-            <div class="calc-chart-tabs" id="macroChartTabs" role="tablist" aria-label="Simulator chart view">
-              <button type="button" class="calc-chart-tab" role="tab" data-view="corpus" aria-pressed="true" style="padding: 4px 8px; font-size: 11px;">Corpus Growth</button>
-              <button type="button" class="calc-chart-tab" role="tab" data-view="drag" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Annual Drag</button>
-              <button type="button" class="calc-chart-tab" role="tab" data-view="grossnet" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Gross vs Net</button>
-              <button type="button" class="calc-chart-tab" role="tab" data-view="leverage" aria-pressed="false" style="padding: 4px 8px; font-size: 11px;">Leverage Path</button>
+              <div class="calc-chart-shell" style="height: 320px; position: relative;">
+                <canvas id="chartMacroSimulation"></canvas>
+              </div>
+
+              <!-- Compounding Schedule Table -->
+              <div style="margin-top: 24px;">
+                <div class="calc-section__kicker">Compounding Schedule &amp; Annual Audit</div>
+                <div class="macro-table-wrapper">
+                  <table class="macro-table" id="macroScheduleTable">
+                    <thead>
+                      <tr>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-year" style="cursor:help;">Year</th>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-trades" style="cursor:help;">Trades</th>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-gross" style="cursor:help;">Gross Return</th>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-tax" style="cursor:help;">Tax Paid</th>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-expenses" style="cursor:help;">Expenses</th>
+                        <th class="has-tooltip" data-tooltip-key="macro-th-corpus" style="cursor:help;">Ending Corpus</th>
+                      </tr>
+                    </thead>
+                    <tbody id="macroScheduleBody">
+                      <!-- Generated Dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="calc-chart-shell" style="height: 320px; position: relative;">
-            <canvas id="chartMacroSimulation"></canvas>
-          </div>
-
-          <!-- Compounding Schedule Table -->
-          <div style="margin-top: 24px;">
-            <div class="calc-section__kicker">Compounding Schedule &amp; Annual Audit</div>
-            <div class="macro-table-wrapper">
-              <table class="macro-table" id="macroScheduleTable">
-                <thead>
-                  <tr>
-                    <th>Year</th>
-                    <th>Trades</th>
-                    <th>Gross Return</th>
-                    <th>Tax Paid</th>
-                    <th>Expenses</th>
-                    <th>Ending Corpus</th>
-                  </tr>
-                </thead>
-                <tbody id="macroScheduleBody">
-                  <!-- Generated Dynamically -->
-                </tbody>
-              </table>
+          <!-- Reality & Compliance Notes -->
+          <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-auditing" style="cursor: help;">Reality &amp; Compliance Auditing</div>
+            <div class="compliance-note compliance-note--danger has-tooltip" data-tooltip-key="macro-auditing">
+              <strong>SEBI Peak Margin Compliance:</strong> SEBI mandates 100% upfront margin collection (Initial Margin + ELM) by clearing members. Peak margin requirements are monitored intraday; any overnight deficit triggers mandatory short-collection penalties. Corporate treasury guidelines must align with SEBI peak buffers.
+            </div>
+            <div class="compliance-note compliance-note--warn has-tooltip" data-tooltip-key="macro-surcharge-thresholds">
+              <strong>Taxation Surcharge Thresholds:</strong> The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply under classical Indian tax brackets.
+            </div>
+            <div class="compliance-note compliance-note--info has-tooltip" data-tooltip-key="macro-capacity-sizing">
+              <strong>Capacity Sizing Firewall:</strong> The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Reality & Compliance Notes -->
-      <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
-        <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-auditing" style="cursor: help;">Reality &amp; Compliance Auditing</div>
-        <div class="compliance-note compliance-note--danger has-tooltip" data-tooltip-key="macro-auditing">
-          <strong>SEBI Peak Margin Compliance:</strong> SEBI mandates 100% upfront margin collection (Initial Margin + ELM) by clearing members. Peak margin requirements are monitored intraday; any overnight deficit triggers mandatory short-collection penalties. Corporate treasury guidelines must align with SEBI peak buffers.
-        </div>
-        <div class="compliance-note compliance-note--warn has-tooltip" data-tooltip-key="macro-surcharge-thresholds">
-          <strong>Taxation Surcharge Thresholds:</strong> The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply under classical Indian tax brackets.
-        </div>
-        <div class="compliance-note compliance-note--info has-tooltip" data-tooltip-key="macro-capacity-sizing">
-          <strong>Capacity Sizing Firewall:</strong> The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).
         </div>
       </div>
     </div>
@@ -2228,6 +2237,26 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
   margin-top: 24px;
 }
+#macroCompoundingHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; user-select: none;
+  border-radius: 4px;
+}
+#macroCompoundingHeader:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+#macroChevron {
+  display: inline-block; font-size: 18px; color: var(--text-muted);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#macroSummaryBadge {
+  background: var(--accent); color: white; border: none;
+  font-weight: 600; padding: 3px 12px; font-size: 11px;
+  letter-spacing: 0.02em; display: none; align-items: center; gap: 4px;
+}
+#macroSummaryBadge.is-loss { background: var(--accent-red); }
+#macroSummaryBadge.is-profit { background: var(--accent-green); color: #0d1117; }
 #macroCompoundingCard:hover {
   border-color: rgba(56,139,253,0.4);
   box-shadow: 0 12px 36px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
@@ -7953,6 +7982,98 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "macro-capacity-sizing": {
     title: "Capacity Sizing Firewall",
     body: `The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).`
+  },
+  "macro-starting-capital": {
+    title: "Starting Capital",
+    body: "The initial investment capital allocated to the compounding strategy (e.g. ₹35 Lakhs, ₹1 Crore)."
+  },
+  "macro-trade-frequency": {
+    title: "Trade Frequency",
+    body: "Average number of complete trades executed per calendar year. Baseline is 1.8 trades/year."
+  },
+  "macro-base-margin": {
+    title: "Base Margin (%)",
+    body: "The percentage of contract value required as overnight margin collateral for the strategy."
+  },
+  "macro-captured-swing": {
+    title: "Captured Swing (ΔP move)",
+    body: "The target price move captured per trade, expressed as a percentage of contract value."
+  },
+  "macro-catastrophic-buffer": {
+    title: "Catastrophic Buffer (ΔP adverse)",
+    body: "The maximum adverse price gap (drawdown) the strategy must survive without hitting ruin/liquidation."
+  },
+  "macro-taxation-mode": {
+    title: "Taxation Mode",
+    body: "<strong>Annual Sweep:</strong> Tax is calculated and paid at the end of each year.<br><strong>Per-Trade Drag:</strong> Tax is deducted immediately from the profits of each individual trade."
+  },
+  "macro-compare-unlevered": {
+    title: "Compare vs. Unlevered Equivalent",
+    body: "Plots a secondary dashed line on the chart representing portfolio growth at 1.0x leverage (no margin usage)."
+  },
+  "macro-log-scale": {
+    title: "Logarithmic Scale",
+    body: "Toggles the chart's vertical Y-axis between linear and logarithmic scale, which is useful for visualizing exponential compounding over long horizons."
+  },
+  "macro-roll-cost": {
+    title: "Roll Cost (%)",
+    body: "The estimated premium, execution slippage, or bid-ask spread loss incurred when rolling positions to the next expiry contract."
+  },
+  "macro-txn-cost": {
+    title: "Transaction Cost (%)",
+    body: "Exchange fees, brokerage, clearing charges, GST, and securities transaction tax (STT) paid per trade round-trip."
+  },
+  "macro-idle-yield": {
+    title: "Idle Fund Yield (%)",
+    body: "The annual interest yield earned on the Liquid Shield cash buffer (held in liquid funds, treasury bills, or sovereign gold bonds)."
+  },
+  "macro-tax-rate": {
+    title: "Corporate Tax Rate (%)",
+    body: "The corporate tax rate applied to net trading profits. Defaults to Section 115BAA rate of 25.168% (22% base + 10% surcharge + 4% cess)."
+  },
+  "macro-breach-loss": {
+    title: "Breach Loss",
+    body: "The realized loss incurred if the catastrophic adverse swing buffer is breached, triggering emergency risk square-off."
+  },
+  "macro-tab-corpus": {
+    title: "Corpus Growth",
+    body: "Shows the projected growth of the net compounding portfolio corpus over the simulation horizon."
+  },
+  "macro-tab-drag": {
+    title: "Annual Drag",
+    body: "Visualizes the annual capital drag caused by taxes swept and transaction/roll expenses paid."
+  },
+  "macro-tab-grossnet": {
+    title: "Gross vs Net",
+    body: "Compares the gross trading ledger balance against the net corpus (after tax sweeps and expenses)."
+  },
+  "macro-tab-leverage": {
+    title: "Leverage Path",
+    body: "Tracks the average leverage used and cash shield percentage maintained by the strategy over time."
+  },
+  "macro-th-year": {
+    title: "Compounding Year",
+    body: "The progressive year of the macro simulation."
+  },
+  "macro-th-trades": {
+    title: "Trades Executed",
+    body: "The number of trades executed in that year based on the configured frequency."
+  },
+  "macro-th-gross": {
+    title: "Gross Return",
+    body: "The gross profit generated before subtracting taxes, transaction costs, and roll expenses."
+  },
+  "macro-th-tax": {
+    title: "Tax Paid",
+    body: "The total corporate income tax swept and paid in that year."
+  },
+  "macro-th-expenses": {
+    title: "Expenses Paid",
+    body: "The sum of transaction costs and roll costs incurred during the year."
+  },
+  "macro-th-corpus": {
+    title: "Ending Corpus",
+    body: "The final net portfolio value at the end of the year, which serves as the starting capital for the next year."
   }
 };
 
@@ -8636,7 +8757,9 @@ function getMacroSimEls() {
     kpiShield: document.getElementById('kpiMacroShield'),
     kpiShieldSub: document.getElementById('kpiMacroShieldSub'),
     kpiSaturation: document.getElementById('kpiMacroSaturation'),
-    kpiSaturationSub: document.getElementById('kpiMacroSaturationSub')
+    kpiSaturationSub: document.getElementById('kpiMacroSaturationSub'),
+    summaryBadge: document.getElementById('macroSummaryBadge'),
+    chevron: document.getElementById('macroChevron')
   };
   return _macroElsCache;
 }
@@ -8691,6 +8814,30 @@ function initMacroSimulator() {
   if (_macroInited) return;
   _macroInited = true;
   const els = getMacroSimEls();
+
+  const header = document.getElementById('macroCompoundingHeader');
+  const body = document.getElementById('macroCompoundingBody');
+  const chevron = document.getElementById('macroChevron');
+
+  const togglePanel = () => {
+    const isCollapsed = !body.classList.contains('is-open');
+    body.classList.toggle('is-open', isCollapsed);
+    header.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+    chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    if (isCollapsed && typeof attachTooltips === 'function') {
+      attachTooltips();
+    }
+  };
+
+  if (header) {
+    header.addEventListener('click', () => togglePanel());
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        togglePanel();
+      }
+    });
+  }
 
   const inputIds = [
     'macroInitCap', 'macroFreq', 'macroHorizon', 'macroMargin',
@@ -8912,6 +9059,15 @@ function _runMacroSimulationCore() {
   els.kpiTax.textContent = macroSimMoney(simMain.totalTax);
   els.kpiTaxSub.textContent = `${macroSimMoney(simMain.totalExpenses)} operating drag`;
   els.kpiShieldSub.textContent = yearOne ? `Yr 1 average reserve ${yearOne.avgShieldPct.toFixed(1)}%` : 'Idle cash cushion';
+
+  if (els.summaryBadge) {
+    const formattedCap = macroSimMoney(terminalCapital);
+    const sign = cagr >= 0 ? '+' : '';
+    els.summaryBadge.textContent = `${formattedCap} (${sign}${cagr.toFixed(1)}% CAGR)`;
+    els.summaryBadge.classList.toggle('is-profit', cagr >= 0);
+    els.summaryBadge.classList.toggle('is-loss', cagr < 0);
+    els.summaryBadge.style.display = 'inline-flex';
+  }
 
   if (simMain.firstSaturationYear != null) {
     els.capacityReadout.textContent = `[CAPACITY SATURATES IN YEAR ${simMain.firstSaturationYear}]`;
