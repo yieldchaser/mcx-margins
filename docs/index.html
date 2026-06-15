@@ -1502,7 +1502,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <!-- ── 10-Year Multi-Regime Macro Compounding Simulator ── -->
     <div class="card" style="margin-top:24px;" id="macroCompoundingCard">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div class="card-title" style="margin-bottom:0; font-size: 13px;">10-Year Multi-Regime Macro Simulator</div>
+        <div class="card-title has-tooltip" data-tooltip-key="macro-simulator" style="margin-bottom:0; font-size: 13px; cursor: help;">10-Year Multi-Regime Macro Simulator</div>
         <div style="display:flex;gap:12px;align-items:center;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none;">
             <input type="checkbox" id="macroLogScaleToggle" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer;">
@@ -1513,32 +1513,32 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
       <!-- High-Density KPI Header Cards -->
       <div class="macro-grid-kpis">
-        <div class="macro-kpi-card macro-kpi-card--success">
+        <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-terminal-wealth">
           <div class="macro-kpi-label">Terminal Wealth</div>
           <div class="macro-kpi-value" id="kpiMacroTerminalWealth">—</div>
           <div class="macro-kpi-sub" id="kpiMacroTerminalWealthSub">10y horizon</div>
         </div>
-        <div class="macro-kpi-card macro-kpi-card--success">
+        <div class="macro-kpi-card macro-kpi-card--success has-tooltip" data-tooltip-key="macro-cagr">
           <div class="macro-kpi-label">After-Tax CAGR</div>
           <div class="macro-kpi-value" id="kpiMacroCAGR">—</div>
           <div class="macro-kpi-sub" id="kpiMacroCAGRSub">Net compound return</div>
         </div>
-        <div class="macro-kpi-card macro-kpi-card--accent">
+        <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-tax-paid">
           <div class="macro-kpi-label">Total Tax Paid</div>
           <div class="macro-kpi-value" id="kpiMacroTotalTax">—</div>
           <div class="macro-kpi-sub" id="kpiMacroTotalTaxSub">Corporate tax swept</div>
         </div>
-        <div class="macro-kpi-card macro-kpi-card--accent">
+        <div class="macro-kpi-card macro-kpi-card--accent has-tooltip" data-tooltip-key="macro-leverage-firewall">
           <div class="macro-kpi-label">Leverage Firewall</div>
           <div class="macro-kpi-value" id="kpiMacroLeverage">—</div>
           <div class="macro-kpi-sub" id="kpiMacroLeverageSub">L<sub>max</sub> ceiling</div>
         </div>
-        <div class="macro-kpi-card macro-kpi-card--orange">
+        <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-liquid-shield">
           <div class="macro-kpi-label">Liquid Shield</div>
           <div class="macro-kpi-value" id="kpiMacroShield">—</div>
           <div class="macro-kpi-sub" id="kpiMacroShieldSub">Idle cash cushion</div>
         </div>
-        <div class="macro-kpi-card macro-kpi-card--orange">
+        <div class="macro-kpi-card macro-kpi-card--orange has-tooltip" data-tooltip-key="macro-adv-saturation">
           <div class="macro-kpi-label">ADV Saturation</div>
           <div class="macro-kpi-value" id="kpiMacroSaturation">—</div>
           <div class="macro-kpi-sub" id="kpiMacroSaturationSub">Capacity limit check</div>
@@ -1566,7 +1566,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="calc-grid">
         <!-- Column 1: Control Panel -->
         <div class="calc-section">
-          <div class="calc-section__kicker">Simulator Setup</div>
+          <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-setup" style="cursor: help;">Simulator Setup</div>
 
           <div class="calc-field" style="margin-bottom: 12px;">
             <label class="calc-field__label" for="macroInitCap">Starting Capital (₹)</label>
@@ -1689,14 +1689,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
       <!-- Reality & Compliance Notes -->
       <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
-        <div class="calc-section__kicker">Reality &amp; Compliance Auditing</div>
-        <div class="compliance-note compliance-note--danger">
+        <div class="calc-section__kicker has-tooltip" data-tooltip-key="macro-auditing" style="cursor: help;">Reality &amp; Compliance Auditing</div>
+        <div class="compliance-note compliance-note--danger has-tooltip" data-tooltip-key="macro-auditing">
           <strong>LRS &amp; Leverage Compliance:</strong> Reserve Bank of India LRS margin guidelines bar margin/leveraged trading for retail outward remittances. Corporate accounts structured under Section 115BAA with approved trading charters must verify that MCX leverage parameters align with corporate treasury guidelines.
         </div>
-        <div class="compliance-note compliance-note--warn">
+        <div class="compliance-note compliance-note--warn has-tooltip" data-tooltip-key="macro-surcharge-thresholds">
           <strong>Taxation Surcharge Thresholds:</strong> The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply under classical Indian tax brackets.
         </div>
-        <div class="compliance-note compliance-note--info">
+        <div class="compliance-note compliance-note--info has-tooltip" data-tooltip-key="macro-capacity-sizing">
           <strong>Capacity Sizing Firewall:</strong> The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).
         </div>
       </div>
@@ -7864,6 +7864,50 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "Regime B": {
     title: "Regime B (Elevated)",
     body: `Heightened market stress. Volatility or risk factors have pushed margins above the usual baseline.`
+  },
+  "macro-simulator": {
+    title: "10-Year Multi-Regime Macro Simulator",
+    body: `Models corporate portfolio growth under multi-regime risk conditions, applying leverage firewalls, tax sweeps, transaction costs, and ADV capacity limits over a 10-year horizon.`
+  },
+  "macro-terminal-wealth": {
+    title: "Terminal Wealth",
+    body: `The final portfolio net asset value (NAV) at the end of the 10-year compounding horizon, net of all taxes, rolls, transaction costs, and breach losses.`
+  },
+  "macro-cagr": {
+    title: "After-Tax CAGR",
+    body: `The net compound annual growth rate (CAGR) of the portfolio over the 10-year horizon, reflecting the net-of-tax compounded return.`
+  },
+  "macro-tax-paid": {
+    title: "Total Tax Paid",
+    body: `The cumulative corporate income tax paid over the 10-year period, modeled under Section 115BAA corporate rates (25.168% default) with selected sweep frequency.`
+  },
+  "macro-leverage-firewall": {
+    title: "Leverage Firewall (Lmax)",
+    body: `The maximum safe leverage limit applied to prevent ruin. Calculated as: <em>Liquid Shield / (Base Margin + Catastrophic Buffer)</em>. Exceeding this ceiling risks margin call liquidation on a single adverse gap move.`
+  },
+  "macro-liquid-shield": {
+    title: "Liquid Shield",
+    body: `The portion of the portfolio kept in cash or liquid yield equivalents (default 6.50%) to act as a buffer against adverse price shocks and margin hikes. A larger shield reduces max safe leverage but enhances survival probability.`
+  },
+  "macro-adv-saturation": {
+    title: "Average Daily Volume (ADV) Saturation",
+    body: `Capacity gate monitoring. If the required position size exceeds 10% of the contract's Average Daily Volume (ADV), the excess capital is redirected to liquid yields, preventing execution slippage and market impact drag.`
+  },
+  "macro-setup": {
+    title: "Simulator Parameters",
+    body: `Configure the initial conditions: starting capital, trading frequency, margin requirements, captured price swings, and the catastrophic gap-risk buffer.`
+  },
+  "macro-auditing": {
+    title: "LRS & Leverage Compliance Audit",
+    body: `Reserve Bank of India LRS margin guidelines bar margin/leveraged trading for retail outward remittances. Corporate accounts structured under Section 115BAA with approved trading charters must verify that MCX leverage parameters align with corporate treasury guidelines.`
+  },
+  "macro-surcharge-thresholds": {
+    title: "Taxation Surcharge Thresholds",
+    body: `The modeled corporate tax rate of 25.168% is fixed under Section 115BAA (22% base + 10% surcharge + 4% cess). If the annual net taxable income exceeds ₹1 Crore or ₹10 Crore, additional surcharge escalations apply.`
+  },
+  "macro-capacity-sizing": {
+    title: "Capacity Sizing Firewall",
+    body: `The ₹378 Cr ADV capacity gate restricts position sizing to 10% of Average Daily Volume. Portfolios exceeding this limit will experience linear growth shifts due to capital overflow, with excess funds redirected into liquid yields (6.50% default).`
   }
 };
 
