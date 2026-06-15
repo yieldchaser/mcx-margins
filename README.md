@@ -26,8 +26,15 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 - **Historical Forward Curves:** Visualizes the evolution of the margin and price curves. Overlays today's curve against the 1-week, 1-month, and 1-year historical curves to measure structural shifts in maturity expectations.
 
 ### 3. History
-- **Deep Time-Series Analysis:** A dedicated historical engine with an interactive range slider (1M, 3M, 6M, 1Y, 3Y, ALL).
-- Plots absolute Margins, Realized Volatility over time, Margin Component Decomposition, and Market Flow dynamics.
+- **Deep Time-Series Analysis:** A dedicated historical engine with an interactive range slider (1M, 3M, 6M, 1Y, 3Y, ALL) plotting absolute Margins, Realized Volatility over time, Margin Component Decomposition, and Market Flow dynamics.
+- **10-Year Multi-Regime Macro Simulator:** An institutional-grade compounding engine that models long-term portfolio growth under multi-regime risk conditions:
+  - *Cushion Sizing Firewall:* Dynamically calculates max safe leverage ($L_{max}$) and liquid cash shields based on base margin and catastrophic gap-risk buffers to prevent ruin.
+  - *Preset & Custom Capital:* Quick preset buttons (35L, 1Cr, 5Cr, 10Cr) and custom numeric input.
+  - *Expanded Frequency:* Models scenarios from 0.5 to 12.0 trades per year.
+  - *Capacity Sizing Firewall:* Enforces a ₹378 Cr ADV capacity gate (10% of average daily volume), redirecting excess capital overflow to liquid yields (6.5% default).
+  - *Tax Sweep Modes:* Simulates corporate tax drag under Section 115BAA (25.168%) via Annual Sweep (with expense tax shielding) or Per-Trade Drag.
+  - *SEBI Peak Margin Audit:* Real-time compliance auditing for domestic exchange upfront collection rules to avoid short-collection penalties.
+
 
 ### 4. Seasonality
 - **Year-Over-Year Overlays:** Compares historical margin behavior normalized across the Jan–Dec calendar year. Allows easy spotting of structural seasonal hikes (e.g., winter volatility pricing).
