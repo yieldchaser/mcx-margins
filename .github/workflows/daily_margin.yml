@@ -51,7 +51,7 @@ jobs:
       # fetch_today.py now includes a fail-fast weekend check.
       - name: Fetch today's margin data
         id: fetch_today
-        run: python scripts/fetch_today.py --retries 5 --wait 15
+        run: python scripts/fetch_today.py --retries 1 --wait 0
         continue-on-error: true
 
       # ── Step 3: export ──────────────────────────────────────────────────

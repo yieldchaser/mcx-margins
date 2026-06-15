@@ -1542,6 +1542,22 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <div class="macro-kpi-label">ADV Saturation</div>
           <div class="macro-kpi-value" id="kpiMacroSaturation">—</div>
           <div class="macro-kpi-sub" id="kpiMacroSaturationSub">Capacity limit check</div>
+      </div>
+
+      <!-- Parameter Readout Ribbon -->
+      <div class="calc-status calc-status--info is-visible" style="display: block; margin-bottom: 20px; margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <span class="calc-status__title">Macro Compounding Firewall Metrics</span>
+            <div class="calc-status__detail" style="margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap;">
+              <span>Max Safe Leverage (L<sub>max</sub>): <strong id="macroCeilingReadout">—</strong></span>
+              <span>Day-1 Liquid Shield: <strong id="macroShieldReadout">—</strong></span>
+              <span>Breach Loss: <strong id="macroLossReadout">—</strong></span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span id="macroCapacityReadout" style="font-weight: 700; font-size: 11px;">—</span>
+          </div>
         </div>
       </div>
 
