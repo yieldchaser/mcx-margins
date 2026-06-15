@@ -32,6 +32,8 @@
       "liquidity_score": null,
       "turnover_ratio": 10.5,
       "oi_flow_state": "neutral",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": null,
       "return_5d_pct": null,
       "return_20d_pct": null
     },
@@ -63,6 +65,8 @@
       "liquidity_score": 40.0,
       "turnover_ratio": 2.0,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -23.274,
       "return_5d_pct": null,
       "return_20d_pct": null
     },
@@ -94,6 +98,8 @@
       "liquidity_score": 70.0,
       "turnover_ratio": 2.8333,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -13.755,
       "return_5d_pct": null,
       "return_20d_pct": null
     },
@@ -125,6 +131,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 3.5,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -23.665,
       "return_5d_pct": null,
       "return_20d_pct": null
     },
@@ -156,6 +164,8 @@
       "liquidity_score": 55.0,
       "turnover_ratio": 1.0667,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -30.152,
       "return_5d_pct": null,
       "return_20d_pct": null
     },
@@ -187,6 +197,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 1.875,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -25.316,
       "return_5d_pct": 13.989,
       "return_20d_pct": null
     },
@@ -218,6 +230,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 2.1364,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": true,
+      "margin_vs_realized_vol_gap": -21.721,
       "return_5d_pct": 17.74,
       "return_20d_pct": null
     },
@@ -249,6 +263,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 2.4091,
       "oi_flow_state": "neutral",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -30.151,
       "return_5d_pct": 14.775,
       "return_20d_pct": null
     },
@@ -280,6 +296,8 @@
       "liquidity_score": 67.5,
       "turnover_ratio": 1.45,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -29.293,
       "return_5d_pct": 8.501,
       "return_20d_pct": null
     },
@@ -311,6 +329,8 @@
       "liquidity_score": 60.0,
       "turnover_ratio": 0.7727,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -45.072,
       "return_5d_pct": -7.467,
       "return_20d_pct": null
     },
@@ -342,6 +362,8 @@
       "liquidity_score": 88.0,
       "turnover_ratio": 1.8333,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -43.507,
       "return_5d_pct": -7.481,
       "return_20d_pct": null
     },
@@ -373,6 +395,8 @@
       "liquidity_score": 83.6,
       "turnover_ratio": 1.0,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -41.038,
       "return_5d_pct": -8.049,
       "return_20d_pct": null
     },
@@ -404,6 +428,8 @@
       "liquidity_score": 61.7,
       "turnover_ratio": 0.8077,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -38.957,
       "return_5d_pct": -3.579,
       "return_20d_pct": null
     },
@@ -435,6 +461,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 1.7097,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -37.208,
       "return_5d_pct": -1.931,
       "return_20d_pct": null
     },
@@ -466,6 +494,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 2.3778,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -36.42,
       "return_5d_pct": 12.487,
       "return_20d_pct": null
     },
@@ -497,6 +527,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 1.8305,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -35.089,
       "return_5d_pct": 9.238,
       "return_20d_pct": null
     },
@@ -528,6 +560,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 3.1373,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.918,
       "return_5d_pct": 9.083,
       "return_20d_pct": null
     },
@@ -559,6 +593,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 3.3542,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -34.422,
       "return_5d_pct": 4.722,
       "return_20d_pct": null
     },
@@ -590,6 +626,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 2.765,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -34.33,
       "return_5d_pct": 9.49,
       "return_20d_pct": null
     },
@@ -621,6 +659,8 @@
       "liquidity_score": 97.9,
       "turnover_ratio": 7.7398,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.466,
       "return_5d_pct": 6.262,
       "return_20d_pct": null
     },
@@ -652,6 +692,8 @@
       "liquidity_score": 98.0,
       "turnover_ratio": 9.3132,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.72,
       "return_5d_pct": 7.417,
       "return_20d_pct": 23.749
     },
@@ -683,6 +725,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 11.1399,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.733,
       "return_5d_pct": 7.163,
       "return_20d_pct": 26.557
     },
@@ -714,6 +758,8 @@
       "liquidity_score": 97.3,
       "turnover_ratio": 7.6054,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -36.882,
       "return_5d_pct": 4.493,
       "return_20d_pct": 21.099
     },
@@ -745,6 +791,8 @@
       "liquidity_score": 87.0,
       "turnover_ratio": 6.0411,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -35.819,
       "return_5d_pct": 0.324,
       "return_20d_pct": 16.881
     },
@@ -776,6 +824,8 @@
       "liquidity_score": 91.7,
       "turnover_ratio": 8.0849,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.895,
       "return_5d_pct": -5.296,
       "return_20d_pct": 4.747
     },
@@ -807,6 +857,8 @@
       "liquidity_score": 96.0,
       "turnover_ratio": 9.0488,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.574,
       "return_5d_pct": -3.844,
       "return_20d_pct": 4.389
     },
@@ -838,6 +890,8 @@
       "liquidity_score": 96.9,
       "turnover_ratio": 13.8599,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.992,
       "return_5d_pct": -5.035,
       "return_20d_pct": 2.077
     },
@@ -869,6 +923,8 @@
       "liquidity_score": 80.0,
       "turnover_ratio": 8.5886,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -33.219,
       "return_5d_pct": -0.595,
       "return_20d_pct": 4.882
     },
@@ -900,6 +956,8 @@
       "liquidity_score": 97.8,
       "turnover_ratio": 6.532,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -37.191,
       "return_5d_pct": 6.627,
       "return_20d_pct": 14.862
     },
@@ -931,6 +989,8 @@
       "liquidity_score": 93.8,
       "turnover_ratio": 5.0649,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -26.531,
       "return_5d_pct": 11.277,
       "return_20d_pct": 25.965
     },
@@ -962,6 +1022,8 @@
       "liquidity_score": 97.3,
       "turnover_ratio": 8.441,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -28.778,
       "return_5d_pct": 2.369,
       "return_20d_pct": 15.503
     },
@@ -993,6 +1055,8 @@
       "liquidity_score": 96.1,
       "turnover_ratio": 13.7767,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -29.579,
       "return_5d_pct": 2.911,
       "return_20d_pct": 14.243
     },
@@ -1024,6 +1088,8 @@
       "liquidity_score": 85.6,
       "turnover_ratio": 7.8321,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -30.344,
       "return_5d_pct": 3.996,
       "return_20d_pct": 13.123
     },
@@ -1055,6 +1121,8 @@
       "liquidity_score": 92.1,
       "turnover_ratio": 14.5776,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -32.106,
       "return_5d_pct": -7.124,
       "return_20d_pct": 8.78
     },
@@ -1086,6 +1154,8 @@
       "liquidity_score": 90.6,
       "turnover_ratio": 12.8377,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -40.412,
       "return_5d_pct": -20.503,
       "return_20d_pct": -10.977
     },
@@ -1117,6 +1187,8 @@
       "liquidity_score": 86.9,
       "turnover_ratio": 10.0354,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -41.992,
       "return_5d_pct": -14.275,
       "return_20d_pct": -9.359
     },
@@ -1148,6 +1220,8 @@
       "liquidity_score": 93.3,
       "turnover_ratio": 11.7344,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -42.907,
       "return_5d_pct": -16.234,
       "return_20d_pct": -12.271
     },
@@ -1179,6 +1253,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 9.7584,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -44.58,
       "return_5d_pct": -21.906,
       "return_20d_pct": -15.641
     },
@@ -1210,6 +1286,8 @@
       "liquidity_score": 92.1,
       "turnover_ratio": 6.2446,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -42.169,
       "return_5d_pct": -22.596,
       "return_20d_pct": -23.098
     },
@@ -1241,6 +1319,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 11.1537,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -43.966,
       "return_5d_pct": -6.478,
       "return_20d_pct": -21.65
     },
@@ -1272,6 +1352,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 10.8754,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -44.284,
       "return_5d_pct": -8.74,
       "return_20d_pct": -22.993
     },
@@ -1303,6 +1385,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 11.6499,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -45.338,
       "return_5d_pct": -13.816,
       "return_20d_pct": -29.446
     },
@@ -1334,6 +1418,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 16.4603,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -45.162,
       "return_5d_pct": -9.215,
       "return_20d_pct": -26.707
     },
@@ -1365,6 +1451,8 @@
       "liquidity_score": 99.1,
       "turnover_ratio": 18.2076,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -46.899,
       "return_5d_pct": -2.684,
       "return_20d_pct": -25.404
     },
@@ -1396,6 +1484,8 @@
       "liquidity_score": 97.3,
       "turnover_ratio": 15.6992,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -48.943,
       "return_5d_pct": -1.226,
       "return_20d_pct": -18.282
     },
@@ -1427,6 +1517,8 @@
       "liquidity_score": 98.2,
       "turnover_ratio": 19.3208,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -47.941,
       "return_5d_pct": -4.4,
       "return_20d_pct": -23.438
     },
@@ -1458,6 +1550,8 @@
       "liquidity_score": 100.0,
       "turnover_ratio": 12.4061,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -51.155,
       "return_5d_pct": -10.514,
       "return_20d_pct": -33.516
     },
@@ -1489,6 +1583,8 @@
       "liquidity_score": 96.6,
       "turnover_ratio": 12.1981,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -52.697,
       "return_5d_pct": -8.851,
       "return_20d_pct": -32.794
     },
@@ -1520,6 +1616,8 @@
       "liquidity_score": 89.6,
       "turnover_ratio": 6.7286,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -46.97,
       "return_5d_pct": -8.824,
       "return_20d_pct": -36.213
     },
@@ -1551,6 +1649,8 @@
       "liquidity_score": 98.4,
       "turnover_ratio": 17.4353,
       "oi_flow_state": "short_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -47.444,
       "return_5d_pct": -18.537,
       "return_20d_pct": -40.177
     },
@@ -1582,6 +1682,8 @@
       "liquidity_score": 95.2,
       "turnover_ratio": 14.353,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -49.159,
       "return_5d_pct": -15.161,
       "return_20d_pct": -36.549
     },
@@ -1613,6 +1715,8 @@
       "liquidity_score": 94.9,
       "turnover_ratio": 21.04,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -58.944,
       "return_5d_pct": 9.94,
       "return_20d_pct": -28.975
     },
@@ -1644,6 +1748,8 @@
       "liquidity_score": 84.6,
       "turnover_ratio": 20.6278,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -59.927,
       "return_5d_pct": 7.595,
       "return_20d_pct": -30.469
     },
@@ -1675,6 +1781,8 @@
       "liquidity_score": 87.6,
       "turnover_ratio": 18.5967,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -63.403,
       "return_5d_pct": 10.758,
       "return_20d_pct": -23.932
     },
@@ -1706,6 +1814,8 @@
       "liquidity_score": 90.4,
       "turnover_ratio": 35.8087,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -51.649,
       "return_5d_pct": 14.886,
       "return_20d_pct": -13.546
     },
@@ -1737,6 +1847,8 @@
       "liquidity_score": 94.9,
       "turnover_ratio": 17.1288,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -54.387,
       "return_5d_pct": 21.541,
       "return_20d_pct": -10.039
     },
@@ -1768,6 +1880,8 @@
       "liquidity_score": 88.2,
       "turnover_ratio": 15.685,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -55.456,
       "return_5d_pct": 7.253,
       "return_20d_pct": -9.061
     },
@@ -1799,6 +1913,8 @@
       "liquidity_score": 85.6,
       "turnover_ratio": 11.0345,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -54.576,
       "return_5d_pct": 15.007,
       "return_20d_pct": 2.396
     },
@@ -1830,6 +1946,8 @@
       "liquidity_score": 84.5,
       "turnover_ratio": 8.0923,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -55.76,
       "return_5d_pct": 16.462,
       "return_20d_pct": 14.453
     },
@@ -1861,6 +1979,8 @@
       "liquidity_score": 81.0,
       "turnover_ratio": 10.1934,
       "oi_flow_state": "long_unwind",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -56.898,
       "return_5d_pct": 17.818,
       "return_20d_pct": 8.914
     },
@@ -1892,6 +2012,8 @@
       "liquidity_score": 82.3,
       "turnover_ratio": 8.4541,
       "oi_flow_state": "long_build",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -58.856,
       "return_5d_pct": 17.254,
       "return_20d_pct": 15.585
     },
@@ -1923,6 +2045,8 @@
       "liquidity_score": 80.0,
       "turnover_ratio": 11.2574,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -54.661,
       "return_5d_pct": 21.159,
       "return_20d_pct": 27.843
     },
@@ -1954,6 +2078,8 @@
       "liquidity_score": 71.3,
       "turnover_ratio": 8.0529,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -54.975,
       "return_5d_pct": 18.737,
       "return_20d_pct": 33.922
     },
@@ -1985,6 +2111,8 @@
       "liquidity_score": 48.2,
       "turnover_ratio": 9.6438,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -55.807,
       "return_5d_pct": 15.877,
       "return_20d_pct": 36.281
     },
@@ -2016,6 +2144,8 @@
       "liquidity_score": 29.7,
       "turnover_ratio": 19.4756,
       "oi_flow_state": "short_cover",
+      "oi_aggregate_build_5d": false,
+      "margin_vs_realized_vol_gap": -56.015,
       "return_5d_pct": 22.353,
       "return_20d_pct": 34.913
     }

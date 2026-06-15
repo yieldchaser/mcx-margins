@@ -1311,6 +1311,12 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                 </div>
               </div>
 
+              <div class="calc-field">
+                <label class="calc-field__label has-tooltip" data-tooltip-key="calc-portfolio-drawdown" for="portfolioDrawdownInput">Portfolio Drawdown (%)</label>
+                <input type="number" id="portfolioDrawdownInput" class="calc-input calc-input--mono" value="0" step="0.5" min="0" max="100" inputmode="numeric">
+              </div>
+              <input type="hidden" id="tradeDirectionToggle" value="LONG">
+
               <div class="calc-grid--triple">
                 <div class="calc-field">
                   <label class="calc-field__label has-tooltip" data-tooltip-key="calc-symbol" for="calcSymbol">Symbol</label>
@@ -2321,6 +2327,11 @@ function fmtNum(v, digits = 2) {
 
 function fmtPct(v, digits = 2) {
   return v == null || Number.isNaN(Number(v)) ? '-' : `${Number(v).toFixed(digits)}%`;
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
 function marketLiquidityBand(score) {
@@ -5128,6 +5139,8 @@ async function initCalculator() {
     if (tg) tg.setAttribute('data-value', d);
     document.getElementById('calcDirLong').setAttribute('aria-checked', d === 'long' ? 'true' : 'false');
     document.getElementById('calcDirShort').setAttribute('aria-checked', d === 'short' ? 'true' : 'false');
+    const tdToggle = document.getElementById('tradeDirectionToggle');
+    if (tdToggle) tdToggle.value = d.toUpperCase();
     window.updateCalc();
   };
   document.getElementById('calcDirLong').addEventListener('click', () => setCalcDir('long'));
@@ -5138,7 +5151,7 @@ async function initCalculator() {
     window.updateCalc();
   });
 
-  ['calcCapital', 'calcCustomLots'].forEach(id => {
+  ['calcCapital', 'calcCustomLots', 'portfolioDrawdownInput'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => window.updateCalc());
   });
@@ -5402,17 +5415,86 @@ window.updateCalc = async function(forceSnap = false) {
   } else if (lotMode === 'safe') {
     lots = Math.round(maxPossibleLots * 0.5);
   } else if (lotMode === 'vamb') {
-    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
-    const initMargin = (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? entryMarginRow.initial_margin_pct : (entryMarginPct || 20.0);
-    const spanPct = initMargin / 100;
-    const totalMarginReq = spanPct + shield;
-    const lotValue = entryPrice * lotSize;
-    if (lotValue > 0) {
-      const rawLots = Math.floor(capital / (lotValue * totalMarginReq));
-      const maxSafeLots = Math.floor((capital * 2.5) / lotValue);
-      lots = Math.max(0, Math.min(rawLots, maxSafeLots));
+    const entryMarketRow = entryLookup?.row || null;
+    const row = {
+      price: entryPrice || 0,
+      spanmarginpct: (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? (entryMarginRow.initial_margin_pct / 100) : (entryMarginPct / 100), 
+      ann_volatility: (entryMarginRow && entryMarginRow.annualized_volatility != null) ? (entryMarginRow.annualized_volatility / 100) : ((entryMarketRow && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarketRow.rolling_realized_vol_20d / 100) : 0),
+      marginvsrealizedvolgap: (entryMarketRow && entryMarketRow.margin_vs_realized_vol_gap != null) ? entryMarketRow.margin_vs_realized_vol_gap : (
+        (entryMarginRow && entryMarginRow.margin_vs_realized_vol_gap != null) ? entryMarginRow.margin_vs_realized_vol_gap : (
+          (entryMarginRow && entryMarketRow && entryMarginRow.initial_margin_pct != null && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarginRow.initial_margin_pct - entryMarketRow.rolling_realized_vol_20d) : 0
+        )
+      ),
+      dte: Number.isFinite(entryMarginRow?.dte) ? entryMarginRow.dte : (Number.isFinite(entryMarketRow?.dte) ? entryMarketRow.dte : 999),
+      oi_aggregate_build_5d: (entryMarketRow && (entryMarketRow.oi_aggregate_build_5d === true || entryMarketRow.oi_aggregate_build_5d === 1) || (entryMarginRow && (entryMarginRow.oi_aggregate_build_5d === true || entryMarginRow.oi_aggregate_build_5d === 1)))
+    };
+
+    // ====== RSAE v2.0 ASYMMETRIC REGIME ENGINE CORES ======
+    const price         = Number(row.price) || 0;
+    const spanPct       = Number(row.spanmarginpct) || 0; 
+    const sigmaAnn      = Number(row.ann_volatility) || 0;
+    const marginGap     = Number(row.marginvsrealizedvolgap) || 0;
+    const dte           = Number.isFinite(row.dte) ? Number(row.dte) : 999;
+    const aggregateOI   = row.oi_aggregate_build_5d === true || row.oi_aggregate_build_5d === 1;
+
+    // Extract existing direction state and new interactive drawdown inputs
+    const direction     = _calcDir.toUpperCase(); // Bind to your template's active variable ('LONG' or 'SHORT')
+    const portfolioDD   = parseFloat(document.getElementById('portfolioDrawdownInput')?.value) || 0;
+
+    const LOT_SIZE = lotSize;
+    const isLong = direction !== 'SHORT';
+
+    if (price > 0 && capital > 0) {
+        // 1. Direction-Decoupled Asymmetric Safety Shield
+        const sMin = isLong ? 0.10 : 0.18;
+        const cCo  = isLong ? 0.25 : 0.40;
+        const shield = Math.min(0.40, Math.max(sMin, cCo * sigmaAnn));
+
+        // 2. Near-Expiry Tender Surcharge & Taper
+        let tau = 0, psiDTE = 1.0;
+        if (dte <= 7) {
+            tau = 0.08 * ((8 - Math.max(dte, 0)) / 7);
+            psiDTE = (dte <= 3) ? 0.50 : 0.75;
+        }
+
+        // 3. Corporate Portfolio Path-Dependency Drawdown Brake
+        let portfolioBrake = 1.00;
+        if (portfolioDD >= 10.0) {
+            portfolioBrake = 0.40;
+        } else if (portfolioDD >= 5.0) {
+            portfolioBrake = 0.65;
+        }
+
+        // 4. Synthesize Compound Margin Sufficiency
+        const mReq = spanPct + shield + tau;
+        const lotsRaw = Math.floor(capital / (price * LOT_SIZE * mReq));
+
+        // 5. Asymmetric Dynamic Leverage Ceilings
+        const lBase = isLong ? 3.25 : 1.75;
+        const kappaOI = (isLong && aggregateOI) ? 1.20 : 1.0;
+
+        // Preemptive Margin-Skew Contraction
+        let phiSkew = 1.0;
+        const G_STAR = 2.0, BETA = 0.15;
+        if (Number.isFinite(marginGap)) {
+            phiSkew = Math.min(1.0, Math.max(0.40, 1 - BETA * Math.max(0, marginGap - G_STAR)));
+        }
+
+        // 6. Final Dual-Firewall Synthesis Clamp
+        const leff = lBase * kappaOI * phiSkew * psiDTE * portfolioBrake;
+        const lotsCeil = Math.floor((capital * leff) / (price * LOT_SIZE));
+        const finalLots = Math.max(0, Math.min(lotsRaw, lotsCeil));
+
+        // Map parameters back to downstream equity curve and drawdown render engines
+        lots = finalLots;
+        usedMargin = finalLots * price * LOT_SIZE * mReq;
+
+        // Save these for downstream ribbon rendering
+        window._rsaeLastCalc = { leff, shield, lotsCeil, lotsRaw, mReq };
     } else {
-      lots = 0;
+        lots = 0;
+        usedMargin = 0;
+        window._rsaeLastCalc = null;
     }
   } else {
     lots = parseInt(document.getElementById('calcCustomLots').value) || 0;
@@ -5433,17 +5515,24 @@ window.updateCalc = async function(forceSnap = false) {
     ribbon.classList.add('is-visible', 'calc-status--warn');
     ribbon.style.display = 'block';
   } else if (lotMode === 'vamb' && lots >= 1) {
-    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
-    const initMargin = (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? entryMarginRow.initial_margin_pct : (entryMarginPct || 20.0);
-    const totalMarginReq = (initMargin / 100) + shield;
-    const lotValue = entryPrice * lotSize;
-    const rawLots = Math.floor(capital / (lotValue * totalMarginReq));
-    const maxSafeLots = Math.floor((capital * 2.5) / lotValue);
-    const isLeverageCeilingActive = rawLots > maxSafeLots;
-    
-    ribbon.innerHTML = `<span class="calc-status__title">Volatility-Adjusted Margin Buffer (VAMB) Active</span><div class="calc-status__detail">Safety Shield: <strong>${(shield * 100).toFixed(2)}%</strong> · Total Req: <strong>${(totalMarginReq * 100).toFixed(2)}%</strong> · Leverage Ceiling (2.5x max): <strong>${isLeverageCeilingActive ? 'ACTIVE (Clamped)' : 'Inactive'}</strong></div>`;
-    ribbon.classList.add('is-visible', 'calc-status--info');
-    ribbon.style.display = 'block';
+    const rsae = window._rsaeLastCalc;
+    if (rsae) {
+      ribbon.innerHTML = `
+        <span class="calc-status__title">Volatility-Adjusted (VAMB / RSAE v2.0) Active</span>
+        <div class="calc-status__detail" style="margin-top:4px;">
+          Ceiling: <strong id="rsaeCeilingDisplay">—</strong> · 
+          Shield: <strong id="rsaeActiveShieldDisplay">—</strong> · 
+          Binding: <strong id="rsaeBindingConstraintDisplay">—</strong>
+        </div>
+      `;
+      ribbon.classList.add('is-visible', 'calc-status--info');
+      ribbon.style.display = 'block';
+
+      // Update frontend UI parameter readouts
+      document.getElementById('rsaeCeilingDisplay').textContent = rsae.leff.toFixed(2) + 'x';
+      document.getElementById('rsaeActiveShieldDisplay').textContent = (rsae.shield * 100).toFixed(2) + '%';
+      document.getElementById('rsaeBindingConstraintDisplay').textContent = (rsae.lotsCeil <= rsae.lotsRaw) ? 'Leverage Ceiling (Firewall)' : 'Margin Coverage';
+    }
   }
 
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──

@@ -421,7 +421,7 @@ def _select_front_month(rows, ref_date=None):
     return min(candidates, key=lambda item: (item[0], item[1]))[2]
 
 
-def _enrich_market_history(rows):
+def _enrich_market_history(rows, oi_lookup=None, margin_lookup=None):
     enriched = []
     closes, returns, volumes, open_interest = [], [], [], []
     for idx, row in enumerate(sorted(rows, key=lambda r: r["date"])):
@@ -458,6 +458,23 @@ def _enrich_market_history(rows):
             else None
         )
         turnover_ratio = round(volume / oi, 4) if volume is not None and oi not in (None, 0) else None
+
+        # Aggregate Cross-Contract OI Trend
+        sym = row.get("symbol")
+        dt = row.get("date")
+        exp = row.get("expiry")
+        oi_trend = False
+        if oi_lookup and (sym, dt) in oi_lookup:
+            oi_trend = oi_lookup[(sym, dt)]
+
+        # Margin-to-Volatility Skew
+        margin_gap = None
+        if margin_lookup and (sym, exp, dt) in margin_lookup:
+            m_row = margin_lookup[(sym, exp, dt)]
+            init_margin = m_row.get("initial_margin_pct")
+            if init_margin is not None and realized is not None:
+                margin_gap = _round(init_margin - (realized * math.sqrt(252)), 3)
+
         enriched_row = {
             **row,
             "return_pct": ret,
@@ -473,6 +490,8 @@ def _enrich_market_history(rows):
             "liquidity_score": liquidity_score,
             "turnover_ratio": turnover_ratio,
             "oi_flow_state": _oi_flow_state(ret, oi_change_pct),
+            "oi_aggregate_build_5d": oi_trend,
+            "margin_vs_realized_vol_gap": margin_gap,
         }
         if idx >= 5 and close is not None and closes[-5] not in (None, 0):
             enriched_row["return_5d_pct"] = round(((close - closes[-5]) / closes[-5]) * 100, 3)
@@ -827,6 +846,17 @@ def _export_market_intelligence(margin_cur):
     conn = sqlite3.connect(PRICE_DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
+        # Pre-build margin contract histories and lookup so they are available for enrichment
+        margin_contract_histories = {
+            symbol: _build_margin_contract_histories(margin_cur, symbol)
+            for symbol in MARKET_SYMBOLS
+        }
+        margin_lookup = {}
+        for sym in MARKET_SYMBOLS:
+            for exp, hist in margin_contract_histories[sym].items():
+                for m_row in hist:
+                    margin_lookup[(sym, exp, m_row["date"])] = m_row
+
         rows = [
             _market_row_from_db(row)
             for row in conn.execute(
@@ -871,6 +901,41 @@ def _export_market_intelligence(margin_cur):
         }
         save("market/meta.json", meta); outputs.append("market/meta.json")
 
+        # Calculate aggregate OI lookup across top 2 active FUTCOM contracts per symbol/date
+        by_symbol_date_raw = {}
+        for r in rows:
+            symbol = r["symbol"]
+            if symbol == "NATGAS":
+                symbol = "NATURALGAS"
+            by_symbol_date_raw.setdefault(symbol, {}).setdefault(r["date"], []).append(r)
+
+        oi_aggregate_build_5d_lookup = {}
+        for symbol in ["NATURALGAS", "NATGASMINI"]:
+            symbol_dates = sorted(by_symbol_date_raw.get(symbol, {}).keys())
+            combined_oi_series = []
+            for d in symbol_dates:
+                contracts = by_symbol_date_raw[symbol][d]
+                sorted_contracts = sorted(
+                    contracts,
+                    key=lambda x: x.get("open_interest") or 0,
+                    reverse=True
+                )
+                top_2_oi = sum((c.get("open_interest") or 0) for c in sorted_contracts[:2])
+                combined_oi_series.append(top_2_oi)
+
+            for i in range(len(combined_oi_series)):
+                if i < 5:
+                    is_up = False
+                else:
+                    is_up = (
+                        combined_oi_series[i] > combined_oi_series[i-1] and
+                        combined_oi_series[i-1] > combined_oi_series[i-2] and
+                        combined_oi_series[i-2] > combined_oi_series[i-3] and
+                        combined_oi_series[i-3] > combined_oi_series[i-4] and
+                        combined_oi_series[i-4] > combined_oi_series[i-5]
+                    )
+                oi_aggregate_build_5d_lookup[(symbol, symbol_dates[i])] = is_up
+
         by_symbol_date = {symbol: {} for symbol in MARKET_SYMBOLS}
         for row in rows:
             by_symbol_date[row["symbol"]].setdefault(row["date"], []).append(row)
@@ -882,7 +947,7 @@ def _export_market_intelligence(margin_cur):
                 best = _select_front_month(by_symbol_date[symbol][d], d)
                 if best:
                     front_rows.append(best)
-            histories[symbol] = _enrich_market_history(front_rows)
+            histories[symbol] = _enrich_market_history(front_rows, oi_aggregate_build_5d_lookup, margin_lookup)
             key = MARKET_SYMBOL_KEYS[symbol]
             save(f"market/history_{key}.json", {
                 "schema_version": MARKET_SCHEMA_VERSION,
@@ -894,22 +959,17 @@ def _export_market_intelligence(margin_cur):
 
         contract_histories = {}
         contract_row_lookup = {}
-        margin_contract_histories = {
-            symbol: _build_margin_contract_histories(margin_cur, symbol)
-            for symbol in MARKET_SYMBOLS
-        }
-        margin_lookup = {}
-        for sym in MARKET_SYMBOLS:
-            for exp, hist in margin_contract_histories[sym].items():
-                for m_row in hist:
-                    margin_lookup[(sym, exp, m_row["date"])] = m_row
         for symbol in MARKET_SYMBOLS:
             by_expiry = {}
             for row in rows:
                 if row["symbol"] == symbol:
                     by_expiry.setdefault(row["expiry"], []).append(row)
             for expiry, expiry_rows in by_expiry.items():
-                enriched = _enrich_market_history(sorted(expiry_rows, key=lambda r: r["date"]))
+                enriched = _enrich_market_history(
+                    sorted(expiry_rows, key=lambda r: r["date"]),
+                    oi_aggregate_build_5d_lookup,
+                    margin_lookup
+                )
                 contract_histories[(symbol, expiry)] = enriched
                 for enriched_row in enriched:
                     contract_row_lookup[(symbol, expiry, enriched_row["date"])] = enriched_row
@@ -1188,6 +1248,7 @@ def _export_market_intelligence(margin_cur):
                     "margin_vs_realized_vol_gap": None,
                     "margin_per_liquidity": None,
                     "funding_friction_score": None,
+                    "oi_aggregate_build_5d": None,
                 }
                 if market and alignment_status == "aligned":
                     entry.update({
@@ -1208,6 +1269,7 @@ def _export_market_intelligence(margin_cur):
                         "turnover_ratio": market.get("turnover_ratio"),
                         "liquidity_score": market.get("liquidity_score"),
                         "oi_flow_state": market.get("oi_flow_state"),
+                        "oi_aggregate_build_5d": market.get("oi_aggregate_build_5d"),
                     })
                     if entry["return_5d_pct"] is not None and margin_change_5d is not None:
                         entry["margin_price_divergence"] = _round(abs(entry["return_5d_pct"]) - abs(margin_change_5d), 3)
