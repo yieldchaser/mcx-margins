@@ -8120,6 +8120,12 @@ let _macroTaxModeVal = 'annual';
 let _macroActiveView = 'corpus';
 let _macroInited = false;
 
+// Read CSS vars once (they never change after page load)
+const _macroCssText  = (typeof getComputedStyle === 'function') ? (getComputedStyle(document.body).getPropertyValue('--text')      || '#e6edf3').trim() : '#e6edf3';
+const _macroCssMuted = (typeof getComputedStyle === 'function') ? (getComputedStyle(document.body).getPropertyValue('--text-muted') || '#8b949e').trim() : '#8b949e';
+const _macroCFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+
 // Initialize macro compounding simulator
 function initMacroSimulator() {
   if (_macroInited) return;
@@ -8249,8 +8255,8 @@ function _runMacroSimulationCore() {
   
   document.getElementById('macroLossReadout').textContent = catastrophicLossPct.toFixed(1) + '%';
 
-  // Indian currency formatter
-  const cFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+  // Indian currency formatter (cFmt hoisted to module level as _macroCFmt)
+  const cFmt = _macroCFmt;
   const formatCrore = (val) => {
     const absVal = Math.abs(val);
     if (absVal >= 10000000) return '₹' + (val / 10000000).toFixed(2) + ' Cr';
@@ -8378,279 +8384,199 @@ function _runMacroSimulationCore() {
     saturationKpiSub.textContent = `Trading within capacity limits`;
   }
 
-  // Populate compounding schedule table
-  const tbody = document.getElementById('macroScheduleBody');
-  tbody.innerHTML = '';
-
-  let totalGross = 0;
-  let totalTax = 0;
-  let totalExpenses = 0;
+  // ── Table: single innerHTML pass (avoid repeated DOM mutations) ──
+  let tableRows = '';
+  let totalGross = 0, totalTax = 0, totalExpenses = 0;
 
   for (let y = 1; y <= 10; y++) {
-    // Filter steps belonging to year Y
-    const stepsInYear = simMain.history.filter(h => Math.ceil(h.year) === y && h.step > 0);
-    const tradesCount = stepsInYear.length;
-    const yearGross = stepsInYear.reduce((sum, h) => sum + h.grossReturn, 0);
-    const yearTax = stepsInYear.reduce((sum, h) => sum + h.taxPaid, 0);
-    const yearExpenses = stepsInYear.reduce((sum, h) => sum + h.expenses, 0);
-    const endCorpus = stepsInYear.length ? stepsInYear[stepsInYear.length - 1].capital : initialCapital;
-
-    totalGross += yearGross;
-    totalTax += yearTax;
-    totalExpenses += yearExpenses;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+    let tradesCount = 0, yearGross = 0, yearTax = 0, yearExpenses = 0, endCorpus = initialCapital;
+    for (let i = 1; i < simMain.history.length; i++) {
+      const h = simMain.history[i];
+      if (Math.ceil(h.year) !== y) continue;
+      tradesCount++;
+      yearGross += h.grossReturn;
+      yearTax += h.taxPaid;
+      yearExpenses += h.expenses;
+      endCorpus = h.capital;
+    }
+    totalGross += yearGross; totalTax += yearTax; totalExpenses += yearExpenses;
+    tableRows += `<tr>
       <td><strong>Year ${y}</strong></td>
       <td>${tradesCount}</td>
       <td>${formatCrore(yearGross)}</td>
       <td style="color:var(--accent-red);">${yearTax > 0 ? formatCrore(yearTax) : '—'}</td>
       <td style="color:var(--text-muted);">${yearExpenses > 0 ? formatCrore(yearExpenses) : '—'}</td>
       <td style="font-weight:600; color:var(--accent-green);">${formatCrore(endCorpus)}</td>
-    `;
-    tbody.appendChild(tr);
+    </tr>`;
   }
-
-  // Append Total Row
-  const totalTr = document.createElement('tr');
-  totalTr.className = 'total-row';
-  totalTr.innerHTML = `
-    <td>TOTAL (10Y)</td>
-    <td>${N_legs}</td>
+  tableRows += `<tr class="total-row">
+    <td>TOTAL (10Y)</td><td>${N_legs}</td>
     <td>${formatCrore(totalGross)}</td>
     <td style="color:var(--accent-red);">${formatCrore(totalTax)}</td>
     <td style="color:var(--text-muted);">${formatCrore(totalExpenses)}</td>
     <td style="color:var(--accent-green);">${formatCrore(terminalCapital)}</td>
-  `;
-  tbody.appendChild(totalTr);
+  </tr>`;
+  document.getElementById('macroScheduleBody').innerHTML = tableRows;
 
-  // ── Chart Rendering ──
-  if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
-  const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
+  // ── Chart Rendering ─────────────────────────────────────────────────────────
+  // Key strategy: use chart.update('none') (zero-animation in-place update) when
+  // the active view hasn't changed — same pattern as the Market Intelligence tab.
+  // Only destroy+recreate when the view type changes (different axes / dataset count).
 
-  const cssText = (typeof getComputedStyle === 'function')
-    ? (getComputedStyle(document.body).getPropertyValue('--text') || '#e6edf3').trim()
-    : '#e6edf3';
-  const cssMuted = (typeof getComputedStyle === 'function')
-    ? (getComputedStyle(document.body).getPropertyValue('--text-muted') || '#8b949e').trim()
-    : '#8b949e';
+  const cssText = _macroCssText || '#e6edf3';
+  const cssMuted = _macroCssMuted || '#8b949e';
 
-  // Construct datasets
   const labels = simMain.history.map(h => {
     if (h.step === 0) return 'Yr 0';
     if (Number.isInteger(h.year)) return 'Yr ' + h.year;
     return h.year.toFixed(1);
   });
 
-  const datasets = [];
+  // Build dataset arrays (reused whether creating or updating)
+  let newDatasets = [];
 
   if (_macroActiveView === 'drag') {
-    // Breakout of yearly tax & expense (using bar chart view)
-    const taxes = [0];
-    const expenses = [0];
+    const taxes = [0], expenses = [0];
     for (let c = 1; c <= N_legs; c++) {
       taxes.push(simMain.history[c].taxPaid);
       expenses.push(simMain.history[c].expenses);
     }
-    datasets.push({
-      label: 'Tax Swept',
-      data: taxes,
-      backgroundColor: 'rgba(248,81,73,0.7)',
-      borderColor: 'rgba(248,81,73,1)',
-      borderWidth: 1,
-      type: 'bar'
-    });
-    datasets.push({
-      label: 'Expenses',
-      data: expenses,
-      backgroundColor: 'rgba(139,148,158,0.5)',
-      borderColor: 'rgba(139,148,158,1)',
-      borderWidth: 1,
-      type: 'bar'
-    });
+    newDatasets = [
+      { label: 'Tax Swept',  data: taxes,    backgroundColor: 'rgba(248,81,73,0.7)',   borderColor: 'rgba(248,81,73,1)',   borderWidth: 1, type: 'bar' },
+      { label: 'Expenses',   data: expenses, backgroundColor: 'rgba(139,148,158,0.5)', borderColor: 'rgba(139,148,158,1)', borderWidth: 1, type: 'bar' }
+    ];
   } else if (_macroActiveView === 'grossnet') {
-    // Compares Gross returns vs Net
     const grossPath = [initialCapital];
     let runningGross = initialCapital;
-    for (let c = 1; c <= N_legs; c++) {
-      runningGross += simMain.history[c].grossReturn;
-      grossPath.push(runningGross);
-    }
-    const netPath = simMain.history.map(h => h.capital);
-
-    datasets.push({
-      label: 'Gross Return Path',
-      data: grossPath,
-      borderColor: 'rgba(56,139,253,0.85)',
-      backgroundColor: 'rgba(56,139,253,0.1)',
-      fill: false,
-      tension: 0.2,
-      pointRadius: 0
-    });
-    datasets.push({
-      label: 'Net Corpus (Post-Tax/Exp)',
-      data: netPath,
-      borderColor: 'rgba(63,185,80,0.85)',
-      backgroundColor: 'rgba(63,185,80,0.1)',
-      fill: false,
-      tension: 0.2,
-      pointRadius: 0
-    });
+    for (let c = 1; c <= N_legs; c++) { runningGross += simMain.history[c].grossReturn; grossPath.push(runningGross); }
+    newDatasets = [
+      { label: 'Gross Return Path',         data: grossPath,                          borderColor: 'rgba(56,139,253,0.85)',  backgroundColor: 'rgba(56,139,253,0.1)',  fill: false, tension: 0.2, pointRadius: 0 },
+      { label: 'Net Corpus (Post-Tax/Exp)', data: simMain.history.map(h => h.capital), borderColor: 'rgba(63,185,80,0.85)',   backgroundColor: 'rgba(63,185,80,0.1)',   fill: false, tension: 0.2, pointRadius: 0 }
+    ];
   } else if (_macroActiveView === 'leverage') {
-    // Tracks effective leverage and cash shield
-    const leveragePath = simMain.history.map(h => {
-      if (h.step === 0) return lMax;
-      return h.capital > 0 ? h.notional / h.capital : 0;
-    });
-    const shieldPath = simMain.history.map(h => {
-      const frozen = h.notional * marginPct;
-      return h.capital > 0 ? (Math.max(0, h.capital - frozen) / h.capital) * 100 : 0;
-    });
-
-    datasets.push({
-      label: 'Effective Leverage Used (Left Y)',
-      data: leveragePath,
-      borderColor: 'rgba(163,113,247,0.85)',
-      backgroundColor: 'rgba(163,113,247,0.1)',
-      fill: false,
-      tension: 0.2,
-      pointRadius: 2,
-      yAxisID: 'y'
-    });
-    datasets.push({
-      label: 'Liquid Cash Shield % (Right Y)',
-      data: shieldPath,
-      borderColor: 'rgba(251,143,68,0.85)',
-      backgroundColor: 'rgba(251,143,68,0.1)',
-      fill: false,
-      tension: 0.2,
-      pointRadius: 2,
-      yAxisID: 'y1'
-    });
+    const leveragePath = simMain.history.map(h => h.step === 0 ? lMax : (h.capital > 0 ? h.notional / h.capital : 0));
+    const shieldPath   = simMain.history.map(h => { const f = h.notional * marginPct; return h.capital > 0 ? (Math.max(0, h.capital - f) / h.capital) * 100 : 0; });
+    newDatasets = [
+      { label: 'Effective Leverage Used (Left Y)',  data: leveragePath, borderColor: 'rgba(163,113,247,0.85)', backgroundColor: 'rgba(163,113,247,0.1)', fill: false, tension: 0.2, pointRadius: 2, yAxisID: 'y' },
+      { label: 'Liquid Cash Shield % (Right Y)',    data: shieldPath,   borderColor: 'rgba(251,143,68,0.85)',  backgroundColor: 'rgba(251,143,68,0.1)',  fill: false, tension: 0.2, pointRadius: 2, yAxisID: 'y1' }
+    ];
   } else {
-    // Corpus growth view (main view)
-    const mainCorpus = simMain.history.map(h => h.capital);
-    
-    // Create point colors array to highlight capacity saturation
+    // corpus (default)
     const pointColors = simMain.history.map(h => h.saturated ? '#fb8f44' : '#388bfd');
-    const pointRadii = simMain.history.map(h => h.saturated ? 5 : 3);
-
-    datasets.push({
-      label: 'Leveraged Corpus (Lmax)',
-      data: mainCorpus,
-      borderColor: '#3fb950',
-      backgroundColor: 'rgba(63,185,80,0.1)',
-      fill: true,
-      tension: 0.2,
-      pointRadius: pointRadii,
-      pointBackgroundColor: pointColors,
-      pointBorderColor: pointColors,
-      pointHoverRadius: 6
-    });
-
+    const pointRadii  = simMain.history.map(h => h.saturated ? 5 : 3);
+    newDatasets = [
+      { label: 'Leveraged Corpus (Lmax)', data: simMain.history.map(h => h.capital),
+        borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.1)', fill: true,
+        tension: 0.2, pointRadius: pointRadii, pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors, pointHoverRadius: 6 }
+    ];
     if (compareUnlevered && simUnlevered) {
-      const unleveredCorpus = simUnlevered.history.map(h => h.capital);
-      datasets.push({
-        label: 'Unlevered Corpus (1.0x)',
-        data: unleveredCorpus,
-        borderColor: 'rgba(139,148,158,0.65)',
-        borderDash: [5, 5],
-        backgroundColor: 'transparent',
-        fill: false,
-        tension: 0.2,
-        pointRadius: 0
+      newDatasets.push({
+        label: 'Unlevered Corpus (1.0x)', data: simUnlevered.history.map(h => h.capital),
+        borderColor: 'rgba(139,148,158,0.65)', borderDash: [5,5],
+        backgroundColor: 'transparent', fill: false, tension: 0.2, pointRadius: 0
       });
     }
   }
 
-  // Dynamic Y-axis scale configs
+  // Y-axis tick formatter
   const moneyTickFmt = (v) => {
     if (v == null) return '';
-    const absVal = Math.abs(v);
-    if (absVal >= 10000000) return (v / 10000000).toFixed(1) + 'Cr';
-    if (absVal >= 100000) return (v / 100000).toFixed(0) + 'L';
-    if (absVal >= 1000) return (v / 1000).toFixed(0) + 'K';
+    const a = Math.abs(v);
+    if (a >= 10000000) return (v / 10000000).toFixed(1) + 'Cr';
+    if (a >= 100000)   return (v / 100000).toFixed(0) + 'L';
+    if (a >= 1000)     return (v / 1000).toFixed(0) + 'K';
     return v.toString();
   };
 
-  const scaleYConfig = {
-    ticks: { color: cssMuted, font: { size: 9, weight: '600' }, callback: moneyTickFmt },
-    grid: { color: 'rgba(139,148,158,0.1)' }
-  };
+  const viewNeedsNewChart = !_macroChart || _macroChart._macroViewKey !== _macroActiveView;
 
-  if (_macroActiveView === 'leverage') {
-    scaleYConfig.title = { display: true, text: 'Leverage Multiplier', color: cssMuted, font: { size: 10 } };
-    scaleYConfig.ticks.callback = (v) => v.toFixed(2) + 'x';
-  } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
-    scaleYConfig.type = 'logarithmic';
-  }
+  if (viewNeedsNewChart) {
+    // Full destroy + recreate — only happens when tab changes (4 possible views)
+    if (_macroChart) { _macroChart.destroy(); _macroChart = null; }
+    const ctx = document.getElementById('chartMacroSimulation').getContext('2d');
 
-  const scales = {
-    x: {
-      ticks: {
-        color: cssMuted,
-        font: { size: 9 },
-        maxRotation: 0,
-        autoSkip: false,
-        callback: function(val, index) {
-          const lbl = labels[index];
-          if (lbl.startsWith('Yr ')) return lbl;
-          return ''; // hide intermediate decimals on x-axis blocks
-        }
-      },
-      grid: { color: 'rgba(139,148,158,0.1)' }
-    },
-    y: scaleYConfig
-  };
-
-  // Dual axis support for leverage view
-  if (_macroActiveView === 'leverage') {
-    scales.y1 = {
-      type: 'linear',
-      position: 'right',
-      ticks: { color: cssMuted, font: { size: 9 }, callback: (v) => v.toFixed(0) + '%' },
-      grid: { drawOnChartArea: false },
-      title: { display: true, text: 'Liquid Shield %', color: cssMuted, font: { size: 10 } }
+    const scaleYConfig = {
+      ticks: { color: cssMuted, font: { size: 9, weight: '600' }, callback: moneyTickFmt },
+      grid:  { color: 'rgba(139,148,158,0.1)' }
     };
-  }
+    if (_macroActiveView === 'leverage') {
+      scaleYConfig.title = { display: true, text: 'Leverage Multiplier', color: cssMuted, font: { size: 10 } };
+      scaleYConfig.ticks.callback = (v) => v.toFixed(2) + 'x';
+    } else if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
+      scaleYConfig.type = 'logarithmic';
+    }
 
-  _macroChart = new Chart(ctx, {
-    type: 'line', // Note: chart is destroyed + recreated each call; debounce (80ms) prevents excessive redraws
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 300 },
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: { color: cssText, font: { size: 10 }, boxWidth: 12, padding: 10 }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(22,27,34,0.95)',
-          borderColor: 'rgba(56,139,253,0.3)',
-          borderWidth: 1,
-          titleColor: cssText,
-          bodyColor: cssText,
-          padding: 8,
-          callbacks: {
-            label: (item) => {
-              const val = item.raw;
-              if (_macroActiveView === 'leverage') {
-                if (item.datasetIndex === 0) return `${item.dataset.label}: ${val.toFixed(2)}x`;
-                return `${item.dataset.label}: ${val.toFixed(1)}%`;
+    const scales = {
+      x: { ticks: { color: cssMuted, font: { size: 9 }, maxRotation: 0, autoSkip: false,
+            callback: (val, idx) => { const l = labels[idx]; return (l && l.startsWith('Yr ')) ? l : ''; } },
+           grid: { color: 'rgba(139,148,158,0.1)' } },
+      y: scaleYConfig
+    };
+    if (_macroActiveView === 'leverage') {
+      scales.y1 = {
+        type: 'linear', position: 'right',
+        ticks: { color: cssMuted, font: { size: 9 }, callback: (v) => v.toFixed(0) + '%' },
+        grid:  { drawOnChartArea: false },
+        title: { display: true, text: 'Liquid Shield %', color: cssMuted, font: { size: 10 } }
+      };
+    }
+
+    _macroChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: newDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: false,                         // ← zero animation, like Market tab
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top',
+            labels: { color: cssText, font: { size: 10 }, boxWidth: 12, padding: 10 } },
+          tooltip: {
+            backgroundColor: 'rgba(22,27,34,0.95)', borderColor: 'rgba(56,139,253,0.3)',
+            borderWidth: 1, titleColor: cssText, bodyColor: cssText, padding: 8,
+            callbacks: {
+              label: (item) => {
+                const val = item.raw;
+                if (_macroActiveView === 'leverage') {
+                  return item.datasetIndex === 0
+                    ? `${item.dataset.label}: ${val.toFixed(2)}x`
+                    : `${item.dataset.label}: ${val.toFixed(1)}%`;
+                }
+                return `${item.dataset.label}: ₹` + cFmt.format(val);
               }
-              return `${item.dataset.label}: ₹` + cFmt.format(val);
             }
           }
-        }
-      },
-      scales
+        },
+        scales
+      }
+    });
+    _macroChart._macroViewKey = _macroActiveView; // tag so we know which view it holds
+
+  } else {
+    // ── In-place update: just swap data arrays, no destroy/recreate ──
+    _macroChart.data.labels = labels;
+    // Sync dataset count (e.g. unlevered toggle adds/removes a dataset)
+    while (_macroChart.data.datasets.length > newDatasets.length) _macroChart.data.datasets.pop();
+    newDatasets.forEach((ds, i) => {
+      if (_macroChart.data.datasets[i]) {
+        // Update only the data + per-point visual arrays; keep styling
+        Object.assign(_macroChart.data.datasets[i], ds);
+      } else {
+        _macroChart.data.datasets.push(ds);
+      }
+    });
+    // Update log scale toggle without recreating
+    const yScale = _macroChart.options.scales.y;
+    if (isLog && (_macroActiveView === 'corpus' || _macroActiveView === 'grossnet')) {
+      yScale.type = 'logarithmic';
+    } else if (yScale.type === 'logarithmic') {
+      yScale.type = 'linear';
     }
-  });
+    _macroChart.update('none'); // 'none' = skip animation entirely
+  }
 }
+
 
 // Wire the macro simulator init to the history tab + lazy scroll observer
 document.querySelector('[data-tab="history"]').addEventListener('click', () => {
