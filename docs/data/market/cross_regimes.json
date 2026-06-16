@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-06-15T12:29:26Z",
+  "generated_at": "2026-06-16T02:05:47Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": {
@@ -54357,6 +54357,19 @@
           "rolling_realized_vol_20d": 44.413,
           "initial_margin_pct": 16.4,
           "liquidity_score": 39.8
+        },
+        {
+          "date": "2026-06-15",
+          "series_scope": "front_month",
+          "matched_expiry": "25JUN2026",
+          "vol_regime": "NORMAL",
+          "margin_regime": "ELEVATED",
+          "liquidity_regime": "NORMAL",
+          "funding_friction_score": 59.6,
+          "return_1d_pct": 0.2696,
+          "rolling_realized_vol_20d": 43.036,
+          "initial_margin_pct": 16.53,
+          "liquidity_score": 42.9
         }
       ],
       "event_windows": [
@@ -56622,7 +56635,7 @@
       "correlations": {
         "lag_0": {
           "price_return": 0.0503,
-          "realized_vol_20d": 0.012,
+          "realized_vol_20d": 0.0119,
           "volume_z_20d": 0.1153,
           "oi_change_pct": -0.1857
         },
@@ -56635,7 +56648,7 @@
         "lag_5": {
           "price_return": 0.0014,
           "realized_vol_20d": -0.0663,
-          "volume_z_20d": -0.0071,
+          "volume_z_20d": -0.0072,
           "oi_change_pct": 0.0036
         }
       }
@@ -67483,6 +67496,19 @@
           "rolling_realized_vol_20d": 44.241,
           "initial_margin_pct": 16.17,
           "liquidity_score": 75.3
+        },
+        {
+          "date": "2026-06-15",
+          "series_scope": "front_month",
+          "matched_expiry": "25JUN2026",
+          "vol_regime": "CALM",
+          "margin_regime": "CALM",
+          "liquidity_regime": "NORMAL",
+          "funding_friction_score": 17.6,
+          "return_1d_pct": 0.2358,
+          "rolling_realized_vol_20d": 42.824,
+          "initial_margin_pct": 16.32,
+          "liquidity_score": 69.6
         }
       ],
       "event_windows": [
@@ -69766,7 +69792,7 @@
       "correlations": {
         "lag_0": {
           "price_return": 0.1392,
-          "realized_vol_20d": 0.0159,
+          "realized_vol_20d": 0.0158,
           "volume_z_20d": 0.0276,
           "oi_change_pct": -0.259
         },
