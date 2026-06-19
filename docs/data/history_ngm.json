@@ -11730,5 +11730,19 @@
     "annualized_volatility": 0.389877,
     "vamb_safety_shield_pct": 0.1,
     "vamb_leverage_ceiling": 2.5
+  },
+  {
+    "date": "2026-06-19",
+    "symbol": "NATGASMINI",
+    "expiry": "25JUN2026",
+    "dte": 6,
+    "initial_margin_pct": 15.4,
+    "total_margin_pct": 20.4,
+    "elm_pct": 1.25,
+    "tender_margin_pct": 5.0,
+    "daily_volatility": 0.024331,
+    "annualized_volatility": 0.384707,
+    "vamb_safety_shield_pct": 0.1,
+    "vamb_leverage_ceiling": 2.5
   }
 ]
