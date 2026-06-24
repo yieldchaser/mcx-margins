@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-06-23T09:54:11Z",
+  "generated_at": "2026-06-24T01:22:58Z",
   "ng": [
     {
       "expiry": "18APR2008",
@@ -504,13 +504,13 @@
     },
     {
       "expiry": "24NOV2026",
-      "obs": 19,
+      "obs": 20,
       "first_date": "2026-05-27",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/24NOV2026.json",
       "market_path": "data/market/contract/ng/24NOV2026.json",
-      "shared_obs": 19,
-      "alignment_status": "partial"
+      "shared_obs": 20,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "25APR2012",
@@ -844,12 +844,12 @@
     },
     {
       "expiry": "25JUN2026",
-      "obs": 124,
+      "obs": 125,
       "first_date": "2025-12-29",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/25JUN2026.json",
       "market_path": "data/market/contract/ng/25JUN2026.json",
-      "shared_obs": 124,
+      "shared_obs": 125,
       "alignment_status": "partial"
     },
     {
@@ -1144,13 +1144,13 @@
     },
     {
       "expiry": "25SEP2026",
-      "obs": 61,
+      "obs": 62,
       "first_date": "2026-03-27",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/25SEP2026.json",
       "market_path": "data/market/contract/ng/25SEP2026.json",
-      "shared_obs": 61,
-      "alignment_status": "partial"
+      "shared_obs": 62,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "26APR2011",
@@ -1274,12 +1274,12 @@
     },
     {
       "expiry": "26AUG2026",
-      "obs": 83,
+      "obs": 84,
       "first_date": "2026-02-25",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/26AUG2026.json",
       "market_path": "data/market/contract/ng/26AUG2026.json",
-      "shared_obs": 83,
+      "shared_obs": 84,
       "alignment_status": "partial"
     },
     {
@@ -2034,13 +2034,13 @@
     },
     {
       "expiry": "27OCT2026",
-      "obs": 40,
+      "obs": 41,
       "first_date": "2026-04-28",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/27OCT2026.json",
       "market_path": "data/market/contract/ng/27OCT2026.json",
-      "shared_obs": 40,
-      "alignment_status": "partial"
+      "shared_obs": 41,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "27SEP2010",
@@ -2264,13 +2264,13 @@
     },
     {
       "expiry": "28JUL2026",
-      "obs": 103,
+      "obs": 104,
       "first_date": "2026-01-28",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ng/28JUL2026.json",
       "market_path": "data/market/contract/ng/28JUL2026.json",
-      "shared_obs": 103,
-      "alignment_status": "partial"
+      "shared_obs": 104,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "28MAR2011",
@@ -2416,13 +2416,13 @@
     },
     {
       "expiry": "24NOV2026",
-      "obs": 19,
+      "obs": 20,
       "first_date": "2026-05-27",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/24NOV2026.json",
       "market_path": "data/market/contract/ngm/24NOV2026.json",
-      "shared_obs": 19,
-      "alignment_status": "partial"
+      "shared_obs": 20,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "25APR2023",
@@ -2496,12 +2496,12 @@
     },
     {
       "expiry": "25JUN2026",
-      "obs": 124,
+      "obs": 125,
       "first_date": "2025-12-29",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/25JUN2026.json",
       "market_path": "data/market/contract/ngm/25JUN2026.json",
-      "shared_obs": 124,
+      "shared_obs": 125,
       "alignment_status": "partial"
     },
     {
@@ -2556,13 +2556,13 @@
     },
     {
       "expiry": "25SEP2026",
-      "obs": 61,
+      "obs": 62,
       "first_date": "2026-03-27",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/25SEP2026.json",
       "market_path": "data/market/contract/ngm/25SEP2026.json",
-      "shared_obs": 61,
-      "alignment_status": "partial"
+      "shared_obs": 62,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "26AUG2025",
@@ -2576,12 +2576,12 @@
     },
     {
       "expiry": "26AUG2026",
-      "obs": 83,
+      "obs": 84,
       "first_date": "2026-02-25",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/26AUG2026.json",
       "market_path": "data/market/contract/ngm/26AUG2026.json",
-      "shared_obs": 83,
+      "shared_obs": 84,
       "alignment_status": "partial"
     },
     {
@@ -2756,13 +2756,13 @@
     },
     {
       "expiry": "27OCT2026",
-      "obs": 40,
+      "obs": 41,
       "first_date": "2026-04-28",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/27OCT2026.json",
       "market_path": "data/market/contract/ngm/27OCT2026.json",
-      "shared_obs": 40,
-      "alignment_status": "partial"
+      "shared_obs": 41,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "28AUG2023",
@@ -2796,13 +2796,13 @@
     },
     {
       "expiry": "28JUL2026",
-      "obs": 103,
+      "obs": 104,
       "first_date": "2026-01-28",
-      "last_date": "2026-06-22",
+      "last_date": "2026-06-23",
       "margin_path": "data/contract/ngm/28JUL2026.json",
       "market_path": "data/market/contract/ngm/28JUL2026.json",
-      "shared_obs": 103,
-      "alignment_status": "partial"
+      "shared_obs": 104,
+      "alignment_status": "aligned"
     },
     {
       "expiry": "28MAY2024",
