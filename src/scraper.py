@@ -114,7 +114,7 @@ async def scrape_margin(date_str: str) -> list[dict]:
             api_result = await page.evaluate(f"""
                 async () => {{
                     try {{
-                        const resp = await fetch('/risk-management/daily-margin/GetDailyMargin?symbol=ALL&fromDate=' + encodeURIComponent('{date_display}') + '&expiryDate=ALL&fileID=ALL&pageNumber=1&pageSize=10000&isExport=false', {{
+                        const resp = await fetch('/DailyMargin/GetDailyMargin?fromDate=' + encodeURIComponent('{date_display}'), {{
                             headers: {{
                                 'X-Requested-With': 'XMLHttpRequest',
                                 'Content-Type': 'application/json',

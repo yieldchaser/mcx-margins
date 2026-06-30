@@ -43,7 +43,15 @@ jobs:
       # is committed immediately, even if today's fetch takes a long time.
       - name: Lookback gap-fill (last 5 weekdays)
         id: lookback
-        run: python scripts/lookback.py --days 5
+        shell: bash
+        run: |
+          python scripts/lookback.py --days 5
+          exit_code=$?
+          if [ $exit_code -eq 0 ] || [ $exit_code -eq 2 ]; then
+            exit 0
+          else
+            exit $exit_code
+          fi
         continue-on-error: true
 
       # ── Step 2: Fetch today's data ──────────────────────────────────────
@@ -51,7 +59,19 @@ jobs:
       # fetch_today.py now includes a fail-fast weekend check.
       - name: Fetch today's margin data
         id: fetch_today
-        run: python scripts/fetch_today.py --retries 1 --wait 0
+        shell: bash
+        run: |
+          python scripts/fetch_today.py --retries 1 --wait 0
+          exit_code=$?
+          if [ $exit_code -eq 0 ]; then
+            echo "fresh_data=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          elif [ $exit_code -eq 2 ]; then
+            echo "fresh_data=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            exit $exit_code
+          fi
         continue-on-error: true
 
       # ── Step 3: export ──────────────────────────────────────────────────
@@ -62,7 +82,7 @@ jobs:
       # ── Step 4: alert ───────────────────────────────────────────────────
       # Only alert if genuinely fresh today's data was found.
       - name: Check margin change and send alert
-        if: steps.fetch_today.outcome == 'success'
+        if: steps.fetch_today.outputs.fresh_data == 'true'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python scripts/alert.py
