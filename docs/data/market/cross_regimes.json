@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-07-17T08:19:48Z",
+  "generated_at": "2026-07-18T05:42:33Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": {
@@ -54669,21 +54669,22 @@
           "rolling_realized_vol_20d": 38.533,
           "initial_margin_pct": 14.69,
           "liquidity_score": 79.0
+        },
+        {
+          "date": "2026-07-17",
+          "series_scope": "front_month",
+          "matched_expiry": "28JUL2026",
+          "vol_regime": "NORMAL",
+          "margin_regime": "ELEVATED",
+          "liquidity_regime": "NORMAL",
+          "funding_friction_score": 51.9,
+          "return_1d_pct": 2.4736,
+          "rolling_realized_vol_20d": 39.915,
+          "initial_margin_pct": 14.85,
+          "liquidity_score": 58.5
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-07-14",
-          "matched_expiry": "28JUL2025",
-          "events": [
-            "oi_shift"
-          ],
-          "margin_change_1d": 0.53,
-          "return_1d_pct": 4.7919,
-          "volume_z_20d": 0.764,
-          "oi_change_pct": -29.702,
-          "funding_friction_score": 69.5
-        },
         {
           "date": "2025-07-18",
           "matched_expiry": "28JUL2025",
@@ -56923,6 +56924,18 @@
           "volume_z_20d": 0.513,
           "oi_change_pct": 10.453,
           "funding_friction_score": 44.9
+        },
+        {
+          "date": "2026-07-17",
+          "matched_expiry": "28JUL2026",
+          "events": [
+            "oi_shift"
+          ],
+          "margin_change_1d": 0.16,
+          "return_1d_pct": 2.4736,
+          "volume_z_20d": -0.026,
+          "oi_change_pct": -17.821,
+          "funding_friction_score": 51.9
         }
       ],
       "correlations": {
@@ -68101,22 +68114,22 @@
           "rolling_realized_vol_20d": 39.065,
           "initial_margin_pct": 14.65,
           "liquidity_score": 90.9
+        },
+        {
+          "date": "2026-07-17",
+          "series_scope": "front_month",
+          "matched_expiry": "28JUL2026",
+          "vol_regime": "CALM",
+          "margin_regime": "CALM",
+          "liquidity_regime": "NORMAL",
+          "funding_friction_score": 12.7,
+          "return_1d_pct": 2.51,
+          "rolling_realized_vol_20d": 40.455,
+          "initial_margin_pct": 14.8,
+          "liquidity_score": 71.9
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-07-29",
-          "matched_expiry": "26AUG2025",
-          "events": [
-            "margin_cut",
-            "oi_shift"
-          ],
-          "margin_change_1d": -1.66,
-          "return_1d_pct": 2.1285,
-          "volume_z_20d": 0.443,
-          "oi_change_pct": 816.352,
-          "funding_friction_score": 28.4
-        },
         {
           "date": "2025-07-30",
           "matched_expiry": "26AUG2025",
@@ -70372,14 +70385,26 @@
           "volume_z_20d": 0.336,
           "oi_change_pct": -11.066,
           "funding_friction_score": 10.3
+        },
+        {
+          "date": "2026-07-17",
+          "matched_expiry": "28JUL2026",
+          "events": [
+            "oi_shift"
+          ],
+          "margin_change_1d": 0.15,
+          "return_1d_pct": 2.51,
+          "volume_z_20d": -0.257,
+          "oi_change_pct": -20.958,
+          "funding_friction_score": 12.7
         }
       ],
       "correlations": {
         "lag_0": {
           "price_return": 0.1371,
-          "realized_vol_20d": 0.0162,
-          "volume_z_20d": 0.0269,
-          "oi_change_pct": -0.2553
+          "realized_vol_20d": 0.0161,
+          "volume_z_20d": 0.0268,
+          "oi_change_pct": -0.2554
         },
         "lag_1": {
           "price_return": -0.0392,
@@ -70388,8 +70413,8 @@
           "oi_change_pct": 0.0448
         },
         "lag_5": {
-          "price_return": 0.0249,
-          "realized_vol_20d": -0.0694,
+          "price_return": 0.0248,
+          "realized_vol_20d": -0.0695,
           "volume_z_20d": 0.048,
           "oi_change_pct": 0.0106
         }
