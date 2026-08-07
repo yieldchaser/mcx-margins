@@ -3,17 +3,11 @@
   "intercept": -4.8445,
   "today": {
     "actual": 13.0,
-    "fair_margin": 10.541,
-    "policy_buffer": 2.459,
+    "fair_margin": 10.672,
+    "policy_buffer": 2.328,
     "buffer_percentile": 98
   },
   "timeseries": [
-    {
-      "date": "2025-03-05",
-      "actual": 25.56,
-      "fair_margin": 25.006,
-      "policy_buffer": 0.554
-    },
     {
       "date": "2025-03-06",
       "actual": 25.34,
@@ -2197,6 +2191,12 @@
       "actual": 13.0,
       "fair_margin": 10.541,
       "policy_buffer": 2.459
+    },
+    {
+      "date": "2026-08-07",
+      "actual": 13.0,
+      "fair_margin": 10.672,
+      "policy_buffer": 2.328
     }
   ]
 }
