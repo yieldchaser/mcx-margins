@@ -1,103 +1,103 @@
 {
-  "as_of": "2026-09-02",
+  "as_of": "2026-09-03",
   "NATURALGAS": [
     {
       "expiry": "25SEP2026",
-      "dte": 23,
+      "dte": 22,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.019391,
-      "annualized_volatility": 0.306599
+      "daily_volatility": 0.019079,
+      "annualized_volatility": 0.301665
     },
     {
       "expiry": "27OCT2026",
-      "dte": 55,
+      "dte": 54,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.016852,
-      "annualized_volatility": 0.266454
+      "daily_volatility": 0.016553,
+      "annualized_volatility": 0.261726
     },
     {
       "expiry": "24NOV2026",
-      "dte": 83,
+      "dte": 82,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.016852,
-      "annualized_volatility": 0.266454
+      "daily_volatility": 0.016523,
+      "annualized_volatility": 0.261252
     },
     {
       "expiry": "28DEC2026",
-      "dte": 117,
-      "initial_margin_pct": 14.04,
-      "total_margin_pct": 14.04,
-      "daily_volatility": 0.022271,
-      "annualized_volatility": 0.352135
+      "dte": 116,
+      "initial_margin_pct": 13.64,
+      "total_margin_pct": 13.64,
+      "daily_volatility": 0.021656,
+      "annualized_volatility": 0.342411
     },
     {
       "expiry": "25JAN2027",
-      "dte": 145,
-      "initial_margin_pct": 17.59,
-      "total_margin_pct": 17.59,
-      "daily_volatility": 0.027641,
-      "annualized_volatility": 0.437043
+      "dte": 144,
+      "initial_margin_pct": 17.02,
+      "total_margin_pct": 17.02,
+      "daily_volatility": 0.026777,
+      "annualized_volatility": 0.423382
     },
     {
       "expiry": "23FEB2027",
-      "dte": 174,
-      "initial_margin_pct": 18.76,
-      "total_margin_pct": 18.76,
-      "daily_volatility": 0.029377,
-      "annualized_volatility": 0.464491
+      "dte": 173,
+      "initial_margin_pct": 37.35,
+      "total_margin_pct": 37.35,
+      "daily_volatility": 0.055794,
+      "annualized_volatility": 0.882181
     }
   ],
   "NATGASMINI": [
     {
       "expiry": "25SEP2026",
-      "dte": 23,
+      "dte": 22,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.019131,
-      "annualized_volatility": 0.302488
+      "daily_volatility": 0.018815,
+      "annualized_volatility": 0.297491
     },
     {
       "expiry": "27OCT2026",
-      "dte": 55,
+      "dte": 54,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.016941,
-      "annualized_volatility": 0.267861
+      "daily_volatility": 0.016643,
+      "annualized_volatility": 0.263149
     },
     {
       "expiry": "24NOV2026",
-      "dte": 83,
+      "dte": 82,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.013892,
-      "annualized_volatility": 0.219652
+      "daily_volatility": 0.013711,
+      "annualized_volatility": 0.21679
     },
     {
       "expiry": "28DEC2026",
-      "dte": 117,
+      "dte": 116,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.012166,
-      "annualized_volatility": 0.192361
+      "daily_volatility": 0.011874,
+      "annualized_volatility": 0.187744
     },
     {
       "expiry": "25JAN2027",
-      "dte": 145,
+      "dte": 144,
       "initial_margin_pct": 13.0,
       "total_margin_pct": 13.0,
-      "daily_volatility": 0.019672,
-      "annualized_volatility": 0.311042
+      "daily_volatility": 0.019157,
+      "annualized_volatility": 0.302899
     },
     {
       "expiry": "23FEB2027",
-      "dte": 174,
-      "initial_margin_pct": 13.62,
-      "total_margin_pct": 13.62,
-      "daily_volatility": 0.021633,
-      "annualized_volatility": 0.342048
+      "dte": 173,
+      "initial_margin_pct": 13.46,
+      "total_margin_pct": 13.46,
+      "daily_volatility": 0.021378,
+      "annualized_volatility": 0.338016
     }
   ]
 }
