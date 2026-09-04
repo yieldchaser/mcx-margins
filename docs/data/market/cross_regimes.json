@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-03T10:58:44Z",
+  "generated_at": "2026-09-04T01:07:38Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": {
@@ -55111,21 +55111,22 @@
           "rolling_realized_vol_20d": 35.016,
           "initial_margin_pct": 13.0,
           "liquidity_score": 81.8
+        },
+        {
+          "date": "2026-09-03",
+          "series_scope": "front_month",
+          "matched_expiry": "25SEP2026",
+          "vol_regime": "NORMAL",
+          "margin_regime": "NORMAL",
+          "liquidity_regime": "STRESS",
+          "funding_friction_score": 35.3,
+          "return_1d_pct": -0.4301,
+          "rolling_realized_vol_20d": 34.671,
+          "initial_margin_pct": 13.0,
+          "liquidity_score": 95.6
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-09-01",
-          "matched_expiry": "25SEP2025",
-          "events": [
-            "oi_shift"
-          ],
-          "margin_change_1d": -0.53,
-          "return_1d_pct": -1.0227,
-          "volume_z_20d": -0.07,
-          "oi_change_pct": 13.261,
-          "funding_friction_score": 61.4
-        },
         {
           "date": "2025-09-02",
           "matched_expiry": "25SEP2025",
@@ -57365,6 +57366,19 @@
           "volume_z_20d": 1.168,
           "oi_change_pct": -20.197,
           "funding_friction_score": 39.7
+        },
+        {
+          "date": "2026-09-03",
+          "matched_expiry": "25SEP2026",
+          "events": [
+            "volume_shock",
+            "oi_shift"
+          ],
+          "margin_change_1d": 0.0,
+          "return_1d_pct": -0.4301,
+          "volume_z_20d": 2.715,
+          "oi_change_pct": 13.313,
+          "funding_friction_score": 35.3
         }
       ],
       "correlations": {
@@ -68985,21 +68999,22 @@
           "rolling_realized_vol_20d": 34.824,
           "initial_margin_pct": 13.0,
           "liquidity_score": 89.9
+        },
+        {
+          "date": "2026-09-03",
+          "series_scope": "front_month",
+          "matched_expiry": "25SEP2026",
+          "vol_regime": "CALM",
+          "margin_regime": "CALM",
+          "liquidity_regime": "STRESS",
+          "funding_friction_score": 2.9,
+          "return_1d_pct": -0.3943,
+          "rolling_realized_vol_20d": 34.49,
+          "initial_margin_pct": 13.0,
+          "liquidity_score": 96.1
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-09-10",
-          "matched_expiry": "25SEP2025",
-          "events": [
-            "oi_shift"
-          ],
-          "margin_change_1d": -0.23,
-          "return_1d_pct": -1.7975,
-          "volume_z_20d": 0.239,
-          "oi_change_pct": 16.44,
-          "funding_friction_score": 6.7
-        },
         {
           "date": "2025-09-11",
           "matched_expiry": "25SEP2025",
@@ -71251,26 +71266,39 @@
           "volume_z_20d": 1.095,
           "oi_change_pct": -17.707,
           "funding_friction_score": 4.8
+        },
+        {
+          "date": "2026-09-03",
+          "matched_expiry": "25SEP2026",
+          "events": [
+            "volume_shock",
+            "oi_shift"
+          ],
+          "margin_change_1d": 0.0,
+          "return_1d_pct": -0.3943,
+          "volume_z_20d": 2.71,
+          "oi_change_pct": 11.133,
+          "funding_friction_score": 2.9
         }
       ],
       "correlations": {
         "lag_0": {
           "price_return": 0.1354,
-          "realized_vol_20d": 0.0162,
+          "realized_vol_20d": 0.0161,
           "volume_z_20d": 0.0263,
           "oi_change_pct": -0.2455
         },
         "lag_1": {
           "price_return": -0.0392,
           "realized_vol_20d": -0.0722,
-          "volume_z_20d": 0.1824,
+          "volume_z_20d": 0.1823,
           "oi_change_pct": 0.0408
         },
         "lag_5": {
           "price_return": 0.0239,
           "realized_vol_20d": -0.0679,
-          "volume_z_20d": 0.0478,
-          "oi_change_pct": 0.0111
+          "volume_z_20d": 0.0477,
+          "oi_change_pct": 0.011
         }
       }
     }
