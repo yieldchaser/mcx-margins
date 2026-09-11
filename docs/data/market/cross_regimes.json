@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-10T11:00:18Z",
+  "generated_at": "2026-09-11T01:15:42Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": {
@@ -55176,21 +55176,22 @@
           "rolling_realized_vol_20d": 33.549,
           "initial_margin_pct": 13.0,
           "liquidity_score": 78.2
+        },
+        {
+          "date": "2026-09-10",
+          "series_scope": "front_month",
+          "matched_expiry": "25SEP2026",
+          "vol_regime": "CALM",
+          "margin_regime": "NORMAL",
+          "liquidity_regime": "ELEVATED",
+          "funding_friction_score": 41.3,
+          "return_1d_pct": 0.2966,
+          "rolling_realized_vol_20d": 31.857,
+          "initial_margin_pct": 13.0,
+          "liquidity_score": 68.5
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-09-11",
-          "matched_expiry": "25SEP2025",
-          "events": [
-            "oi_shift"
-          ],
-          "margin_change_1d": 0.07,
-          "return_1d_pct": -2.6149,
-          "volume_z_20d": 0.855,
-          "oi_change_pct": 15.598,
-          "funding_friction_score": 46.0
-        },
         {
           "date": "2025-09-16",
           "matched_expiry": "25SEP2025",
@@ -57432,6 +57433,18 @@
           "volume_z_20d": 2.178,
           "oi_change_pct": 56.859,
           "funding_friction_score": 33.4
+        },
+        {
+          "date": "2026-09-10",
+          "matched_expiry": "25SEP2026",
+          "events": [
+            "vol_regime_flip"
+          ],
+          "margin_change_1d": 0.0,
+          "return_1d_pct": 0.2966,
+          "volume_z_20d": -0.245,
+          "oi_change_pct": -3.258,
+          "funding_friction_score": 41.3
         }
       ],
       "correlations": {
@@ -69117,6 +69130,19 @@
           "rolling_realized_vol_20d": 33.376,
           "initial_margin_pct": 13.0,
           "liquidity_score": 90.3
+        },
+        {
+          "date": "2026-09-10",
+          "series_scope": "front_month",
+          "matched_expiry": "25SEP2026",
+          "vol_regime": "CALM",
+          "margin_regime": "CALM",
+          "liquidity_regime": "ELEVATED",
+          "funding_friction_score": 8.3,
+          "return_1d_pct": 0.2594,
+          "rolling_realized_vol_20d": 31.718,
+          "initial_margin_pct": 13.0,
+          "liquidity_score": 77.9
         }
       ],
       "event_windows": [
@@ -71403,7 +71429,7 @@
         "lag_5": {
           "price_return": 0.0239,
           "realized_vol_20d": -0.0678,
-          "volume_z_20d": 0.0476,
+          "volume_z_20d": 0.0475,
           "oi_change_pct": 0.011
         }
       }
