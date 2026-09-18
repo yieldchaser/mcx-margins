@@ -1,25 +1,25 @@
 {
   "30d": {
     "directional_accuracy": 20.0,
-    "mae": 0.688,
-    "rmse": 0.768,
-    "interval_hit_rate_1sigma": 30.0,
+    "mae": 0.693,
+    "rmse": 0.772,
+    "interval_hit_rate_1sigma": 26.7,
     "interval_hit_rate_2sigma": 83.3,
     "n": 30
   },
   "90d": {
-    "directional_accuracy": 44.4,
-    "mae": 0.717,
-    "rmse": 0.878,
-    "interval_hit_rate_1sigma": 45.6,
+    "directional_accuracy": 43.3,
+    "mae": 0.721,
+    "rmse": 0.88,
+    "interval_hit_rate_1sigma": 44.4,
     "interval_hit_rate_2sigma": 87.8,
     "n": 90
   },
   "365d": {
-    "directional_accuracy": 61.6,
+    "directional_accuracy": 61.4,
     "mae": 1.399,
     "rmse": 3.531,
-    "interval_hit_rate_1sigma": 64.4,
+    "interval_hit_rate_1sigma": 64.1,
     "interval_hit_rate_2sigma": 86.0,
     "n": 365
   }

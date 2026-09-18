@@ -1,19 +1,19 @@
 {
-  "rolling_sigma": 0.411,
+  "rolling_sigma": 0.4114,
   "window_days": 30,
   "sigma_by_dte_bucket": {
-    "0-30": 0.5943,
+    "0-30": 0.5944,
     "31-90": 1.7992,
-    "91+": 0.411
+    "91+": 0.4114
   },
   "bands": [
     {
       "expiry": "25SEP2026",
-      "dte": 8,
+      "dte": 7,
       "current": 13.0,
       "predicted": 12.248,
-      "sigma_1": 0.5943,
-      "sigma_2": 1.1886,
+      "sigma_1": 0.5944,
+      "sigma_2": 1.1888,
       "upper_1": 12.842,
       "lower_1": 11.654,
       "upper_2": 13.437,
@@ -21,63 +21,63 @@
     },
     {
       "expiry": "27OCT2026",
-      "dte": 40,
+      "dte": 39,
       "current": 13.0,
-      "predicted": 12.166,
+      "predicted": 12.164,
       "sigma_1": 1.7992,
       "sigma_2": 3.5983,
-      "upper_1": 13.965,
-      "lower_1": 10.367,
-      "upper_2": 15.764,
-      "lower_2": 8.568
+      "upper_1": 13.963,
+      "lower_1": 10.365,
+      "upper_2": 15.762,
+      "lower_2": 8.566
     },
     {
       "expiry": "24NOV2026",
-      "dte": 68,
+      "dte": 67,
       "current": 13.0,
-      "predicted": 12.087,
+      "predicted": 12.08,
       "sigma_1": 1.7992,
       "sigma_2": 3.5983,
-      "upper_1": 13.886,
-      "lower_1": 10.288,
-      "upper_2": 15.685,
-      "lower_2": 8.489
+      "upper_1": 13.879,
+      "lower_1": 10.281,
+      "upper_2": 15.678,
+      "lower_2": 8.482
     },
     {
       "expiry": "28DEC2026",
-      "dte": 102,
+      "dte": 101,
       "current": 13.0,
-      "predicted": 12.239,
-      "sigma_1": 0.411,
-      "sigma_2": 0.8221,
-      "upper_1": 12.65,
-      "lower_1": 11.828,
-      "upper_2": 13.061,
-      "lower_2": 11.417
+      "predicted": 12.228,
+      "sigma_1": 0.4114,
+      "sigma_2": 0.8228,
+      "upper_1": 12.639,
+      "lower_1": 11.817,
+      "upper_2": 13.051,
+      "lower_2": 11.405
     },
     {
       "expiry": "25JAN2027",
-      "dte": 130,
+      "dte": 129,
       "current": 13.0,
-      "predicted": 12.382,
-      "sigma_1": 0.411,
-      "sigma_2": 0.8221,
-      "upper_1": 12.793,
-      "lower_1": 11.971,
-      "upper_2": 13.204,
-      "lower_2": 11.56
+      "predicted": 12.373,
+      "sigma_1": 0.4114,
+      "sigma_2": 0.8228,
+      "upper_1": 12.784,
+      "lower_1": 11.962,
+      "upper_2": 13.196,
+      "lower_2": 11.55
     },
     {
       "expiry": "23FEB2027",
-      "dte": 159,
-      "current": 32.92,
-      "predicted": 31.305,
-      "sigma_1": 0.411,
-      "sigma_2": 0.8221,
-      "upper_1": 31.716,
-      "lower_1": 30.894,
-      "upper_2": 32.127,
-      "lower_2": 30.483
+      "dte": 158,
+      "current": 31.86,
+      "predicted": 30.302,
+      "sigma_1": 0.4114,
+      "sigma_2": 0.8228,
+      "upper_1": 30.713,
+      "lower_1": 29.891,
+      "upper_2": 31.125,
+      "lower_2": 29.479
     }
   ]
 }
