@@ -69,9 +69,9 @@
   "historical_contract_legs_backtest": {
     "total_legs_simulated": 278,
     "vamb_margin_call_legs": 29,
-    "fixed_31_margin_call_legs": 59,
+    "fixed_31_margin_call_legs": 60,
     "vamb_survival_rate_pct": 89.57,
-    "fixed_31_survival_rate_pct": 78.78
+    "fixed_31_survival_rate_pct": 78.42
   },
   "formula": "Lots = Floor( Capital / (Initial_Margin% + Safety_Shield%) / Contract_Value )",
   "vamb_parameters": {
