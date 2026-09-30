@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-29T12:31:05Z",
+  "generated_at": "2026-09-30T02:14:01Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": [
@@ -162193,9 +162193,9 @@
         "symbol": "NATURALGAS",
         "series_scope": "front_month",
         "margin_expiry": "27OCT2026",
-        "market_expiry": null,
-        "matched_expiry": null,
-        "alignment_status": "missing_market",
+        "market_expiry": "27OCT2026",
+        "matched_expiry": "27OCT2026",
+        "alignment_status": "aligned",
         "dte": 28,
         "initial_margin_pct": 16.05,
         "total_margin_pct": 16.05,
@@ -162203,28 +162203,28 @@
         "annualized_volatility": 0.400313,
         "margin_change_1d": -0.31,
         "margin_change_5d": 3.05,
-        "close": null,
-        "return_pct": null,
-        "return_1d_pct": null,
-        "return_5d_pct": null,
-        "return_20d_pct": null,
-        "rolling_realized_vol_5d": null,
-        "rolling_realized_vol_20d": null,
-        "range_pct": null,
-        "volume_lots": null,
-        "volume_z_20d": null,
-        "volume_pct_252d": null,
-        "open_interest": null,
-        "oi_change_pct": null,
-        "oi_pct_252d": null,
-        "turnover_ratio": null,
-        "liquidity_score": null,
-        "oi_flow_state": null,
-        "margin_price_divergence": null,
-        "margin_vs_realized_vol_gap": null,
-        "margin_per_liquidity": null,
-        "funding_friction_score": null,
-        "oi_aggregate_build_5d": null
+        "close": 293.7,
+        "return_pct": -2.1,
+        "return_1d_pct": -2.1,
+        "return_5d_pct": 3.965,
+        "return_20d_pct": 5.952,
+        "rolling_realized_vol_5d": 87.645,
+        "rolling_realized_vol_20d": 46.541,
+        "range_pct": 3.745,
+        "volume_lots": 126007,
+        "volume_z_20d": 0.303,
+        "volume_pct_252d": 73.8,
+        "open_interest": 41708,
+        "oi_change_pct": 7.509,
+        "oi_pct_252d": 92.5,
+        "turnover_ratio": 3.0212,
+        "liquidity_score": 81.3,
+        "oi_flow_state": "short_build",
+        "margin_price_divergence": 0.915,
+        "margin_vs_realized_vol_gap": -30.491,
+        "margin_per_liquidity": 0.1974,
+        "funding_friction_score": 49.8,
+        "oi_aggregate_build_5d": false
       }
     ],
     "NATGASMINI": [
@@ -196813,9 +196813,9 @@
         "symbol": "NATGASMINI",
         "series_scope": "front_month",
         "margin_expiry": "27OCT2026",
-        "market_expiry": null,
-        "matched_expiry": null,
-        "alignment_status": "missing_market",
+        "market_expiry": "27OCT2026",
+        "matched_expiry": "27OCT2026",
+        "alignment_status": "aligned",
         "dte": 28,
         "initial_margin_pct": 15.96,
         "total_margin_pct": 15.96,
@@ -196823,34 +196823,34 @@
         "annualized_volatility": 0.398115,
         "margin_change_1d": -0.3,
         "margin_change_5d": 2.96,
-        "close": null,
-        "return_pct": null,
-        "return_1d_pct": null,
-        "return_5d_pct": null,
-        "return_20d_pct": null,
-        "rolling_realized_vol_5d": null,
-        "rolling_realized_vol_20d": null,
-        "range_pct": null,
-        "volume_lots": null,
-        "volume_z_20d": null,
-        "volume_pct_252d": null,
-        "open_interest": null,
-        "oi_change_pct": null,
-        "oi_pct_252d": null,
-        "turnover_ratio": null,
-        "liquidity_score": null,
-        "oi_flow_state": null,
-        "margin_price_divergence": null,
-        "margin_vs_realized_vol_gap": null,
-        "margin_per_liquidity": null,
-        "funding_friction_score": null,
-        "oi_aggregate_build_5d": null
+        "close": 293.8,
+        "return_pct": -2.0993,
+        "return_1d_pct": -2.0993,
+        "return_5d_pct": 4.0,
+        "return_20d_pct": 5.988,
+        "rolling_realized_vol_5d": 87.046,
+        "rolling_realized_vol_20d": 46.197,
+        "range_pct": 3.71,
+        "volume_lots": 220672,
+        "volume_z_20d": 0.532,
+        "volume_pct_252d": 91.3,
+        "open_interest": 57807,
+        "oi_change_pct": 10.232,
+        "oi_pct_252d": 94.8,
+        "turnover_ratio": 3.8174,
+        "liquidity_score": 92.7,
+        "oi_flow_state": "short_build",
+        "margin_price_divergence": 1.04,
+        "margin_vs_realized_vol_gap": -30.237,
+        "margin_per_liquidity": 0.1722,
+        "funding_friction_score": 17.8,
+        "oi_aggregate_build_5d": false
       }
     ]
   },
   "summaries": {
     "NATURALGAS": {
-      "aligned_obs": 4257,
+      "aligned_obs": 4258,
       "lag_correlations": {
         "lag_0": {
           "price_return": 0.0489,
@@ -196859,39 +196859,39 @@
           "oi_change_pct": -0.1873
         },
         "lag_1": {
-          "price_return": 0.0291,
+          "price_return": 0.0292,
           "realized_vol_20d": -0.0659,
           "volume_z_20d": 0.1276,
-          "oi_change_pct": 0.0269
+          "oi_change_pct": 0.0265
         },
         "lag_5": {
           "price_return": 0.0016,
-          "realized_vol_20d": -0.0664,
-          "volume_z_20d": -0.0069,
-          "oi_change_pct": 0.0036
+          "realized_vol_20d": -0.0663,
+          "volume_z_20d": -0.0068,
+          "oi_change_pct": 0.0037
         }
       }
     },
     "NATGASMINI": {
-      "aligned_obs": 910,
+      "aligned_obs": 911,
       "lag_correlations": {
         "lag_0": {
-          "price_return": 0.1331,
-          "realized_vol_20d": 0.0147,
-          "volume_z_20d": 0.0208,
-          "oi_change_pct": -0.247
+          "price_return": 0.1332,
+          "realized_vol_20d": 0.0148,
+          "volume_z_20d": 0.0207,
+          "oi_change_pct": -0.2469
         },
         "lag_1": {
-          "price_return": -0.032,
+          "price_return": -0.0319,
           "realized_vol_20d": -0.0722,
           "volume_z_20d": 0.177,
-          "oi_change_pct": 0.0403
+          "oi_change_pct": 0.0393
         },
         "lag_5": {
-          "price_return": 0.0245,
-          "realized_vol_20d": -0.0691,
+          "price_return": 0.0244,
+          "realized_vol_20d": -0.0689,
           "volume_z_20d": 0.0488,
-          "oi_change_pct": 0.0104
+          "oi_change_pct": 0.0105
         }
       }
     }
