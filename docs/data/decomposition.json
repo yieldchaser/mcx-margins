@@ -2,18 +2,12 @@
   "slope": 7.5893,
   "intercept": -4.8445,
   "today": {
-    "actual": 15.88,
-    "fair_margin": 14.174,
-    "policy_buffer": 1.706,
-    "buffer_percentile": 70
+    "actual": 15.67,
+    "fair_margin": 13.931,
+    "policy_buffer": 1.739,
+    "buffer_percentile": 73
   },
   "timeseries": [
-    {
-      "date": "2025-04-30",
-      "actual": 26.24,
-      "fair_margin": 25.74,
-      "policy_buffer": 0.5
-    },
     {
       "date": "2025-05-01",
       "actual": 25.99,
@@ -2197,6 +2191,12 @@
       "actual": 15.88,
       "fair_margin": 14.174,
       "policy_buffer": 1.706
+    },
+    {
+      "date": "2026-10-01",
+      "actual": 15.67,
+      "fair_margin": 13.931,
+      "policy_buffer": 1.739
     }
   ]
 }
