@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "source": "market_futures",
   "status": "warn",
-  "generated_at": "2026-10-08T13:09:42Z",
+  "generated_at": "2026-10-09T03:00:26Z",
   "latest_date": "2026-10-01",
   "date_range": {
     "from": "2007-01-01",
@@ -10,7 +10,7 @@
   },
   "freshness": {
     "label": "STALE",
-    "age_days": 7
+    "age_days": 8
   },
   "row_count": 22065,
   "symbols": {
@@ -54,7 +54,7 @@
         "name": "stale_source",
         "status": "warn",
         "message": "Market data freshness: STALE.",
-        "count": 7
+        "count": 8
       },
       {
         "name": "weekday_gaps_naturalgas",
