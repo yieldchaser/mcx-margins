@@ -56,11 +56,40 @@ def init_db():
         conn.close()
 
 
+MONTH_MAP = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+}
+
+
+def compute_dte(expiry_str: str, ref_date_str: str) -> int | None:
+    try:
+        from datetime import date
+        day = int(expiry_str[:2])
+        mon = MONTH_MAP.get(expiry_str[2:5].upper())
+        yr = int(expiry_str[5:])
+        if not mon:
+            return None
+        expiry_date = date(yr, mon, day)
+        ref = date.fromisoformat(ref_date_str)
+        return (expiry_date - ref).days
+    except Exception:
+        return None
+
+
 def upsert_margin(row: dict) -> bool:
     """
     Insert or update a margin record.
     Returns True if inserted/updated, False if error.
     """
+    expiry = row.get("expiry")
+    date_str = row.get("date")
+    if expiry and date_str:
+        dte = compute_dte(expiry, date_str)
+        if dte is not None and dte < 0:
+            print(f"[db] Skipping rogue post-expiry record: {date_str} {row.get('symbol')} {expiry} (DTE={dte})")
+            return False
+
     conn = get_connection()
     try:
         conn.execute("""

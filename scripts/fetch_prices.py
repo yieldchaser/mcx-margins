@@ -264,6 +264,27 @@ def _to_int(val) -> int | None:
     return int(f) if f is not None else None
 
 
+MONTH_MAP = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+}
+
+
+def compute_dte(expiry_str: str, ref_date_str: str) -> int | None:
+    try:
+        from datetime import date
+        day = int(expiry_str[:2])
+        mon = MONTH_MAP.get(expiry_str[2:5].upper())
+        yr = int(expiry_str[5:])
+        if not mon:
+            return None
+        expiry_date = date(yr, mon, day)
+        ref = date.fromisoformat(ref_date_str)
+        return (expiry_date - ref).days
+    except Exception:
+        return None
+
+
 def normalize(raw: dict, date_str: str) -> dict | None:
     """
     Map one raw API row → canonical Blue Margin record.
@@ -282,6 +303,10 @@ def normalize(raw: dict, date_str: str) -> dict | None:
 
     expiry = str(raw.get("ExpiryDate", "")).strip()
     if not expiry or expiry == "-":
+        return None
+
+    dte = compute_dte(expiry, date_str)
+    if dte is not None and dte < 0:
         return None
 
     return {

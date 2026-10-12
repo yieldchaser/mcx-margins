@@ -62,15 +62,32 @@ cur.execute("""
 counts = [r[0] for r in cur.fetchall()]
 from collections import Counter
 dist = Counter(counts)
+MONTH_MAP = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+}
+
+def compute_dte(expiry_str, ref_date_str):
+    try:
+        from datetime import date
+        day = int(expiry_str[:2])
+        mon = MONTH_MAP[expiry_str[2:5].upper()]
+        yr = int(expiry_str[5:])
+        expiry_date = date(yr, mon, day)
+        ref = date.fromisoformat(ref_date_str)
+        return (expiry_date - ref).days
+    except Exception:
+        return 9999
+
 print(f"Min: {min(counts)}, Max: {max(counts)}, Median: {sorted(counts)[len(counts)//2]}")
-print("Obs count → number of contracts with that count:")
+print("Obs count -> number of contracts with that count:")
 for k in sorted(dist):
     print(f"  {k:>3} obs: {dist[k]:>4} contracts")
 
 print()
 print("--- Specific contract deep-dive: 27APR2026 ---")
 cur.execute("""
-    SELECT date, dte, initial_margin_pct, total_margin_pct
+    SELECT date, initial_margin_pct, total_margin_pct
     FROM margins
     WHERE symbol='NATURALGAS' AND expiry='27APR2026'
     ORDER BY date
@@ -78,16 +95,18 @@ cur.execute("""
 rows = cur.fetchall()
 print(f"Total rows in DB for 27APR2026: {len(rows)}")
 if rows:
-    print(f"  First obs: {rows[0][0]}  DTE={rows[0][1]}")
-    print(f"  Last  obs: {rows[-1][0]}  DTE={rows[-1][1]}")
+    first_dte = compute_dte('27APR2026', rows[0][0])
+    last_dte = compute_dte('27APR2026', rows[-1][0])
+    print(f"  First obs: {rows[0][0]}  DTE={first_dte}")
+    print(f"  Last  obs: {rows[-1][0]}  DTE={last_dte}")
 
 print()
 print("--- Was this contract EVER listed more than 30 days before expiry? ---")
-# 27APR2026 expiry → if first obs DTE < 30 it was only captured late
 if rows:
-    max_dte = max(r[1] for r in rows if r[1])
+    all_dtes = [compute_dte('27APR2026', r[0]) for r in rows]
+    max_dte = max(all_dtes)
     print(f"  Max DTE seen for 27APR2026: {max_dte} days")
-    print(f"  → Contract was first captured when DTE={max_dte} days out")
+    print(f"  -> Contract was first captured when DTE={max_dte} days out")
 
 conn.close()
 print()

@@ -16,6 +16,27 @@ ALERT_FROM = "upadhyayprateek574@gmail.com"
 SYMBOL = "NATURALGAS"
 
 
+MONTH_MAP = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+}
+
+
+def compute_dte(expiry_str: str, ref_date_str: str) -> int | None:
+    try:
+        from datetime import date
+        day = int(expiry_str[:2])
+        mon = MONTH_MAP.get(expiry_str[2:5].upper())
+        yr = int(expiry_str[5:])
+        if not mon:
+            return None
+        expiry_date = date(yr, mon, day)
+        ref = date.fromisoformat(ref_date_str)
+        return (expiry_date - ref).days
+    except Exception:
+        return None
+
+
 def get_front_month_margins():
     """Return list of (date, initial_margin_pct, expiry, total_margin_pct, daily_vol, ann_vol)
     for the two most recent trading days."""
@@ -40,12 +61,15 @@ def get_front_month_margins():
                    m.daily_volatility, m.annualized_volatility
             FROM margins m
             WHERE m.date = ? AND m.symbol = ?
-            ORDER BY m.expiry ASC
-            LIMIT 1
         """, (d, SYMBOL))
-        row = cur.fetchone()
-        if row:
-            results.append((d, row[0], row[1], row[2], row[3], row[4]))
+        candidates = []
+        for row in cur.fetchall():
+            dte = compute_dte(row[1], d)
+            if dte is not None and dte >= 0:
+                candidates.append((dte, row))
+        if candidates:
+            best = min(candidates, key=lambda x: (x[0], x[1][1]))[1]
+            results.append((d, best[0], best[1], best[2], best[3], best[4]))
 
     conn.close()
     return results if len(results) == 2 else None

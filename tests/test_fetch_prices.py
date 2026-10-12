@@ -50,6 +50,27 @@ class FetchPricesTests(unittest.TestCase):
         self.assertEqual(fetch_prices.parse_response(''), [])
         self.assertEqual(fetch_prices.parse_response('{"other": 123}'), [])
 
+    def test_normalize_drops_post_expiry_rows(self):
+        # Contract expired on 20AUG2007, bhavcopy on 2007-08-21 (DTE = -1)
+        post_expiry = {
+            "Symbol": "NATURALGAS",
+            "ExpiryDate": "20AUG2007",
+            "InstrumentName": "FUTCOM",
+            "Close": 250.0,
+        }
+        self.assertIsNone(fetch_prices.normalize(post_expiry, "2007-08-21"))
+
+        # Active contract (DTE >= 0)
+        active = {
+            "Symbol": "NATURALGAS",
+            "ExpiryDate": "27OCT2026",
+            "InstrumentName": "FUTCOM",
+            "Close": 250.0,
+        }
+        result = fetch_prices.normalize(active, "2026-10-12")
+        self.assertIsNotNone(result)
+        self.assertEqual(result["expiry"], "27OCT2026")
+
 
 if __name__ == "__main__":
     unittest.main()

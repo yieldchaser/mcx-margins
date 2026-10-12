@@ -236,13 +236,16 @@ def _normalize_margin_row(row):
 
 def _load_symbol_margin_history_rows(cur, symbol):
     return [
-        _normalize_margin_row(row)
-        for row in _load_margin_rows(
-            cur,
-            "symbol = ? AND initial_margin_pct IS NOT NULL",
-            (symbol,),
-            "date ASC, expiry ASC",
+        norm for norm in (
+            _normalize_margin_row(row)
+            for row in _load_margin_rows(
+                cur,
+                "symbol = ? AND initial_margin_pct IS NOT NULL",
+                (symbol,),
+                "date ASC, expiry ASC",
+            )
         )
+        if norm is not None and (norm.get("dte") is None or norm["dte"] >= 0)
     ]
 
 
@@ -873,7 +876,7 @@ def _export_market_intelligence(margin_cur):
                 """
             ).fetchall()
         ]
-        rows = [r for r in rows if _is_market_futures_row(r)]
+        rows = [r for r in rows if _is_market_futures_row(r) and (r.get("dte") is None or r["dte"] >= 0)]
         latest_date = max((r["date"] for r in rows), default=None)
         min_date = min((r["date"] for r in rows), default=None)
         validation = _market_validation(conn, latest_date, rows)
@@ -966,6 +969,8 @@ def _export_market_intelligence(margin_cur):
             by_expiry = {}
             for row in rows:
                 if row["symbol"] == symbol:
+                    if row.get("dte") is not None and row["dte"] < 0:
+                        continue
                     by_expiry.setdefault(row["expiry"], []).append(row)
             for expiry, expiry_rows in by_expiry.items():
                 enriched = _enrich_market_history(
@@ -2518,6 +2523,8 @@ def main():
             for _row in _price_rows:
                 _rec = _market_row_from_db(_row)
                 if not _is_market_futures_row(_rec):
+                    continue
+                if _rec.get("dte") is not None and _rec["dte"] < 0:
                     continue
                 _market_contract_dates.setdefault((_rec["symbol"], _rec["expiry"]), set()).add(_rec["date"])
         finally:

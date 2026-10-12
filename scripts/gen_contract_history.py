@@ -43,6 +43,8 @@ for sym, sym_key in SYM_MAP.items():
         dv = row[6]
         av = row[7]
         dte = compute_dte(exp, row[0])
+        if dte < 0:
+            continue
         by_expiry[exp].append({
             'date': row[0],
             'dte': dte,
