@@ -180,9 +180,11 @@ def main():
 
     else:
         # Query by symbol
-        symbol = arg.upper()
+        alias_map = {"NG": "NATURALGAS", "NGM": "NATGASMINI"}
+        symbol = alias_map.get(arg.upper(), arg.upper())
         records = db.get_margins(symbol=symbol)
-        print_records(records, title=f"Margins for symbol matching '{symbol}'")
+        limit = 50
+        print_records(records[:limit], title=f"Margins for symbol matching '{symbol}' (showing latest {min(len(records), limit)} of {len(records)})")
 
 
 if __name__ == "__main__":
