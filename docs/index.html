@@ -140,7 +140,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-input[type="date"] { color-scheme: dark; }
 .calc-input::-webkit-calendar-picker-indicator { filter: invert(0.65); cursor: pointer; }
 .calc-grid--triple {
-  display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 8px;
+  display: grid; grid-template-columns: 74px 84px 1fr; gap: 8px;
 }
 .calc-grid--duo {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -251,17 +251,28 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 .calc-stat {
   position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
   background: linear-gradient(145deg, rgba(33,38,45,0.85) 0%, rgba(22,27,34,0.85) 100%);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 10px 12px;
+  min-width: 0;
+  min-height: 80px;
   overflow: hidden;
   transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), border-color 0.18s ease, box-shadow 0.18s ease;
   isolation: isolate;
+}
+.calc-stat.has-tooltip {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
 }
 .calc-stat::before {
   content: '';
@@ -286,10 +297,14 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-stat__label {
   font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--text-muted);
-  display: inline-flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 .calc-stat__value {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+  font-size: 19px; font-weight: 700; letter-spacing: -0.02em;
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
@@ -297,6 +312,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   line-height: 1.15;
   transition: color 0.25s ease;
   display: flex; align-items: baseline; gap: 4px;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 .calc-stat__unit {
   font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; opacity: 0.8;
@@ -304,10 +322,15 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-stat__value.is-positive { color: var(--accent-green); }
 .calc-stat__value.is-negative { color: var(--accent-red); }
 .calc-stat__sub {
-  font-size: 11px; color: var(--text-muted);
+  font-size: 10.5px; color: var(--text-muted);
   margin-top: 3px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+  line-height: 1.35;
+  width: 100%;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 @keyframes calcStatPulse {
   0%   { box-shadow: 0 0 0 0 rgba(56,139,253,0.45); }
@@ -717,6 +740,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 tr.has-tooltip { display: table-row; }
 td.has-tooltip, th.has-tooltip { display: table-cell; }
 div.card.has-tooltip, div.mkt-card.has-tooltip { display: block; }
+.calc-stat.has-tooltip { display: flex !important; flex-direction: column !important; align-items: stretch !important; }
+.calc-quick-btns.has-tooltip { display: flex !important; }
+#calcRangeSlider.has-tooltip { display: block !important; }
 .heatmap-cell.has-tooltip { display: flex; }
 tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.has-tooltip::after, div.mkt-card.has-tooltip::after, .heatmap-cell.has-tooltip::after,
 .calc-stat.has-tooltip::after, .calc-quick-btns.has-tooltip::after, #calcRangeSlider.has-tooltip::after, .calc-share-btn.has-tooltip::after,
@@ -3212,7 +3238,7 @@ async function renderOverview() {
             : hp5y <= 66 ? 'the normal range (trailing 5Y)'
             : hp5y <= 80 ? 'elevated territory — watch for hikes (trailing 5Y)'
             : 'historically expensive territory (trailing 5Y)';
-          hpTitle = `${_contractLabel(c.expiry)} (${c.expiry}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp5y}% of 5-year trailing readings at equivalent DTE (±15d). This is ${zone}.` +
+          hpTitle = `${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)}): margin ${c.total_margin_pct.toFixed(2)}% is higher than ${hp5y}% of 5-year trailing readings at equivalent DTE (±15d). This is ${zone}.` +
             (hpAll != null ? ` All-time rank: P${hpAll}.` : '');
         }
 
@@ -3269,7 +3295,7 @@ async function renderOverview() {
           }
         }
 
-        const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${c.expiry})`;
+        const dynTitle = `Term Structure: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
         const diffToFront = (c.total_margin_pct != null && rows[0]?.total_margin_pct != null)
                             ? (c.total_margin_pct - rows[0].total_margin_pct).toFixed(2)
                             : '0.00';
@@ -3281,7 +3307,7 @@ async function renderOverview() {
         const dynBody = `This contract expires in <strong>${c.dte} days</strong>.${tenderText}${priceCtx}${diffText}<br><br><em>Historical Context:</em> ${hpTitle}`;
 
         return `<tr class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
-          <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
+          <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)}</div></td>
           <td>${priceCell}</td>
           <td>${chgCell}</td>
           <td>${flowCell}</td>
@@ -3421,11 +3447,11 @@ async function renderOverview() {
         rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.07);';
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
-      const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${c.expiry})`;
+      const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Point Estimate (Initial tomorrow):</b> ${predicted.toFixed(2)}%<br><b>Current Initial Margin:</b> ${im.toFixed(2)}%<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%`;
       if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
       return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
-        <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${c.expiry}</div></td>
+        <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)}</div></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
         <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
         <td>${probCell}</td>
@@ -4088,6 +4114,20 @@ function _contractDeliveryYear(expiry) {
 function _expLabel(expiry) {
   return _contractLabel(expiry).replace(' 20', " '");
 }
+// Human-readable short expiry date: "27OCT2026" → "27 Oct '26"
+function _formatExpiryShort(expiry) {
+  if (!expiry || typeof expiry !== 'string') return '';
+  const clean = expiry.trim();
+  const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (!m) return clean;
+  const day = m[1];
+  const mon3 = m[2].toUpperCase();
+  const yr = m[3];
+  const mi = _LC_MONTHS_3.indexOf(mon3);
+  const monDisp = mi >= 0 ? _LC_MONTHS_DISP[mi] : (mon3.charAt(0) + mon3.slice(1).toLowerCase());
+  const yrShort = yr.length === 4 ? yr.slice(2) : yr;
+  return `${day} ${monDisp} '${yrShort}`;
+}
 
 
 // Metric definitions — fn extracts numeric value from a history row
@@ -4146,7 +4186,7 @@ function _lcPopulateMonths(year, autoSelectExpiry) {
     .sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
   inYear.forEach(e => {
     const o = document.createElement('option'); o.value = e.expiry;
-    o.textContent = `${_contractLabel(e.expiry)} (${e.expiry})`;
+    o.textContent = `${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})`;
     mSel.appendChild(o);
   });
   if (autoSelectExpiry) { mSel.value = autoSelectExpiry; renderLifecycle(); }
@@ -5509,7 +5549,7 @@ async function initCalculator() {
     const updateExpiries = () => {
       const year = yrSel.value;
       const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
-      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${e.expiry})</option>`).join('');
+      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})</option>`).join('');
       if (frontExp && _contractDeliveryYear(frontExp).toString() === year) expSel.value = frontExp;
       window.updateCalc(true); // snap dates on expiry change
     };
@@ -6102,15 +6142,15 @@ window.updateCalc = async function(forceSnap = false) {
   setStat('resLots', `${lots}<span class="calc-stat__unit">Lots</span>`);
   if (lotMode === 'vamb') {
     const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
-    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · Safety Shield: ${(shield*100).toFixed(2)}%`);
+    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} margin/lot · Safety: ${(shield*100).toFixed(1)}%`);
   } else {
-    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} entry margin/lot · ${windowDays.length} days`);
+    setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} margin/lot · ${windowDays.length}d`);
   }
   setStat('resMargin', '₹' + fmtNum(peakMargin, 0));
   const peakUtil = capital > 0 ? (peakMargin / capital) * 100 : 0;
   setStat('resMarginPeak', `Peak Util ${fmtPct(peakUtil, 1)}`);
   setStat('resROIMargin', fmtPct(roiOnMargin, 2), { cls: roiOnMargin >= 0 ? 'pos' : 'neg' });
-  setStat('resROIMarginSub', peakMargin > 0 ? `On ₹${fmtNum(peakMargin,0)} peak deployed` : 'No margin deployed');
+  setStat('resROIMarginSub', peakMargin > 0 ? `On ₹${fmtNum(peakMargin,0)} peak margin` : 'No margin deployed');
   setStat('resNet', '₹' + fmtNum(netPL, 0), { cls: netPL >= 0 ? 'pos' : 'neg' });
   setStat('resNetSub', costDetail);
   setStat('resBest', '₹' + fmtNum(bestDay, 0), { color: bestDay >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
@@ -6558,10 +6598,10 @@ async function renderMarketIntel(force = false) {
     const curRows = current[symbol] || [];
     document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => {
       const liqBand = marketLiquidityBand(r.liquidity_score);
-      const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${r.expiry})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
+      const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
       return `
         <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
-          <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+          <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
           <td>${r.dte}</td>
           <td>${fmtNum(r.close, 2)}</td>
           <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
@@ -6942,7 +6982,7 @@ async function renderMarketIntel(force = false) {
             const dteBg   = r.dte <= 10 ? 'rgba(248,81,73,0.12)' : r.dte <= 30 ? 'rgba(210,153,34,0.12)' : 'var(--surface2)';
             return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
               <div style="font-size:12px;color:var(--text);font-weight:500;">${_contractLabel(r.expiry)}</div>
-              <div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div>
               <div style="font-size:11px;font-weight:700;color:${urgency};background:${dteBg};border-radius:3px;padding:2px 7px;min-width:38px;text-align:center;">${r.dte}d</div>
             </div>`;
           }).join('')}
@@ -7046,7 +7086,7 @@ async function renderMarketIntel(force = false) {
         const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong><br>Liquidity Score: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>OI State: <strong>${r.oi_flow_state || 'neutral'}</strong><br>Roll Yield: <strong>${fmtPct(r.roll_yield_pct, 2)}</strong><br><br><em>Recommendation:</em> ${liqBand === 'deep' ? 'Optimal for high-conviction sizing.' : 'Monitor execution slippage.'}`;
         return `
           <tr style="height:66px;" class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
-            <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+            <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
             <td>${fmtNum(r.liquidity_score, 1)}</td>
             <td>${formatLabel(r.oi_flow_state)}</td>
             <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
@@ -7308,7 +7348,7 @@ function renderMarketExplorerPage() {
     return `
       <tr class="has-tooltip" data-dyn-title="Data Point: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
         <td>${r.date}</td>
-        <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${r.expiry}</div></td>
+        <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
         <td>${r.dte}</td>
         <td>${fmtNum(r.close, 2)}</td>
         <td>${fmtPct(r.return_pct, 2)}</td>
@@ -7361,7 +7401,7 @@ function renderExplorerPage() {
   document.getElementById('explorerBody').innerHTML = slice.map(d => `
     <tr>
       <td>${d.date}</td>
-      <td><span style="font-weight:600;">${_contractLabel(d.expiry)}</span><div style="font-size:10px;color:var(--text-muted);">${d.expiry}</div></td>
+      <td><span style="font-weight:600;">${_contractLabel(d.expiry)}</span><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(d.expiry)}</div></td>
       <td>${d.dte}</td>
       <td>${d.initial_margin_pct?.toFixed(2) ?? '—'}%</td>
       <td>${d.elm_pct?.toFixed(2) ?? '—'}%</td>
