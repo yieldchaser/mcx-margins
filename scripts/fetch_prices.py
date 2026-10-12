@@ -215,7 +215,7 @@ def parse_response(text: str) -> list[dict]:
 
     if isinstance(data, dict):
         if "Data" in data:
-            records = data["Data"]
+            records = data.get("Data") or []
             print(f"[parser] Data rows={len(records)}")
             return records if isinstance(records, list) else []
         if "d" in data:
@@ -507,8 +507,12 @@ async def run_backfill(
             date_str = dt.strftime("%Y-%m-%d")
             print(f"[backfill] {i}/{len(pending)}  {date_str}", end="  ")
 
-            raw_rows   = await session.fetch_date(date_str)
-            normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
+            try:
+                raw_rows   = await session.fetch_date(date_str)
+                normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
+            except Exception as e:
+                print(f"✗ error: {e}")
+                continue
 
             if normalized:
                 saved = save_records(conn, normalized)

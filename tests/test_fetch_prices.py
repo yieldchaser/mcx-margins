@@ -43,6 +43,13 @@ class FetchPricesTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(row, (102.25, 1200, 5400))
 
+    def test_parse_response_handles_null_and_empty_payloads(self):
+        self.assertEqual(fetch_prices.parse_response('{"Data": null}'), [])
+        self.assertEqual(fetch_prices.parse_response('{"Data": []}'), [])
+        self.assertEqual(fetch_prices.parse_response('{"d": {"Data": null}}'), [])
+        self.assertEqual(fetch_prices.parse_response(''), [])
+        self.assertEqual(fetch_prices.parse_response('{"other": 123}'), [])
+
 
 if __name__ == "__main__":
     unittest.main()
