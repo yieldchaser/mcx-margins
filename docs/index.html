@@ -850,7 +850,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 }
 .range-slider-container {
   position: relative; height: 32px; width: 100%;
-  display: flex; align-items: center;
+  display: flex; align-items: center; touch-action: none;
 }
 .range-slider-track {
   position: absolute; height: 4px; width: 100%;
@@ -866,20 +866,38 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 .range-inputs input[type="range"] {
   position: absolute; top: 0; left: 0; width: 100%; height: 32px;
   -webkit-appearance: none; appearance: none;
-  background: none; pointer-events: none; margin: 0;
+  background: none; pointer-events: none; margin: 0; touch-action: none;
 }
 .range-inputs input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
   background: var(--text); border: 2px solid var(--accent);
-  cursor: pointer; pointer-events: auto;
+  cursor: grab; pointer-events: auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.range-inputs input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(56, 139, 253, 0.25);
+}
+.range-inputs input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
 }
 .range-inputs input[type="range"]::-moz-range-thumb {
   width: 14px; height: 14px; border-radius: 50%;
   background: var(--text); border: 2px solid var(--accent);
-  cursor: pointer; pointer-events: auto;
+  cursor: grab; pointer-events: auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.range-inputs input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(56, 139, 253, 0.25);
+}
+.range-inputs input[type="range"]::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
 }
 .range-label-container {
   position: relative;
@@ -2457,6 +2475,7 @@ function escAttr(s) { return s ? s.replace(/"/g, '&quot;') : ''; }
 class RangeController {
   constructor(containerId, min, max, initialStart, initialEnd, onUpdate) {
     this.container = document.getElementById(containerId);
+    if (!this.container) return;
     this.inStart = this.container.querySelector('.range-start');
     this.inEnd = this.container.querySelector('.range-end');
     this.highlight = this.container.querySelector('.range-slider-highlight');
@@ -2466,6 +2485,9 @@ class RangeController {
 
     this.min = min;
     this.max = max;
+    this.activeThumb = null;
+    this.isDragging = false;
+
     this.inStart.min = this.inEnd.min = min;
     this.inStart.max = this.inEnd.max = max;
     this.inStart.value = initialStart;
@@ -2474,47 +2496,106 @@ class RangeController {
     this.inStart.addEventListener('input', () => this.handleInput(true));
     this.inEnd.addEventListener('input', () => this.handleInput(false));
 
-    // Bring active thumb to front so both thumbs are independently draggable
-    this.inStart.addEventListener('pointerdown', () => {
-      this.inStart.style.zIndex = '4';
-      this.inEnd.style.zIndex = '2';
-    });
-    this.inEnd.addEventListener('pointerdown', () => {
-      this.inEnd.style.zIndex = '4';
-      this.inStart.style.zIndex = '2';
-    });
+    const setFocus = (thumb) => {
+      this.activeThumb = thumb;
+      this.isDragging = true;
+      if (thumb === 'start') {
+        this.inStart.style.zIndex = '10';
+        this.inEnd.style.zIndex = '5';
+      } else if (thumb === 'end') {
+        this.inEnd.style.zIndex = '10';
+        this.inStart.style.zIndex = '5';
+      }
+    };
+
+    const clearFocus = () => {
+      this.activeThumb = null;
+      this.isDragging = false;
+      this.updateZIndex();
+    };
+
+    this.inStart.addEventListener('pointerdown', () => setFocus('start'));
+    this.inEnd.addEventListener('pointerdown', () => setFocus('end'));
+    this.inStart.addEventListener('focus', () => setFocus('start'));
+    this.inEnd.addEventListener('focus', () => setFocus('end'));
+    this.inStart.addEventListener('blur', clearFocus);
+    this.inEnd.addEventListener('blur', clearFocus);
+
+    window.addEventListener('pointerup', clearFocus);
+    window.addEventListener('pointercancel', clearFocus);
+
+    // Intelligently route pointerdown to the closer thumb when thumbs overlap in tight ranges
+    this.container.addEventListener('pointerdown', (evt) => {
+      const rect = this.container.getBoundingClientRect();
+      if (!rect.width) return;
+      const pct = Math.max(0, Math.min(1, (evt.clientX - rect.left) / rect.width));
+      const clickVal = this.min + pct * (this.max - this.min);
+      const s = parseInt(this.inStart.value, 10);
+      const e = parseInt(this.inEnd.value, 10);
+      const distS = Math.abs(clickVal - s);
+      const distE = Math.abs(clickVal - e);
+
+      if (distS < distE) {
+        setFocus('start');
+      } else if (distE < distS) {
+        setFocus('end');
+      } else {
+        if (e >= this.max) {
+          setFocus('start');
+        } else if (s <= this.min) {
+          setFocus('end');
+        } else if (clickVal <= (s + e) / 2) {
+          setFocus('start');
+        } else {
+          setFocus('end');
+        }
+      }
+    }, true);
 
     this.updateUI();
   }
 
   updateZIndex() {
-    const s = parseInt(this.inStart.value);
-    // When start thumb is near max, bring it forward so user can pull it back
-    if (s >= this.max - 1) {
-      this.inStart.style.zIndex = '4';
-      this.inEnd.style.zIndex = '2';
-    } else {
-      this.inStart.style.zIndex = '2';
+    if (this.activeThumb) return; // Keep active thumb on top throughout active drag
+    const s = parseInt(this.inStart.value, 10);
+    const e = parseInt(this.inEnd.value, 10);
+    const mid = (this.min + this.max) / 2;
+    // When start thumb is near end or in the right half, bring it forward so user can pull it left
+    if (s >= this.max - 1 || (e - s <= 2 && s > mid)) {
+      this.inStart.style.zIndex = '6';
       this.inEnd.style.zIndex = '4';
+    } else {
+      this.inStart.style.zIndex = '4';
+      this.inEnd.style.zIndex = '6';
     }
   }
 
   handleInput(isStart) {
-    let s = parseInt(this.inStart.value);
-    let e = parseInt(this.inEnd.value);
+    let s = parseInt(this.inStart.value, 10);
+    let e = parseInt(this.inEnd.value, 10);
 
-    // Collision prevention: enforce gap of 1 and boundaries
-    if (s >= e) {
-      if (isStart) {
+    // Enforce strict order s < e and boundaries (min 1 step gap)
+    if (isStart) {
+      if (s >= e) {
         s = Math.max(this.min, e - 1);
+        if (s === e && e < this.max) {
+          e = s + 1;
+          this.inEnd.value = e;
+        }
         this.inStart.value = s;
-      } else {
+      }
+    } else {
+      if (e <= s) {
         e = Math.min(this.max, s + 1);
+        if (e === s && s > this.min) {
+          s = e - 1;
+          this.inStart.value = s;
+        }
         this.inEnd.value = e;
       }
     }
     this.updateUI();
-    if (this.onUpdate) this.onUpdate(parseInt(this.inStart.value), parseInt(this.inEnd.value));
+    if (this.onUpdate) this.onUpdate(parseInt(this.inStart.value, 10), parseInt(this.inEnd.value, 10));
   }
 
   updateRange(min, max, s, e) {
@@ -2528,8 +2609,8 @@ class RangeController {
   }
 
   updateUI() {
-    const s = parseInt(this.inStart.value);
-    const e = parseInt(this.inEnd.value);
+    const s = parseInt(this.inStart.value, 10);
+    const e = parseInt(this.inEnd.value, 10);
     const range = this.max - this.min;
     if (range <= 0) {
       this.highlight.style.width = '0%';
@@ -2544,8 +2625,21 @@ class RangeController {
   }
 
   setRange(s, e) {
-    this.inStart.value = Math.max(this.min, s);
-    this.inEnd.value = Math.min(this.max, e);
+    let startVal = parseInt(s, 10);
+    let endVal = parseInt(e, 10);
+    if (isNaN(startVal)) startVal = this.min;
+    if (isNaN(endVal)) endVal = this.max;
+    startVal = Math.max(this.min, Math.min(this.max - 1, startVal));
+    endVal = Math.max(this.min + 1, Math.min(this.max, endVal));
+    if (startVal >= endVal) {
+      if (endVal < this.max) {
+        endVal = Math.min(this.max, startVal + 1);
+      } else {
+        startVal = Math.max(this.min, endVal - 1);
+      }
+    }
+    this.inStart.value = startVal;
+    this.inEnd.value = endVal;
     this.updateUI();
   }
 
@@ -3802,10 +3896,22 @@ async function renderHistory(chartName, startIdx, endIdx) {
       _histFullRaw = firstDataIdx > 0 ? raw.slice(firstDataIdx) : raw;
       
       const max = _histFullRaw.length - 1;
-      _histMarginRC = new RangeController('sliderHistMargin', 0, max, startIdx ?? 0, max, (s, e) => renderHistory('Margin', s, e));
-      _histVolRC    = new RangeController('sliderHistVol',    0, max, startIdx ?? 0, max, (s, e) => renderHistory('Vol',    s, e));
-      _histDecompRC = new RangeController('sliderDecomp',   0, max, startIdx ?? 0, max, (s, e) => renderHistory('Decomp', s, e));
-      _histMarketFlowRC = new RangeController('sliderHistMarketFlow', 0, max, startIdx ?? 0, max, (s, e) => renderHistory('MarketFlow', s, e));
+      _histMarginRC = new RangeController('sliderHistMargin', 0, max, startIdx ?? 0, max, (s, e) => {
+        document.querySelectorAll('#tab-history .horizon-btn').forEach(b => b.classList.remove('active'));
+        renderHistory('Margin', s, e);
+      });
+      _histVolRC    = new RangeController('sliderHistVol',    0, max, startIdx ?? 0, max, (s, e) => {
+        document.querySelectorAll('#tab-history .horizon-btn').forEach(b => b.classList.remove('active'));
+        renderHistory('Vol',    s, e);
+      });
+      _histDecompRC = new RangeController('sliderDecomp',   0, max, startIdx ?? 0, max, (s, e) => {
+        document.querySelectorAll('#tab-history .horizon-btn').forEach(b => b.classList.remove('active'));
+        renderHistory('Decomp', s, e);
+      });
+      _histMarketFlowRC = new RangeController('sliderHistMarketFlow', 0, max, startIdx ?? 0, max, (s, e) => {
+        document.querySelectorAll('#tab-history .horizon-btn').forEach(b => b.classList.remove('active'));
+        renderHistory('MarketFlow', s, e);
+      });
       
       renderHistory('Margin', startIdx ?? 0, max);
       renderHistory('Vol',    startIdx ?? 0, max);
@@ -4231,7 +4337,10 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
     }
     
     // Init Range Slider
-    _lcRC = new RangeController('lcSlider', 0, _lcFullRows.length - 1, 0, _lcFullRows.length - 1, (s, e) => renderLifecycle(s, e, true));
+    _lcRC = new RangeController('lcSlider', 0, _lcFullRows.length - 1, 0, _lcFullRows.length - 1, (s, e) => {
+      document.querySelectorAll('#lcPresets .horizon-btn').forEach(b => b.classList.remove('active'));
+      renderLifecycle(s, e, true);
+    });
     startIdx = 0; endIdx = _lcFullRows.length - 1;
     isZoomOnly = false; // new contract always does full build
     
@@ -4531,9 +4640,8 @@ document.querySelectorAll('#lcPresets .horizon-btn').forEach(btn => {
       if (idx >= 0) s = idx;
     }
 
-    _lcRC.inStart.value = s;
-    _lcRC.inEnd.value = e;
-    _lcRC.updateUI();
+    if (s >= e) s = Math.max(0, e - 1);
+    _lcRC.setRange(s, e);
     _lcRC.setLabels(_lcFullRows[s].date, _lcFullRows[e].date);
     renderLifecycle(s, e, true);
   });
@@ -5593,6 +5701,7 @@ async function initCalculator() {
           }
         }
       }
+      if (s >= e) s = Math.max(0, e - 1);
       // 'full' uses defaults: s=0, e=maxIdx
 
       document.getElementById('calcEntryDate').value = allDates[s];
@@ -5600,7 +5709,7 @@ async function initCalculator() {
 
       _calcRC.setRange(s, e);
       _calcRC.setLabels(allDates[s], allDates[e]);
-      await window.updateCalc();
+      await window.updateCalc(false, false);
     });
   });
 
@@ -5634,6 +5743,8 @@ async function initCalculator() {
     if (el) el.addEventListener('input', () => {
       const allDates = window._calcAllDates;
       if (!_calcRC || !allDates) return window.updateCalc();
+
+      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
 
       const entryVal = document.getElementById('calcEntryDate').value;
       const exitVal = document.getElementById('calcExitDate').value;
@@ -5743,7 +5854,7 @@ async function initCalculator() {
   });
 }
 
-window.updateCalc = async function(forceSnap = false) {
+window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const sym = document.getElementById('calcSymbol').value;
   const expiry = document.getElementById('calcExpiry').value;
   if (!expiry) return;
@@ -5777,9 +5888,14 @@ window.updateCalc = async function(forceSnap = false) {
   // Initialize or Update Range Controller
   if (!_calcRC) {
     _calcRC = new RangeController('calcRangeSlider', 0, allDates.length - 1, 0, allDates.length - 1, (s, e) => {
+      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
       if (allDates[s]) document.getElementById('calcEntryDate').value = allDates[s];
       if (allDates[e]) document.getElementById('calcExitDate').value = allDates[e];
-      window.updateCalc();
+      _calcRC.setLabels(allDates[s] || '', allDates[e] || '');
+      if (window._calcDebounceTimer) cancelAnimationFrame(window._calcDebounceTimer);
+      window._calcDebounceTimer = requestAnimationFrame(() => {
+        window.updateCalc(false, true);
+      });
     });
   } else {
     _calcRC.updateRange(0, allDates.length - 1);
@@ -5799,7 +5915,7 @@ window.updateCalc = async function(forceSnap = false) {
     document.getElementById('calcExitDate').min = allDates[0]; document.getElementById('calcExitDate').max = end;
     _calcRC.setRange(snapStart, allDates.length - 1);
     _calcRC.setLabels(start, end);
-    if (forceSnap) return window.updateCalc(false);
+    if (forceSnap) return window.updateCalc(false, false);
   } else {
     // Set constraints even if not snapping
     document.getElementById('calcEntryDate').min = allDates[0];
@@ -5819,11 +5935,20 @@ window.updateCalc = async function(forceSnap = false) {
 
     // If reversed by user, swap
     if (s > e) [s, e] = [e, s];
-    if (s === e) e = Math.min(allDates.length - 1, s + 1);
+    if (s === e) {
+      if (s >= allDates.length - 1) {
+        s = Math.max(0, (allDates.length - 1) - 1);
+        e = allDates.length - 1;
+      } else {
+        e = Math.min(allDates.length - 1, s + 1);
+      }
+    }
 
     document.getElementById('calcEntryDate').value = allDates[s];
     document.getElementById('calcExitDate').value = allDates[e];
-    _calcRC.setRange(s, e);
+    if (!fromSlider && !_calcRC.isDragging) {
+      _calcRC.setRange(s, e);
+    }
     _calcRC.setLabels(allDates[s], allDates[e]);
   }
 
