@@ -258,6 +258,9 @@ def _build_margin_contract_histories(cur, symbol):
         expiry = row.get("expiry")
         if not expiry:
             continue
+        dte = compute_dte(expiry, row.get("date"))
+        if dte < 0:
+            continue
         dv = row.get("daily_volatility")
         av = row.get("annualized_volatility")
         # Calculate safety shield
@@ -1116,6 +1119,8 @@ def _export_market_intelligence(margin_cur):
             by_expiry = {}
             for row in rows:
                 if row["symbol"] == symbol:
+                    if row.get("dte") is not None and row["dte"] < 0:
+                        continue
                     by_expiry.setdefault(row["expiry"], []).append(row)
             for expiry, expiry_rows in sorted(by_expiry.items()):
                 enriched = contract_histories.get((symbol, expiry)) or _enrich_market_history(sorted(expiry_rows, key=lambda r: r["date"]))

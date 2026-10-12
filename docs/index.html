@@ -4146,7 +4146,7 @@ function _lcPopulateMonths(year, autoSelectExpiry) {
     .sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
   inYear.forEach(e => {
     const o = document.createElement('option'); o.value = e.expiry;
-    o.textContent = _contractLabel(e.expiry); // e.g. 'JAN 2026'
+    o.textContent = `${_contractLabel(e.expiry)} (${e.expiry})`;
     mSel.appendChild(o);
   });
   if (autoSelectExpiry) { mSel.value = autoSelectExpiry; renderLifecycle(); }
@@ -5509,7 +5509,7 @@ async function initCalculator() {
     const updateExpiries = () => {
       const year = yrSel.value;
       const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
-      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)}</option>`).join('');
+      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${e.expiry})</option>`).join('');
       if (frontExp && _contractDeliveryYear(frontExp).toString() === year) expSel.value = frontExp;
       window.updateCalc(true); // snap dates on expiry change
     };
