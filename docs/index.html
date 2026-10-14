@@ -4257,11 +4257,11 @@ async function buildLCDropdown() {
   const idx = await loadJSON('contract_index');
   _lcAllEntries = idx[_lcSym] || [];
 
-  // Populate Year selector (delivery years, newest first)
+  // Populate Year selector (delivery years, newest first, with "All" option)
   const years = [...new Set(_lcAllEntries.map(e => _contractDeliveryYear(e.expiry).toString()))]
     .sort((a, b) => +b - +a);
   const yrSel = document.getElementById('lcYearSelect');
-  yrSel.innerHTML = '<option value="">Year</option>';
+  yrSel.innerHTML = '<option value="all">All</option>';
   years.forEach(y => {
     const o = document.createElement('option'); o.value = y; o.textContent = y;
     yrSel.appendChild(o);
@@ -4286,15 +4286,36 @@ function _lcPopulateMonths(year, autoSelectExpiry) {
   const mSel = document.getElementById('lcMonthSelect');
   mSel.innerHTML = '<option value="">— Month —</option>';
   if (!year) { renderLifecycle(); return; }
-  // Filter entries for chosen year, sort by expiry date newest-first
-  const inYear = _lcAllEntries
-    .filter(e => _contractDeliveryYear(e.expiry).toString() === year)
-    .sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
-  inYear.forEach(e => {
-    const o = document.createElement('option'); o.value = e.expiry;
-    o.textContent = `${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})`;
-    mSel.appendChild(o);
-  });
+
+  if (year === 'all') {
+    const sorted = [..._lcAllEntries].sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+    const byYr = {};
+    sorted.forEach(e => {
+      const y = _contractDeliveryYear(e.expiry).toString();
+      if (!byYr[y]) byYr[y] = [];
+      byYr[y].push(e);
+    });
+    Object.keys(byYr).sort((a, b) => +b - +a).forEach(y => {
+      const og = document.createElement('optgroup');
+      og.label = y;
+      byYr[y].forEach(e => {
+        const o = document.createElement('option'); o.value = e.expiry;
+        o.textContent = `${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})`;
+        og.appendChild(o);
+      });
+      mSel.appendChild(og);
+    });
+  } else {
+    // Filter entries for chosen year, sort by expiry date newest-first
+    const inYear = _lcAllEntries
+      .filter(e => _contractDeliveryYear(e.expiry).toString() === year)
+      .sort((a, b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+    inYear.forEach(e => {
+      const o = document.createElement('option'); o.value = e.expiry;
+      o.textContent = `${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})`;
+      mSel.appendChild(o);
+    });
+  }
   if (autoSelectExpiry) { mSel.value = autoSelectExpiry; renderLifecycle(); }
 }
 
@@ -5649,16 +5670,37 @@ async function initCalculator() {
     const updateYears = () => {
       const entries = _lcAllEntries.sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
       const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))].sort((a,b) => b-a);
-      yrSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+      yrSel.innerHTML = '<option value="all">All</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
       if (frontExp) yrSel.value = _contractDeliveryYear(frontExp).toString();
       updateExpiries();
     };
 
     const updateExpiries = () => {
       const year = yrSel.value;
-      const inYear = _lcAllEntries.filter(e => _contractDeliveryYear(e.expiry).toString() === year);
-      expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})</option>`).join('');
-      if (frontExp && _contractDeliveryYear(frontExp).toString() === year) expSel.value = frontExp;
+      const prevExpiry = expSel.value;
+      if (year === 'all') {
+        const sorted = [..._lcAllEntries].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+        const byYr = {};
+        sorted.forEach(e => {
+          const y = _contractDeliveryYear(e.expiry).toString();
+          if (!byYr[y]) byYr[y] = [];
+          byYr[y].push(e);
+        });
+        expSel.innerHTML = Object.keys(byYr).sort((a,b) => +b - +a).map(y => 
+          `<optgroup label="${y}">${byYr[y].map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})</option>`).join('')}</optgroup>`
+        ).join('');
+      } else {
+        const inYear = _lcAllEntries
+          .filter(e => _contractDeliveryYear(e.expiry).toString() === year)
+          .sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
+        expSel.innerHTML = inYear.map(e => `<option value="${e.expiry}">${_contractLabel(e.expiry)} (${_formatExpiryShort(e.expiry)})</option>`).join('');
+      }
+
+      if (prevExpiry && expSel.querySelector(`option[value="${prevExpiry}"]`)) {
+        expSel.value = prevExpiry;
+      } else if (frontExp && (year === 'all' || _contractDeliveryYear(frontExp).toString() === year)) {
+        expSel.value = frontExp;
+      }
       window.updateCalc(true); // snap dates on expiry change
     };
 
