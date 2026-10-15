@@ -24,7 +24,7 @@ from fyers_apiv3 import fyersModel
 
 # Absolute Repository Root Path
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PYTHON_EXE = os.path.join(os.path.dirname(sys.executable), "python.exe")
+PYTHON_EXE = sys.executable
 LOG_FILE = os.path.join(REPO_DIR, "data", "auto_sync.log")
 TOKEN_PATH = os.path.join(REPO_DIR, "data", "fyers_auth", "access_token.txt")
 TOKEN_STATUS_FILE = os.path.join(REPO_DIR, "docs", "data", "token_status.json")
