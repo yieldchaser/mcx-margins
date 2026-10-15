@@ -1255,9 +1255,9 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           </div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Margin vs Volatility">Margin vs Volatility (Scatter)</div>
-        <div class="chart-container"><canvas id="chartScatter"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:360px;"><canvas id="chartScatter"></canvas></div>
       </div>
     </div>
     <!-- Item 6: Decomposition -->
@@ -4327,20 +4327,40 @@ async function renderHistory(chartName, startIdx, endIdx) {
           else scatterA.push(pt);
         });
         const datasets = [
-          { label: 'Regime A (Structural)', data: scatterA, backgroundColor: 'rgba(56,139,253,0.35)', pointRadius: 2 },
-          { label: 'Regime B (Elevated)', data: scatterB, backgroundColor: 'rgba(251,143,68,0.45)', pointRadius: 2 }
+          { label: 'Regime A (Structural)', data: scatterA, backgroundColor: 'rgba(56,139,253,0.4)', pointRadius: 2.5, pointHoverRadius: 5 },
+          { label: 'Regime B (Elevated)', data: scatterB, backgroundColor: 'rgba(251,143,68,0.5)', pointRadius: 2.5, pointHoverRadius: 5 }
         ];
         if (regimeModel) {
           const ra = regimeModel.regime_a, rb = regimeModel.regime_b;
           const allVolPts = [...scatterA, ...scatterB].map(p => p.x);
           if (allVolPts.length > 0) {
             const minV = Math.min(...allVolPts), maxV = Math.max(...allVolPts);
-            datasets.push({ label: `Regime A OLS`, data: [{x: minV, y: ra.slope*minV + ra.intercept}, {x: Math.min(maxV, 6), y: ra.slope*Math.min(maxV,6) + ra.intercept}], type: 'line', borderColor: 'rgba(56,139,253,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
-            datasets.push({ label: `Regime B OLS`, data: [{x: Math.max(minV, 4.5), y: rb.slope*Math.max(minV,4.5) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}], type: 'line', borderColor: 'rgba(251,143,68,0.8)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
+            datasets.push({ label: `Regime A OLS`, data: [{x: minV, y: ra.slope*minV + ra.intercept}, {x: Math.min(maxV, 6), y: ra.slope*Math.min(maxV,6) + ra.intercept}], type: 'line', borderColor: 'rgba(56,139,253,0.85)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
+            datasets.push({ label: `Regime B OLS`, data: [{x: Math.max(minV, 4.5), y: rb.slope*Math.max(minV,4.5) + rb.intercept}, {x: maxV, y: rb.slope*maxV + rb.intercept}], type: 'line', borderColor: 'rgba(251,143,68,0.85)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false });
           }
         }
         if (histChartScatter) histChartScatter.destroy();
-        histChartScatter = new Chart(document.getElementById('chartScatter'), { type: 'scatter', data: { datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => ctx.raw.date ? `${ctx.raw.date}: Vol=${ctx.raw.x.toFixed(2)}%, Margin=${ctx.raw.y.toFixed(2)}%` : '' } } }, scales: { x: { title: { display: true, text: 'Daily Volatility %' } }, y: { title: { display: true, text: 'Initial Margin %' } } } } });
+        histChartScatter = new Chart(document.getElementById('chartScatter'), {
+          type: 'scatter',
+          data: { datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 6, bottom: 6 } },
+            plugins: {
+              legend: { display: true, position: 'top', labels: { font: { size: 10 } } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ctx.raw.date ? `${ctx.raw.date}: Vol=${ctx.raw.x.toFixed(2)}%, Margin=${ctx.raw.y.toFixed(2)}%` : ''
+                }
+              }
+            },
+            scales: {
+              x: { title: { display: true, text: 'Daily Volatility %' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y: { title: { display: true, text: 'Initial Margin %' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+          }
+        });
       } catch(e) {}
     }
 
