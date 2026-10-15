@@ -1104,14 +1104,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- Mini forward curve + panic signals -->
     <div class="grid-2">
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Forward Curve">Forward Curve — Today</div>
-        <div class="chart-container"><canvas id="miniForwardCurve"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="miniForwardCurve"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Panic Spread">Panic Spread Signals</div>
-        <div style="overflow-x:auto;">
-          <table class="data-table" id="panicTable">
+        <div style="overflow-x:auto;flex:1;min-height:0;">
+          <table class="data-table" id="panicTable" style="width:100%;">
             <thead><tr>
               <th title="Contract expiry date being evaluated.">Expiry</th>
               <th title="Today's total margin requirement (Initial + ELM + Tender). Shown for reference.">Total %</th>
@@ -1985,13 +1985,13 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div id="deltaCondSummary" style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text-muted);"></div>
     </div>
     <div class="grid-2" style="margin-top:16px;">
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="5-Day Rolling">5-Day Rolling Average vs Spot Margin</div>
-        <div class="chart-container"><canvas id="chartMomentum"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartMomentum"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
-        <div class="chart-container"><canvas id="chartPercentile"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartPercentile"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
       </div>
     </div>
@@ -2140,24 +2140,24 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Active Futures Curve">Active Futures Curve</div>
         <div class="scope-row" style="margin-top:0;">
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>Lens</strong> Close + liquidity</span>
         </div>
-        <div class="chart-container" style="height:400px;"><canvas id="chartMarketCurve"></canvas></div>
-        <div id="marketCurveInsight"></div>
+        <div class="chart-container" style="flex:1;min-height:320px;"><canvas id="chartMarketCurve"></canvas></div>
+        <div id="marketCurveInsight" style="margin-top:auto;"></div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Explainable Market Signals">Explainable Market Signals</div>
-        <div class="market-table-shell">
-          <table class="data-table">
+        <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;">
+          <table class="data-table" style="width:100%;">
             <thead><tr><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
             <tbody id="marketSignalBody"></tbody>
           </table>
         </div>
-        <div id="marketSignalBias"></div>
+        <div id="marketSignalBias" style="margin-top:auto;"></div>
       </div>
     </div>
     <div class="grid-2 market-grid mb-4" style="align-items:stretch;">
@@ -2234,10 +2234,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartMarketEfficiency"></canvas></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Active-Contract Leaderboard">Active-Contract Leaderboard</div>
-        <div class="market-table-shell">
-          <table class="data-table">
+        <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;">
+          <table class="data-table" style="width:100%;">
             <thead><tr><th>Contract</th><th>Liquidity</th><th>OI Flow</th><th>Realized Vol</th><th>Roll Yield</th></tr></thead>
             <tbody id="marketLeaderboardBody"></tbody>
           </table>
@@ -7983,12 +7983,12 @@ async function renderMarketIntel(force = false) {
     document.getElementById('marketSignalBody').innerHTML = sigRows.map(s => {
       const dynBody = `<strong>Signal: ${s.label}</strong><br>Direction: <strong>${s.direction}</strong> bias<br>Severity: <strong>${s.severity}</strong> (Score: ${s.score}/100)<br><br><em>Rationale:</em> ${s.reason}<br><br>This intelligence is synthesized from multi-contract price/OI flow and historical stress patterns.`;
       return `
-      <tr style="height:68px;" class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
-        <td>${formatLabel(s.label)}</td>
+      <tr class="has-tooltip" data-dyn-title="${s.label}" data-dyn-body="${escAttr(dynBody)}">
+        <td style="font-weight:600;">${formatLabel(s.label)}</td>
         <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
-        <td>${s.score}</td>
+        <td style="font-weight:600;">${s.score}</td>
         <td>${formatLabel(s.direction)}</td>
-        <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
+        <td style="font-size:12px;color:var(--text-muted);line-height:1.45;">${s.reason}</td>
       </tr>
     `;
     }).join('');
@@ -8072,8 +8072,8 @@ async function renderMarketIntel(force = false) {
         const liqBand = marketLiquidityBand(r.liquidity_score);
         const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong><br>Liquidity Score: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>OI State: <strong>${r.oi_flow_state || 'neutral'}</strong><br>Roll Yield: <strong>${fmtPct(r.roll_yield_pct, 2)}</strong><br><br><em>Recommendation:</em> ${liqBand === 'deep' ? 'Optimal for high-conviction sizing.' : 'Monitor execution slippage.'}`;
         return `
-          <tr style="height:66px;" class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
-            <td>${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
+          <tr class="has-tooltip" data-dyn-title="Leaderboard: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+            <td style="font-weight:600;">${_contractLabel(r.expiry)}<div style="font-size:10px;color:var(--text-muted);font-weight:400;">${_formatExpiryShort(r.expiry)}</div></td>
             <td>${fmtNum(r.liquidity_score, 1)}</td>
             <td>${formatLabel(r.oi_flow_state)}</td>
             <td>${fmtPct(r.rolling_realized_vol_20d, 2)}</td>
