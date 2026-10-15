@@ -1912,7 +1912,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <!-- Item 4: Delta Distribution Histogram -->
     <div class="card" style="margin-top:16px;" id="deltaDistCard" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution (Gaussian & Empirical)</div>
         <div style="display:flex;gap:6px;" id="deltaBucketBtns">
           <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
           <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
@@ -3674,6 +3674,23 @@ chartScript.onload = () => {
   Chart.defaults.color       = '#8b949e';
   Chart.defaults.borderColor = '#30363d';
   Chart.defaults.font.family = 'Inter';
+
+  // ── Global Institutional Tooltip Defaults ──
+  Chart.defaults.plugins.tooltip = {
+    backgroundColor: 'rgba(22, 27, 34, 0.96)',
+    borderColor: 'rgba(56, 139, 253, 0.35)',
+    borderWidth: 1,
+    titleColor: '#58a6ff',
+    titleFont: { family: 'Inter', size: 12, weight: '700' },
+    bodyColor: '#e6edf3',
+    bodyFont: { family: 'Inter', size: 11.5 },
+    footerColor: '#8b949e',
+    footerFont: { family: 'Inter', size: 11, style: 'italic' },
+    padding: 12,
+    boxPadding: 6,
+    cornerRadius: 8,
+    usePointStyle: true,
+  };
 
   // ── High-Fidelity Chart.js Plugin ──
   Chart.register({
@@ -5601,36 +5618,81 @@ async function renderAnalytics() {
           const h = dd.histograms[bucket];
           if (!h || !h.bins) return;
           if (deltaChart) { deltaChart.destroy(); deltaChart = null; }
-          const colors = h.bins.map((_, i) => {
-            const midVal = -5 + i * 0.25;
-            return midVal < 0 ? 'rgba(63,185,80,0.6)' : midVal > 0 ? 'rgba(248,81,73,0.6)' : 'rgba(210,153,34,0.6)';
+
+          const totalCount = h.counts.reduce((s, v) => s + v, 0);
+          const binMidVals = h.bins.map((b, i) => {
+            if (b.startsWith('<')) return -5.25;
+            if (b.startsWith('>')) return 5.25;
+            return parseFloat(b);
           });
-          // FIX 8: Compute predicted delta and max frequency for vertical lines
+
+          // Calculate empirical mean and standard deviation
+          let sum = 0;
+          h.counts.forEach((c, i) => {
+            sum += c * binMidVals[i];
+          });
+          const mean = totalCount > 0 ? sum / totalCount : 0;
+
+          let varSum = 0;
+          h.counts.forEach((c, i) => {
+            varSum += c * Math.pow(binMidVals[i] - mean, 2);
+          });
+          const variance = totalCount > 1 ? varSum / (totalCount - 1) : 1;
+          const stdDev = Math.sqrt(variance);
+
+          // Cumulative counts for percentiles
+          const cumCounts = [];
+          let runningCount = 0;
+          h.counts.forEach(c => {
+            runningCount += c;
+            cumCounts.push(runningCount);
+          });
+
+          // Generate theoretical Gaussian (Normal) bell curve data scaled to bin counts
+          const gaussianFitData = binMidVals.map(x => {
+            const z = (x - mean) / stdDev;
+            const pdf = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
+            return +(totalCount * 0.25 * pdf).toFixed(1);
+          });
+
+          const colors = h.bins.map((_, i) => {
+            const midVal = binMidVals[i];
+            return midVal < -0.05 ? 'rgba(63,185,80,0.65)' : midVal > 0.05 ? 'rgba(248,81,73,0.65)' : 'rgba(210,153,34,0.65)';
+          });
+
           const maxCount = Math.max(...h.counts);
-          // Zero line at delta=0: find the bin index closest to 0
           const zeroIdx = h.bins.reduce((best, b, i) =>
-            Math.abs(parseFloat(b)) < Math.abs(parseFloat(h.bins[best])) ? i : best, 0);
-          // Predicted delta: from forecast_bands front-month (predicted - current)
+            Math.abs(parseFloat(b) || 0) < Math.abs(parseFloat(h.bins[best]) || 0) ? i : best, 0);
+
           let predDelta = null;
           let predDeltaIdx = null;
           try {
             const fb = forecastBands;
             if (fb && fb.bands && fb.bands.length > 0) {
               predDelta = +(fb.bands[0].predicted - fb.bands[0].current).toFixed(2);
-              // Find nearest bin
               predDeltaIdx = h.bins.reduce((best, b, i) =>
-                Math.abs(parseFloat(b) - predDelta) < Math.abs(parseFloat(h.bins[best]) - predDelta) ? i : best, 0);
+                Math.abs((parseFloat(b) || 0) - predDelta) < Math.abs((parseFloat(h.bins[best]) || 0) - predDelta) ? i : best, 0);
             }
           } catch(e) {}
 
-          // Build extra line datasets for vertical reference lines using sparse arrays trick
           const zeroLineData = h.bins.map((_, i) => i === zeroIdx ? maxCount : null);
           const extraDatasets = [
+            {
+              label: `Gaussian Fit (μ=${mean >= 0 ? '+' : ''}${mean.toFixed(2)}%, σ=${stdDev.toFixed(2)}%)`,
+              data: gaussianFitData,
+              type: 'line',
+              borderColor: '#58a6ff',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.35,
+              fill: false,
+              order: 0
+            },
             {
               label: 'Δ=0 (neutral)',
               data: zeroLineData,
               type: 'line',
-              borderColor: 'rgba(255,255,255,0.5)',
+              borderColor: 'rgba(255,255,255,0.45)',
               borderWidth: 1.5,
               borderDash: [4,4],
               pointRadius: 0,
@@ -5661,35 +5723,89 @@ async function renderAnalytics() {
             data: {
               labels: h.bins,
               datasets: [
-                { label: 'Frequency', data: h.counts, backgroundColor: colors, borderRadius: 1, order: 1 },
+                { label: 'Observed Frequency', data: h.counts, backgroundColor: colors, borderRadius: 2, order: 1 },
                 ...extraDatasets
               ]
             },
             options: {
-              responsive: true, maintainAspectRatio: false,
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
               plugins: {
-                legend: { display: true, labels: { font: { size: 10 }, filter: item => item.text !== 'Frequency' } },
+                legend: {
+                  display: true,
+                  position: 'top',
+                  labels: { font: { size: 10 }, color: '#8b949e', boxWidth: 12, padding: 10 }
+                },
                 tooltip: {
+                  backgroundColor: 'rgba(22, 27, 34, 0.96)',
+                  borderColor: 'rgba(56, 139, 253, 0.35)',
+                  borderWidth: 1,
+                  titleColor: '#58a6ff',
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyColor: '#e6edf3',
+                  bodyFont: { family: 'Inter', size: 11.5 },
+                  padding: 12,
+                  boxPadding: 6,
+                  cornerRadius: 8,
+                  usePointStyle: true,
                   callbacks: {
-                    title: ctx => `Delta: ${h.bins[ctx[0].dataIndex]}%`,
+                    title: ctx => {
+                      const idx = ctx[0].dataIndex;
+                      const val = binMidVals[idx];
+                      const binLabel = h.bins[idx];
+                      const type = val > 0.05 ? 'Margin Hike' : val < -0.05 ? 'Margin Cut' : 'Neutral Hold';
+                      return `📊 Daily Margin Delta: ${binLabel}% [${type}]`;
+                    },
                     label: ctx => {
-                      if (ctx.dataset.label === 'Frequency') {
-                        const total = h.counts.reduce((s,v) => s+v, 0);
-                        const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
-                        return `Count: ${ctx.raw} (${pct}% of observations)`;
+                      const idx = ctx.dataIndex;
+                      if (ctx.dataset.label === 'Observed Frequency') {
+                        const cnt = h.counts[idx];
+                        const pct = totalCount > 0 ? ((cnt / totalCount) * 100).toFixed(2) : 0;
+                        return `Empirical Frequency: ${cnt.toLocaleString()} days (${pct}% of observations)`;
                       }
-                      if (ctx.dataset.label?.startsWith('Model:'))
-                        return `Today's model predicts ${predDelta > 0 ? '+' : ''}${predDelta}% change for front-month.`;
-                      if (ctx.dataset.label?.startsWith('Δ=0'))
-                        return 'Zero line: changes to the left = cut, right = hike.';
+                      if (ctx.dataset.label?.startsWith('Gaussian Fit')) {
+                        const expected = gaussianFitData[idx];
+                        const expPct = totalCount > 0 ? ((expected / totalCount) * 100).toFixed(2) : 0;
+                        const diff = (h.counts[idx] - expected).toFixed(0);
+                        return `Gaussian Expectation: ${expected} days (${expPct}%) · Empirical Divergence: ${diff > 0 ? '+' : ''}${diff}`;
+                      }
+                      if (ctx.dataset.label?.startsWith('Model:')) {
+                        return `Model Forecast: Today's model predicts ${predDelta > 0 ? '+' : ''}${predDelta}% change for front-month.`;
+                      }
+                      if (ctx.dataset.label?.startsWith('Δ=0')) {
+                        return 'Exchange Neutral Axis: Zero change baseline (left = margin cut, right = margin hike).';
+                      }
                       return '';
+                    },
+                    afterBody: items => {
+                      const idx = items[0].dataIndex;
+                      const val = binMidVals[idx];
+                      const z = stdDev > 0 ? (val - mean) / stdDev : 0;
+                      const cumPct = totalCount > 0 ? ((cumCounts[idx] / totalCount) * 100).toFixed(1) : 50;
+                      const sigmaZone = Math.abs(z) <= 1.0 ? '1.0σ Core Range (Routine)' : Math.abs(z) <= 2.0 ? '2.0σ Elevated Range (Active)' : '3.0σ Extreme Shock Tail';
+                      const interpretation = val > 1.0
+                        ? 'Actionable Risk: Significant margin increase. Requires capital buffer to prevent broker margin call.'
+                        : val < -1.0
+                        ? 'Capital Easing: Substantial margin cut. Releases capital buffer back to usable ledger.'
+                        : 'Routine Fluctuation: Regular daily variation within normal exchange clearing parameters.';
+                      const tailRisk = Math.abs(val) >= 2.0
+                        ? 'Kurtosis Alert: Fat-tail shock regime — natural gas exhibits leptokurtic jump risks exceeding Gaussian curves.'
+                        : 'Density Profile: High empirical concentration clustered around zero delta baseline.';
+
+                      return [
+                        `Statistical Deviation: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ [${sigmaZone}]`,
+                        `Cumulative Percentile: P${cumPct} (Percentage of historical days at or below this delta)`,
+                        tailRisk,
+                        interpretation
+                      ];
                     }
                   }
                 }
               },
               scales: {
                 x: { ticks: { maxTicksLimit: 15, font: { size: 9 }, maxRotation: 45 }, title: { display: true, text: 'Daily Margin Change (%)' } },
-                y: { title: { display: true, text: 'Frequency' } }
+                y: { title: { display: true, text: 'Frequency (Days)' } }
               }
             }
           });
@@ -8114,10 +8230,11 @@ The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin 
 <strong>RMSE</strong> = Root Mean Squared Error — penalizes large misses more heavily.`
   },
   "Delta Distribution": {
-    title: "Margin Change Distribution",
-    body: `Each bar shows how frequently daily margin changed by that amount historically.<br><br>
-Toggle DTE buckets to see how the distribution shifts near expiry (0–30d is wider/noisier) vs far-dated contracts (91+d is tighter).<br><br>
-The conditional summary below shows P10/P50/P90 of next-day changes given your <strong>current margin quartile</strong> — answering "from here, what's the likely range of tomorrow's move?"<br><br>
+    title: "Margin Change Distribution (Gaussian & Empirical)",
+    body: `Each bar shows how frequently daily margin changed by that amount historically across all contracts.<br><br>
+<strong>Blue Curve (Gaussian Fit):</strong> Illustrates theoretical Gaussian (Normal) bell curve expectations (μ and σ) fitted directly to the empirical data.<br><br>
+<strong>Fat-Tail Kurtosis:</strong> Highlights natural gas's tendency toward heavy-tailed jump risks (>2σ margin hike shocks) exceeding normal distribution assumptions.<br><br>
+<strong>DTE Toggles:</strong> Compare how the distribution contracts and stabilizes for far-dated contracts (91+d DTE) vs front-month noise (0–30d DTE).<br><br>
 Green bars = margin decreased. Red bars = margin increased.`
   },
   "Margin Decomposition": {

@@ -124,7 +124,7 @@
       lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.1 },
       lastValueVisible: true,
-      priceLineVisible: true,
+      priceLineVisible: false, // Prevents persistent horizontal line at current price
       visible: true,
     });
 
@@ -192,22 +192,21 @@
     floatingTooltip.id = 'deepChartFloatingTooltip';
     floatingTooltip.style.position = 'absolute';
     floatingTooltip.style.display = 'none';
-    floatingTooltip.style.padding = '8px 12px';
+    floatingTooltip.style.padding = '12px 14px';
     floatingTooltip.style.boxSizing = 'border-box';
     floatingTooltip.style.fontSize = '12px';
     floatingTooltip.style.textAlign = 'left';
     floatingTooltip.style.zIndex = '100';
-    floatingTooltip.style.top = '12px';
-    floatingTooltip.style.left = '12px';
     floatingTooltip.style.pointerEvents = 'none';
-    floatingTooltip.style.border = '1px solid var(--border)';
-    floatingTooltip.style.borderRadius = '6px';
-    floatingTooltip.style.background = 'rgba(22, 27, 34, 0.95)';
-    floatingTooltip.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
-    floatingTooltip.style.backdropFilter = 'blur(6px)';
+    floatingTooltip.style.border = '1px solid rgba(56, 139, 253, 0.4)';
+    floatingTooltip.style.borderRadius = '8px';
+    floatingTooltip.style.background = 'rgba(22, 27, 34, 0.96)';
+    floatingTooltip.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.6)';
+    floatingTooltip.style.backdropFilter = 'blur(8px)';
     floatingTooltip.style.color = '#e6edf3';
-    floatingTooltip.style.fontFamily = 'Inter, monospace';
-    floatingTooltip.style.lineHeight = '1.45';
+    floatingTooltip.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+    floatingTooltip.style.lineHeight = '1.5';
+    floatingTooltip.style.minWidth = '220px';
     container.appendChild(floatingTooltip);
   }
 
@@ -260,60 +259,60 @@
           let ohlcHtml = '';
           if (pBar.open !== undefined) {
             const ret = ((pBar.close - pBar.open) / pBar.open) * 100;
+            const diff = pBar.close - pBar.open;
             const retColor = ret >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
             ohlcHtml = `
-              <div style="display:flex; justify-content:space-between; gap:16px; margin-top:4px;">
-                <span style="color:var(--text-muted);">Open:</span> <strong>₹${pBar.open.toFixed(2)}</strong>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px 12px; margin-top:6px; font-family:monospace; font-size:11.5px;">
+                <div><span style="color:var(--text-muted);">Open:</span> <strong style="color:var(--text);">₹${pBar.open.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">High:</span> <strong style="color:var(--accent-green);">₹${pBar.high.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">Low:</span> <strong style="color:var(--accent-red);">₹${pBar.low.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">Close:</span> <strong style="color:var(--text);">₹${pBar.close.toFixed(2)}</strong></div>
               </div>
-              <div style="display:flex; justify-content:space-between; gap:16px;">
-                <span style="color:var(--text-muted);">High:</span> <strong style="color:var(--accent-green);">₹${pBar.high.toFixed(2)}</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; gap:16px;">
-                <span style="color:var(--text-muted);">Low:</span> <strong style="color:var(--accent-red);">₹${pBar.low.toFixed(2)}</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; gap:16px;">
-                <span style="color:var(--text-muted);">Close:</span> <strong>₹${pBar.close.toFixed(2)}</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; gap:16px;">
-                <span style="color:var(--text-muted);">Bar Return:</span> <strong style="color:${retColor};">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%</strong>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(48,54,61,0.6); font-size:11.5px;">
+                <span style="color:var(--text-muted);">Bar Change:</span>
+                <span style="font-weight:700; color:${retColor}; font-family:monospace;">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}% (${diff >= 0 ? '+' : ''}₹${diff.toFixed(2)})</span>
               </div>
             `;
           } else if (pBar.value !== undefined) {
             ohlcHtml = `
-              <div style="display:flex; justify-content:space-between; gap:16px; margin-top:4px;">
-                <span style="color:var(--text-muted);">Price:</span> <strong style="color:var(--accent); font-size:14px;">₹${pBar.value.toFixed(2)}</strong>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:12px;">
+                <span style="color:var(--text-muted);">Price:</span>
+                <strong style="color:var(--accent); font-size:14px; font-family:monospace;">₹${pBar.value.toFixed(2)}</strong>
               </div>
             `;
           }
 
           const volHtml = (vBar && vBar.value !== undefined)
-            ? `<div style="display:flex; justify-content:space-between; gap:16px; border-top:1px solid var(--border); margin-top:4px; padding-top:4px;">
-                <span style="color:var(--text-muted);">Volume:</span> <strong>${vBar.value.toLocaleString()} lots</strong>
+            ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding-top:6px; border-top:1px solid rgba(48,54,61,0.6); font-size:11.5px;">
+                <span style="color:var(--text-muted);">Traded Volume:</span>
+                <strong style="font-family:monospace; color:var(--text);">${vBar.value.toLocaleString()} lots</strong>
                </div>`
             : '';
 
           floatingTooltip.innerHTML = `
-            <div style="font-weight:700; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:3px; margin-bottom:4px; display:flex; justify-content:space-between; gap:12px;">
-              <span>${timeDisplay}</span>
-              <span style="font-size:10px; color:var(--accent); font-weight:600;">${currentResolution.toUpperCase()}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(56, 139, 253, 0.3); padding-bottom:6px; margin-bottom:4px;">
+              <span style="font-weight:700; color:#58a6ff; font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">${timeDisplay}</span>
+              <span style="background:rgba(56,139,253,0.15); color:var(--accent); font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(56,139,253,0.3);">${currentResolution.toUpperCase()}</span>
             </div>
             ${ohlcHtml}
             ${volHtml}
           `;
 
-          // Position smoothly within container boundaries
-          const w = 195;
-          const h = 150;
-          let left = param.point.x + 18;
-          if (left + w > container.clientWidth) {
-            left = param.point.x - w - 18;
+          // Position smoothly without obscuring the cursor or candle
+          const w = 230;
+          const h = 160;
+          let left = param.point.x + 22;
+          if (left + w > container.clientWidth - 12) {
+            left = param.point.x - w - 22;
           }
-          let top = param.point.y + 18;
-          if (top + h > container.clientHeight) {
-            top = param.point.y - h - 18;
+          let top = param.point.y - 40;
+          if (top + h > container.clientHeight - 12) {
+            top = container.clientHeight - h - 12;
           }
-          floatingTooltip.style.left = Math.max(8, left) + 'px';
-          floatingTooltip.style.top = Math.max(8, top) + 'px';
+          if (top < 10) top = 10;
+          if (left < 10) left = 10;
+          floatingTooltip.style.left = left + 'px';
+          floatingTooltip.style.top = top + 'px';
         }
       }
     });
@@ -512,12 +511,12 @@
         isCandleMode = !isCandleMode;
         if (isCandleMode) {
           areaSeries.applyOptions({ visible: false, lastValueVisible: false, priceLineVisible: false });
-          candleSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: true });
+          candleSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: false });
           btnToggle.textContent = 'Candles';
           btnToggle.style.color = 'var(--accent-green)';
           btnToggle.style.borderColor = 'var(--accent-green)';
         } else {
-          areaSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: true });
+          areaSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: false });
           candleSeries.applyOptions({ visible: false, lastValueVisible: false, priceLineVisible: false });
           btnToggle.textContent = 'Line';
           btnToggle.style.color = '';
@@ -620,6 +619,117 @@
     return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
   }
 
+  function getTODMarketContext(interval, key) {
+    if (interval === '09:00') {
+      return {
+        phase: 'MCX Opening Bell & Overnight Rebalancing',
+        catalyst: 'Price discovery digesting overnight NYMEX Globex moves & morning weather model runs.',
+        execution: 'Spread: Wide · Risk: Elevated opening jump. Avoid unhedged market orders at open.'
+      };
+    }
+    if (interval >= '09:15' && interval < '10:30') {
+      return {
+        phase: 'Morning Price Discovery & Book Building',
+        catalyst: 'Domestic commercial hedgers and institutional order books establish session baseline.',
+        execution: 'Spread: Stabilizing · Liquidity: Moderate. Order depth solidifies.'
+      };
+    }
+    if (interval >= '10:30' && interval < '13:00') {
+      return {
+        phase: 'Asian Midday Lull (Quiet Mean-Reversion)',
+        catalyst: 'Quiescent global window; low international macro volume, algorithmic MM dominance.',
+        execution: 'Spread: Tight · Volatility: Low. Favorable for patient limit order accumulation.'
+      };
+    }
+    if (interval >= '13:00' && interval < '14:30') {
+      return {
+        phase: 'European Pre-Market Positioning',
+        catalyst: 'London & European energy trading desks come online; TTF/NBP arbitrage flow starts.',
+        execution: 'Spread: Tightening · Momentum: Watch for directional trend initiation from Europe.'
+      };
+    }
+    if (interval >= '14:30' && interval < '17:00') {
+      return {
+        phase: 'European Full Session (ICE TTF Cross-Flow)',
+        catalyst: 'Active European trading hours; ICE TTF gas benchmark volume peaks, guiding global tone.',
+        execution: 'Liquidity: Robust · Spread: Institutional. Steady international trend flow.'
+      };
+    }
+    if (key === 'winter_est') {
+      if (interval >= '17:00' && interval < '19:30') {
+        const isPreUs = interval >= '18:30';
+        return {
+          phase: isPreUs ? 'US Winter Pre-Market (1h DST Shift)' : 'US Pre-Market Accumulation',
+          catalyst: isPreUs
+            ? 'In US Winter (EST), NYMEX Pit opens at 19:30 IST (1 hr later than summer).'
+            : 'North American desks begin pre-market positioning ahead of cash open.',
+          execution: isPreUs
+            ? 'Watch: False breakouts frequent before 19:30 IST official US cash bell.'
+            : 'Volume begins stepping up; book depth increases steadily.'
+        };
+      }
+    } else {
+      if (interval >= '17:00' && interval < '18:30') {
+        return {
+          phase: 'US Pre-Market Positioning',
+          catalyst: 'US commercial desks and hedge funds stage orders for the NYMEX cash opening.',
+          execution: 'Spread: Tight · Depth: Thickening in anticipation of NYMEX pit bell.'
+        };
+      }
+    }
+
+    if (key === 'winter_est') {
+      if (interval >= '19:30' && interval < '20:30') {
+        return {
+          phase: 'US NYMEX Pit Open (Winter Schedule: 19:30 IST)',
+          catalyst: '19:30 IST marks the winter US cash open. Primary global liquidity influx begins.',
+          execution: 'Peak Volume Velocity · Deepest market liquidity and narrowest spreads of the winter day.'
+        };
+      }
+    } else {
+      if (interval >= '18:30' && interval < '20:00') {
+        return {
+          phase: 'US NYMEX Pit Open (Primary Cash Bell: 18:30 IST)',
+          catalyst: '18:30 IST marks the official US pit session bell. Primary institutional surge.',
+          execution: 'Maximum Depth · Highest volume velocity and tightest bid-ask spreads of the 24h cycle.'
+        };
+      }
+    }
+
+    const isEIAWindow = (key === 'winter_est' && interval >= '21:00' && interval < '21:30') ||
+                        (key !== 'winter_est' && interval >= '20:00' && interval < '20:30') ||
+                        (key === 'thursday_eia' && interval >= '20:00' && interval <= '21:00');
+    if (isEIAWindow) {
+      return {
+        phase: '🚨 US EIA STORAGE REPORT RELEASE WINDOW',
+        catalyst: 'Weekly US EIA underground storage inventory release. Extreme volatility shock up to 2.8x baseline.',
+        execution: 'Risk: Violent 15m price dislocation (1.5%–4.0%). Spreads widen instantly; avoid market orders.'
+      };
+    }
+
+    if (interval >= '20:00' && interval < '22:30') {
+      return {
+        phase: 'Active US Power & Heating Demand Trading',
+        catalyst: 'US cash session in full swing; 18z weather model runs (GFS/ECMWF) cross wires.',
+        execution: 'Liquidity: High · Momentum: Strong follow-through on weather degree-day revisions.'
+      };
+    }
+
+    if (interval >= '22:30' && interval < '23:15') {
+      return {
+        phase: 'MCX Broker Square-Off Window (MIS Liquidation)',
+        catalyst: 'Domestic retail brokers trigger automated square-offs of intraday leverage positions.',
+        execution: 'Caution: Mechanical flow spikes and localized stop-runs independent of Henry Hub.'
+      };
+    }
+
+    return {
+      phase: 'Session Cash Close & Settlement Run',
+      catalyst: 'MCX daily settlement price calculation (15m VWAP). Delivery margin cutoffs applied.',
+      execution: 'Liquidity: Thinning rapidly · Risk: Extreme overnight carryover & gap-open risk.'
+    };
+  }
+
   function renderTODChart(profile, key) {
     const canvas = document.getElementById('chartTODSeasonality');
     if (!canvas || !profile) return;
@@ -671,36 +781,44 @@
             labels: { color: '#e6edf3', font: { family: 'Inter', size: 11 } }
           },
           tooltip: {
-            backgroundColor: 'rgba(22, 27, 34, 0.95)',
-            titleColor: '#e6edf3',
+            backgroundColor: 'rgba(22, 27, 34, 0.96)',
+            titleColor: '#58a6ff',
+            titleFont: { family: 'Inter', size: 12, weight: '700' },
             bodyColor: '#e6edf3',
-            borderColor: 'rgba(56, 139, 253, 0.3)',
+            bodyFont: { family: 'Inter', size: 11.5 },
+            borderColor: 'rgba(56, 139, 253, 0.35)',
             borderWidth: 1,
-            padding: 10,
-            cornerRadius: 6,
+            padding: 12,
+            boxPadding: 6,
+            cornerRadius: 8,
+            usePointStyle: true,
             callbacks: {
               title: items => {
                 const interval = profile.intervals[items[0].dataIndex];
-                return `Interval: ${interval} – ${getNextInterval(interval)} IST`;
+                const next = getNextInterval(interval);
+                return `⏰ Window: ${interval} – ${next} IST`;
               },
               label: (ctx) => {
                 if (ctx.datasetIndex === 0) {
-                  const med = profile.median_volume ? ` (Median: ${profile.median_volume[ctx.dataIndex].toLocaleString()})` : '';
-                  return `Volume: ${ctx.raw.toLocaleString()} lots${med}`;
+                  const vol = ctx.raw || 0;
+                  const med = profile.median_volume ? profile.median_volume[ctx.dataIndex] : 0;
+                  const ratio = med > 0 ? (vol / med).toFixed(1) : '1.0';
+                  return `📊 Average Traded Volume: ${Math.round(vol).toLocaleString()} lots · Median: ${Math.round(med).toLocaleString()} (${ratio}x skew)`;
                 }
-                const rng = profile.avg_range_pct ? ` · Avg Range: ${profile.avg_range_pct[ctx.dataIndex].toFixed(2)}%` : '';
-                return `GK Volatility: ${ctx.raw.toFixed(1)}% annualized${rng}`;
+                const gk = ctx.raw || 0;
+                const rng = profile.avg_range_pct ? profile.avg_range_pct[ctx.dataIndex].toFixed(2) : '—';
+                const regime = gk >= 20 ? '🔴 ELEVATED VOL' : gk >= 15 ? '🟡 ACTIVE' : '🟢 CALM';
+                return `⚡ GK Realized Volatility: ${gk.toFixed(2)}% [${regime}] · Avg 15m Range: ${rng}%`;
               },
               afterBody: (items) => {
                 const idx = items[0].dataIndex;
                 const interval = profile.intervals[idx];
-                if (interval === '09:00') return ['Context: MCX Morning Opening Gap & Overnight NYMEX Catch-up.'];
-                if (interval >= '14:30' && interval <= '15:30') return ['Context: European Market Opening acceleration.'];
-                if (interval >= '18:30' && interval <= '21:30') return ['Context: US NYMEX Pit trading & Primary Session Liquidity.'];
-                if (interval === '20:00' && key === 'summer_edt') return ['Context: US EIA Storage Report Release Window (Summer EDT).'];
-                if (interval === '21:00' && key === 'winter_est') return ['Context: US EIA Storage Report Release Window (Winter EST).'];
-                if (interval >= '23:00') return ['Context: Pre-close intraday squaring & delivery margin cutoffs.'];
-                return [];
+                const c = getTODMarketContext(interval, key);
+                return [
+                  `Session Phase: ${c.phase}`,
+                  `Market Driver: ${c.catalyst}`,
+                  `Execution Rule: ${c.execution}`
+                ];
               }
             }
           }
