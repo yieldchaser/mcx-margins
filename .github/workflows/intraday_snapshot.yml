@@ -6,12 +6,12 @@ name: Intraday Market Snapshot
 
 on:
   schedule:
-    # Hourly at :15 past the hour from 09:15 AM IST (03:45 UTC) to 23:15 PM IST (17:45 UTC) Mon-Fri
-    - cron: '15 3-17 * * 1-5'
+    # Runs every 15 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
+    - cron: '*/15 3-18 * * 1-5'
   workflow_dispatch:
 
 concurrency:
-  group: git-repo-sync
+  group: intraday-market-sync
   cancel-in-progress: false
 
 jobs:
