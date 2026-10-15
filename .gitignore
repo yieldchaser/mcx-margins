@@ -11,3 +11,18 @@ docs/data/contract_history.json
 blue_margin.xlsx
 # Added by code-review-graph
 .code-review-graph/
+
+# Authentication & Sensitive Tokens
+data/fyers_auth/
+*.log
+fyersApi.log
+fyersRequests.log
+
+# Raw Large Data Vaults & Scratch Dumps
+data/mcx_vault/
+data/historical_intraday/
+data/fyers_*.csv
+data/fyers_*.parquet
+data/sample_*.csv
+scratch_*.txt
+workstream_*.txt
