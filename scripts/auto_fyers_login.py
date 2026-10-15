@@ -175,6 +175,13 @@ def auto_login():
         access_token = resp_token.get("access_token")
         with open(TOKEN_FILE, "w", encoding="utf-8") as f:
             f.write(access_token)
+        try:
+            import subprocess
+            res = subprocess.run(["gh", "secret", "set", "FYERS_ACCESS_TOKEN"], input=access_token, text=True, capture_output=True)
+            if res.returncode == 0:
+                print("✓ Automatically synchronized FYERS_ACCESS_TOKEN to GitHub Secrets!")
+        except Exception:
+            pass
         print("=" * 80)
         print("SUCCESS! FRESH FYERS ACCESS TOKEN GENERATED AND SAVED TO data/fyers_auth/access_token.txt!")
         print("=" * 80)

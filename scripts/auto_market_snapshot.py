@@ -56,10 +56,17 @@ def clear_stale_git_locks():
 clear_stale_git_locks()
 
 if not os.path.exists(TOKEN_PATH):
-    log("ERROR: No access_token.txt found. Run login script.")
-    with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
-        json.dump({"status": "missing", "message": "No access_token.txt found.", "last_check": datetime.now().isoformat()}, f)
-    sys.exit(1)
+    env_token = os.environ.get("FYERS_ACCESS_TOKEN", "").strip()
+    if env_token:
+        os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
+        with open(TOKEN_PATH, "w", encoding="utf-8") as f:
+            f.write(env_token)
+        log("Loaded FYERS_ACCESS_TOKEN from environment variable.")
+    else:
+        log("ERROR: No access_token.txt found and FYERS_ACCESS_TOKEN env var not set.")
+        with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"status": "missing", "message": "No access_token.txt found.", "last_check": datetime.now().isoformat()}, f)
+        sys.exit(1)
 
 with open(TOKEN_PATH, encoding="utf-8") as f:
     token = f.read().strip()
@@ -155,21 +162,25 @@ for base, exp, sym, pfile in active_contracts:
                 try:
                     deep_1m_file = os.path.join(REPO_DIR, "docs", "data", "deep", "1m", "2026_10.json")
                     if os.path.exists(deep_1m_file):
+                        with open(deep_1m_file, "r", encoding="utf-8") as f:
+                            existing_bars = json.load(f)
+                        bar_map = {b[0]: b for b in existing_bars}
                         oct_start_epoch = int(datetime(2026, 10, 1, 0, 0, tzinfo=timezone.utc).timestamp())
                         df_oct = df_combined[df_combined["epoch"] >= oct_start_epoch]
-                        m1_bars = []
                         for _, row in df_oct.iterrows():
-                            m1_bars.append([
+                            bar_map[int(row["epoch"])] = [
                                 int(row["epoch"]),
                                 round(float(row["open"]), 2),
                                 round(float(row["high"]), 2),
                                 round(float(row["low"]), 2),
                                 round(float(row["close"]), 2),
                                 int(row["volume"])
-                            ])
+                            ]
+                        merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
                         with open(deep_1m_file, "w", encoding="utf-8") as f:
-                            json.dump(m1_bars, f, separators=(',', ':'))
-                        log(f"Synchronized docs/data/deep/1m/2026_10.json ({len(m1_bars):,} bars up to {df_oct['ts_ist'].iloc[-1].strftime('%H:%M IST')}).")
+                            json.dump(merged_bars, f, separators=(',', ':'))
+                        last_ts = df_oct['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_oct) > 0 else 'recent'
+                        log(f"Synchronized docs/data/deep/1m/2026_10.json ({len(merged_bars):,} bars up to {last_ts}).")
 
                     # Synchronize Tier 2: ng_15m.json
                     m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
@@ -238,17 +249,25 @@ for base, exp, sym, pfile in active_contracts:
 
 # 3. Re-run Pre-Computation Pipeline
 log("Re-running pre-computation exporters...")
-scripts_to_run = [
-    os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"),
+scripts_to_run = []
+
+# Only run TOD seasonality if historical continuous vault exists
+vault_continuous = os.path.join(REPO_DIR, "data", "mcx_vault", "NATURALGAS_1m_continuous_2019_2026.parquet")
+if os.path.exists(vault_continuous):
+    scripts_to_run.append(os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"))
+
+scripts_to_run.extend([
     os.path.join(REPO_DIR, "scripts", "export_options_chain.py"),
     os.path.join(REPO_DIR, "scripts", "export_intraday_rollups.py")
-]
+])
 
 for script in scripts_to_run:
     try:
         res = subprocess.run([PYTHON_EXE, script], cwd=REPO_DIR, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
-        log(f"Error running {os.path.basename(script)}: {e.stderr}")
+        log(f"Notice on {os.path.basename(script)}: {e.stderr[:200] if e.stderr else 'error'}")
+    except Exception as e:
+        log(f"Notice running {os.path.basename(script)}: {e}")
 
 # 4. Fault-Tolerant Git Commit & Push
 try:
@@ -256,6 +275,8 @@ try:
     status_res = subprocess.run(["git", "status", "--porcelain", "docs/data/"], cwd=REPO_DIR, capture_output=True, text=True)
     if status_res.stdout.strip():
         log("Changes detected in docs/data/. Syncing with GitHub Pages...")
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=REPO_DIR, check=False)
+        subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=REPO_DIR, check=False)
         subprocess.run(["git", "add", "docs/data/"], cwd=REPO_DIR, check=True)
         commit_msg = f"data: automated market snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         subprocess.run(["git", "commit", "-m", commit_msg], cwd=REPO_DIR, check=True)

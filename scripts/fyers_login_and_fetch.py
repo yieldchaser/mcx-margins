@@ -49,6 +49,13 @@ def exchange_auth_code_for_token(auth_code_or_url):
         with open("data/fyers_auth/access_token.txt", "w") as f:
             f.write(access_token)
         print("SUCCESS! Generated and saved Access Token!")
+        try:
+            import subprocess
+            res = subprocess.run(["gh", "secret", "set", "FYERS_ACCESS_TOKEN"], input=access_token, text=True, capture_output=True)
+            if res.returncode == 0:
+                print("✓ Automatically synced FYERS_ACCESS_TOKEN to GitHub Secrets for cloud automation!")
+        except Exception:
+            pass
         return access_token
     else:
         print("Failed to generate token:", response)

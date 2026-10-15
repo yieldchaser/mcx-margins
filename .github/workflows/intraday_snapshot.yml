@@ -1,0 +1,52 @@
+name: Intraday Market Snapshot
+
+# Runs every 30 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
+# Pulls latest 1-minute execution candles from FYERS API in the cloud,
+# updates deep LOD tiers (1m, 15m, daily), and synchronizes with GitHub Pages.
+
+on:
+  schedule:
+    # 03:30 UTC = 09:00 AM IST, through 18:00 UTC = 23:30 PM IST (Mon-Fri)
+    - cron: '30 3-18 * * 1-5'
+    - cron: '0 4-18 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FYERS_ACCESS_TOKEN: ${{ secrets.FYERS_ACCESS_TOKEN }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyarrow duckdb fyers-apiv3 scipy pyotp
+
+      - name: Check Fyers Token Availability
+        id: check_token
+        run: |
+          if [ -z "$FYERS_ACCESS_TOKEN" ]; then
+            echo "FYERS_ACCESS_TOKEN secret is not set. Skipping cloud intraday snapshot."
+            echo "token_present=false" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "token_present=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Intraday Market Snapshot & LOD Sync
+        if: steps.check_token.outputs.token_present == 'true'
+        run: |
+          python scripts/auto_market_snapshot.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
