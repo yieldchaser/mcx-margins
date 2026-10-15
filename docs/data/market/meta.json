@@ -2,31 +2,31 @@
   "schema_version": "1.0.0",
   "source": "market_futures",
   "status": "warn",
-  "generated_at": "2026-10-14T11:32:57Z",
-  "latest_date": "2026-10-13",
+  "generated_at": "2026-10-15T01:37:04Z",
+  "latest_date": "2026-10-14",
   "date_range": {
     "from": "2007-01-01",
-    "to": "2026-10-13"
+    "to": "2026-10-14"
   },
   "freshness": {
     "label": "LIVE",
     "age_days": 1
   },
-  "row_count": 22070,
+  "row_count": 22082,
   "symbols": {
     "NATURALGAS": {
-      "rows": 17263,
-      "dates": 5067,
+      "rows": 17269,
+      "dates": 5068,
       "expiries": 243,
       "first_date": "2007-01-01",
-      "latest_date": "2026-10-13"
+      "latest_date": "2026-10-14"
     },
     "NATGASMINI": {
-      "rows": 4807,
-      "dates": 920,
+      "rows": 4813,
+      "dates": 921,
       "expiries": 48,
       "first_date": "2023-03-14",
-      "latest_date": "2026-10-13"
+      "latest_date": "2026-10-14"
     }
   },
   "validation": {
