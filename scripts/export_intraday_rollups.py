@@ -42,7 +42,16 @@ con = duckdb.connect()
 contracts = [
     ("MCX:NATURALGAS26OCTFUT", "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet", "NG_26OCT"),
     ("MCX:NATURALGAS26NOVFUT", "MCX_NATURALGAS26NOVFUT_1m_contract_wise.parquet", "NG_26NOV"),
+    ("MCX:NATURALGAS26DECFUT", "MCX_NATURALGAS26DECFUT_1m_contract_wise.parquet", "NG_26DEC"),
+    ("MCX:NATURALGAS27JANFUT", "MCX_NATURALGAS27JANFUT_1m_contract_wise.parquet", "NG_27JAN"),
+    ("MCX:NATURALGAS27FEBFUT", "MCX_NATURALGAS27FEBFUT_1m_contract_wise.parquet", "NG_27FEB"),
+    ("MCX:NATURALGAS27MARFUT", "MCX_NATURALGAS27MARFUT_1m_contract_wise.parquet", "NG_27MAR"),
     ("MCX:NATGASMINI26OCTFUT", "MCX_NATGASMINI26OCTFUT_1m_contract_wise.parquet", "NGM_26OCT"),
+    ("MCX:NATGASMINI26NOVFUT", "MCX_NATGASMINI26NOVFUT_1m_contract_wise.parquet", "NGM_26NOV"),
+    ("MCX:NATGASMINI26DECFUT", "MCX_NATGASMINI26DECFUT_1m_contract_wise.parquet", "NGM_26DEC"),
+    ("MCX:NATGASMINI27JANFUT", "MCX_NATGASMINI27JANFUT_1m_contract_wise.parquet", "NGM_27JAN"),
+    ("MCX:NATGASMINI27FEBFUT", "MCX_NATGASMINI27FEBFUT_1m_contract_wise.parquet", "NGM_27FEB"),
+    ("MCX:NATGASMINI27MARFUT", "MCX_NATGASMINI27MARFUT_1m_contract_wise.parquet", "NGM_27MAR"),
 ]
 
 for sym, pfile, tag in contracts:
@@ -155,6 +164,28 @@ for sym, pfile, tag in contracts:
         
     kb = os.path.getsize(out_path) / 1024
     print(f"  {sym:26s} -> Saved 15m Rollup ({len(df_15m):,} bars, {kb:.1f} KB) | POC: ₹{poc_price:.2f}, VAH: ₹{vah_price:.2f}, VAL: ₹{val_price:.2f}")
+
+    # Also export 1m columnar JSON for near active contracts
+    if tag in ["NG_26OCT", "NG_26NOV", "NGM_26OCT", "NGM_26NOV"]:
+        out_1m = {
+            "symbol": sym,
+            "tag": tag,
+            "resolution": "1m",
+            "candles_count": len(df),
+            "data": {
+                "dt": df["dt"].tolist(),
+                "o": [round(float(x), 2) for x in df["open"]],
+                "h": [round(float(x), 2) for x in df["high"]],
+                "l": [round(float(x), 2) for x in df["low"]],
+                "c": [round(float(x), 2) for x in df["close"]],
+                "v": [int(x) for x in df["volume"]]
+            }
+        }
+        out_1m_path = os.path.join(OUTPUT_DIR, f"{tag}_1m.json")
+        with open(out_1m_path, "w", encoding="utf-8") as f:
+            json.dump(out_1m, f, cls=NpEncoder, separators=(",", ":"))
+        kb_1m = os.path.getsize(out_1m_path) / 1024
+        print(f"    └─ Saved 1m Microstructure ({len(df):,} bars, {kb_1m:.1f} KB)")
 
 # 2. Compute Session-Bounded ASOF Calendar Spread (Nov26 - Oct26)
 print("\nComputing Session-Bounded Calendar Roll Spread (Nov26 - Oct26)...")

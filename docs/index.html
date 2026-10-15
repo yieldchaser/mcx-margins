@@ -1284,31 +1284,53 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <option value="">&#x2014; Month &#x2014;</option>
           </select>
         </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date">&#x1F4C5; Date</button>
-          <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)">&#x23F1; DTE &#x2193;</button>
+        <!-- Resolution Mode Switch: Daily Macro vs Granular Intraday -->
+        <div style="display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;flex-shrink:0;">
+          <button id="lcModeMacro" class="lc-ctrl lc-active" title="Daily Macro View (Margins & Flow Overlays)">📊 Daily Macro</button>
+          <button id="lcModeIntra" class="lc-ctrl" title="Granular 15m & 1m Intraday Microstructure">⚡ Intraday 15m/1m</button>
         </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button class="lc-ctrl lc-active lc-metric-btn" data-metric="initial" title="Initial Margin %">Initial %</button>
-          <button class="lc-ctrl lc-metric-btn"           data-metric="total"   title="Total Margin %">Total %</button>
-          <button class="lc-ctrl lc-metric-btn"           data-metric="vol"     title="Daily Volatility %">Daily Vol</button>
+        <!-- Daily Macro Controls -->
+        <div id="lcMacroControls" style="display:contents;">
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date">&#x1F4C5; Date</button>
+            <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)">&#x23F1; DTE &#x2193;</button>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="lc-ctrl lc-active lc-metric-btn" data-metric="initial" title="Initial Margin %">Initial %</button>
+            <button class="lc-ctrl lc-metric-btn"           data-metric="total"   title="Total Margin %">Total %</button>
+            <button class="lc-ctrl lc-metric-btn"           data-metric="vol"     title="Daily Volatility %">Daily Vol</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+            <input type="checkbox" id="lcShowHH" style="accent-color:#3fb950;width:14px;height:14px;">
+            <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
+          </label>
+          <label class="market-intel-control" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+            <input type="checkbox" id="lcShowMcx" style="accent-color:var(--accent);width:14px;height:14px;">
+            <span style="font-size:12px;color:var(--text-muted);">MCX Market</span>
+          </label>
+          <!-- Horizon presets — right-aligned in the controls row -->
+          <div class="horizon-group" id="lcPresets" style="margin-left:auto;flex-shrink:0;">
+            <button class="horizon-btn" data-range="1w">1w</button>
+            <button class="horizon-btn" data-range="1m">1m</button>
+            <button class="horizon-btn" data-range="3m">3m</button>
+            <button class="horizon-btn" data-range="6m">6m</button>
+            <button class="horizon-btn" data-range="1y">1y</button>
+            <button class="horizon-btn active" data-range="all">All</button>
+          </div>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-          <input type="checkbox" id="lcShowHH" style="accent-color:#3fb950;width:14px;height:14px;">
-          <span id="lcHHLabel" style="font-size:12px;color:var(--text-muted);">HH Price</span>
-        </label>
-        <label class="market-intel-control" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-          <input type="checkbox" id="lcShowMcx" style="accent-color:var(--accent);width:14px;height:14px;">
-          <span style="font-size:12px;color:var(--text-muted);">MCX Market</span>
-        </label>
-        <!-- Horizon presets — right-aligned in the controls row -->
-        <div class="horizon-group" id="lcPresets" style="margin-left:auto;flex-shrink:0;">
-          <button class="horizon-btn" data-range="1w">1w</button>
-          <button class="horizon-btn" data-range="1m">1m</button>
-          <button class="horizon-btn" data-range="3m">3m</button>
-          <button class="horizon-btn" data-range="6m">6m</button>
-          <button class="horizon-btn" data-range="1y">1y</button>
-          <button class="horizon-btn active" data-range="all">All</button>
+        <!-- Intraday Microstructure Controls -->
+        <div id="lcIntraControls" style="display:none;margin-left:auto;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span id="lcIntraResBadge" class="scope-chip" style="font-size:11px;padding:3px 8px;"><strong>Res:</strong> 15-Minute</span>
+          <span id="lcIntraBarCount" class="scope-chip" style="font-size:11px;padding:3px 8px;"><strong>Bars:</strong> --</span>
+          <div class="horizon-group" id="lcIntraPresets">
+            <button class="horizon-btn lc-intra-tf" data-intra-tf="1D">1D</button>
+            <button class="horizon-btn lc-intra-tf" data-intra-tf="1W">1W</button>
+            <button class="horizon-btn lc-intra-tf" data-intra-tf="1M">1M</button>
+            <button class="horizon-btn lc-intra-tf" data-intra-tf="3M">3M</button>
+            <button class="horizon-btn lc-intra-tf active" data-intra-tf="ALL">All</button>
+          </div>
+          <button id="btnLcToggleCandles" class="deep-tf-btn" style="padding:4px 8px;font-size:11px;color:var(--accent-green);border-color:var(--accent-green);">Candles</button>
+          <button id="btnLcResetZoom" class="deep-tf-btn" style="padding:4px 8px;font-size:11px;">Reset</button>
         </div>
       </div>
       <!-- Chart with empty-state overlay -->
@@ -1318,10 +1340,27 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <div style="font-size:14px;font-weight:600;color:var(--text-muted);">Select a contract above to explore its lifecycle</div>
           <div style="font-size:11px;color:var(--text-muted);opacity:0.65;">196+ contracts tracked &#x00B7; new ones auto-appear from daily updates</div>
         </div>
-        <div class="chart-container" style="height:360px;"><canvas id="chartLifecycle"></canvas></div>
+        <div id="lcMacroChartWrap" class="chart-container" style="height:360px;"><canvas id="chartLifecycle"></canvas></div>
+        <div id="lcIntraChartWrap" style="display:none;position:relative;height:420px;border-radius:6px;overflow:hidden;background:#161b22;border:1px solid var(--border);">
+          <div id="lcLwChartContainer" style="width:100%;height:100%;"></div>
+          <div id="lcIntraHud" style="position:absolute;top:10px;left:14px;z-index:10;display:flex;gap:12px;font-family:'Inter',monospace;font-size:11px;color:var(--text-muted);pointer-events:none;background:rgba(22,27,34,0.85);padding:4px 10px;border-radius:4px;border:1px solid rgba(48,54,61,0.6);">
+            <span id="lcHudTime" style="color:var(--text);font-weight:600;">--</span>
+            <span>O: <strong id="lcHudOpen" style="color:#e6edf3;">--</strong></span>
+            <span>H: <strong id="lcHudHigh" style="color:var(--accent-green);">--</strong></span>
+            <span>L: <strong id="lcHudLow" style="color:var(--accent-red);">--</strong></span>
+            <span>C: <strong id="lcHudClose" style="color:var(--accent);">--</strong></span>
+            <span>Vol: <strong id="lcHudVol" style="color:#e6edf3;">--</strong></span>
+          </div>
+        </div>
       </div>
       <!-- Stats strip -->
       <div id="lcStats" style="display:none;"></div>
+
+      <!-- Quick prompt to switch to Intraday if short window -->
+      <div id="lcIntraPrompt" style="display:none;margin-top:10px;padding:8px 14px;background:rgba(56,139,253,0.08);border:1px solid rgba(56,139,253,0.25);border-radius:6px;align-items:center;justify-content:space-between;font-size:12px;">
+        <span style="color:#e6edf3;">⚡ Granular 15-minute and 1-minute intraday tick microstructure is available for this contract.</span>
+        <button id="btnSwitchToIntra" class="btn" style="padding:4px 10px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">View Intraday (15m / 1m)</button>
+      </div>
 
       <!-- Range Controls (slider only — presets moved to controls row) -->
       <div id="lcRangeWrapper" style="display:none; margin-top:12px;">
@@ -3678,7 +3717,8 @@ chartScript.onload = () => {
   Chart.defaults.font.family = 'Inter';
 
   // ── Global Institutional Tooltip Defaults ──
-  Chart.defaults.plugins.tooltip = {
+  Chart.defaults.plugins.tooltip = Object.assign(Chart.defaults.plugins.tooltip || {}, {
+    enabled: true,
     backgroundColor: 'rgba(22, 27, 34, 0.96)',
     borderColor: 'rgba(56, 139, 253, 0.35)',
     borderWidth: 1,
@@ -3692,7 +3732,7 @@ chartScript.onload = () => {
     boxPadding: 6,
     cornerRadius: 8,
     usePointStyle: true,
-  };
+  });
 
   // ── High-Fidelity Chart.js Plugin ──
   Chart.register({
@@ -4473,6 +4513,12 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
       `<span class="scope-chip"><strong>Join</strong> ${lcEntry?.alignment_status || 'unknown'}</span>` +
       `<span class="scope-chip"><strong>Shared Obs</strong> ${lcEntry?.shared_obs ?? '-'}</span>`;
     
+    if (_lcMode === 'intraday') {
+      emptyEl.style.display = 'none';
+      loadLcContractIntraday(_lcSym, expiry);
+      return;
+    }
+
     if (_lcFullRows.length < 2) {
       _lcViewState = { rows: [], metricFn: null, contractLabel: '' };
       const lbl = _contractLabel(expiry);
@@ -4700,7 +4746,9 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
       plugins: {
         legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 } },
         tooltip: {
-          mode: 'index', intersect: false,
+          enabled: true,
+          mode: 'index',
+          intersect: false,
           callbacks: {
             title: ctx => {
               const viewRows = _lcViewState.rows || [];
@@ -4711,16 +4759,43 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
                 ? lbl + '  \u00b7  DTE: ' + r.dte + 'd  \u00b7  ' + r.date
                 : lbl + '  \u00b7  ' + r.date + '  \u00b7  DTE: ' + r.dte + 'd';
             },
+            label: ctx => {
+              const dsLabel = ctx.dataset.label || '';
+              const val = ctx.parsed.y;
+              if (val === null || val === undefined) return null;
+              if (dsLabel.includes('Margin') || dsLabel.includes('Initial') || dsLabel.includes('Total') || dsLabel.includes('Daily Vol')) {
+                return `${dsLabel}: ${val.toFixed(2)}%`;
+              }
+              if (dsLabel === 'MCX Close') {
+                return `MCX Close: \u20b9${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
+              if (dsLabel === 'Volume Lots') {
+                return `Volume: ${Math.round(val).toLocaleString('en-IN')} lots`;
+              }
+              if (dsLabel === 'Open Interest') {
+                return `Open Interest: ${Math.round(val).toLocaleString('en-IN')} contracts`;
+              }
+              if (dsLabel.includes('HH Price')) {
+                return `Henry Hub: $${val.toFixed(3)}/MMBtu`;
+              }
+              if (dsLabel.includes('Hikes')) {
+                return `\u25b2 Hike: +${val.toFixed(2)}%`;
+              }
+              if (dsLabel.includes('Cuts')) {
+                return `\u25bc Cut: ${val.toFixed(2)}%`;
+              }
+              return `${dsLabel}: ${val}`;
+            },
             afterBody: ctx => {
               const viewRows = _lcViewState.rows || [];
               const metricFn = _lcViewState.metricFn;
               const i = ctx[0]?.dataIndex ?? 0, r = viewRows[i]; if (!r) return [];
               const lines = [];
-              if (r.tender_margin_pct > 0) lines.push('Tender: ' + r.tender_margin_pct.toFixed(2) + '%');
+              if (r.tender_margin_pct > 0) lines.push('Tender Margin: ' + r.tender_margin_pct.toFixed(2) + '%');
               if (i > 0 && metricFn) {
                 const p = metricFn(viewRows[i-1]), c = metricFn(r);
                 if (p != null && c != null && Math.abs(c-p) >= 0.01)
-                  lines.push('\u0394: ' + (c-p > 0 ? '+' : '') + (c-p).toFixed(2) + '%');
+                  lines.push('\u0394 Day Change: ' + (c-p > 0 ? '+' : '') + (c-p).toFixed(2) + '%');
               }
               return lines;
             }
@@ -4752,8 +4827,15 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
     '<div class="lc-stat"><div class="lc-stat-label">Hikes \u25b2</div><div class="lc-stat-value" style="color:#ef4444;">' + hikeCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp increases</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">Cuts \u25bc</div><div class="lc-stat-value" style="color:#22c55e;">' + cutCount + '</div><div class="lc-stat-sub">\u2265' + thr + 'pp decreases</div></div>' +
     '<div class="lc-stat"><div class="lc-stat-label">HH Correlation</div><div class="lc-stat-value" style="color:' + corrColor + ';">' + corrVal + '</div><div class="lc-stat-sub">' + corrSub + '</div></div>';
-  statsEl.style.display = 'grid';
+  statsEl.style.display = _lcMode === 'macro' ? 'grid' : 'none';
   if (!isZoomOnly) attachTooltips();
+
+  const promptEl = document.getElementById('lcIntraPrompt');
+  if (promptEl) {
+    const isShort = rows.length <= 20;
+    const isAvailable = (expiry || '').includes('2026') || (expiry || '').includes('2027');
+    promptEl.style.display = (isShort && isAvailable && _lcMode === 'macro') ? 'flex' : 'none';
+  }
 }
 
 // ── Wire all lifecycle controls ──
@@ -4839,6 +4921,366 @@ document.getElementById('lcShowHH').addEventListener('change', () => {
 document.getElementById('lcShowMcx')?.addEventListener('change', () => {
   if (!_lcRC) return;
   renderLifecycle(parseInt(_lcRC.inStart.value), parseInt(_lcRC.inEnd.value));
+});
+// ─────────────────────────────────────────────────────────────────
+// CONTRACT LIFECYCLE INTRADAY ENGINE (TradingView Lightweight Charts)
+// ─────────────────────────────────────────────────────────────────
+let _lcMode = 'macro'; // 'macro' | 'intraday'
+let _lcLwChart = null;
+let _lcLwAreaSeries = null;
+let _lcLwCandleSeries = null;
+let _lcLwVolumeSeries = null;
+let _lcLwIsCandle = true;
+let _lcLwData15m = null;
+let _lcLwData1m = null;
+let _lcLwCurrentRes = '15m';
+let _lcLwTooltip = null;
+let _lcLwCurrentTag = null;
+
+function setLcMode(mode) {
+  _lcMode = mode;
+  const isMacro = mode === 'macro';
+  document.getElementById('lcModeMacro')?.classList.toggle('lc-active', isMacro);
+  document.getElementById('lcModeIntra')?.classList.toggle('lc-active', !isMacro);
+
+  const macroControls = document.getElementById('lcMacroControls');
+  const intraControls = document.getElementById('lcIntraControls');
+  const macroWrap = document.getElementById('lcMacroChartWrap');
+  const intraWrap = document.getElementById('lcIntraChartWrap');
+  const statsEl = document.getElementById('lcStats');
+  const rangeEl = document.getElementById('lcRangeWrapper');
+  const promptEl = document.getElementById('lcIntraPrompt');
+
+  if (macroControls) macroControls.style.display = isMacro ? 'contents' : 'none';
+  if (intraControls) intraControls.style.display = isMacro ? 'none' : 'flex';
+  if (macroWrap) macroWrap.style.display = isMacro ? 'block' : 'none';
+  if (intraWrap) intraWrap.style.display = isMacro ? 'none' : 'block';
+  if (statsEl) statsEl.style.display = (isMacro && _lcViewState.rows?.length) ? 'grid' : 'none';
+  if (rangeEl) rangeEl.style.display = (isMacro && _lcViewState.rows?.length) ? 'block' : 'none';
+  if (promptEl) promptEl.style.display = 'none';
+
+  const expiry = document.getElementById('lcMonthSelect')?.value;
+  if (!isMacro) {
+    if (expiry) {
+      loadLcContractIntraday(_lcSym, expiry);
+    }
+  } else {
+    if (_lcChart) {
+      _lcChart.resize();
+    }
+  }
+}
+
+function initLcLwChart() {
+  const container = document.getElementById('lcLwChartContainer');
+  if (!container) return;
+  if (_lcLwChart) {
+    _lcLwChart.applyOptions({ width: container.clientWidth });
+    return;
+  }
+  if (typeof LightweightCharts === 'undefined') {
+    setTimeout(initLcLwChart, 100);
+    return;
+  }
+
+  _lcLwChart = LightweightCharts.createChart(container, {
+    width: container.clientWidth || 800,
+    height: 420,
+    layout: {
+      background: { type: 'solid', color: '#161b22' },
+      textColor: '#8b949e',
+      fontSize: 12,
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    },
+    grid: {
+      vertLines: { color: 'rgba(48, 54, 61, 0.45)', style: 1 },
+      horzLines: { color: 'rgba(48, 54, 61, 0.45)', style: 1 },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Magnet,
+      vertLine: {
+        color: '#58a6ff',
+        width: 1,
+        style: 3,
+        labelBackgroundColor: '#1f6feb',
+        visible: true,
+        labelVisible: true,
+      },
+      horzLine: {
+        visible: false,
+        labelVisible: false,
+      },
+    },
+    rightPriceScale: {
+      borderColor: '#30363d',
+      scaleMargins: {
+        top: 0.08,
+        bottom: 0.22,
+      },
+    },
+    timeScale: {
+      borderColor: '#30363d',
+      timeVisible: true,
+      secondsVisible: false,
+      fixLeftEdge: false,
+      fixRightEdge: true,
+    },
+  });
+
+  _lcLwAreaSeries = _lcLwChart.addAreaSeries({
+    topColor: 'rgba(56, 139, 253, 0.45)',
+    bottomColor: 'rgba(56, 139, 253, 0.02)',
+    lineColor: '#58a6ff',
+    lineWidth: 2,
+    priceLineVisible: false,
+    lastValueVisible: false,
+    visible: !_lcLwIsCandle,
+  });
+
+  _lcLwCandleSeries = _lcLwChart.addCandlestickSeries({
+    upColor: '#3fb950',
+    downColor: '#f85149',
+    borderVisible: false,
+    wickUpColor: '#3fb950',
+    wickDownColor: '#f85149',
+    priceLineVisible: false,
+    lastValueVisible: true,
+    visible: _lcLwIsCandle,
+  });
+
+  _lcLwVolumeSeries = _lcLwChart.addHistogramSeries({
+    priceScaleId: 'volume',
+    priceLineVisible: false,
+    lastValueVisible: false,
+    base: 0,
+  });
+
+  _lcLwChart.priceScale('volume').applyOptions({
+    scaleMargins: {
+      top: 0.82,
+      bottom: 0,
+    },
+    drawTicks: false,
+  });
+
+  _lcLwTooltip = document.createElement('div');
+  _lcLwTooltip.id = 'lcLwFloatingTooltip';
+  _lcLwTooltip.style.cssText = 'position:absolute;display:none;padding:12px 14px;box-sizing:border-box;font-size:12px;text-align:left;z-index:100;pointer-events:none;border:1px solid rgba(56,139,253,0.4);border-radius:8px;background:rgba(22,27,34,0.96);box-shadow:0 12px 28px rgba(0,0,0,0.6);backdrop-filter:blur(8px);color:#e6edf3;font-family:Inter,-apple-system,sans-serif;line-height:1.5;min-width:200px;';
+  container.appendChild(_lcLwTooltip);
+
+  _lcLwChart.subscribeCrosshairMove(param => {
+    if (!param || !param.time || !param.point || param.point.x < 0 || param.point.x > container.clientWidth || param.point.y < 0 || param.point.y > container.clientHeight) {
+      if (_lcLwTooltip) _lcLwTooltip.style.display = 'none';
+      return;
+    }
+
+    const pBar = _lcLwIsCandle ? param.seriesData.get(_lcLwCandleSeries) : param.seriesData.get(_lcLwAreaSeries);
+    const vBar = param.seriesData.get(_lcLwVolumeSeries);
+    if (!pBar) return;
+
+    const d = new Date(param.time * 1000);
+    const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+
+    const open = pBar.open ?? pBar.value;
+    const high = pBar.high ?? pBar.value;
+    const low = pBar.low ?? pBar.value;
+    const close = pBar.close ?? pBar.value;
+    const vol = vBar?.value ?? 0;
+
+    const hudTime = document.getElementById('lcHudTime');
+    const hudOpen = document.getElementById('lcHudOpen');
+    const hudHigh = document.getElementById('lcHudHigh');
+    const hudLow = document.getElementById('lcHudLow');
+    const hudClose = document.getElementById('lcHudClose');
+    const hudVol = document.getElementById('lcHudVol');
+    if (hudTime) hudTime.textContent = `${dateStr} ${timeStr} IST`;
+    if (hudOpen) hudOpen.textContent = `₹${open.toFixed(2)}`;
+    if (hudHigh) hudHigh.textContent = `₹${high.toFixed(2)}`;
+    if (hudLow) hudLow.textContent = `₹${low.toFixed(2)}`;
+    if (hudClose) hudClose.textContent = `₹${close.toFixed(2)}`;
+    if (hudVol) hudVol.textContent = `${Math.round(vol).toLocaleString('en-IN')} lots`;
+
+    const toolW = 210, toolH = 130;
+    let left = param.point.x + 15;
+    let top = param.point.y + 15;
+    if (left + toolW > container.clientWidth) left = param.point.x - toolW - 15;
+    if (top + toolH > container.clientHeight) top = param.point.y - toolH - 15;
+
+    const chg = close - open;
+    const chgPct = open > 0 ? (chg / open) * 100 : 0;
+    const chgCol = chg >= 0 ? '#3fb950' : '#f85149';
+    const chgSign = chg >= 0 ? '+' : '';
+
+    _lcLwTooltip.innerHTML = `
+      <div style="font-weight:700;color:#58a6ff;margin-bottom:4px;display:flex;justify-content:space-between;">
+        <span>${dateStr}</span>
+        <span style="font-size:10px;background:rgba(56,139,253,0.2);padding:1px 5px;border-radius:3px;">${_lcLwCurrentRes}</span>
+      </div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:6px;">${timeStr} IST</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-family:monospace;font-size:11.5px;">
+        <div>Open: <strong style="color:#e6edf3;">₹${open.toFixed(2)}</strong></div>
+        <div>High: <strong style="color:#3fb950;">₹${high.toFixed(2)}</strong></div>
+        <div>Low: <strong style="color:#f85149;">₹${low.toFixed(2)}</strong></div>
+        <div>Close: <strong style="color:#58a6ff;">₹${close.toFixed(2)}</strong></div>
+      </div>
+      <div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(48,54,61,0.6);display:flex;justify-content:space-between;font-size:11px;">
+        <span style="color:${chgCol};font-weight:600;">${chgSign}${chg.toFixed(2)} (${chgSign}${chgPct.toFixed(2)}%)</span>
+        <span style="color:#8b949e;">${Math.round(vol).toLocaleString('en-IN')} lots</span>
+      </div>
+    `;
+    _lcLwTooltip.style.left = `${Math.max(10, left)}px`;
+    _lcLwTooltip.style.top = `${Math.max(10, top)}px`;
+    _lcLwTooltip.style.display = 'block';
+  });
+
+  _lcLwChart.timeScale().subscribeVisibleTimeRangeChange(range => {
+    if (!range || !range.from || !range.to) return;
+    const spanDays = (range.to - range.from) / 86400;
+    if (spanDays <= 7 && _lcLwCurrentRes !== '1m' && _lcLwData1m) {
+      applyLcLwData(_lcLwData1m, '1m');
+    } else if (spanDays > 7 && _lcLwCurrentRes !== '15m' && _lcLwData15m) {
+      applyLcLwData(_lcLwData15m, '15m');
+    }
+  });
+
+  const ro = new ResizeObserver(() => {
+    if (_lcLwChart && container.clientWidth > 0) {
+      _lcLwChart.applyOptions({ width: container.clientWidth });
+    }
+  });
+  ro.observe(container);
+}
+
+function applyLcLwData(data, res) {
+  if (!data || !data.dt || !_lcLwChart) return;
+  _lcLwCurrentRes = res;
+  const areaData = [];
+  const candleData = [];
+  const volumeData = [];
+
+  for (let i = 0; i < data.dt.length; i++) {
+    const t = data.dt[i];
+    const o = data.o[i], h = data.h[i], l = data.l[i], c = data.c[i], v = data.v[i];
+    areaData.push({ time: t, value: c });
+    candleData.push({ time: t, open: o, high: h, low: l, close: c });
+    volumeData.push({
+      time: t,
+      value: v,
+      color: c >= o ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)',
+    });
+  }
+
+  _lcLwAreaSeries.setData(areaData);
+  _lcLwCandleSeries.setData(candleData);
+  _lcLwVolumeSeries.setData(volumeData);
+
+  const resBadge = document.getElementById('lcIntraResBadge');
+  const countBadge = document.getElementById('lcIntraBarCount');
+  if (resBadge) resBadge.innerHTML = `<strong>Res:</strong> ${res === '1m' ? '1-Minute (Micro)' : '15-Minute'}`;
+  if (countBadge) countBadge.innerHTML = `<strong>Bars:</strong> ${data.dt.length.toLocaleString('en-IN')}`;
+}
+
+async function loadLcContractIntraday(sym, expiry) {
+  initLcLwChart();
+  const prefix = sym === 'ngm' ? 'NGM' : 'NG';
+  const m = (expiry || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+  if (!m) return;
+  const month = m[1];
+  const yy = m[2].slice(-2);
+  const tag = `${prefix}_${yy}${month}`;
+
+  _lcLwCurrentTag = tag;
+  const countBadge = document.getElementById('lcIntraBarCount');
+  if (countBadge) countBadge.innerHTML = '<strong>Loading...</strong>';
+
+  try {
+    const res15 = await fetch(`data/market/${tag}_15m.json`);
+    if (!res15.ok) {
+      alert(`Intraday tick data is available for active 2026/2027 contracts. Switching to Daily Macro view.`);
+      setLcMode('macro');
+      return;
+    }
+    const json15 = await res15.json();
+    _lcLwData15m = json15.data;
+
+    _lcLwData1m = null;
+    fetch(`data/market/${tag}_1m.json`).then(r => r.ok ? r.json() : null).then(j => {
+      if (j && j.data) _lcLwData1m = j.data;
+    }).catch(() => {});
+
+    applyLcLwData(_lcLwData15m, '15m');
+    _lcLwChart.timeScale().fitContent();
+  } catch(e) {
+    console.error('Failed to load contract intraday data:', e);
+    setLcMode('macro');
+  }
+}
+
+function applyLcLwTimeframe(tf) {
+  if (!_lcLwChart || !_lcLwData15m || !_lcLwData15m.dt.length) return;
+  const lastTs = _lcLwData15m.dt[_lcLwData15m.dt.length - 1];
+  let days = 0;
+  switch(tf) {
+    case '1D': days = 1; break;
+    case '1W': days = 7; break;
+    case '1M': days = 30; break;
+    case '3M': days = 90; break;
+    case 'ALL':
+    default:
+      if (_lcLwCurrentRes !== '15m') applyLcLwData(_lcLwData15m, '15m');
+      _lcLwChart.timeScale().fitContent();
+      return;
+  }
+  const fromTs = lastTs - Math.round(days * 86400);
+  const toTs = lastTs;
+
+  if (days <= 7 && _lcLwData1m) {
+    applyLcLwData(_lcLwData1m, '1m');
+  } else if (_lcLwCurrentRes !== '15m') {
+    applyLcLwData(_lcLwData15m, '15m');
+  }
+  _lcLwChart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+}
+
+// Wire Lifecycle Mode Buttons
+document.getElementById('lcModeMacro')?.addEventListener('click', () => setLcMode('macro'));
+document.getElementById('lcModeIntra')?.addEventListener('click', () => setLcMode('intraday'));
+document.getElementById('btnSwitchToIntra')?.addEventListener('click', () => setLcMode('intraday'));
+
+// Intraday Presets
+document.querySelectorAll('.lc-intra-tf').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lc-intra-tf').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyLcLwTimeframe(btn.dataset.intraTf);
+  });
+});
+
+// Toggle Candles / Line
+document.getElementById('btnLcToggleCandles')?.addEventListener('click', () => {
+  if (!_lcLwCandleSeries || !_lcLwAreaSeries) return;
+  _lcLwIsCandle = !_lcLwIsCandle;
+  const btn = document.getElementById('btnLcToggleCandles');
+  if (_lcLwIsCandle) {
+    _lcLwAreaSeries.applyOptions({ visible: false, lastValueVisible: false });
+    _lcLwCandleSeries.applyOptions({ visible: true, lastValueVisible: true });
+    btn.textContent = 'Candles';
+    btn.style.color = 'var(--accent-green)';
+    btn.style.borderColor = 'var(--accent-green)';
+  } else {
+    _lcLwAreaSeries.applyOptions({ visible: true, lastValueVisible: true });
+    _lcLwCandleSeries.applyOptions({ visible: false, lastValueVisible: false });
+    btn.textContent = 'Line';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+});
+
+// Reset Zoom
+document.getElementById('btnLcResetZoom')?.addEventListener('click', () => {
+  document.querySelectorAll('.lc-intra-tf').forEach(b => b.classList.toggle('active', b.dataset.intraTf === 'ALL'));
+  applyLcLwTimeframe('ALL');
 });
 
 // ═══════════════════════════════════════════════════════════════════
