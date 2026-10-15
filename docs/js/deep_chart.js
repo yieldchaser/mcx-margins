@@ -2,23 +2,27 @@
  * deep_chart.js
  * -------------
  * Institutional High-Performance Multi-Resolution Chart (2019-2026, 1.65M Bars)
- * Powered by TradingView Lightweight Charts v4.2.
+ * & Intraday Time-of-Day Seasonality Engine.
  * 
  * Features:
- * - Level of Detail (LOD) Dynamic Streaming:
- *     * Window > 60 Days: Tier 0 Daily Macro (~1,940 bars)
- *     * Window 10-60 Days: Tier 2 15-Minute Swing (~26,300 bars)
- *     * Window <= 10 Days: Tier 3 1-Minute Microstructure (~18,000 bars/month)
- * - Area Line Chart & Candlestick Modes
- * - Volume Histogram Overlay
- * - Interactive Crosshair HUD (OHLCV)
- * - Strictly Ascending Time Series Enforced
- * - 60 FPS Smooth Canvas Performance (Zero browser freeze)
+ * 1. Deep Multi-Resolution Zoom:
+ *    - Level of Detail (LOD) Dynamic Streaming (Daily -> 15m -> 1m)
+ *    - Strictly Ascending Time Series Enforced
+ *    - Fixed Dual-Price Scale Bug: Volume series hides right-scale price badges
+ *    - Dynamic Glassmorphism Floating Tooltip following cursor on canvas
+ * 2. Intraday Time-of-Day (TOD) Volatility & Volume Profile:
+ *    - 15-Minute granularity across 1,618,198 one-minute candles (2019-2026)
+ *    - US DST-Aware: Summer (EDT) vs Winter (EST) vs Thursday EIA Shock Windows
+ *    - Dual-axis Volume Histogram + Garman-Klass Volatility % Line
+ *    - Rich Contextual Tooltips matching institutional design system
  */
 
 (function () {
   'use strict';
 
+  // ─────────────────────────────────────────────────────────────
+  // PART 1: Multi-Resolution Deep Zoom Chart (TradingView LW)
+  // ─────────────────────────────────────────────────────────────
   let chart = null;
   let areaSeries = null;
   let candleSeries = null;
@@ -28,6 +32,7 @@
   let isSwitchingResolution = false;
   let resizeObserver = null;
   let pendingLODTimeout = null;
+  let floatingTooltip = null;
 
   // In-memory data caches
   const cache = {
@@ -118,6 +123,8 @@
       bottomColor: 'rgba(56, 139, 253, 0.01)',
       lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.1 },
+      lastValueVisible: true,
+      priceLineVisible: true,
       visible: true,
     });
 
@@ -130,21 +137,29 @@
       wickUpColor: '#3fb950',
       wickDownColor: '#f85149',
       priceFormat: { type: 'price', precision: 2, minMove: 0.1 },
+      lastValueVisible: false,
+      priceLineVisible: false,
       visible: false,
     });
 
     // ── Volume Series: Histogram ──
+    // CRITICAL: lastValueVisible=false and priceLineVisible=false ensure volume number NEVER posts on the price scale!
     volumeSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
       priceScaleId: '', // overlay
+      lastValueVisible: false, // HIDES volume number from price scale (Fixes dual-price bug)
+      priceLineVisible: false, // HIDES horizontal volume line
       scaleMargins: {
         top: 0.80,
         bottom: 0,
       },
     });
 
-    // ── Crosshair HUD Update ──
-    setupCrosshairHud();
+    // ── Create Dynamic Floating Tooltip Element ──
+    createFloatingTooltip(container);
+
+    // ── Crosshair HUD & Dynamic Tooltip Update ──
+    setupCrosshairHud(container);
 
     // ── Visible Range Change Listener for Dynamic LOD ──
     chart.timeScale().subscribeVisibleTimeRangeChange(onTimeRangeChanged);
@@ -168,7 +183,35 @@
     loadDailyTier(true);
   }
 
-  function setupCrosshairHud() {
+  function createFloatingTooltip(container) {
+    if (document.getElementById('deepChartFloatingTooltip')) {
+      floatingTooltip = document.getElementById('deepChartFloatingTooltip');
+      return;
+    }
+    floatingTooltip = document.createElement('div');
+    floatingTooltip.id = 'deepChartFloatingTooltip';
+    floatingTooltip.style.position = 'absolute';
+    floatingTooltip.style.display = 'none';
+    floatingTooltip.style.padding = '8px 12px';
+    floatingTooltip.style.boxSizing = 'border-box';
+    floatingTooltip.style.fontSize = '12px';
+    floatingTooltip.style.textAlign = 'left';
+    floatingTooltip.style.zIndex = '100';
+    floatingTooltip.style.top = '12px';
+    floatingTooltip.style.left = '12px';
+    floatingTooltip.style.pointerEvents = 'none';
+    floatingTooltip.style.border = '1px solid var(--border)';
+    floatingTooltip.style.borderRadius = '6px';
+    floatingTooltip.style.background = 'rgba(22, 27, 34, 0.95)';
+    floatingTooltip.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    floatingTooltip.style.backdropFilter = 'blur(6px)';
+    floatingTooltip.style.color = '#e6edf3';
+    floatingTooltip.style.fontFamily = 'Inter, monospace';
+    floatingTooltip.style.lineHeight = '1.45';
+    container.appendChild(floatingTooltip);
+  }
+
+  function setupCrosshairHud(container) {
     const hudDate = document.getElementById('hudDate');
     const hudOpen = document.getElementById('hudOpen');
     const hudHigh = document.getElementById('hudHigh');
@@ -177,9 +220,13 @@
     const hudVolume = document.getElementById('hudVolume');
 
     chart.subscribeCrosshairMove(param => {
-      if (!param || !param.time || !param.seriesData) {
+      if (!param || !param.time || !param.seriesData || !param.point ||
+          param.point.x < 0 || param.point.x > container.clientWidth ||
+          param.point.y < 0 || param.point.y > container.clientHeight) {
+        if (floatingTooltip) floatingTooltip.style.display = 'none';
         return;
       }
+
       const pBar = isCandleMode ? param.seriesData.get(candleSeries) : param.seriesData.get(areaSeries);
       const vBar = param.seriesData.get(volumeSeries);
 
@@ -187,23 +234,92 @@
         const d = new Date(param.time * 1000);
         const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
-        hudDate.textContent = currentResolution === 'daily' ? `Date: ${dateStr}` : `IST: ${dateStr} ${timeStr}`;
+        const timeDisplay = currentResolution === 'daily' ? dateStr : `${dateStr} ${timeStr} IST`;
 
+        // 1. Update Header HUD
+        if (hudDate) hudDate.textContent = currentResolution === 'daily' ? `Date: ${dateStr}` : `IST: ${dateStr} ${timeStr}`;
         if (pBar.open !== undefined) {
-          hudOpen.innerHTML = `O: <strong style="color:var(--text)">₹${pBar.open.toFixed(2)}</strong>`;
-          hudHigh.innerHTML = `H: <strong style="color:var(--accent-green)">₹${pBar.high.toFixed(2)}</strong>`;
-          hudLow.innerHTML = `L: <strong style="color:var(--accent-red)">₹${pBar.low.toFixed(2)}</strong>`;
-          hudClose.innerHTML = `C: <strong style="color:var(--text)">₹${pBar.close.toFixed(2)}</strong>`;
+          if (hudOpen) hudOpen.innerHTML = `O: <strong style="color:var(--text)">₹${pBar.open.toFixed(2)}</strong>`;
+          if (hudHigh) hudHigh.innerHTML = `H: <strong style="color:var(--accent-green)">₹${pBar.high.toFixed(2)}</strong>`;
+          if (hudLow) hudLow.innerHTML = `L: <strong style="color:var(--accent-red)">₹${pBar.low.toFixed(2)}</strong>`;
+          if (hudClose) hudClose.innerHTML = `C: <strong style="color:var(--text)">₹${pBar.close.toFixed(2)}</strong>`;
         } else if (pBar.value !== undefined) {
-          hudOpen.innerHTML = '';
-          hudHigh.innerHTML = '';
-          hudLow.innerHTML = '';
-          hudClose.innerHTML = `Price: <strong style="color:var(--text)">₹${pBar.value.toFixed(2)}</strong>`;
+          if (hudOpen) hudOpen.innerHTML = '';
+          if (hudHigh) hudHigh.innerHTML = '';
+          if (hudLow) hudLow.innerHTML = '';
+          if (hudClose) hudClose.innerHTML = `Price: <strong style="color:var(--text)">₹${pBar.value.toFixed(2)}</strong>`;
+        }
+        if (vBar && vBar.value !== undefined && hudVolume) {
+          hudVolume.innerHTML = `Vol: <strong style="color:var(--text)">${vBar.value.toLocaleString()}</strong>`;
+        }
+
+        // 2. Update Dynamic Floating Tooltip
+        if (floatingTooltip) {
+          floatingTooltip.style.display = 'block';
+
+          let ohlcHtml = '';
+          if (pBar.open !== undefined) {
+            const ret = ((pBar.close - pBar.open) / pBar.open) * 100;
+            const retColor = ret >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            ohlcHtml = `
+              <div style="display:flex; justify-content:space-between; gap:16px; margin-top:4px;">
+                <span style="color:var(--text-muted);">Open:</span> <strong>₹${pBar.open.toFixed(2)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px;">
+                <span style="color:var(--text-muted);">High:</span> <strong style="color:var(--accent-green);">₹${pBar.high.toFixed(2)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px;">
+                <span style="color:var(--text-muted);">Low:</span> <strong style="color:var(--accent-red);">₹${pBar.low.toFixed(2)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px;">
+                <span style="color:var(--text-muted);">Close:</span> <strong>₹${pBar.close.toFixed(2)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; gap:16px;">
+                <span style="color:var(--text-muted);">Bar Return:</span> <strong style="color:${retColor};">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%</strong>
+              </div>
+            `;
+          } else if (pBar.value !== undefined) {
+            ohlcHtml = `
+              <div style="display:flex; justify-content:space-between; gap:16px; margin-top:4px;">
+                <span style="color:var(--text-muted);">Price:</span> <strong style="color:var(--accent); font-size:14px;">₹${pBar.value.toFixed(2)}</strong>
+              </div>
+            `;
+          }
+
+          const volHtml = (vBar && vBar.value !== undefined)
+            ? `<div style="display:flex; justify-content:space-between; gap:16px; border-top:1px solid var(--border); margin-top:4px; padding-top:4px;">
+                <span style="color:var(--text-muted);">Volume:</span> <strong>${vBar.value.toLocaleString()} lots</strong>
+               </div>`
+            : '';
+
+          floatingTooltip.innerHTML = `
+            <div style="font-weight:700; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:3px; margin-bottom:4px; display:flex; justify-content:space-between; gap:12px;">
+              <span>${timeDisplay}</span>
+              <span style="font-size:10px; color:var(--accent); font-weight:600;">${currentResolution.toUpperCase()}</span>
+            </div>
+            ${ohlcHtml}
+            ${volHtml}
+          `;
+
+          // Position smoothly within container boundaries
+          const w = 195;
+          const h = 150;
+          let left = param.point.x + 18;
+          if (left + w > container.clientWidth) {
+            left = param.point.x - w - 18;
+          }
+          let top = param.point.y + 18;
+          if (top + h > container.clientHeight) {
+            top = param.point.y - h - 18;
+          }
+          floatingTooltip.style.left = Math.max(8, left) + 'px';
+          floatingTooltip.style.top = Math.max(8, top) + 'px';
         }
       }
-      if (vBar && vBar.value !== undefined) {
-        hudVolume.innerHTML = `Vol: <strong style="color:var(--text)">${vBar.value.toLocaleString()}</strong>`;
-      }
+    });
+
+    container.addEventListener('mouseleave', () => {
+      if (floatingTooltip) floatingTooltip.style.display = 'none';
     });
   }
 
@@ -256,7 +372,6 @@
         cache.m15 = await res.json();
       }
 
-      // Filter to relevant range with padding
       const pad = 15 * 86400; // 15 days padding
       const minT = (fromTs || 0) - pad;
       const maxT = (toTs || Infinity) + pad;
@@ -293,7 +408,6 @@
   async function load1mTier(fromTs, toTs) {
     updateBadges('Loading 1-Minute...', '--');
     try {
-      // Determine required month string from center of visible window
       const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || 1792046640;
       const d = new Date(centerTs * 1000);
       const ym = `${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -301,7 +415,6 @@
       if (!cache.m1[ym]) {
         const res = await fetch(`data/deep/1m/${ym}.json`);
         if (!res.ok) {
-          // If month file not found, fall back to October 2026 active month
           console.warn(`Month ${ym}.json not found, falling back to 2026_10.json`);
           const fallbackRes = await fetch('data/deep/1m/2026_10.json');
           if (!fallbackRes.ok) throw new Error('1m fallback failed');
@@ -315,13 +428,11 @@
       render1mRaw(cache.m1[ym], fromTs, toTs);
     } catch (err) {
       console.error('Error loading 1m tier:', err);
-      // Fallback to 15m
       load15mTier(fromTs, toTs);
     }
   }
 
   function render1mRaw(rawBars, fromTs, toTs) {
-    // raw format: [[time, open, high, low, close, volume], ...]
     const pad = 2 * 86400; // 2 days padding
     const minT = (fromTs || 0) - pad;
     const maxT = (toTs || Infinity) + pad;
@@ -400,14 +511,14 @@
       btnToggle.addEventListener('click', () => {
         isCandleMode = !isCandleMode;
         if (isCandleMode) {
-          areaSeries.applyOptions({ visible: false });
-          candleSeries.applyOptions({ visible: true });
+          areaSeries.applyOptions({ visible: false, lastValueVisible: false, priceLineVisible: false });
+          candleSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: true });
           btnToggle.textContent = 'Candles';
           btnToggle.style.color = 'var(--accent-green)';
           btnToggle.style.borderColor = 'var(--accent-green)';
         } else {
-          areaSeries.applyOptions({ visible: true });
-          candleSeries.applyOptions({ visible: false });
+          areaSeries.applyOptions({ visible: true, lastValueVisible: true, priceLineVisible: true });
+          candleSeries.applyOptions({ visible: false, lastValueVisible: false, priceLineVisible: false });
           btnToggle.textContent = 'Line';
           btnToggle.style.color = '';
           btnToggle.style.borderColor = '';
@@ -438,7 +549,7 @@
       case '1W': days = 7; break;
       case '1M': days = 30; break;
       case '3M': days = 90; break;
-      case 'YTD': days = 288; break; // ~Jan 1 to Oct 15
+      case 'YTD': days = 288; break;
       case '1Y': days = 365; break;
       case '5Y': days = 1825; break;
       case 'ALL':
@@ -448,7 +559,7 @@
     }
 
     const fromTs = nowTs - (days * 86400);
-    const toTs = nowTs + (days * 0.05 * 86400); // 5% right margin
+    const toTs = nowTs + (days * 0.05 * 86400);
 
     if (days <= 10) {
       load1mTier(fromTs, toTs).then(() => {
@@ -465,22 +576,196 @@
     }
   }
 
-  // Expose global init function
-  window.initDeepChart = initDeepChart;
+  // ─────────────────────────────────────────────────────────────
+  // PART 2: Intraday Time-of-Day (TOD) Volatility & Volume Profile
+  // ─────────────────────────────────────────────────────────────
+  let todChartInstance = null;
+  let todData = null;
 
-  // Auto-init when Market tab becomes active or on window load
+  async function initTODSeasonality() {
+    const canvas = document.getElementById('chartTODSeasonality');
+    if (!canvas) return;
+
+    try {
+      if (!todData) {
+        const res = await fetch('data/tod_seasonality.json');
+        if (!res.ok) throw new Error('Failed to load tod_seasonality.json');
+        todData = await res.json();
+      }
+
+      const buttons = document.querySelectorAll('[data-tod-profile]');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const profileKey = btn.getAttribute('data-tod-profile');
+          renderTODChart(todData.profiles[profileKey] || todData.profiles.combined, profileKey);
+        });
+      });
+
+      renderTODChart(todData.profiles.combined, 'combined');
+    } catch (err) {
+      console.error('Error initializing TOD Seasonality:', err);
+    }
+  }
+
+  function getNextInterval(t) {
+    const [h, m] = t.split(':').map(Number);
+    let nm = m + 15;
+    let nh = h;
+    if (nm >= 60) {
+      nm -= 60;
+      nh += 1;
+    }
+    return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+  }
+
+  function renderTODChart(profile, key) {
+    const canvas = document.getElementById('chartTODSeasonality');
+    if (!canvas || !profile) return;
+
+    if (todChartInstance) {
+      todChartInstance.destroy();
+      todChartInstance = null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    todChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: profile.intervals,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Average Traded Volume (Lots / 15m)',
+            data: profile.avg_volume,
+            backgroundColor: 'rgba(56, 139, 253, 0.45)',
+            borderColor: '#388bfd',
+            borderWidth: 1,
+            borderRadius: 2,
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            type: 'line',
+            label: 'Garman-Klass Volatility % (Annualized)',
+            data: profile.gk_vol_pct,
+            borderColor: '#fb8f44',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 1,
+            tension: 0.25,
+            yAxisID: 'y1',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { color: '#e6edf3', font: { family: 'Inter', size: 11 } }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(22, 27, 34, 0.95)',
+            titleColor: '#e6edf3',
+            bodyColor: '#e6edf3',
+            borderColor: 'rgba(56, 139, 253, 0.3)',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 6,
+            callbacks: {
+              title: items => {
+                const interval = profile.intervals[items[0].dataIndex];
+                return `Interval: ${interval} – ${getNextInterval(interval)} IST`;
+              },
+              label: (ctx) => {
+                if (ctx.datasetIndex === 0) {
+                  const med = profile.median_volume ? ` (Median: ${profile.median_volume[ctx.dataIndex].toLocaleString()})` : '';
+                  return `Volume: ${ctx.raw.toLocaleString()} lots${med}`;
+                }
+                const rng = profile.avg_range_pct ? ` · Avg Range: ${profile.avg_range_pct[ctx.dataIndex].toFixed(2)}%` : '';
+                return `GK Volatility: ${ctx.raw.toFixed(1)}% annualized${rng}`;
+              },
+              afterBody: (items) => {
+                const idx = items[0].dataIndex;
+                const interval = profile.intervals[idx];
+                if (interval === '09:00') return ['Context: MCX Morning Opening Gap & Overnight NYMEX Catch-up.'];
+                if (interval >= '14:30' && interval <= '15:30') return ['Context: European Market Opening acceleration.'];
+                if (interval >= '18:30' && interval <= '21:30') return ['Context: US NYMEX Pit trading & Primary Session Liquidity.'];
+                if (interval === '20:00' && key === 'summer_edt') return ['Context: US EIA Storage Report Release Window (Summer EDT).'];
+                if (interval === '21:00' && key === 'winter_est') return ['Context: US EIA Storage Report Release Window (Winter EST).'];
+                if (interval >= '23:00') return ['Context: Pre-close intraday squaring & delivery margin cutoffs.'];
+                return [];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', font: { family: 'Inter', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 },
+            grid: { color: 'rgba(139, 148, 158, 0.08)' }
+          },
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: { display: true, text: 'Traded Volume (Lots / 15m)', color: '#8b949e', font: { family: 'Inter', size: 10 } },
+            ticks: { color: '#8b949e', font: { family: 'Inter', size: 9 } },
+            grid: { color: 'rgba(139, 148, 158, 0.08)' }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: 'Garman-Klass Volatility %', color: '#fb8f44', font: { family: 'Inter', size: 10 } },
+            ticks: { color: '#fb8f44', font: { family: 'Inter', size: 9 }, callback: (v) => `${v}%` },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+
+    const insight = document.getElementById('todInsightText');
+    if (insight) {
+      if (key === 'summer_edt') {
+        insight.innerHTML = `☀️ <strong>US Summer (EDT):</strong> NYMEX Pit opens at <strong>18:30 IST</strong>. Thursday US EIA Storage release occurs at <strong>20:00 IST</strong>. Prime liquidity and volatility surge during 18:30–20:30 IST.`;
+      } else if (key === 'winter_est') {
+        insight.innerHTML = `❄️ <strong>US Winter (EST):</strong> NYMEX Pit opens at <strong>19:30 IST</strong>. Thursday US EIA Storage release shifts to <strong>21:00 IST</strong>. Peak liquidity occurs 19:30–21:30 IST.`;
+      } else if (key === 'thursday_eia') {
+        insight.innerHTML = `⚡ <strong>Thursday Inventory Day:</strong> Volatility explodes up to <strong>2.8x baseline</strong> during the 20:00–21:00 IST release window, driving immediate intraday margin and VaR spikes.`;
+      } else if (key === 'regular_weekdays') {
+        insight.innerHTML = `📅 <strong>Regular Weekdays (Mon-Wed, Fri):</strong> Baseline organic volume curve showing steady afternoon pickup and peak liquidity between 18:30 and 22:00 IST without Thursday report distortion.`;
+      } else {
+        insight.innerHTML = `💡 <strong>Combined 8-Year Profile:</strong> Morning open (09:00 IST) features elevated overnight gap volatility, followed by session peak liquidity during US pit hours (18:30–21:30 IST).`;
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Exports & Initialization
+  // ─────────────────────────────────────────────────────────────
+  window.initDeepChart = initDeepChart;
+  window.initTODSeasonality = initTODSeasonality;
+
+  function initMarketVisuals() {
+    initDeepChart();
+    initTODSeasonality();
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const marketTabBtn = document.querySelector('[data-tab="market"]');
     if (marketTabBtn) {
       marketTabBtn.addEventListener('click', () => {
-        setTimeout(initDeepChart, 50);
+        setTimeout(initMarketVisuals, 60);
       });
     }
 
-    // If Market tab is already active on boot
     const activeTab = document.querySelector('.tab-btn.active');
     if (activeTab && activeTab.getAttribute('data-tab') === 'market') {
-      setTimeout(initDeepChart, 100);
+      setTimeout(initMarketVisuals, 100);
     }
   });
 
