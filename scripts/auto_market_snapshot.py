@@ -70,14 +70,28 @@ fyers = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=
 try:
     prof = fyers.get_profile()
     if prof.get("s") != "ok":
-        log(f"WARN: FYERS Token expired or invalid: {prof.get('message', 'unknown')}")
-        with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({
-                "status": "expired",
-                "message": f"Token expired or invalid ({prof.get('message', 'unknown')}). Re-run scripts/fyers_login_and_fetch.py.",
-                "last_check": datetime.now().isoformat()
-            }, f)
-        sys.exit(0) # Silent exit on expired token, no crash
+        log(f"WARN: FYERS Token expired ({prof.get('message', 'unknown')}). Attempting automated TOTP login...")
+        try:
+            from auto_fyers_login import auto_login
+            if auto_login():
+                log("Automated TOTP login succeeded! Fresh token acquired.")
+                with open(TOKEN_PATH, encoding="utf-8") as f:
+                    token = f.read().strip()
+                fyers = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=token, log_path="")
+                prof = fyers.get_profile()
+                user_name = prof.get("data", {}).get("name", "Authorized User")
+            else:
+                log("Automated login credentials not yet configured. Exiting silently.")
+                with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "status": "expired",
+                        "message": f"Token expired. Re-authenticate via scripts/fyers_login_and_fetch.py or configure data/fyers_auth/credentials.json.",
+                        "last_check": datetime.now().isoformat()
+                    }, f)
+                sys.exit(0)
+        except Exception as e:
+            log(f"Notice on auto-login attempt: {e}")
+            sys.exit(0)
     else:
         user_name = prof.get("data", {}).get("name", "Authorized User")
         with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
