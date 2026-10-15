@@ -149,6 +149,87 @@ for base, exp, sym, pfile in active_contracts:
                 
             df_combined.to_parquet(pfile, compression="zstd")
             log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
+
+            # If front month October, update the deep chart LOD tiers
+            if base == "NATURALGAS" and exp == "26OCT":
+                try:
+                    deep_1m_file = os.path.join(REPO_DIR, "docs", "data", "deep", "1m", "2026_10.json")
+                    if os.path.exists(deep_1m_file):
+                        oct_start_epoch = int(datetime(2026, 10, 1, 0, 0, tzinfo=timezone.utc).timestamp())
+                        df_oct = df_combined[df_combined["epoch"] >= oct_start_epoch]
+                        m1_bars = []
+                        for _, row in df_oct.iterrows():
+                            m1_bars.append([
+                                int(row["epoch"]),
+                                round(float(row["open"]), 2),
+                                round(float(row["high"]), 2),
+                                round(float(row["low"]), 2),
+                                round(float(row["close"]), 2),
+                                int(row["volume"])
+                            ])
+                        with open(deep_1m_file, "w", encoding="utf-8") as f:
+                            json.dump(m1_bars, f, separators=(',', ':'))
+                        log(f"Synchronized docs/data/deep/1m/2026_10.json ({len(m1_bars):,} bars up to {df_oct['ts_ist'].iloc[-1].strftime('%H:%M IST')}).")
+
+                    # Synchronize Tier 2: ng_15m.json
+                    m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
+                    if os.path.exists(m15_file):
+                        df_resample = df_combined.copy()
+                        df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
+                        m15_res = df_resample.resample("15min").agg({
+                            "open": "first",
+                            "high": "max",
+                            "low": "min",
+                            "close": "last",
+                            "volume": "sum",
+                            "epoch": "first"
+                        }).dropna()
+                        m15_new_bars = []
+                        for dt_idx, r in m15_res.iterrows():
+                            m15_new_bars.append({
+                                "time": int(dt_idx.timestamp()),
+                                "open": round(float(r["open"]), 2),
+                                "high": round(float(r["high"]), 2),
+                                "low": round(float(r["low"]), 2),
+                                "close": round(float(r["close"]), 2),
+                                "volume": int(r["volume"])
+                            })
+                        with open(m15_file, "r", encoding="utf-8") as f:
+                            existing_m15 = json.load(f)
+                        existing_map = {b["time"]: b for b in existing_m15}
+                        for nb in m15_new_bars:
+                            existing_map[nb["time"]] = nb
+                        merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
+                        with open(m15_file, "w", encoding="utf-8") as f:
+                            json.dump(merged_m15, f, separators=(',', ':'))
+                        log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
+
+                    # Synchronize Tier 0: ng_daily.json today's bar
+                    daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_daily.json")
+                    if os.path.exists(daily_file):
+                        today_str = now.strftime("%Y-%m-%d")
+                        today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
+                        if len(today_bars) > 0:
+                            today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp())
+                            today_daily = {
+                                "time": today_epoch,
+                                "open": round(float(today_bars["open"].iloc[0]), 2),
+                                "high": round(float(today_bars["high"].max()), 2),
+                                "low": round(float(today_bars["low"].min()), 2),
+                                "close": round(float(today_bars["close"].iloc[-1]), 2),
+                                "volume": int(today_bars["volume"].sum())
+                            }
+                            with open(daily_file, "r", encoding="utf-8") as f:
+                                daily_bars = json.load(f)
+                            if daily_bars and daily_bars[-1]["time"] == today_epoch:
+                                daily_bars[-1] = today_daily
+                            else:
+                                daily_bars.append(today_daily)
+                            with open(daily_file, "w", encoding="utf-8") as f:
+                                json.dump(daily_bars, f, separators=(',', ':'))
+                            log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f}")
+                except Exception as e:
+                    log(f"Notice updating deep LOD tiers: {e}")
         else:
             log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
         time.sleep(0.35)
