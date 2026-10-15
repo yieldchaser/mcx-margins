@@ -2193,10 +2193,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Event Windows">Event Windows</div>
         <div class="scope-row" style="margin-top:0;">
-          <span class="scope-chip"><strong>History</strong> Trailing 30 Windows</span>
+          <span class="scope-chip"><strong>History</strong> Trailing 38 Windows</span>
           <span class="scope-chip"><strong>Signals</strong> Margin / Vol / OI Shift</span>
         </div>
-        <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;overflow-x:auto;">
+        <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;overflow-x:auto;border:none;">
           <table class="data-table" style="width:100%;border-collapse:separate;border-spacing:0;">
             <thead>
               <tr>
@@ -8005,7 +8005,7 @@ async function renderMarketIntel(force = false) {
         </div>`;
     }
 
-    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-30).reverse().map(r => {
+    document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-38).reverse().map(r => {
       const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
       const retVal = Number(r.return_1d_pct) || 0;
       const mrgVal = Number(r.margin_change_1d) || 0;
