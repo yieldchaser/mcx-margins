@@ -8,6 +8,8 @@
 <meta name="description" content="Live MCX NATURALGAS and NATGASMINI futures margin intelligence dashboard — forward curve, history, seasonality, analytics.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+<script src="js/deep_chart.js"></script>
 <style>
 /* ── Design tokens ── */
 :root {
@@ -23,6 +25,28 @@
   --accent-red: #f85149;
   --accent-yellow: #d29922;
   --accent-purple: #a371f7;
+}
+
+/* ── Deep Multi-Resolution Chart ── */
+.deep-tf-btn {
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.deep-tf-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+.deep-tf-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 /* ── Reset ── */
@@ -928,12 +952,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <img src="favicon.svg" alt="Blue Margin Logo" style="height:20px; width:auto; display:block;">
     <span class="brand">Blue Margin</span>
   </div>
-  <div class="header-center" style="display:flex; align-items:center; gap:10px; font-size:12px;">
-    <span style="font-weight:700; color:var(--text);">MCX:NATURALGAS</span>
-    <span id="headerLtpVal" style="font-family:monospace; font-weight:800; color:var(--accent-green);">₹309.20</span>
-    <span id="headerLtpChg" style="color:var(--accent-green); font-size:11px;">+1.45 (+0.47%)</span>
-    <span class="scope-chip" id="headerSpreadBadge" style="padding:2px 8px; font-size:10px; border-color:var(--accent-green); color:var(--accent-green);">Spread: 0.10 pts</span>
-  </div>
+
   <div class="header-right">
     <span class="staleness-dot" id="stalenessDot" title="Loading..."></span>
     <span id="lastUpdated">Loading...</span>
@@ -987,8 +1006,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   <button class="tab-btn" data-tab="seasonality" id="btn-seasonality" title="Seasonal Patterns by Month/Year">Seasonality</button>
   <button class="tab-btn" data-tab="analytics" id="btn-analytics" title="Predictive Signals & System Health">Analytics</button>
   <button class="tab-btn" data-tab="market" id="btn-market" title="MCX Price, Volume, OI & Liquidity Intelligence">Market</button>
-  <button class="tab-btn" data-tab="options" id="btn-options" title="Natural Gas Option Chain & Black-76 Greeks">Options</button>
-  <button class="tab-btn" data-tab="terminal" id="btn-terminal" title="Real-Time Level 2 Depth & Execution Simulator">Live Terminal</button>
+
   <button class="tab-btn" data-tab="explorer" id="btn-explorer" title="Raw Data Explorer & Export Tool">Data Explorer</button>
 </nav>
 
@@ -1918,7 +1936,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   </div>
 
   <div id="tab-market" class="tab-content">
-    <div id="microstructureWorkspaceContainer"></div>
+
     <div class="card mb-4 market-toolbar-card" style="padding:14px 20px;">
       <div class="market-toolbar">
         <label class="market-select-wrap has-tooltip" data-tooltip-key="Market Symbol Selector">
@@ -1944,6 +1962,53 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
           <tbody id="marketCurrentBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ── Deep Multi-Resolution Historical Price & Microstructure Chart (2019-2026) ── -->
+    <div class="card mb-4" id="deepMarketCard">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+        <div>
+          <div class="module-kicker">Multi-Resolution Deep Zoom · 1.65M Candles</div>
+          <div class="card-title" style="margin-bottom:2px;">Front-Month Historical Price Action & Intraday Structure (2019–2026)</div>
+          <div class="scope-row" style="margin-top:2px;">
+            <span class="scope-chip"><strong>Data</strong> 8-Year Continuous Front-Month</span>
+            <span class="scope-chip" id="lodResolutionBadge" style="border-color:var(--accent); color:var(--accent);"><strong>Resolution:</strong> Daily (Macro)</span>
+            <span class="scope-chip" id="lodCandleCountBadge"><strong>Loaded:</strong> 1,940 bars</span>
+          </div>
+        </div>
+        <!-- Timeframe Preset Buttons & Mode Toggle -->
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <button class="deep-tf-btn active" data-tf="ALL">8Y (All)</button>
+          <button class="deep-tf-btn" data-tf="5Y">5Y</button>
+          <button class="deep-tf-btn" data-tf="1Y">1Y</button>
+          <button class="deep-tf-btn" data-tf="YTD">YTD</button>
+          <button class="deep-tf-btn" data-tf="3M">3M</button>
+          <button class="deep-tf-btn" data-tf="1M">1M</button>
+          <button class="deep-tf-btn" data-tf="1W">1W</button>
+          <button class="deep-tf-btn" data-tf="1D">1D</button>
+          <span style="border-left:1px solid var(--border); height:18px; margin:0 4px;"></span>
+          <button class="deep-tf-btn" id="btnToggleChartType" title="Toggle Candlestick / Area Line">Line</button>
+          <button class="deep-tf-btn" id="btnResetDeepZoom" title="Reset Zoom to Full View">Reset</button>
+        </div>
+      </div>
+      
+      <!-- Crosshair HUD / OHLC readout -->
+      <div id="deepChartHud" style="display:flex; gap:16px; font-size:12px; font-family:monospace; color:var(--text-muted); margin-bottom:8px; min-height:18px; flex-wrap:wrap;">
+        <span id="hudDate">Date: Hover over chart</span>
+        <span id="hudOpen"></span>
+        <span id="hudHigh"></span>
+        <span id="hudLow"></span>
+        <span id="hudClose"></span>
+        <span id="hudVolume"></span>
+      </div>
+
+      <!-- TradingView Lightweight Charts Container -->
+      <div id="deepLightweightChartContainer" style="width:100%; height:460px; position:relative; border-radius:6px; overflow:hidden; border:1px solid var(--border);"></div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11px; color:var(--text-muted); flex-wrap:wrap; gap:8px;">
+        <span><i style="color:var(--accent); font-style:normal; font-weight:600;">&#9432; Smooth Deep Zoom:</i> Use mouse wheel or touchpad pinch to zoom in/out. Drag horizontally to pan back in time. Resolution automatically sharpens from Daily &rarr; 15-Minute &rarr; 1-Minute tick-level candles without lag.</span>
+        <span style="font-family:monospace; color:var(--text-muted);">TradingView Lightweight Engine · 60 FPS</span>
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
@@ -2118,13 +2183,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     </div>
   </div>
 
-  <div id="tab-options" class="tab-content">
-    <div id="optionsWorkspaceContainer"></div>
-  </div>
 
-  <div id="tab-terminal" class="tab-content">
-    <div id="terminalWorkspaceContainer"></div>
-  </div>
 
   <div id="tab-explorer" class="tab-content">
     <div class="card mb-4" style="padding:14px 20px;">
@@ -2852,6 +2911,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'market' && window.initDeepChart) {
+      setTimeout(window.initDeepChart, 50);
+    }
   });
 });
 
@@ -6799,6 +6861,9 @@ async function renderMarketIntel(force = false) {
 
     const recent = rows.slice(-365);
     const recentLabels = recent.map(r => r.date);
+    if (window.initDeepChart) {
+      setTimeout(window.initDeepChart, 50);
+    }
     if (marketPriceChart) marketPriceChart.destroy();
     marketPriceChart = new Chart(document.getElementById('chartMarketPrice'), {
       type: 'line',
@@ -9081,23 +9146,7 @@ document.addEventListener('keydown', e => {
 });
 </script>
 
-<!-- ── Blue Margin v2.0 ES6 Module Workspaces ── -->
-<script type="module">
-  import { initOptionsWorkspace } from './js/options.js';
-  import { initLiveTerminal } from './js/terminal.js';
-  import { initMicrostructureWorkspace } from './js/microstructure.js';
 
-  // Lazy initialize workspaces on click
-  document.querySelector('[data-tab="options"]')?.addEventListener('click', () => {
-    initOptionsWorkspace();
-  });
-  document.querySelector('[data-tab="terminal"]')?.addEventListener('click', () => {
-    initLiveTerminal();
-  });
-  document.querySelector('[data-tab="market"]')?.addEventListener('click', () => {
-    initMicrostructureWorkspace();
-  });
-</script>
 
 <div id="tooltipOverlay">
   <div class="tt-title" id="ttTitle"></div>

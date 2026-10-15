@@ -1,0 +1,107 @@
+{
+  "daily": {
+    "file": "data/deep/ng_daily.json",
+    "bars": 1940
+  },
+  "h1": {
+    "file": "data/deep/ng_1h.json",
+    "bars": 28263
+  },
+  "m15": {
+    "file": "data/deep/ng_15m.json",
+    "bars": 26341
+  },
+  "m1_months": [
+    {
+      "month": "2025_10",
+      "bars": 17586,
+      "start": 1759289400,
+      "end": 1761933540,
+      "file": "data/deep/1m/2025_10.json"
+    },
+    {
+      "month": "2025_11",
+      "bars": 17420,
+      "start": 1762140600,
+      "end": 1764354240,
+      "file": "data/deep/1m/2025_11.json"
+    },
+    {
+      "month": "2025_12",
+      "bars": 19690,
+      "start": 1764559800,
+      "end": 1767205440,
+      "file": "data/deep/1m/2025_12.json"
+    },
+    {
+      "month": "2026_01",
+      "bars": 18315,
+      "start": 1767238200,
+      "end": 1769797440,
+      "file": "data/deep/1m/2026_01.json"
+    },
+    {
+      "month": "2026_02",
+      "bars": 18795,
+      "start": 1769916600,
+      "end": 1772216640,
+      "file": "data/deep/1m/2026_02.json"
+    },
+    {
+      "month": "2026_03",
+      "bars": 18250,
+      "start": 1772422200,
+      "end": 1774981440,
+      "file": "data/deep/1m/2026_03.json"
+    },
+    {
+      "month": "2026_04",
+      "bars": 17990,
+      "start": 1775014200,
+      "end": 1777571940,
+      "file": "data/deep/1m/2026_04.json"
+    },
+    {
+      "month": "2026_05",
+      "bars": 17310,
+      "start": 1777635000,
+      "end": 1780077540,
+      "file": "data/deep/1m/2026_05.json"
+    },
+    {
+      "month": "2026_06",
+      "bars": 18660,
+      "start": 1780284600,
+      "end": 1782842340,
+      "file": "data/deep/1m/2026_06.json"
+    },
+    {
+      "month": "2026_07",
+      "bars": 20010,
+      "start": 1782876600,
+      "end": 1785520740,
+      "file": "data/deep/1m/2026_07.json"
+    },
+    {
+      "month": "2026_08",
+      "bars": 18270,
+      "start": 1785727800,
+      "end": 1788199140,
+      "file": "data/deep/1m/2026_08.json"
+    },
+    {
+      "month": "2026_09",
+      "bars": 18660,
+      "start": 1788233400,
+      "end": 1790791140,
+      "file": "data/deep/1m/2026_09.json"
+    },
+    {
+      "month": "2026_10",
+      "bars": 8025,
+      "start": 1790825400,
+      "end": 1792046640,
+      "file": "data/deep/1m/2026_10.json"
+    }
+  ]
+}

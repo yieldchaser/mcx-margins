@@ -26,3 +26,18 @@ data/fyers_*.parquet
 data/sample_*.csv
 scratch_*.txt
 workstream_*.txt
+
+# AI Agent & IDE configs
+.agents/
+.claude/
+.codex/
+.cursor/
+.cursorrules
+.gemini/
+.kiro/
+.mcp.json
+.opencode.json
+.qoder/
+.vscode/
+.windsurfrules
+
