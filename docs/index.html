@@ -2196,9 +2196,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <span class="scope-chip"><strong>History</strong> Trailing 30 Windows</span>
           <span class="scope-chip"><strong>Signals</strong> Margin / Vol / OI Shift</span>
         </div>
-        <div class="market-table-shell" style="flex:1;min-height:0;max-height:1040px;overflow-y:auto;overflow-x:auto;">
-          <table class="data-table">
-            <thead><tr><th>Date</th><th>Contract</th><th>Events</th><th>Price</th><th>Margin</th><th>Flow</th></tr></thead>
+        <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;overflow-x:auto;">
+          <table class="data-table" style="width:100%;border-collapse:separate;border-spacing:0;">
+            <thead>
+              <tr>
+                <th style="width:90px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Date</th>
+                <th style="width:85px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Contract</th>
+                <th style="min-width:210px;position:sticky;top:0;background:var(--surface2);z-index:10;">Events</th>
+                <th style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Price</th>
+                <th style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Margin</th>
+                <th style="width:80px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Flow</th>
+              </tr>
+            </thead>
             <tbody id="marketEventBody"></tbody>
           </table>
         </div>
@@ -7892,19 +7901,39 @@ async function renderMarketIntel(force = false) {
 
     // ── Upcoming Expiries Calendar ──
     {
-      const expiryRows = curve.slice(0, 6);
+      const expiryRows = curve.slice(0, 8);
       document.getElementById('marketExpiriesCalendar').innerHTML = `
         <div style="padding-top:4px;">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">UPCOMING EXPIRIES</div>
-          ${expiryRows.map(r => {
-            const urgency = r.dte <= 10 ? '#f85149' : r.dte <= 30 ? '#d29922' : 'var(--text-muted)';
-            const dteBg   = r.dte <= 10 ? 'rgba(248,81,73,0.12)' : r.dte <= 30 ? 'rgba(210,153,34,0.12)' : 'var(--surface2)';
-            return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
-              <div style="font-size:12px;color:var(--text);font-weight:500;">${_contractLabel(r.expiry)}</div>
-              <div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div>
-              <div style="font-size:11px;font-weight:700;color:${urgency};background:${dteBg};border-radius:3px;padding:2px 7px;min-width:38px;text-align:center;">${r.dte}d</div>
-            </div>`;
-          }).join('')}
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;">UPCOMING EXPIRIES</div>
+          <table class="data-table" style="width:100%;font-size:11px;border-collapse:separate;border-spacing:0;margin-bottom:6px;">
+            <thead>
+              <tr>
+                <th style="font-size:10px;padding:6px 8px;">Contract</th>
+                <th style="font-size:10px;padding:6px 8px;">Expiry Date</th>
+                <th style="font-size:10px;padding:6px 8px;text-align:right;">DTE</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${expiryRows.map(r => {
+                const urgency = r.dte <= 10 ? '#f85149' : r.dte <= 30 ? '#d29922' : 'var(--text-muted)';
+                const dteBg   = r.dte <= 10 ? 'rgba(248,81,73,0.14)' : r.dte <= 30 ? 'rgba(210,153,34,0.14)' : 'var(--surface2)';
+                const cleanExp = (r.expiry || '').trim();
+                const m = cleanExp.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+                const monDisp = m ? (m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase()) : cleanExp;
+                const yrDisp  = m ? (m[3].length === 4 ? m[3] : '20' + m[3]) : '';
+                const contractTitle = m ? `${monDisp} ${yrDisp}` : cleanExp;
+                return `
+                  <tr>
+                    <td style="font-weight:600;color:var(--text);padding:7px 8px;">${contractTitle}</td>
+                    <td style="color:var(--text-muted);padding:7px 8px;">${_formatExpiryShort(r.expiry)}</td>
+                    <td style="text-align:right;padding:7px 8px;">
+                      <span style="font-size:11px;font-weight:700;color:${urgency};background:${dteBg};border-radius:3px;padding:2px 7px;display:inline-block;min-width:34px;text-align:center;">${r.dte}d</span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
         </div>`;
     }
 
@@ -7984,21 +8013,27 @@ async function renderMarketIntel(force = false) {
       const retCol = retVal > 0 ? '#3fb950' : retVal < 0 ? '#f85149' : 'var(--text-muted)';
       const mrgCol = mrgVal > 0 ? '#f85149' : mrgVal < 0 ? '#3fb950' : 'var(--text-muted)';
       const oiCol  = oiVal > 0 ? '#58a6ff' : oiVal < 0 ? '#d29922' : 'var(--text-muted)';
-      const eventBadges = (r.events || []).map(ev => {
-        const isDanger = /hike|crisis|stress/i.test(ev);
-        const isWarn   = /flip|shift|unwind/i.test(ev);
-        const col = isDanger ? '#f85149' : isWarn ? '#d29922' : '#58a6ff';
-        const bg  = isDanger ? 'rgba(248,81,73,0.12)' : isWarn ? 'rgba(210,153,34,0.12)' : 'rgba(56,139,253,0.12)';
-        return `<span style="display:inline-block;background:${bg};color:${col};border:1px solid ${col}44;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;margin:1px 2px;white-space:nowrap;">${formatLabel(ev)}</span>`;
-      }).join('');
+      const oiDisp = Math.abs(oiVal) > 500
+        ? (oiVal > 0 ? `+${Math.round(oiVal).toLocaleString('en-IN')}%` : `${Math.round(oiVal).toLocaleString('en-IN')}%`)
+        : fmtPct(r.oi_change_pct, 2);
+      const contractLabel = _formatExpiryShort(r.matched_expiry) || r.matched_expiry || '-';
+      const eventBadges = `<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">` +
+        (r.events || []).map(ev => {
+          const isDanger = /hike|crisis|stress/i.test(ev);
+          const isWarn   = /flip|shift|unwind/i.test(ev);
+          const col = isDanger ? '#f85149' : isWarn ? '#d29922' : '#58a6ff';
+          const bg  = isDanger ? 'rgba(248,81,73,0.12)' : isWarn ? 'rgba(210,153,34,0.12)' : 'rgba(56,139,253,0.12)';
+          return `<span style="display:inline-flex;align-items:center;background:${bg};color:${col};border:1px solid ${col}44;border-radius:3px;padding:2px 6px;font-size:10px;font-weight:600;white-space:nowrap;line-height:1.2;">${formatLabel(ev)}</span>`;
+        }).join('') +
+      `</div>`;
       return `
         <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
-          <td style="font-weight:600;white-space:nowrap;">${r.date}</td>
-          <td style="white-space:nowrap;">${r.matched_expiry || '-'}</td>
-          <td>${eventBadges || '-'}</td>
-          <td style="color:${retCol};font-weight:600;white-space:nowrap;">${fmtPct(r.return_1d_pct, 2)}</td>
-          <td style="color:${mrgCol};font-weight:600;white-space:nowrap;">${fmtPct(r.margin_change_1d, 2)}</td>
-          <td style="color:${oiCol};font-weight:600;white-space:nowrap;">${fmtPct(r.oi_change_pct, 2)}</td>
+          <td style="font-weight:600;white-space:nowrap;padding:8px 10px;">${r.date}</td>
+          <td style="white-space:nowrap;font-weight:600;color:var(--text);padding:8px 10px;">${contractLabel}</td>
+          <td style="padding:8px 10px;">${eventBadges || '-'}</td>
+          <td style="color:${retCol};font-weight:600;white-space:nowrap;text-align:right;padding:8px 10px;">${fmtPct(r.return_1d_pct, 2)}</td>
+          <td style="color:${mrgCol};font-weight:600;white-space:nowrap;text-align:right;padding:8px 10px;">${fmtPct(r.margin_change_1d, 2)}</td>
+          <td style="color:${oiCol};font-weight:600;white-space:nowrap;text-align:right;padding:8px 10px;">${oiDisp}</td>
         </tr>
       `;
     }).join('');
