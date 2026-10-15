@@ -4,9 +4,10 @@ scripts/run_background_service.pyw
 
 Runs completely invisible in the background on Windows:
 - Zero popups, zero terminal windows, zero interruption.
-- Automatically snapshots market every 30 minutes during MCX hours (09:00 to 23:30 IST Mon-Fri).
+- Automatically snapshots market every 30 minutes during MCX hours (09:00 to 23:35 IST Mon-Fri).
 - Automatically keeps live_bridge.py WebSocket server running on ws://127.0.0.1:8765.
 - Silently pushes fresh data to GitHub Pages.
+- Detailed error trapping and auto-recovery.
 """
 
 import os
@@ -26,18 +27,19 @@ def log(msg):
 
 log("Starting Blue Margin Silent Background Automation Service...")
 
-# Launch live_bridge.py as a persistent background subprocess
 bridge_proc = None
+
 def ensure_bridge_alive():
     global bridge_proc
     if bridge_proc is None or bridge_proc.poll() is not None:
         try:
             bridge_script = os.path.join(REPO_DIR, "scripts", "live_bridge.py")
-            # CREATE_NO_WINDOW = 0x08000000 ensures zero console window
+            # CREATE_NO_WINDOW = 0x08000000 ensures zero console window on Windows
+            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
             bridge_proc = subprocess.Popen(
                 [PYTHON_EXE, bridge_script],
                 cwd=REPO_DIR,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                creationflags=creationflags
             )
             log(f"Started live_bridge daemon (PID: {bridge_proc.pid})")
         except Exception as e:
@@ -55,7 +57,6 @@ while True:
         # MCX Trading Window: Monday-Friday, 09:00 to 23:35 IST
         is_trading_hours = (0 <= weekday <= 4) and (9 * 60 <= minute_of_day <= 23 * 60 + 35)
         
-        # Ensure WebSocket bridge is running during trading hours
         if is_trading_hours:
             ensure_bridge_alive()
             
@@ -63,23 +64,27 @@ while True:
             if (time.time() - last_snapshot_time) >= SNAPSHOT_INTERVAL_SECONDS:
                 log("Triggering scheduled market snapshot...")
                 snapshot_script = os.path.join(REPO_DIR, "scripts", "auto_market_snapshot.py")
+                creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
                 res = subprocess.run(
                     [PYTHON_EXE, snapshot_script],
                     cwd=REPO_DIR,
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                    creationflags=creationflags,
                     capture_output=True,
                     text=True
                 )
                 last_snapshot_time = time.time()
-                log(f"Snapshot execution finished (exit code {res.returncode})")
+                if res.returncode == 0:
+                    log("Snapshot execution succeeded cleanly.")
+                else:
+                    log(f"Snapshot returned non-zero code {res.returncode}. Stderr: {res.stderr[:200] if res.stderr else 'none'}")
         else:
-            # Outside market hours: terminate bridge if running to conserve resources
+            # Outside market hours: suspend bridge to conserve resources
             if bridge_proc and bridge_proc.poll() is None:
                 bridge_proc.terminate()
                 bridge_proc = None
                 log("Market closed. Suspended live bridge daemon.")
                 
-        # Sleep for 60 seconds before next heartbeat check
+        # Sleep for 60 seconds before next check
         time.sleep(60)
         
     except Exception as e:
