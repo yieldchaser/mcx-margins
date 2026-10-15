@@ -736,6 +736,27 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .data-table tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .data-table tr:nth-child(even) td { background: rgba(33,38,45,0.5); }
 
+/* ── Market Table Shell Scrollbar ── */
+.market-table-shell {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 139, 253, 0.4) var(--surface2);
+}
+.market-table-shell::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.market-table-shell::-webkit-scrollbar-track {
+  background: var(--surface2);
+  border-radius: 3px;
+}
+.market-table-shell::-webkit-scrollbar-thumb {
+  background: rgba(56, 139, 253, 0.4);
+  border-radius: 3px;
+}
+.market-table-shell::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 139, 253, 0.7);
+}
+
 /* ── Utility ── */
 .mb-4 { margin-bottom: 16px; }
 .mt-4 { margin-top: 16px; }
@@ -2139,7 +2160,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div id="marketSignalBias"></div>
       </div>
     </div>
-    <div class="grid-2 market-grid mb-4">
+    <div class="grid-2 market-grid mb-4" style="align-items:stretch;">
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="card">
           <div class="card-title has-tooltip" data-tooltip-key="Curve Evolution">Curve Evolution</div>
@@ -2147,23 +2168,35 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
             <span class="scope-chip"><strong>Lens</strong> Roll tension</span>
           </div>
-          <div class="chart-container" style="height:280px;"><canvas id="chartMarketCurveHistory"></canvas></div>
+          <div class="chart-container" style="height:300px;"><canvas id="chartMarketCurveHistory"></canvas></div>
+          <div id="marketCurveHistoryInsight"></div>
         </div>
         <div class="card">
           <div class="card-title has-tooltip" data-tooltip-key="Vol Regime Transition Matrix">Vol Regime Transition Matrix</div>
           <div class="scope-row" style="margin-top:0;">
             <span class="scope-chip"><strong>Horizon</strong> Full history</span>
-            <span class="scope-chip"><strong>Model</strong> Day-over-day</span>
+            <span class="scope-chip"><strong>Model</strong> Day-over-day Markov</span>
           </div>
           <div id="regimeTransitionMatrix" style="margin-top:8px;"></div>
           <div id="regimePlaybook" style="margin-top:12px;"></div>
-          <div id="marketExpiriesCalendar"></div>
+        </div>
+        <div class="card">
+          <div class="card-title has-tooltip" data-tooltip-key="Upcoming Expiries & Maturity Schedule">Upcoming Expiries &amp; Maturity Schedule</div>
+          <div class="scope-row" style="margin-top:0;">
+            <span class="scope-chip"><strong>Schedule</strong> Active Expiries</span>
+            <span class="scope-chip"><strong>Lens</strong> Days to Maturity &amp; Cluster</span>
+          </div>
+          <div id="marketExpiriesCalendar" style="margin-top:8px;"></div>
           <div id="regimeFrequencyStats"></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Event Windows">Event Windows</div>
-        <div class="market-table-shell">
+        <div class="scope-row" style="margin-top:0;">
+          <span class="scope-chip"><strong>History</strong> Trailing 30 Windows</span>
+          <span class="scope-chip"><strong>Signals</strong> Margin / Vol / OI Shift</span>
+        </div>
+        <div class="market-table-shell" style="flex:1;min-height:0;max-height:1040px;overflow-y:auto;overflow-x:auto;">
           <table class="data-table">
             <thead><tr><th>Date</th><th>Contract</th><th>Events</th><th>Price</th><th>Margin</th><th>Flow</th></tr></thead>
             <tbody id="marketEventBody"></tbody>
@@ -7762,6 +7795,37 @@ async function renderMarketIntel(force = false) {
       }
     });
 
+    // ── Curve History Insight Metrics Strip ──
+    {
+      const latestTrail = curveTrail.length ? curveTrail[curveTrail.length - 1] : {};
+      const frontSecondSpread = fmtNum(latestTrail.front_second_spread, 2);
+      const rollYield = fmtPct(latestTrail.roll_yield_pct, 2);
+      const conc = latestTrail.liquidity_concentration;
+      const concLabel = Number.isFinite(conc) ? (conc >= 70 ? 'Crowded' : conc >= 45 ? 'Balanced' : 'Diffused') : '-';
+      const concColor = Number.isFinite(conc) ? (conc >= 70 ? '#f85149' : conc >= 45 ? '#d29922' : '#3fb950') : 'var(--text-muted)';
+      const histInsightEl = document.getElementById('marketCurveHistoryInsight');
+      if (histInsightEl) {
+        histInsightEl.innerHTML = `
+          <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 0 2px;margin-top:8px;">
+            <div>
+              <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">FRONT-SECOND SPREAD</div>
+              <div style="font-size:15px;font-weight:700;color:var(--text);">₹${frontSecondSpread}</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Calendar carry</div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">ROLL YIELD (1M)</div>
+              <div style="font-size:15px;font-weight:700;color:${(latestTrail.roll_yield_pct || 0) >= 0 ? '#3fb950' : '#f85149'};">${rollYield}</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Annualized carry</div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">CONCENTRATION</div>
+              <div style="font-size:15px;font-weight:700;color:${concColor};">${fmtNum(conc, 1)}</div>
+              <div style="font-size:10px;color:${concColor};margin-top:2px;">${concLabel} curve</div>
+            </div>
+          </div>`;
+      }
+    }
+
     // ── Vol Regime Transition Matrix ──
     const REGIME_STATES = ['CALM', 'ELEVATED', 'STRESS', 'CRISIS'];
     const transMatrix = {};
@@ -7830,7 +7894,7 @@ async function renderMarketIntel(force = false) {
     {
       const expiryRows = curve.slice(0, 6);
       document.getElementById('marketExpiriesCalendar').innerHTML = `
-        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+        <div style="padding-top:4px;">
           <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">UPCOMING EXPIRIES</div>
           ${expiryRows.map(r => {
             const urgency = r.dte <= 10 ? '#f85149' : r.dte <= 30 ? '#d29922' : 'var(--text-muted)';
@@ -7914,14 +7978,27 @@ async function renderMarketIntel(force = false) {
 
     document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-30).reverse().map(r => {
       const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
+      const retVal = Number(r.return_1d_pct) || 0;
+      const mrgVal = Number(r.margin_change_1d) || 0;
+      const oiVal  = Number(r.oi_change_pct) || 0;
+      const retCol = retVal > 0 ? '#3fb950' : retVal < 0 ? '#f85149' : 'var(--text-muted)';
+      const mrgCol = mrgVal > 0 ? '#f85149' : mrgVal < 0 ? '#3fb950' : 'var(--text-muted)';
+      const oiCol  = oiVal > 0 ? '#58a6ff' : oiVal < 0 ? '#d29922' : 'var(--text-muted)';
+      const eventBadges = (r.events || []).map(ev => {
+        const isDanger = /hike|crisis|stress/i.test(ev);
+        const isWarn   = /flip|shift|unwind/i.test(ev);
+        const col = isDanger ? '#f85149' : isWarn ? '#d29922' : '#58a6ff';
+        const bg  = isDanger ? 'rgba(248,81,73,0.12)' : isWarn ? 'rgba(210,153,34,0.12)' : 'rgba(56,139,253,0.12)';
+        return `<span style="display:inline-block;background:${bg};color:${col};border:1px solid ${col}44;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;margin:1px 2px;white-space:nowrap;">${formatLabel(ev)}</span>`;
+      }).join('');
       return `
         <tr class="has-tooltip" data-dyn-title="Market Event: ${r.date}" data-dyn-body="${escAttr(dynBody)}">
-          <td>${r.date}</td>
-          <td>${r.matched_expiry || '-'}</td>
-          <td>${(r.events || []).map(formatLabel).join(', ')}</td>
-          <td>${fmtPct(r.return_1d_pct, 2)}</td>
-          <td>${fmtPct(r.margin_change_1d, 2)}</td>
-          <td>${fmtPct(r.oi_change_pct, 2)}</td>
+          <td style="font-weight:600;white-space:nowrap;">${r.date}</td>
+          <td style="white-space:nowrap;">${r.matched_expiry || '-'}</td>
+          <td>${eventBadges || '-'}</td>
+          <td style="color:${retCol};font-weight:600;white-space:nowrap;">${fmtPct(r.return_1d_pct, 2)}</td>
+          <td style="color:${mrgCol};font-weight:600;white-space:nowrap;">${fmtPct(r.margin_change_1d, 2)}</td>
+          <td style="color:${oiCol};font-weight:600;white-space:nowrap;">${fmtPct(r.oi_change_pct, 2)}</td>
         </tr>
       `;
     }).join('');
@@ -8792,6 +8869,10 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "Curve Evolution": {
     title: "Curve Evolution",
     body: `<strong>What:</strong> Time-series of front-second spread, roll yield, and liquidity concentration.<br><strong>How to read:</strong> Separates genuine repricing from concentration-driven curve distortion.<br><strong>Threshold zone:</strong> Concentration > 70 = crowded curve risk; 45-70 = balanced.<br><strong>What to watch:</strong> Rising spread + rising concentration often signals unstable roll conditions.`
+  },
+  "Upcoming Expiries & Maturity Schedule": {
+    title: "Upcoming Expiries & Maturity Schedule",
+    body: `<strong>What:</strong> Active MCX contract maturity calendar with days-to-expiry (DTE) countdown and historical regime frequency distribution.<br><br><strong>How to read:</strong> <span style="color:#f85149;font-weight:600;">Red badges (&le; 10 DTE)</span> highlight immediate tender danger zones. <span style="color:#d29922;font-weight:600;">Amber badges (11–30 DTE)</span> identify the active roll planning window.<br><br><strong>Regime distribution:</strong> Quantifies long-term empirical frequency across Calm, Elevated, Stress, and Crisis market environments.`
   },
   "Event Windows": {
     title: "Event Windows",
