@@ -33,10 +33,12 @@
   color: var(--text-muted);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
   transition: all 0.15s ease;
 }
 .deep-tf-btn:hover {
@@ -1967,18 +1969,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- ── Deep Multi-Resolution Historical Price & Microstructure Chart (2019-2026) ── -->
     <div class="card mb-4" id="deepMarketCard">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
-        <div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:12px; flex-wrap:nowrap;">
+        <div style="min-width:0; flex:1;">
           <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Level of Detail (LOD)" data-dyn-body="Intelligent data pyramid dynamically streaming from 1,940 daily macro bars down to 1.65 million one-minute candles on demand with 60 FPS canvas acceleration.">Multi-Resolution Deep Zoom · 1.65M Candles</div>
-          <div class="card-title has-tooltip" data-dyn-title="Front-Month Continuous Futures" data-dyn-body="Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery." style="margin-bottom:2px;">Front-Month Historical Price Action & Intraday Structure (2019–2026)</div>
+          <div class="card-title has-tooltip" data-dyn-title="Front-Month Continuous Futures" data-dyn-body="Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery." style="margin-bottom:2px; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Front-Month Historical Price Action & Intraday Structure</div>
           <div class="scope-row" style="margin-top:2px;">
-            <span class="scope-chip has-tooltip" data-dyn-title="8-Year Continuous Front-Month" data-dyn-body="Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts."><strong>Data</strong> 8-Year Continuous Front-Month</span>
+            <span class="scope-chip has-tooltip" data-dyn-title="8-Year Continuous Front-Month" data-dyn-body="Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts."><strong>Data</strong> 8Y Front-Month</span>
             <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Active Level of Detail" data-dyn-body="Automatically switches between Daily (Macro), 15-Minute (Swing), and 1-Minute (Microstructure) based on visible zoom range." style="border-color:var(--accent); color:var(--accent);"><strong>Resolution:</strong> Daily (Macro)</span>
             <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Memory Footprint" data-dyn-body="Current number of bars held in browser memory (< 20 MB footprint, zero browser freezing)."><strong>Loaded:</strong> 1,940 bars</span>
           </div>
         </div>
-        <!-- Timeframe Preset Buttons & Mode Toggle -->
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        <!-- Timeframe Preset Buttons & Mode Toggle (Pinned to Top Right) -->
+        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0; margin-left:auto; white-space:nowrap;">
           <button class="deep-tf-btn active has-tooltip" data-tf="ALL" data-dyn-title="8Y Full Macro View" data-dyn-body="Displays all 8 years of historical daily prices (2019 to 2026).">8Y (All)</button>
           <button class="deep-tf-btn has-tooltip" data-tf="5Y" data-dyn-title="5-Year Horizon" data-dyn-body="Five-year multi-regime view highlighting macro commodity supercycles.">5Y</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1Y" data-dyn-title="1-Year Horizon" data-dyn-body="Trailing 365-day price action covering the full annual seasonal cycle.">1Y</button>
@@ -1987,7 +1989,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <button class="deep-tf-btn has-tooltip" data-tf="1M" data-dyn-title="1-Month Horizon" data-dyn-body="30-day view streaming 15-minute intermediate candles.">1M</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1W" data-dyn-title="1-Week Microstructure Horizon" data-dyn-body="7-day view streaming tick-level 1-minute execution candles.">1W</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1D" data-dyn-title="1-Day Intraday Horizon" data-dyn-body="Intraday session view streaming exact 1-minute execution detail.">1D</button>
-          <span style="border-left:1px solid var(--border); height:18px; margin:0 4px;"></span>
+          <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
           <button class="deep-tf-btn has-tooltip" id="btnToggleChartType" data-dyn-title="Toggle Chart Display Mode" data-dyn-body="Switch between smooth Area Line view (with blue gradient) and green/red Candlestick mode." title="Toggle Candlestick / Area Line">Line</button>
           <button class="deep-tf-btn has-tooltip" id="btnResetDeepZoom" data-dyn-title="Reset Zoom" data-dyn-body="Resets zoom and pans back to full 8-year macro view." title="Reset Zoom to Full View">Reset</button>
         </div>
@@ -6003,28 +6005,46 @@ async function initCalculator() {
     if (el) el.addEventListener('input', () => window.updateCalc());
   });
 
-  // Sync date inputs with range slider
+  // Sync date inputs with range slider (handles typing and calendar picker 'change' events)
   ['calcEntryDate', 'calcExitDate'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => {
-      const allDates = window._calcAllDates;
-      if (!_calcRC || !allDates) return window.updateCalc();
+    if (el) {
+      ['input', 'change'].forEach(evt => {
+        el.addEventListener(evt, () => {
+          const allDates = window._calcAllDates;
+          if (!_calcRC || !allDates || allDates.length === 0) return window.updateCalc();
 
-      document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
+          document.querySelectorAll('#calcPresets button').forEach(b => b.classList.remove('lc-active'));
 
-      const entryVal = document.getElementById('calcEntryDate').value;
-      const exitVal = document.getElementById('calcExitDate').value;
-      const startIdx = allDates.indexOf(entryVal);
-      const endIdx = allDates.indexOf(exitVal);
+          const entryVal = document.getElementById('calcEntryDate').value;
+          const exitVal = document.getElementById('calcExitDate').value;
+          
+          let startIdx = allDates.indexOf(entryVal);
+          let endIdx = allDates.indexOf(exitVal);
 
-      // Valid indices found: sync slider with dates
-      if (startIdx !== -1 && endIdx !== -1) {
-        _calcRC.setRange(startIdx, endIdx);
-        _calcRC.setLabels(entryVal, exitVal);
-      }
+          // If date was a weekend/holiday, snap to nearest valid trading date
+          if (startIdx === -1 && entryVal) {
+            startIdx = allDates.findIndex(d => d >= entryVal);
+            if (startIdx === -1) startIdx = allDates.length - 1;
+            document.getElementById('calcEntryDate').value = allDates[startIdx];
+          }
+          if (endIdx === -1 && exitVal) {
+            for (let i = allDates.length - 1; i >= 0; i--) {
+              if (allDates[i] <= exitVal) { endIdx = i; break; }
+            }
+            if (endIdx === -1) endIdx = 0;
+            document.getElementById('calcExitDate').value = allDates[endIdx];
+          }
 
-      window.updateCalc();
-    });
+          if (startIdx !== -1 && endIdx !== -1) {
+            _calcRC.setRange(startIdx, endIdx);
+            _calcRC.setLabels(allDates[startIdx], allDates[endIdx]);
+          }
+
+          window.updateCalc();
+        });
+      });
+    }
   });
 
   // Capital quick-preset buttons (replaces inline onclick)

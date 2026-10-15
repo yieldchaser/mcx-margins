@@ -71,18 +71,18 @@
         horzLines: { color: 'rgba(48, 54, 61, 0.45)', style: 1 },
       },
       crosshair: {
-        mode: LightweightCharts.CrosshairMode.Normal,
+        mode: LightweightCharts.CrosshairMode.Magnet,
         vertLine: {
           color: '#58a6ff',
           width: 1,
           style: 3,
           labelBackgroundColor: '#1f6feb',
+          visible: true,
+          labelVisible: true,
         },
         horzLine: {
-          color: '#58a6ff',
-          width: 1,
-          style: 3,
-          labelBackgroundColor: '#1f6feb',
+          visible: false, // Prevents spurious horizontal line across chart at cursor Y
+          labelVisible: false, // Prevents cursor Y coordinate (e.g. ₹694.94) from displaying on Y-axis
         },
       },
       rightPriceScale: {
@@ -235,21 +235,50 @@
         const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
         const timeDisplay = currentResolution === 'daily' ? dateStr : `${dateStr} ${timeStr} IST`;
 
+        // Resolve complete bar record (OHLCV) whether in Candle mode or Area Line mode
+        let ohlc = null;
+        if (pBar.open !== undefined) {
+          ohlc = pBar;
+        } else if (pBar.value !== undefined) {
+          if (currentResolution === 'daily' && cache.daily) {
+            ohlc = cache.daily.find(b => b.time === param.time);
+          } else if (currentResolution === '15m' && cache.m15) {
+            ohlc = cache.m15.find(b => b.time === param.time);
+          } else if (currentResolution === '1m') {
+            const ym = `${d.getUTCFullYear()}_${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+            if (cache.m1[ym]) {
+              const raw = cache.m1[ym].find(r => r[0] === param.time);
+              if (raw) ohlc = { open: raw[1], high: raw[2], low: raw[3], close: raw[4], volume: raw[5] };
+            }
+          }
+          if (!ohlc) {
+            ohlc = { close: pBar.value };
+          }
+        } else {
+          ohlc = pBar;
+        }
+
+        const closePrice = ohlc.close !== undefined ? ohlc.close : (pBar.value !== undefined ? pBar.value : pBar.close);
+        const openPrice = ohlc.open;
+        const highPrice = ohlc.high;
+        const lowPrice = ohlc.low;
+        const volVal = (vBar && vBar.value !== undefined) ? vBar.value : (ohlc.volume !== undefined ? ohlc.volume : null);
+
         // 1. Update Header HUD
         if (hudDate) hudDate.textContent = currentResolution === 'daily' ? `Date: ${dateStr}` : `IST: ${dateStr} ${timeStr}`;
-        if (pBar.open !== undefined) {
-          if (hudOpen) hudOpen.innerHTML = `O: <strong style="color:var(--text)">₹${pBar.open.toFixed(2)}</strong>`;
-          if (hudHigh) hudHigh.innerHTML = `H: <strong style="color:var(--accent-green)">₹${pBar.high.toFixed(2)}</strong>`;
-          if (hudLow) hudLow.innerHTML = `L: <strong style="color:var(--accent-red)">₹${pBar.low.toFixed(2)}</strong>`;
-          if (hudClose) hudClose.innerHTML = `C: <strong style="color:var(--text)">₹${pBar.close.toFixed(2)}</strong>`;
-        } else if (pBar.value !== undefined) {
+        if (openPrice !== undefined && highPrice !== undefined && lowPrice !== undefined) {
+          if (hudOpen) hudOpen.innerHTML = `O: <strong style="color:var(--text)">₹${openPrice.toFixed(2)}</strong>`;
+          if (hudHigh) hudHigh.innerHTML = `H: <strong style="color:var(--accent-green)">₹${highPrice.toFixed(2)}</strong>`;
+          if (hudLow) hudLow.innerHTML = `L: <strong style="color:var(--accent-red)">₹${lowPrice.toFixed(2)}</strong>`;
+          if (hudClose) hudClose.innerHTML = `C: <strong style="color:var(--text)">₹${closePrice.toFixed(2)}</strong>`;
+        } else {
           if (hudOpen) hudOpen.innerHTML = '';
           if (hudHigh) hudHigh.innerHTML = '';
           if (hudLow) hudLow.innerHTML = '';
-          if (hudClose) hudClose.innerHTML = `Price: <strong style="color:var(--text)">₹${pBar.value.toFixed(2)}</strong>`;
+          if (hudClose) hudClose.innerHTML = `Price: <strong style="color:var(--text)">₹${closePrice.toFixed(2)}</strong>`;
         }
-        if (vBar && vBar.value !== undefined && hudVolume) {
-          hudVolume.innerHTML = `Vol: <strong style="color:var(--text)">${vBar.value.toLocaleString()}</strong>`;
+        if (volVal !== null && hudVolume) {
+          hudVolume.innerHTML = `Vol: <strong style="color:var(--text)">${volVal.toLocaleString()} lots</strong>`;
         }
 
         // 2. Update Dynamic Floating Tooltip
@@ -257,35 +286,35 @@
           floatingTooltip.style.display = 'block';
 
           let ohlcHtml = '';
-          if (pBar.open !== undefined) {
-            const ret = ((pBar.close - pBar.open) / pBar.open) * 100;
-            const diff = pBar.close - pBar.open;
+          if (openPrice !== undefined && highPrice !== undefined && lowPrice !== undefined) {
+            const ret = ((closePrice - openPrice) / openPrice) * 100;
+            const diff = closePrice - openPrice;
             const retColor = ret >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
             ohlcHtml = `
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px 12px; margin-top:6px; font-family:monospace; font-size:11.5px;">
-                <div><span style="color:var(--text-muted);">Open:</span> <strong style="color:var(--text);">₹${pBar.open.toFixed(2)}</strong></div>
-                <div><span style="color:var(--text-muted);">High:</span> <strong style="color:var(--accent-green);">₹${pBar.high.toFixed(2)}</strong></div>
-                <div><span style="color:var(--text-muted);">Low:</span> <strong style="color:var(--accent-red);">₹${pBar.low.toFixed(2)}</strong></div>
-                <div><span style="color:var(--text-muted);">Close:</span> <strong style="color:var(--text);">₹${pBar.close.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">Open:</span> <strong style="color:var(--text);">₹${openPrice.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">High:</span> <strong style="color:var(--accent-green);">₹${highPrice.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">Low:</span> <strong style="color:var(--accent-red);">₹${lowPrice.toFixed(2)}</strong></div>
+                <div><span style="color:var(--text-muted);">Close:</span> <strong style="color:var(--text);">₹${closePrice.toFixed(2)}</strong></div>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px solid rgba(48,54,61,0.6); font-size:11.5px;">
                 <span style="color:var(--text-muted);">Bar Change:</span>
                 <span style="font-weight:700; color:${retColor}; font-family:monospace;">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}% (${diff >= 0 ? '+' : ''}₹${diff.toFixed(2)})</span>
               </div>
             `;
-          } else if (pBar.value !== undefined) {
+          } else {
             ohlcHtml = `
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:12px;">
                 <span style="color:var(--text-muted);">Price:</span>
-                <strong style="color:var(--accent); font-size:14px; font-family:monospace;">₹${pBar.value.toFixed(2)}</strong>
+                <strong style="color:var(--accent); font-size:14px; font-family:monospace;">₹${closePrice.toFixed(2)}</strong>
               </div>
             `;
           }
 
-          const volHtml = (vBar && vBar.value !== undefined)
+          const volHtml = (volVal !== null)
             ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding-top:6px; border-top:1px solid rgba(48,54,61,0.6); font-size:11.5px;">
                 <span style="color:var(--text-muted);">Traded Volume:</span>
-                <strong style="font-family:monospace; color:var(--text);">${vBar.value.toLocaleString()} lots</strong>
+                <strong style="font-family:monospace; color:var(--text);">${volVal.toLocaleString()} lots</strong>
                </div>`
             : '';
 
@@ -300,17 +329,18 @@
 
           // Position smoothly without obscuring the cursor or candle
           const w = 230;
-          const h = 160;
-          let left = param.point.x + 22;
+          const h = (openPrice !== undefined) ? 165 : 115;
+          let left = param.point.x + 20;
           if (left + w > container.clientWidth - 12) {
-            left = param.point.x - w - 22;
+            left = param.point.x - w - 20;
           }
-          let top = param.point.y - 40;
+          if (left < 10) left = 10;
+
+          let top = param.point.y - 35;
           if (top + h > container.clientHeight - 12) {
             top = container.clientHeight - h - 12;
           }
           if (top < 10) top = 10;
-          if (left < 10) left = 10;
           floatingTooltip.style.left = left + 'px';
           floatingTooltip.style.top = top + 'px';
         }
@@ -376,7 +406,13 @@
       const maxT = (toTs || Infinity) + pad;
 
       const filtered = cache.m15.filter(b => b.time >= minT && b.time <= maxT);
-      const dataToUse = filtered.length >= 20 ? filtered : cache.m15.slice(-3000);
+      if (filtered.length === 0) {
+        // Pre-2025: 15m data starts in Jan 2025. Fall back cleanly to daily tier
+        console.info('Pre-2025 date range requested, remaining on Daily macro tier');
+        await loadDailyTier(false);
+        return;
+      }
+      const dataToUse = filtered;
 
       const areaData = [];
       const candleData = [];
@@ -414,11 +450,9 @@
       if (!cache.m1[ym]) {
         const res = await fetch(`data/deep/1m/${ym}.json`);
         if (!res.ok) {
-          console.warn(`Month ${ym}.json not found, falling back to 2026_10.json`);
-          const fallbackRes = await fetch('data/deep/1m/2026_10.json');
-          if (!fallbackRes.ok) throw new Error('1m fallback failed');
-          cache.m1['2026_10'] = await fallbackRes.json();
-          render1mRaw(cache.m1['2026_10'], fromTs, toTs);
+          // If 1m month is not available (e.g. historical data before Oct 2025), gracefully fall back to 15m
+          console.info(`1m data for ${ym} not found, falling back to 15m tier`);
+          await load15mTier(fromTs, toTs);
           return;
         }
         cache.m1[ym] = await res.json();
@@ -426,8 +460,8 @@
 
       render1mRaw(cache.m1[ym], fromTs, toTs);
     } catch (err) {
-      console.error('Error loading 1m tier:', err);
-      load15mTier(fromTs, toTs);
+      console.warn('Error loading 1m tier, falling back to 15m:', err);
+      await load15mTier(fromTs, toTs);
     }
   }
 
@@ -437,7 +471,7 @@
     const maxT = (toTs || Infinity) + pad;
 
     const filtered = rawBars.filter(b => b[0] >= minT && b[0] <= maxT);
-    const dataToUse = filtered.length >= 10 ? filtered : rawBars.slice(-1500);
+    const dataToUse = filtered.length > 0 ? filtered : rawBars.slice(-1500);
 
     const areaData = [];
     const candleData = [];
@@ -472,15 +506,15 @@
     pendingLODTimeout = setTimeout(() => {
       const spanDays = (range.to - range.from) / 86400;
 
-      if (spanDays > 60 && currentResolution !== 'daily') {
+      if (spanDays > 95 && currentResolution !== 'daily') {
         isSwitchingResolution = true;
-        loadDailyTier(false).finally(() => { isSwitchingResolution = false; });
-      } else if (spanDays <= 60 && spanDays > 10 && currentResolution !== '15m') {
+        loadDailyTier(false).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
+      } else if (spanDays <= 95 && spanDays > 10 && currentResolution !== '15m') {
         isSwitchingResolution = true;
-        load15mTier(range.from, range.to).finally(() => { isSwitchingResolution = false; });
+        load15mTier(range.from, range.to).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
       } else if (spanDays <= 10 && currentResolution !== '1m') {
         isSwitchingResolution = true;
-        load1mTier(range.from, range.to).finally(() => { isSwitchingResolution = false; });
+        load1mTier(range.from, range.to).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
       }
     }, 200);
   }
@@ -539,39 +573,60 @@
 
   function applyTimeframe(tf) {
     if (!chart) return;
-    const latestBar = cache.daily?.[cache.daily.length - 1];
-    const nowTs = latestBar ? latestBar.time : Math.floor(Date.now() / 1000);
-    let days = 0;
+    isSwitchingResolution = true;
+    if (pendingLODTimeout) {
+      clearTimeout(pendingLODTimeout);
+      pendingLODTimeout = null;
+    }
 
+    const latestBar = cache.daily?.[cache.daily.length - 1];
+    const nowTs = Math.max(
+      latestBar ? latestBar.time : 0,
+      cache.m15?.[cache.m15.length - 1]?.time || 0,
+      1792046640
+    );
+
+    let days = 0;
     switch (tf) {
       case '1D': days = 1; break;
       case '1W': days = 7; break;
       case '1M': days = 30; break;
       case '3M': days = 90; break;
-      case 'YTD': days = 288; break;
+      case 'YTD': {
+        const d = new Date(nowTs * 1000);
+        const ytdStart = Math.floor(Date.UTC(d.getUTCFullYear(), 0, 1) / 1000);
+        days = Math.max(1, (nowTs - ytdStart) / 86400);
+        break;
+      }
       case '1Y': days = 365; break;
       case '5Y': days = 1825; break;
       case 'ALL':
       default:
-        loadDailyTier(true);
+        loadDailyTier(true).then(() => {
+          setTimeout(() => { isSwitchingResolution = false; }, 250);
+        });
         return;
     }
 
-    const fromTs = nowTs - (days * 86400);
-    const toTs = nowTs + (days * 0.05 * 86400);
+    const fromTs = nowTs - Math.round(days * 86400);
+    const pad = Math.max(3600, Math.round(days * 0.02 * 86400));
+    const toTs = nowTs + pad;
+
+    const onComplete = () => {
+      chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+      setTimeout(() => { isSwitchingResolution = false; }, 250);
+    };
 
     if (days <= 10) {
-      load1mTier(fromTs, toTs).then(() => {
-        chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+      load1mTier(fromTs, toTs).then(onComplete).catch(() => {
+        load15mTier(fromTs, toTs).then(onComplete);
       });
-    } else if (days <= 60) {
-      load15mTier(fromTs, toTs).then(() => {
-        chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+    } else if (days <= 95) {
+      load15mTier(fromTs, toTs).then(onComplete).catch(() => {
+        loadDailyTier(false).then(onComplete);
       });
     } else {
-      loadDailyTier(false).then(() => {
-        chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
-      });
+      loadDailyTier(false).then(onComplete);
     }
   }
 
