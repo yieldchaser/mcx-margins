@@ -52,19 +52,21 @@ def create_template_if_missing():
     return True
 
 def auto_login():
-    if not create_template_if_missing():
-        print("\nPlease fill in your 4-digit PIN and TOTP_SECRET_KEY in data/fyers_auth/credentials.json to enable 100% headless login.")
-        return False
+    creds = {}
+    if os.path.exists(CREDS_FILE):
+        try:
+            with open(CREDS_FILE, "r", encoding="utf-8") as f:
+                creds = json.load(f)
+        except Exception:
+            pass
 
-    with open(CREDS_FILE, "r", encoding="utf-8") as f:
-        creds = json.load(f)
+    fy_id = os.environ.get("FYERS_FY_ID", creds.get("fy_id", "FAL11545")).strip()
+    pin = os.environ.get("FYERS_PIN", str(creds.get("pin", ""))).strip()
+    totp_secret = os.environ.get("FYERS_TOTP_KEY", creds.get("totp_secret_key", "")).replace(" ", "").strip()
 
-    fy_id = creds.get("fy_id", "FAL11545")
-    pin = str(creds.get("pin", ""))
-    totp_secret = creds.get("totp_secret_key", "").replace(" ", "").strip()
-
-    if pin == "YOUR_4_DIGIT_PIN" or not totp_secret or totp_secret == "YOUR_FYERS_TOTP_SECRET_KEY":
-        print("Please enter your actual PIN and TOTP_SECRET_KEY in data/fyers_auth/credentials.json.")
+    if pin in ("", "YOUR_4_DIGIT_PIN") or not totp_secret or totp_secret == "YOUR_FYERS_TOTP_SECRET_KEY":
+        create_template_if_missing()
+        print("\nPlease fill in your 4-digit PIN and TOTP_SECRET_KEY in data/fyers_auth/credentials.json or set FYERS_PIN / FYERS_TOTP_KEY env vars to enable 100% headless login.")
         return False
 
     print("=" * 80)

@@ -6,10 +6,13 @@ name: Intraday Market Snapshot
 
 on:
   schedule:
-    # 03:30 UTC = 09:00 AM IST, through 18:00 UTC = 23:30 PM IST (Mon-Fri)
-    - cron: '30 3-18 * * 1-5'
-    - cron: '0 4-18 * * 1-5'
+    # Hourly at :15 past the hour from 09:15 AM IST (03:45 UTC) to 23:15 PM IST (17:45 UTC) Mon-Fri
+    - cron: '15 3-17 * * 1-5'
   workflow_dispatch:
+
+concurrency:
+  group: git-repo-sync
+  cancel-in-progress: false
 
 jobs:
   snapshot:
@@ -17,6 +20,9 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       FYERS_ACCESS_TOKEN: ${{ secrets.FYERS_ACCESS_TOKEN }}
+      FYERS_FY_ID: ${{ secrets.FYERS_FY_ID }}
+      FYERS_PIN: ${{ secrets.FYERS_PIN }}
+      FYERS_TOTP_KEY: ${{ secrets.FYERS_TOTP_KEY }}
     permissions:
       contents: write
 
@@ -36,8 +42,8 @@ jobs:
       - name: Check Fyers Token Availability
         id: check_token
         run: |
-          if [ -z "$FYERS_ACCESS_TOKEN" ]; then
-            echo "FYERS_ACCESS_TOKEN secret is not set. Skipping cloud intraday snapshot."
+          if [ -z "$FYERS_ACCESS_TOKEN" ] && [ -z "$FYERS_TOTP_KEY" ]; then
+            echo "Neither FYERS_ACCESS_TOKEN nor FYERS_TOTP_KEY secret is set. Skipping cloud intraday snapshot."
             echo "token_present=false" >> $GITHUB_OUTPUT
             exit 0
           else

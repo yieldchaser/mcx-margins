@@ -21,10 +21,13 @@ name: Daily Prices Fetch
 on:
   schedule:
     - cron: '30 23 * * 0-4'   # Early AM: 4:30 AM IST Mon–Fri (23:00 UTC Sun–Thu)
-    - cron: '30 3 * * 2-6'    # Morning:  9:00 AM IST Tue–Sat
+    - cron: '35 3 * * 2-6'    # Morning:  9:05 AM IST Tue–Sat (staggered from margin fetch)
     - cron: '0 5 * * 6'       # Weekend: 10:30 AM IST Saturday (14-day sweep)
   workflow_dispatch:
 
+concurrency:
+  group: git-repo-sync
+  cancel-in-progress: false
 
 jobs:
   fetch:

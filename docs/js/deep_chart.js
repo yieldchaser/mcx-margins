@@ -97,7 +97,20 @@
         timeVisible: true,
         secondsVisible: false,
         fixLeftEdge: false,
-        fixRightEdge: false,
+        fixRightEdge: true, // CLAMP RIGHT EDGE: strictly prevents scrolling into blank future space
+        rightOffset: 2,     // Clean buffer from the price scale
+        minBarSpacing: 0.2, // Smooth zoom-in/out sensitivity
+      },
+      handleScroll: {
+        mouseWheel: false,  // CRITICAL: Dedicate mousewheel 100% to zoom; prevent horizontal pan conflicts with fixRightEdge
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
       },
       localization: {
         priceFormatter: p => '₹' + p.toFixed(2),
@@ -137,20 +150,24 @@
       wickUpColor: '#3fb950',
       wickDownColor: '#f85149',
       priceFormat: { type: 'price', precision: 2, minMove: 0.1 },
-      lastValueVisible: false,
+      lastValueVisible: true,
       priceLineVisible: false,
       visible: false,
     });
 
-    // ── Volume Series: Histogram ──
-    // CRITICAL: lastValueVisible=false and priceLineVisible=false ensure volume number NEVER posts on the price scale!
+    // ── Volume Series: Dedicated Overlay Scale ──
+    // CRITICAL: Dedicated overlay priceScaleId isolates volume from the price scale.
     volumeSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
-      priceScaleId: '', // overlay
+      priceScaleId: 'volume-scale',
       lastValueVisible: false, // HIDES volume number from price scale (Fixes dual-price bug)
       priceLineVisible: false, // HIDES horizontal volume line
+    });
+
+    // Confine volume histogram strictly to bottom 18% of chart canvas
+    chart.priceScale('volume-scale').applyOptions({
       scaleMargins: {
-        top: 0.80,
+        top: 0.82,
         bottom: 0,
       },
     });
@@ -210,6 +227,42 @@
     container.appendChild(floatingTooltip);
   }
 
+  // Fast binary search helper for O(log n) bar lookups across 26k+ points
+  function findBarByTime(bars, targetTime) {
+    if (!bars || !bars.length) return null;
+    let low = 0, high = bars.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const b = bars[mid];
+      const t = b.time !== undefined ? b.time : b[0];
+      if (t === targetTime) return b;
+      if (t < targetTime) low = mid + 1;
+      else high = mid - 1;
+    }
+    return null;
+  }
+
+  // Helper: Enforces strictly ascending order and eliminates duplicate timestamps
+  function sanitizeBars(bars) {
+    if (!bars || !Array.isArray(bars) || bars.length === 0) return [];
+    const sorted = [...bars].sort((a, b) => a.time - b.time);
+    const deduped = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const b = sorted[i];
+      if (deduped.length === 0) {
+        deduped.push(b);
+      } else {
+        const last = deduped[deduped.length - 1];
+        if (b.time > last.time) {
+          deduped.push(b);
+        } else if (b.time === last.time) {
+          deduped[deduped.length - 1] = b; // Keep newest bar (overwrite)
+        }
+      }
+    }
+    return deduped;
+  }
+
   function setupCrosshairHud(container) {
     const hudDate = document.getElementById('hudDate');
     const hudOpen = document.getElementById('hudOpen');
@@ -241,13 +294,14 @@
           ohlc = pBar;
         } else if (pBar.value !== undefined) {
           if (currentResolution === 'daily' && cache.daily) {
-            ohlc = cache.daily.find(b => b.time === param.time);
+            ohlc = findBarByTime(cache.daily, param.time);
           } else if (currentResolution === '15m' && cache.m15) {
-            ohlc = cache.m15.find(b => b.time === param.time);
+            ohlc = findBarByTime(cache.m15, param.time);
           } else if (currentResolution === '1m') {
-            const ym = `${d.getUTCFullYear()}_${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+            const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            const ym = istDateStr.slice(0, 7).replace('-', '_');
             if (cache.m1[ym]) {
-              const raw = cache.m1[ym].find(r => r[0] === param.time);
+              const raw = findBarByTime(cache.m1[ym], param.time);
               if (raw) ohlc = { open: raw[1], high: raw[2], low: raw[3], close: raw[4], volume: raw[5] };
             }
           }
@@ -361,12 +415,13 @@
         cache.daily = await res.json();
       }
 
+      const cleanBars = sanitizeBars(cache.daily);
       const areaData = [];
       const candleData = [];
       const volumeData = [];
 
-      for (let i = 0; i < cache.daily.length; i++) {
-        const b = cache.daily[i];
+      for (let i = 0; i < cleanBars.length; i++) {
+        const b = cleanBars[i];
         areaData.push({ time: b.time, value: b.close });
         candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
         volumeData.push({
@@ -381,7 +436,7 @@
       volumeSeries.setData(volumeData);
 
       currentResolution = 'daily';
-      updateBadges('Daily (Macro)', `${cache.daily.length.toLocaleString()} bars`);
+      updateBadges('Daily (Macro)', `${cleanBars.length.toLocaleString()} bars`);
 
       if (fit) {
         chart.timeScale().fitContent();
@@ -392,7 +447,7 @@
     }
   }
 
-  async function load15mTier(fromTs, toTs) {
+  async function load15mTier() {
     updateBadges('Loading 15m...', '--');
     try {
       if (!cache.m15) {
@@ -401,25 +456,13 @@
         cache.m15 = await res.json();
       }
 
-      const pad = 15 * 86400; // 15 days padding
-      const minT = (fromTs || 0) - pad;
-      const maxT = (toTs || Infinity) + pad;
-
-      const filtered = cache.m15.filter(b => b.time >= minT && b.time <= maxT);
-      if (filtered.length === 0) {
-        // Pre-2025: 15m data starts in Jan 2025. Fall back cleanly to daily tier
-        console.info('Pre-2025 date range requested, remaining on Daily macro tier');
-        await loadDailyTier(false);
-        return;
-      }
-      const dataToUse = filtered;
-
+      const cleanBars = sanitizeBars(cache.m15);
       const areaData = [];
       const candleData = [];
       const volumeData = [];
 
-      for (let i = 0; i < dataToUse.length; i++) {
-        const b = dataToUse[i];
+      for (let i = 0; i < cleanBars.length; i++) {
+        const b = cleanBars[i];
         areaData.push({ time: b.time, value: b.close });
         candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
         volumeData.push({
@@ -434,7 +477,7 @@
       volumeSeries.setData(volumeData);
 
       currentResolution = '15m';
-      updateBadges('15-Minute (Swing)', `${dataToUse.length.toLocaleString()} bars`);
+      updateBadges('15-Minute (Swing)', `${cleanBars.length.toLocaleString()} bars`);
     } catch (err) {
       console.error('Error loading 15m tier:', err);
     }
@@ -443,48 +486,51 @@
   async function load1mTier(fromTs, toTs) {
     updateBadges('Loading 1-Minute...', '--');
     try {
-      const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || 1792046640;
+      const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || 1792066980;
       const d = new Date(centerTs * 1000);
-      const ym = `${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const ym = istDateStr.slice(0, 7).replace('-', '_');
 
       if (!cache.m1[ym]) {
         const res = await fetch(`data/deep/1m/${ym}.json`);
         if (!res.ok) {
-          // If 1m month is not available (e.g. historical data before Oct 2025), gracefully fall back to 15m
           console.info(`1m data for ${ym} not found, falling back to 15m tier`);
-          await load15mTier(fromTs, toTs);
+          await load15mTier();
           return;
         }
         cache.m1[ym] = await res.json();
       }
 
-      render1mRaw(cache.m1[ym], fromTs, toTs);
+      render1mRaw(cache.m1[ym]);
     } catch (err) {
       console.warn('Error loading 1m tier, falling back to 15m:', err);
-      await load15mTier(fromTs, toTs);
+      await load15mTier();
     }
   }
 
-  function render1mRaw(rawBars, fromTs, toTs) {
-    const pad = 2 * 86400; // 2 days padding
-    const minT = (fromTs || 0) - pad;
-    const maxT = (toTs || Infinity) + pad;
-
-    const filtered = rawBars.filter(b => b[0] >= minT && b[0] <= maxT);
-    const dataToUse = filtered.length > 0 ? filtered : rawBars.slice(-1500);
+  function render1mRaw(rawBars) {
+    if (!rawBars || !rawBars.length) return;
+    const cleanBars = sanitizeBars(rawBars.map(b => ({
+      time: b[0],
+      open: b[1],
+      high: b[2],
+      low: b[3],
+      close: b[4],
+      volume: b[5]
+    })));
 
     const areaData = [];
     const candleData = [];
     const volumeData = [];
 
-    for (let i = 0; i < dataToUse.length; i++) {
-      const b = dataToUse[i];
-      areaData.push({ time: b[0], value: b[4] });
-      candleData.push({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] });
+    for (let i = 0; i < cleanBars.length; i++) {
+      const b = cleanBars[i];
+      areaData.push({ time: b.time, value: b.close });
+      candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
       volumeData.push({
-        time: b[0],
-        value: b[5],
-        color: b[4] >= b[1] ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
       });
     }
 
@@ -493,7 +539,7 @@
     volumeSeries.setData(volumeData);
 
     currentResolution = '1m';
-    updateBadges('1-Minute (Microstructure)', `${dataToUse.length.toLocaleString()} bars`);
+    updateBadges('1-Minute (Microstructure)', `${cleanBars.length.toLocaleString()} bars`);
   }
 
   function onTimeRangeChanged(range) {
@@ -505,18 +551,32 @@
 
     pendingLODTimeout = setTimeout(() => {
       const spanDays = (range.to - range.from) / 86400;
+      const m15StartTs = 1735702200; // 2025-01-01
+      const isPre2025 = range.from < m15StartTs;
 
-      if (spanDays > 95 && currentResolution !== 'daily') {
+      if ((spanDays > 120 || isPre2025) && currentResolution !== 'daily') {
         isSwitchingResolution = true;
-        loadDailyTier(false).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
-      } else if (spanDays <= 95 && spanDays > 10 && currentResolution !== '15m') {
+        const cur = chart.timeScale().getVisibleRange();
+        loadDailyTier(false).finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
+      } else if (spanDays <= 120 && spanDays > 7 && !isPre2025 && currentResolution !== '15m') {
         isSwitchingResolution = true;
-        load15mTier(range.from, range.to).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
-      } else if (spanDays <= 10 && currentResolution !== '1m') {
+        const cur = chart.timeScale().getVisibleRange();
+        load15mTier().finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
+      } else if (spanDays <= 7 && !isPre2025 && currentResolution !== '1m') {
         isSwitchingResolution = true;
-        load1mTier(range.from, range.to).finally(() => { setTimeout(() => { isSwitchingResolution = false; }, 200); });
+        const cur = chart.timeScale().getVisibleRange();
+        load1mTier(range.from, range.to).finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
       }
-    }, 200);
+    }, 300);
   }
 
   function updateBadges(resText, countText) {
@@ -579,12 +639,9 @@
       pendingLODTimeout = null;
     }
 
-    const latestBar = cache.daily?.[cache.daily.length - 1];
-    const nowTs = Math.max(
-      latestBar ? latestBar.time : 0,
-      cache.m15?.[cache.m15.length - 1]?.time || 0,
-      1792046640
-    );
+    const latestDaily = cache.daily?.[cache.daily.length - 1]?.time || 0;
+    const latest15m = cache.m15?.[cache.m15.length - 1]?.time || 0;
+    const nowTs = Math.max(latestDaily, latest15m, 1792068300);
 
     let days = 0;
     switch (tf) {
@@ -609,20 +666,19 @@
     }
 
     const fromTs = nowTs - Math.round(days * 86400);
-    const pad = Math.max(3600, Math.round(days * 0.02 * 86400));
-    const toTs = nowTs + pad;
+    const toTs = nowTs; // CLAMP TO LATEST AVAILABLE CANDLE (Zero future dead space)
 
     const onComplete = () => {
       chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
       setTimeout(() => { isSwitchingResolution = false; }, 250);
     };
 
-    if (days <= 10) {
+    if (days <= 7) {
       load1mTier(fromTs, toTs).then(onComplete).catch(() => {
-        load15mTier(fromTs, toTs).then(onComplete);
+        load15mTier().then(onComplete);
       });
-    } else if (days <= 95) {
-      load15mTier(fromTs, toTs).then(onComplete).catch(() => {
+    } else if (days <= 120) {
+      load15mTier().then(onComplete).catch(() => {
         loadDailyTier(false).then(onComplete);
       });
     } else {

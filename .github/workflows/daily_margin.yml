@@ -16,6 +16,10 @@ on:
     
   workflow_dispatch:
 
+concurrency:
+  group: git-repo-sync
+  cancel-in-progress: false
+
 jobs:
   fetch:
     runs-on: ubuntu-latest

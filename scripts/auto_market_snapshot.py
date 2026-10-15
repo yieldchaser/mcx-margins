@@ -185,35 +185,38 @@ for base, exp, sym, pfile in active_contracts:
                     # Synchronize Tier 2: ng_15m.json
                     m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
                     if os.path.exists(m15_file):
-                        df_resample = df_combined.copy()
-                        df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
-                        m15_res = df_resample.resample("15min").agg({
-                            "open": "first",
-                            "high": "max",
-                            "low": "min",
-                            "close": "last",
-                            "volume": "sum",
-                            "epoch": "first"
-                        }).dropna()
-                        m15_new_bars = []
-                        for dt_idx, r in m15_res.iterrows():
-                            m15_new_bars.append({
-                                "time": int(dt_idx.timestamp()),
-                                "open": round(float(r["open"]), 2),
-                                "high": round(float(r["high"]), 2),
-                                "low": round(float(r["low"]), 2),
-                                "close": round(float(r["close"]), 2),
-                                "volume": int(r["volume"])
-                            })
-                        with open(m15_file, "r", encoding="utf-8") as f:
-                            existing_m15 = json.load(f)
-                        existing_map = {b["time"]: b for b in existing_m15}
-                        for nb in m15_new_bars:
-                            existing_map[nb["time"]] = nb
-                        merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
-                        with open(m15_file, "w", encoding="utf-8") as f:
-                            json.dump(merged_m15, f, separators=(',', ':'))
-                        log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
+                        # ONLY resample the active recent 5-day window to preserve continuous historical front-month data
+                        recent_start_epoch = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp())
+                        df_resample = df_combined[df_combined["epoch"] >= recent_start_epoch].copy()
+                        if len(df_resample) > 0:
+                            df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
+                            m15_res = df_resample.resample("15min").agg({
+                                "open": "first",
+                                "high": "max",
+                                "low": "min",
+                                "close": "last",
+                                "volume": "sum",
+                                "epoch": "first"
+                            }).dropna()
+                            m15_new_bars = []
+                            for dt_idx, r in m15_res.iterrows():
+                                m15_new_bars.append({
+                                    "time": int(dt_idx.timestamp()),
+                                    "open": round(float(r["open"]), 2),
+                                    "high": round(float(r["high"]), 2),
+                                    "low": round(float(r["low"]), 2),
+                                    "close": round(float(r["close"]), 2),
+                                    "volume": int(r["volume"])
+                                })
+                            with open(m15_file, "r", encoding="utf-8") as f:
+                                existing_m15 = json.load(f)
+                            existing_map = {b["time"]: b for b in existing_m15}
+                            for nb in m15_new_bars:
+                                existing_map[nb["time"]] = nb
+                            merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
+                            with open(m15_file, "w", encoding="utf-8") as f:
+                                json.dump(merged_m15, f, separators=(',', ':'))
+                            log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
 
                     # Synchronize Tier 0: ng_daily.json today's bar
                     daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_daily.json")
@@ -221,7 +224,8 @@ for base, exp, sym, pfile in active_contracts:
                         today_str = now.strftime("%Y-%m-%d")
                         today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                         if len(today_bars) > 0:
-                            today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp())
+                            # In ng_daily.json, daily timestamps are aligned at 03:30:00 UTC (12600s) to match continuous vault
+                            today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 12600
                             today_daily = {
                                 "time": today_epoch,
                                 "open": round(float(today_bars["open"].iloc[0]), 2),
@@ -232,13 +236,12 @@ for base, exp, sym, pfile in active_contracts:
                             }
                             with open(daily_file, "r", encoding="utf-8") as f:
                                 daily_bars = json.load(f)
-                            if daily_bars and daily_bars[-1]["time"] == today_epoch:
-                                daily_bars[-1] = today_daily
-                            else:
-                                daily_bars.append(today_daily)
+                            existing_daily_map = {b["time"]: b for b in daily_bars}
+                            existing_daily_map[today_epoch] = today_daily
+                            merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
                             with open(daily_file, "w", encoding="utf-8") as f:
-                                json.dump(daily_bars, f, separators=(',', ':'))
-                            log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f}")
+                                json.dump(merged_daily, f, separators=(',', ':'))
+                            log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars)")
                 except Exception as e:
                     log(f"Notice updating deep LOD tiers: {e}")
         else:
@@ -281,13 +284,13 @@ try:
         commit_msg = f"data: automated market snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         subprocess.run(["git", "commit", "-m", commit_msg], cwd=REPO_DIR, check=True)
         
-        # Pull rebase with auto-recovery
+        # Pull rebase with auto-recovery and autostash
         try:
-            subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=REPO_DIR, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "main"], cwd=REPO_DIR, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             log(f"Rebase notice: {e.stderr}. Attempting auto-recovery...")
             subprocess.run(["git", "rebase", "--abort"], cwd=REPO_DIR, capture_output=True)
-            subprocess.run(["git", "pull", "--no-rebase", "origin", "main"], cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "pull", "--no-rebase", "origin", "main"], cwd=REPO_DIR, check=False)
             
         subprocess.run(["git", "push", "origin", "main"], cwd=REPO_DIR, check=True)
         log("SUCCESS: Pushed automated market snapshot to GitHub Pages!")

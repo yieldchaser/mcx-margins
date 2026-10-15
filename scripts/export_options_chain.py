@@ -26,6 +26,10 @@ FUTURES_PARQUET = "data/mcx_vault/contract_wise/MCX_NATURALGAS26OCTFUT_1m_contra
 OUTPUT_FILE = "docs/data/options_chain_oct26.json"
 os.makedirs("docs/data", exist_ok=True)
 
+if not os.path.exists(OPTIONS_PARQUET) or not os.path.exists(FUTURES_PARQUET):
+    print(f"Notice: Parquet files ({OPTIONS_PARQUET} or {FUTURES_PARQUET}) not present in workspace. Skipping options chain export.")
+    sys.exit(0)
+
 # Risk-free rate (Indian 91-day T-Bill yield ~6.6%)
 RISK_FREE_RATE = 0.066
 # Expiry: October 23, 2026, 23:30:00 IST (UTC: 2026-10-23 18:00:00)
