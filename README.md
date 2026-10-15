@@ -43,6 +43,17 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 - **Machine Learning & Stats:** Random Forest feature importance, margin-to-volatility linear regression, and cross-regime correlation matrices. Generated entirely from backend data and surfaced gracefully.
 
 ### 6. Market
+- **8-Year Multi-Resolution Deep Zoom Engine (1.65M Candles):** Powered by TradingView Lightweight Charts (HTML5 WebGL/Canvas running at native 60 FPS). Renders continuous front-month price action from 2019 to 2026 unstitched across roll boundaries to preserve true price discovery. Features an intelligent 3-tier Level-of-Detail (LOD) streaming pyramid:
+  - *Macro Horizon (8Y / 5Y / 1Y / YTD):* Streams 1,940 daily macro bars (~169 KB).
+  - *Swing Horizon (3M / 1M):* Streams ~26,300 high-definition 15-minute bars.
+  - *Microstructure Horizon (1W / 1D / Wheel Zoom):* Dynamically streams 1-minute tick-level execution candles from monthly partitions on demand.
+  - *Interactive Controls:* Preset horizon buttons, instant Area Line vs Candlesticks toggle, Volume Histogram overlay with dedicated zero-bleed scale isolation, dynamic glassmorphic cursor-following tooltips (with bar return % and volume), and an IST crosshair HUD.
+- **Intraday Time-of-Day (TOD) Volatility & Volume Profile:** Analyzes historical volume surges and Garman-Klass realized volatility spikes across every 15-minute window of the trading session (09:00 to 23:30 IST) across 1,618,198 candles. Features US Daylight Saving Time (DST) toggles:
+  - *Combined:* 8-year session baseline volume and volatility curve.
+  - *US Summer (EDT):* Captures NYMEX Pit opening at 18:30 IST and Thursday EIA storage release at 20:00 IST.
+  - *US Winter (EST):* Captures the 1-hour winter shift (NYMEX 19:30 IST, EIA 21:00 IST).
+  - *Thursday (EIA):* Isolates the 2.8x volatility explosion during the weekly storage injection/withdrawal release window.
+  - *Regular Weekdays:* Organic trading curve excluding Thursday report distortion.
 - **Market Intelligence KPIs:** In-depth metrics including Realized Volatility percentiles, exact OI Flow States (e.g., "Long Unwind", "Short Cover"), and Funding Friction scores.
 - **Futures Details Panel:** Heatmapped tabular data highlighting liquidity bandwidth and exact PVOI metrics across all active contract months.
 
@@ -207,7 +218,21 @@ Defined in [`daily_margin.yml`](.github/workflows/daily_margin.yml):
 Defined in [`daily_prices.yml`](.github/workflows/daily_prices.yml):
 - Refreshes futures price/volume/OI data from MCX bhavcopy
 - Re-runs JSON export so linked market outputs stay perfectly synchronized
-- Commits updated DB and static files
+- Runs incremental LOD pyramid builder (`python scripts/build_lod_pyramid.py --incremental`) to append new daily trading bars to the Deep Zoom chart
+- Commits updated DB and static files directly to GitHub Pages
+
+## MCX Quant Vault (6.18M Records)
+
+The repository includes scripts to manage an institutional data vault stored in `data/mcx_vault/`, containing **6,182,507 execution records** across 25 Parquet datasets:
+
+| Category | Datasets | Records | Description |
+| :--- | :--- | :--- | :--- |
+| **Benchmark Continuous Futures** | `NATURALGAS` & `NATGASMINI` | 2,715,075 | 1-minute & 5-minute continuous futures (2019–2026) |
+| **Options Order Flow** | `naturalgas_options_oct26` & `natgasmini_options` | 1,635,850 | All-strikes CE/PE 1-minute execution series |
+| **Unstitched Contract Futures** | 12 monthly contracts (OCT, NOV, DEC, JAN, FEB, MAR) | 458,844 | Clean contract boundaries with zero roll distortion |
+| **Cross-Asset Commodities** | `CRUDEOIL`, `GOLD`, `SILVER`, `COPPER` | 881,723 | 1-year continuous 1-minute series for cross-commodity correlation |
+
+*Audit catalog available in [`data/mcx_vault/VAULT_CATALOG.md`](data/mcx_vault/VAULT_CATALOG.md).*
 
 ## Local setup
 
