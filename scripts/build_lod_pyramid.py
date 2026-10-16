@@ -31,20 +31,32 @@ VAULT_DIR = Path("data/mcx_vault")
 PRICE_DB = Path("data/prices.db")
 OUTPUT_DIR = Path("docs/data/deep")
 
+def find_vault_parquet(name: str) -> Path:
+    """Dynamically locates the continuous 1-minute vault parquet, adapting to any year range."""
+    candidates = sorted(VAULT_DIR.glob(f"{name}_1m_continuous_*.parquet"))
+    if candidates:
+        return candidates[-1]
+    return VAULT_DIR / f"{name}_1m_continuous_2019_2026.parquet"
+
+def find_contract_wise_parquets(name: str) -> list[Path]:
+    """Dynamically discovers all contract-wise 1m parquets for the commodity (active and future)."""
+    contract_dir = VAULT_DIR / "contract_wise"
+    if not contract_dir.exists():
+        return []
+    return sorted(contract_dir.glob(f"MCX_{name}*FUT_1m_contract_wise.parquet"))
+
 SYMBOLS_CONFIG = [
     {
         "name": "NATURALGAS",
         "prefix": "ng",
-        "vault_parquet": VAULT_DIR / "NATURALGAS_1m_continuous_2019_2026.parquet",
-        "recent_parquet": VAULT_DIR / "contract_wise" / "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet",
+        "vault_parquet": find_vault_parquet("NATURALGAS"),
         "dir_1m": OUTPUT_DIR / "1m",
         "manifest_1m_prefix": "data/deep/1m"
     },
     {
         "name": "NATGASMINI",
         "prefix": "ngm",
-        "vault_parquet": VAULT_DIR / "NATGASMINI_1m_continuous_2019_2026.parquet",
-        "recent_parquet": VAULT_DIR / "contract_wise" / "MCX_NATGASMINI26OCTFUT_1m_contract_wise.parquet",
+        "vault_parquet": find_vault_parquet("NATGASMINI"),
         "dir_1m": OUTPUT_DIR / "1m_ngm",
         "manifest_1m_prefix": "data/deep/1m_ngm"
     }
@@ -121,16 +133,20 @@ def build_symbol_pyramid(sym_cfg):
     df = pd.read_parquet(vault_parquet)
     print(f"[{sym_cfg['name']}] Loaded {len(df):,} raw bars from vault.")
 
-    # Merge recent 1m contract-wise bars if available
-    recent_parquet = sym_cfg["recent_parquet"]
-    if recent_parquet.exists():
-        try:
-            df_recent = pd.read_parquet(recent_parquet)
-            df = pd.concat([df, df_recent], ignore_index=True)
-            df = df.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
-            print(f"[{sym_cfg['name']}] Merged {len(df_recent):,} recent contract bars (Total: {len(df):,}).")
-        except Exception as e:
-            print(f"[{sym_cfg['name']}] Notice merging recent contract bars: {e}")
+    # Dynamically merge all available contract-wise 1m bars
+    contract_files = find_contract_wise_parquets(sym_cfg["name"])
+    if contract_files:
+        print(f"[{sym_cfg['name']}] Merging {len(contract_files)} contract-wise parquets into LOD pyramid...")
+        merged_count = 0
+        for cp in contract_files:
+            try:
+                df_cp = pd.read_parquet(cp)
+                df = pd.concat([df, df_cp], ignore_index=True)
+                merged_count += len(df_cp)
+            except Exception as e:
+                print(f"[{sym_cfg['name']}] Notice merging {cp.name}: {e}")
+        df = df.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
+        print(f"[{sym_cfg['name']}] Successfully merged {merged_count:,} contract bars across all active/future contracts (Total: {len(df):,}).")
 
     df["dt"] = pd.to_datetime(df["epoch"], unit="s", utc=True).dt.tz_convert("Asia/Kolkata")
     df = df.set_index("dt").sort_index()

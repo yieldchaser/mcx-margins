@@ -251,63 +251,113 @@ for sym, pfile, tag in contracts:
         kb_1m = os.path.getsize(out_1m_path) / 1024
         print(f"    └─ Saved 1m Microstructure ({out_1m['candles_count']:,} bars, {kb_1m:.1f} KB)")
 
-# 2. Compute Session-Bounded ASOF Calendar Spread (Nov26 - Oct26)
-print("\nComputing Session-Bounded Calendar Roll Spread (Nov26 - Oct26)...")
-oct_file = os.path.join(CONTRACT_DIR, "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet")
-nov_file = os.path.join(CONTRACT_DIR, "MCX_NATURALGAS26NOVFUT_1m_contract_wise.parquet")
+# 2. Dynamically Compute Session-Bounded ASOF Calendar Spread
+print("\nDynamically Resolving Active Calendar Roll Spread Pair...")
+MONTH_ORDER = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
 
-if os.path.exists(oct_file) and os.path.exists(nov_file):
-    df_spread = con.execute(f"""
-        WITH oct AS (
-            SELECT epoch, close as oct_close
-            FROM read_parquet('{oct_file}')
-            WHERE close > 0
-        ),
-        nov AS (
-            SELECT epoch, close as nov_close
-            FROM read_parquet('{nov_file}')
-            WHERE close > 0
-        )
-        SELECT 
-            nov.epoch as dt,
-            nov.nov_close,
-            oct.oct_close,
-            ROUND(nov.nov_close - oct.oct_close, 2) as spread
-        FROM nov
-        JOIN oct ON nov.epoch = oct.epoch
-        ORDER BY nov.epoch ASC
-    """).df()
-    
-    # Downsample Spread to 15-Minute Median
-    df_spread["dt_15m"] = (df_spread["dt"] // 900) * 900
-    spread_15m = df_spread.groupby("dt_15m").agg(
-        spread=("spread", "median"),
-        oct_close=("oct_close", "last"),
-        nov_close=("nov_close", "last")
-    ).reset_index().rename(columns={"dt_15m": "dt"})
-    
-    spread_output = {
-        "pair": "MCX:NATURALGAS26NOVFUT - MCX:NATURALGAS26OCTFUT",
-        "resolution": "15m",
-        "bars_count": len(spread_15m),
-        "latest_spread": round(float(spread_15m["spread"].iloc[-1]), 2),
-        "min_spread": round(float(spread_15m["spread"].min()), 2),
-        "max_spread": round(float(spread_15m["spread"].max()), 2),
-        "data": {
-            "dt": spread_15m["dt"].tolist(),
-            "spread": [round(float(s), 2) for s in spread_15m["spread"]],
-            "oct_close": [round(float(c), 2) for c in spread_15m["oct_close"]],
-            "nov_close": [round(float(c), 2) for c in spread_15m["nov_close"]]
-        }
-    }
-    
-    spread_path = os.path.join(OUTPUT_DIR, "calendar_spread_nov26_oct26.json")
-    with open(spread_path, "w", encoding="utf-8") as f:
-        json.dump(spread_output, f, cls=NpEncoder, separators=(",", ":"))
-        
-    kb = os.path.getsize(spread_path) / 1024
-    print(f"  Saved Calendar Spread to {spread_path} ({len(spread_15m):,} bars, {kb:.1f} KB)")
-    print(f"  Latest Roll Spread: ₹{spread_output['latest_spread']:.2f} (Range: ₹{spread_output['min_spread']:.2f} to ₹{spread_output['max_spread']:.2f})")
+ng_contracts = []
+for sym, pfile, tag in contracts:
+    m = re.match(r"^MCX_NATURALGAS(\d{2})([A-Z]{3})FUT_1m_contract_wise\.parquet$", pfile)
+    if m:
+        yr = 2000 + int(m.group(1))
+        mo = MONTH_ORDER.get(m.group(2), 0)
+        full_path = os.path.join(CONTRACT_DIR, pfile)
+        ng_contracts.append({
+            "sym": sym,
+            "pfile": pfile,
+            "path": full_path,
+            "tag": tag,
+            "yr": yr,
+            "mo": mo
+        })
+
+ng_contracts.sort(key=lambda x: (x["yr"], x["mo"]))
+
+if len(ng_contracts) >= 2:
+    # Pick front month and next month:
+    # Look for the first contract that has recent trading activity or the earliest active pair
+    now_ts = pd.Timestamp.now(tz="UTC").timestamp()
+    pair_idx = 0
+    for i in range(len(ng_contracts) - 1):
+        c_path = ng_contracts[i]["path"]
+        try:
+            max_epoch = con.execute(f"SELECT MAX(epoch) FROM read_parquet('{c_path}')").fetchone()[0]
+            if max_epoch and (now_ts - max_epoch) < 35 * 86400: # Active in last 35 days
+                pair_idx = i
+                break
+        except Exception:
+            continue
+
+    c1 = ng_contracts[pair_idx]
+    c2 = ng_contracts[pair_idx + 1]
+    print(f"  Selected Roll Pair: Front={c1['sym']} ({c1['tag']}) vs Next={c2['sym']} ({c2['tag']})")
+
+    try:
+        df_spread = con.execute(f"""
+            WITH c1_data AS (
+                SELECT epoch, close as c1_close
+                FROM read_parquet('{c1["path"]}')
+                WHERE close > 0
+            ),
+            c2_data AS (
+                SELECT epoch, close as c2_close
+                FROM read_parquet('{c2["path"]}')
+                WHERE close > 0
+            )
+            SELECT 
+                c2_data.epoch as dt,
+                c2_data.c2_close,
+                c1_data.c1_close,
+                ROUND(c2_data.c2_close - c1_data.c1_close, 2) as spread
+            FROM c2_data
+            JOIN c1_data ON c2_data.epoch = c1_data.epoch
+            ORDER BY c2_data.epoch ASC
+        """).df()
+
+        if len(df_spread) > 0:
+            df_spread["dt_15m"] = (df_spread["dt"] // 900) * 900
+            spread_15m = df_spread.groupby("dt_15m").agg(
+                spread=("spread", "median"),
+                c1_close=("c1_close", "last"),
+                c2_close=("c2_close", "last")
+            ).reset_index().rename(columns={"dt_15m": "dt"})
+
+            spread_output = {
+                "pair": f"{c2['sym']} - {c1['sym']}",
+                "front_contract": c1["sym"],
+                "next_contract": c2["sym"],
+                "resolution": "15m",
+                "bars_count": len(spread_15m),
+                "latest_spread": round(float(spread_15m["spread"].iloc[-1]), 2),
+                "min_spread": round(float(spread_15m["spread"].min()), 2),
+                "max_spread": round(float(spread_15m["spread"].max()), 2),
+                "data": {
+                    "dt": spread_15m["dt"].tolist(),
+                    "spread": [round(float(s), 2) for s in spread_15m["spread"]],
+                    "front_close": [round(float(c), 2) for c in spread_15m["c1_close"]],
+                    "next_close": [round(float(c), 2) for c in spread_15m["c2_close"]]
+                }
+            }
+
+            # Save perpetual generic calendar spread
+            spread_path_generic = os.path.join(OUTPUT_DIR, "calendar_spread.json")
+            with open(spread_path_generic, "w", encoding="utf-8") as f:
+                json.dump(spread_output, f, cls=NpEncoder, separators=(",", ":"))
+
+            # Save specific pair and legacy compatibility JSONs
+            pair_tag_path = os.path.join(OUTPUT_DIR, f"calendar_spread_{c2['tag'].lower()}_{c1['tag'].lower()}.json")
+            with open(pair_tag_path, "w", encoding="utf-8") as f:
+                json.dump(spread_output, f, cls=NpEncoder, separators=(",", ":"))
+
+            legacy_path = os.path.join(OUTPUT_DIR, "calendar_spread_nov26_oct26.json")
+            with open(legacy_path, "w", encoding="utf-8") as f:
+                json.dump(spread_output, f, cls=NpEncoder, separators=(",", ":"))
+
+            kb = os.path.getsize(spread_path_generic) / 1024
+            print(f"  Saved Calendar Spread to {spread_path_generic} & legacy aliases ({len(spread_15m):,} bars, {kb:.1f} KB)")
+            print(f"  Latest Roll Spread: ₹{spread_output['latest_spread']:.2f} (Range: ₹{spread_output['min_spread']:.2f} to ₹{spread_output['max_spread']:.2f})")
+    except Exception as e:
+        print(f"  Notice calculating calendar roll spread: {e}")
 
 con.close()
 print("=" * 80)

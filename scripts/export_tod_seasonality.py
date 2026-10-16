@@ -14,12 +14,15 @@ import duckdb
 import pandas as pd
 import numpy as np
 
-PARQUET_FILE = "data/mcx_vault/NATURALGAS_1m_continuous_2019_2026.parquet"
+import glob
+
+vault_candidates = sorted(glob.glob("data/mcx_vault/NATURALGAS_1m_continuous_*.parquet"))
+PARQUET_FILE = vault_candidates[-1] if vault_candidates else "data/mcx_vault/NATURALGAS_1m_continuous_2019_2026.parquet"
 OUTPUT_FILE = "docs/data/tod_seasonality.json"
 os.makedirs("docs/data", exist_ok=True)
 
 print("=" * 80)
-print("EXTRACTING US DST-AWARE TIME-OF-DAY SEASONALITY (2019–2026)")
+print(f"EXTRACTING US DST-AWARE TIME-OF-DAY SEASONALITY ({os.path.basename(PARQUET_FILE)})")
 print("=" * 80)
 
 con = duckdb.connect()

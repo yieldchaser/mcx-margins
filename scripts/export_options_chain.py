@@ -21,19 +21,62 @@ import pandas as pd
 from scipy.stats import norm
 from scipy.optimize import brentq
 
-OPTIONS_PARQUET = "data/mcx_vault/naturalgas_options_oct26_1m_all_strikes.parquet"
-FUTURES_PARQUET = "data/mcx_vault/contract_wise/MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet"
-OUTPUT_FILE = "docs/data/options_chain_oct26.json"
-os.makedirs("docs/data", exist_ok=True)
+import glob
+import re
 
-if not os.path.exists(OPTIONS_PARQUET) or not os.path.exists(FUTURES_PARQUET):
-    print(f"Notice: Parquet files ({OPTIONS_PARQUET} or {FUTURES_PARQUET}) not present in workspace. Skipping options chain export.")
+VAULT_DIR = "data/mcx_vault"
+CONTRACT_DIR = "data/mcx_vault/contract_wise"
+OUTPUT_DIR = "docs/data"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# 1. Dynamically locate options parquet
+options_candidates = glob.glob(os.path.join(VAULT_DIR, "*options*_all_strikes.parquet")) + \
+                     glob.glob(os.path.join(VAULT_DIR, "options", "*options*_all_strikes.parquet"))
+
+if not options_candidates:
+    print("Notice: No options parquet files present in workspace. Skipping options chain export.")
     sys.exit(0)
+
+OPTIONS_PARQUET = sorted(options_candidates, key=lambda p: os.path.getmtime(p))[-1]
+
+# Infer contract code (e.g. 26OCT, 26NOV, 27JAN)
+m_exp = re.search(r"(\d{2}[A-Z]{3})", os.path.basename(OPTIONS_PARQUET).upper())
+exp_code = m_exp.group(1) if m_exp else ""
+
+# 2. Dynamically locate matching futures parquet
+FUTURES_PARQUET = None
+if exp_code:
+    expected_fut = os.path.join(CONTRACT_DIR, f"MCX_NATURALGAS{exp_code}FUT_1m_contract_wise.parquet")
+    if os.path.exists(expected_fut):
+        FUTURES_PARQUET = expected_fut
+
+if not FUTURES_PARQUET:
+    fut_candidates = sorted(glob.glob(os.path.join(CONTRACT_DIR, "MCX_NATURALGAS*FUT_1m_contract_wise.parquet")))
+    if fut_candidates:
+        FUTURES_PARQUET = fut_candidates[0]
+
+if not FUTURES_PARQUET or not os.path.exists(FUTURES_PARQUET):
+    print(f"Notice: Matching futures parquet for {exp_code} not present. Skipping options chain export.")
+    sys.exit(0)
+
+fut_basename = os.path.basename(FUTURES_PARQUET)
+m_sym = re.search(r"MCX_NATURALGAS(\d{2}[A-Z]{3})FUT", fut_basename)
+underlying_sym = f"MCX:NATURALGAS{m_sym.group(1)}FUT" if m_sym else "MCX:NATURALGASFUT"
 
 # Risk-free rate (Indian 91-day T-Bill yield ~6.6%)
 RISK_FREE_RATE = 0.066
-# Expiry: October 23, 2026, 23:30:00 IST (UTC: 2026-10-23 18:00:00)
-EXPIRY_EPOCH = int(datetime(2026, 10, 23, 18, 0, 0, tzinfo=timezone.utc).timestamp())
+
+MONTH_CODES = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+if exp_code and len(exp_code) == 5:
+    exp_yr = 2000 + int(exp_code[:2])
+    exp_mo = MONTH_CODES.get(exp_code[2:].upper(), 10)
+    exp_day = 23
+    expiry_dt = datetime(exp_yr, exp_mo, exp_day, 18, 0, 0, tzinfo=timezone.utc)
+    EXPIRY_EPOCH = int(expiry_dt.timestamp())
+    EXPIRY_DATE_STR = expiry_dt.strftime("%Y-%m-%d")
+else:
+    EXPIRY_EPOCH = int(datetime(2026, 10, 23, 18, 0, 0, tzinfo=timezone.utc).timestamp())
+    EXPIRY_DATE_STR = "2026-10-23"
 
 print("=" * 80)
 print("EXTRACTING BLACK-76 NATURAL GAS OPTIONS CHAIN & GREEKS")
@@ -208,9 +251,9 @@ filtered_strikes = [
 output_data = {
     "metadata": {
         "generated_at": datetime.now().isoformat(),
-        "underlying_futures": "MCX:NATURALGAS26OCTFUT",
+        "underlying_futures": underlying_sym,
         "latest_futures_price": latest_fut_price,
-        "expiry_date": "2026-10-23",
+        "expiry_date": EXPIRY_DATE_STR,
         "days_to_expiry": round(curr_T * 365.25, 2),
         "total_strikes": len(strikes),
         "filtered_liquid_strikes_count": len(filtered_strikes)
@@ -246,11 +289,21 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
 
-with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+output_file_generic = os.path.join(OUTPUT_DIR, "options_chain.json")
+with open(output_file_generic, "w", encoding="utf-8") as f:
     json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
 
-kb = os.path.getsize(OUTPUT_FILE) / 1024
-print(f"SUCCESS! Saved Black-76 options chain to {OUTPUT_FILE} ({kb:.1f} KB)")
+if exp_code:
+    specific_file = os.path.join(OUTPUT_DIR, f"options_chain_{exp_code.lower()}.json")
+    with open(specific_file, "w", encoding="utf-8") as f:
+        json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
+
+legacy_file = os.path.join(OUTPUT_DIR, "options_chain_oct26.json")
+with open(legacy_file, "w", encoding="utf-8") as f:
+    json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
+
+kb = os.path.getsize(output_file_generic) / 1024
+print(f"SUCCESS! Saved Black-76 options chain to {output_file_generic} & aliases ({kb:.1f} KB)")
 print(f"  Futures Reference Price : ₹{latest_fut_price:.2f}")
 print(f"  Call Wall (Resistance)  : Strike {call_wall_strike} (OI: {chain_records[call_wall_strike].get('call', {}).get('oi', 0):,})")
 print(f"  Put Wall (Floor)        : Strike {put_wall_strike} (OI: {chain_records[put_wall_strike].get('put', {}).get('oi', 0):,})")

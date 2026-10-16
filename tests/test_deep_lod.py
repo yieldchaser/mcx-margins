@@ -96,5 +96,47 @@ class DeepLodParityTests(unittest.TestCase):
             self.assertGreater(first_bar[4], 0)
 
 
+    def test_dynamic_calendar_spread_output(self):
+        spread_generic = os.path.join(REPO_DIR, "docs", "data", "market", "calendar_spread.json")
+        spread_legacy = os.path.join(REPO_DIR, "docs", "data", "market", "calendar_spread_nov26_oct26.json")
+        self.assertTrue(os.path.exists(spread_generic), "calendar_spread.json must exist")
+        self.assertTrue(os.path.exists(spread_legacy), "calendar_spread_nov26_oct26.json legacy alias must exist")
+
+        with open(spread_generic, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertIn("pair", data)
+        self.assertIn("front_contract", data)
+        self.assertIn("next_contract", data)
+        self.assertIn("latest_spread", data)
+        self.assertIn("data", data)
+        self.assertGreater(len(data["data"]["dt"]), 100)
+
+    def test_dynamic_options_chain_output(self):
+        options_generic = os.path.join(REPO_DIR, "docs", "data", "options_chain.json")
+        options_legacy = os.path.join(REPO_DIR, "docs", "data", "options_chain_oct26.json")
+        self.assertTrue(os.path.exists(options_generic), "options_chain.json must exist")
+        self.assertTrue(os.path.exists(options_legacy), "options_chain_oct26.json legacy alias must exist")
+
+        with open(options_generic, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertIn("metadata", data)
+        self.assertIn("indicators", data)
+        self.assertIn("chain", data)
+        self.assertGreater(len(data["chain"]), 5)
+        self.assertIn("underlying_futures", data["metadata"])
+        self.assertIn("expiry_date", data["metadata"])
+
+    def test_dynamic_lod_pyramid_helpers(self):
+        import sys
+        sys.path.insert(0, os.path.join(REPO_DIR, "scripts"))
+        from build_lod_pyramid import find_vault_parquet, find_contract_wise_parquets
+
+        v_ng = find_vault_parquet("NATURALGAS")
+        self.assertTrue(v_ng.exists(), "find_vault_parquet must resolve existing parquet")
+
+        cw_ng = find_contract_wise_parquets("NATURALGAS")
+        self.assertGreater(len(cw_ng), 0, "find_contract_wise_parquets must find contract parquets")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -801,7 +801,7 @@
     if (!exp || exp.length < 7) return new Date();
     const day = parseInt(exp.slice(0, 2), 10) || 1;
     const mon = _DEEP_MON[exp.slice(2, 5).toUpperCase()] ?? 0;
-    const yr = parseInt(exp.slice(5), 10) || 2026;
+    const yr = parseInt(exp.slice(5), 10) || new Date().getFullYear();
     return new Date(Date.UTC(yr, mon, day));
   }
 
@@ -859,7 +859,7 @@
     const prevYear = yrSel.value;
     yrSel.innerHTML = '<option value="all">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
 
-    const defaultYear = frontExp ? getDeliveryYear(frontExp).toString() : (years[0] || '2026');
+    const defaultYear = frontExp ? getDeliveryYear(frontExp).toString() : (years[0] || new Date().getFullYear().toString());
     yrSel.value = (prevYear && (prevYear === 'all' || years.includes(prevYear))) ? prevYear : defaultYear;
 
     populateDeepMonths(entries, yrSel.value, frontExp, autoSelectExpiry);
@@ -1098,9 +1098,10 @@
 
     // Style continuous pill
     const btnCont = document.getElementById('deepBtnContinuous');
-    const isMini = (activeContractSym === 'ngm');
-    const spanYears = isMini ? '4Y' : '8Y';
-    const spanRange = isMini ? '2023–2026' : '2019–2026';
+    const curYear = new Date().getFullYear();
+    const startYear = isMini ? 2023 : 2019;
+    const spanYears = `${curYear - startYear + 1}Y`;
+    const spanRange = `${startYear}–${curYear}`;
     const symLabel = isMini ? 'Natural Gas Mini' : 'Natural Gas';
 
     if (btnCont) {

@@ -309,8 +309,9 @@ def run_snapshot_cycle():
     scripts_to_run = []
 
     # Only run TOD seasonality if historical continuous vault exists
-    vault_continuous = os.path.join(REPO_DIR, "data", "mcx_vault", "NATURALGAS_1m_continuous_2019_2026.parquet")
-    if os.path.exists(vault_continuous):
+    import glob
+    vault_matches = glob.glob(os.path.join(REPO_DIR, "data", "mcx_vault", "NATURALGAS_1m_continuous_*.parquet"))
+    if vault_matches:
         scripts_to_run.append(os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"))
 
     scripts_to_run.extend([
