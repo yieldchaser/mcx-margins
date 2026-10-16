@@ -36,9 +36,12 @@ os.makedirs(os.path.join(REPO_DIR, "docs", "data"), exist_ok=True)
 def log(msg):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entry = f"[{ts}] {msg}\n"
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(entry)
-    print(entry.strip())
+    print(entry.strip(), flush=True)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(entry)
+    except Exception:
+        pass
 
 def clear_stale_git_locks():
     """Recovers from interrupted git processes by clearing stale index.lock files"""
