@@ -183,9 +183,11 @@ def build_symbol_pyramid(sym_cfg):
         json.dump(h1_bars, f, separators=(',', ':'))
     print(f"[{sym_cfg['name']}] Wrote Tier 1 1-Hour: {len(h1_bars):,} bars -> {h1_file.name} ({h1_file.stat().st_size / 1024:.1f} KB)")
 
-    # ── Tier 2: 15-Minute ──
-    print(f"[{sym_cfg['name']}] Resampling 15-Minute tier (2025-2026)...")
-    df_recent = df[df.index >= "2025-01-01"]
+    # ── Tier 2: 15-Minute (Trailing 24 Months) ──
+    latest_dt = df.index.max()
+    cutoff_24m = (latest_dt - pd.DateOffset(months=24)).strftime("%Y-%m-01")
+    print(f"[{sym_cfg['name']}] Resampling 15-Minute tier (from {cutoff_24m} to {latest_dt.strftime('%Y-%m-%d')})...")
+    df_recent = df[df.index >= cutoff_24m]
     m15 = df_recent.resample("15min").agg({
         "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum", "epoch": "first"
     }).dropna(subset=["close"])
@@ -205,9 +207,10 @@ def build_symbol_pyramid(sym_cfg):
         json.dump(m15_bars, f, separators=(',', ':'))
     print(f"[{sym_cfg['name']}] Wrote Tier 2 15-Minute: {len(m15_bars):,} bars -> {m15_file.name} ({m15_file.stat().st_size / 1024:.1f} KB)")
 
-    # ── Tier 3: 1-Minute Monthly Chunks ──
-    print(f"[{sym_cfg['name']}] Generating Tier 3 Monthly 1-Minute chunks for trailing 12 months...")
-    df_1m = df[df.index >= "2025-10-01"].copy()
+    # ── Tier 3: 1-Minute Monthly Chunks (Trailing 12 Months) ──
+    cutoff_12m = (latest_dt - pd.DateOffset(months=12)).strftime("%Y-%m-01")
+    print(f"[{sym_cfg['name']}] Generating Tier 3 Monthly 1-Minute chunks for trailing 12 months (from {cutoff_12m})...")
+    df_1m = df[df.index >= cutoff_12m].copy()
     df_1m["ym"] = df_1m.index.strftime("%Y_%m")
 
     manifest_1m = []
