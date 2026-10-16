@@ -133,11 +133,12 @@ def auto_login():
         **headers,
         "Authorization": f"Bearer {data_token}"
     }
+    base_app_id, app_type = CLIENT_ID.split("-") if "-" in CLIENT_ID else (CLIENT_ID, "100")
     payload_token = {
         "fyers_id": fy_id,
-        "app_id": CLIENT_ID,
+        "app_id": base_app_id,
         "redirect_uri": REDIRECT_URI,
-        "appType": "100",
+        "appType": app_type,
         "code_challenge": "",
         "state": "None",
         "scope": "",
