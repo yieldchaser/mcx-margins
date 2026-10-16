@@ -40,12 +40,20 @@
   let contractIndexCache = null; // cached contract_index.json
   const contractCache = {}; // tag -> { '15m': bars, '1m': bars, 'daily': bars }
 
-  // In-memory data caches
+  // In-memory data caches per symbol
   const cache = {
-    daily: null,
-    h1: null,
-    m15: null,
-    m1: {}, // ym -> bars
+    ng: {
+      daily: null,
+      h1: null,
+      m15: null,
+      m1: {}, // ym -> bars
+    },
+    ngm: {
+      daily: null,
+      h1: null,
+      m15: null,
+      m1: {}, // ym -> bars
+    }
   };
 
   function initDeepChart() {
@@ -338,16 +346,19 @@
             const tag = m ? `${prefix}_${m[2].slice(-2)}${m[1]}` : activeContractMode;
             const cBars = contractCache[tag]?.[currentResolution] || contractCache[tag]?.['15m'] || contractCache[tag]?.['daily'] || contractCache[tag]?.['1m'];
             if (cBars) ohlc = findBarByTime(cBars, param.time);
-          } else if (currentResolution === 'daily' && cache.daily) {
-            ohlc = findBarByTime(cache.daily, param.time);
-          } else if (currentResolution === '15m' && cache.m15) {
-            ohlc = findBarByTime(cache.m15, param.time);
-          } else if (currentResolution === '1m') {
-            const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-            const ym = istDateStr.slice(0, 7).replace('-', '_');
-            if (cache.m1[ym]) {
-              const raw = findBarByTime(cache.m1[ym], param.time);
-              if (raw) ohlc = { open: raw[1], high: raw[2], low: raw[3], close: raw[4], volume: raw[5] };
+          } else {
+            const sCache = cache[activeContractSym] || cache.ng;
+            if (currentResolution === 'daily' && sCache.daily) {
+              ohlc = findBarByTime(sCache.daily, param.time);
+            } else if (currentResolution === '15m' && sCache.m15) {
+              ohlc = findBarByTime(sCache.m15, param.time);
+            } else if (currentResolution === '1m') {
+              const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+              const ym = istDateStr.slice(0, 7).replace('-', '_');
+              if (sCache.m1[ym]) {
+                const raw = findBarByTime(sCache.m1[ym], param.time);
+                if (raw) ohlc = { open: raw[1], high: raw[2], low: raw[3], close: raw[4], volume: raw[5] };
+              }
             }
           }
           if (!ohlc) {
@@ -452,9 +463,8 @@
   }
 
   const cacheTimestamps = {
-    daily: 0,
-    m15: 0,
-    m1: {}
+    ng: { daily: 0, m15: 0, m1: {} },
+    ngm: { daily: 0, m15: 0, m1: {} }
   };
 
   function updateGlobalLiveTimestamp(lastBar) {
@@ -474,15 +484,19 @@
   async function loadDailyTier(fit) {
     updateBadges('Loading Daily...', '--');
     try {
-      const isStale = ((Date.now() - (cacheTimestamps.daily || 0)) > 60000);
-      if (!cache.daily || isStale) {
-        const res = await fetch(`data/deep/ng_daily.json?_v=${Date.now()}`);
-        if (!res.ok) throw new Error('Failed to load ng_daily.json');
-        cache.daily = await res.json();
-        cacheTimestamps.daily = Date.now();
+      const sym = activeContractSym;
+      const symPrefix = sym === 'ngm' ? 'ngm' : 'ng';
+      const sCache = cache[sym] || cache.ng;
+      const sTS = cacheTimestamps[sym] || cacheTimestamps.ng;
+      const isStale = ((Date.now() - (sTS.daily || 0)) > 60000);
+      if (!sCache.daily || isStale) {
+        const res = await fetch(`data/deep/${symPrefix}_daily.json?_v=${Date.now()}`);
+        if (!res.ok) throw new Error(`Failed to load ${symPrefix}_daily.json`);
+        sCache.daily = await res.json();
+        sTS.daily = Date.now();
       }
 
-      const cleanBars = sanitizeBars(cache.daily);
+      const cleanBars = sanitizeBars(sCache.daily);
       const areaData = [];
       const candleData = [];
       const volumeData = [];
@@ -535,15 +549,15 @@
           }
         };
 
-        if (cache.m15 && cache.m15.length) {
-          trySyncLatestIntraday(cache.m15);
+        if (sCache.m15 && sCache.m15.length) {
+          trySyncLatestIntraday(sCache.m15);
         } else {
-          fetch(`data/deep/ng_15m.json?_v=${Date.now()}`)
+          fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`)
             .then(r => r.ok ? r.json() : null)
             .then(m15 => {
               if (m15) {
-                cache.m15 = m15;
-                cacheTimestamps.m15 = Date.now();
+                sCache.m15 = m15;
+                sTS.m15 = Date.now();
                 trySyncLatestIntraday(m15);
               }
             })
@@ -563,15 +577,19 @@
   async function load15mTier() {
     updateBadges('Loading 15m...', '--');
     try {
-      const isStale = ((Date.now() - (cacheTimestamps.m15 || 0)) > 30000);
-      if (!cache.m15 || isStale) {
-        const res = await fetch(`data/deep/ng_15m.json?_v=${Date.now()}`);
-        if (!res.ok) throw new Error('Failed to load ng_15m.json');
-        cache.m15 = await res.json();
-        cacheTimestamps.m15 = Date.now();
+      const sym = activeContractSym;
+      const symPrefix = sym === 'ngm' ? 'ngm' : 'ng';
+      const sCache = cache[sym] || cache.ng;
+      const sTS = cacheTimestamps[sym] || cacheTimestamps.ng;
+      const isStale = ((Date.now() - (sTS.m15 || 0)) > 30000);
+      if (!sCache.m15 || isStale) {
+        const res = await fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`);
+        if (!res.ok) throw new Error(`Failed to load ${symPrefix}_15m.json`);
+        sCache.m15 = await res.json();
+        sTS.m15 = Date.now();
       }
 
-      const cleanBars = sanitizeBars(cache.m15);
+      const cleanBars = sanitizeBars(sCache.m15);
       const areaData = [];
       const candleData = [];
       const volumeData = [];
@@ -602,6 +620,10 @@
   async function load1mTier(fromTs, toTs) {
     updateBadges('Loading 1-Minute...', '--');
     try {
+      const sym = activeContractSym;
+      const dir1m = sym === 'ngm' ? '1m_ngm' : '1m';
+      const sCache = cache[sym] || cache.ng;
+      const sTS = cacheTimestamps[sym] || cacheTimestamps.ng;
       const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || Math.floor(Date.now() / 1000);
       const d = new Date(centerTs * 1000);
       const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -609,21 +631,21 @@
 
       const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
       const isCurrentMonth = (ym === nowYm);
-      const isStale = isCurrentMonth && ((Date.now() - (cacheTimestamps.m1[ym] || 0)) > 30000);
+      const isStale = isCurrentMonth && ((Date.now() - (sTS.m1[ym] || 0)) > 30000);
 
-      if (!cache.m1[ym] || isStale) {
-        const url = isCurrentMonth ? `data/deep/1m/${ym}.json?_v=${Date.now()}` : `data/deep/1m/${ym}.json`;
+      if (!sCache.m1[ym] || isStale) {
+        const url = isCurrentMonth ? `data/deep/${dir1m}/${ym}.json?_v=${Date.now()}` : `data/deep/${dir1m}/${ym}.json`;
         const res = await fetch(url);
         if (!res.ok) {
           console.info(`1m data for ${ym} not found, falling back to 15m tier`);
           await load15mTier();
           return;
         }
-        cache.m1[ym] = await res.json();
-        cacheTimestamps.m1[ym] = Date.now();
+        sCache.m1[ym] = await res.json();
+        sTS.m1[ym] = Date.now();
       }
 
-      render1mRaw(cache.m1[ym]);
+      render1mRaw(sCache.m1[ym]);
     } catch (err) {
       console.warn('Error loading 1m tier, falling back to 15m:', err);
       await load15mTier();
@@ -698,16 +720,22 @@
       return;
     }
 
+    const sym = activeContractSym;
+    const symPrefix = sym === 'ngm' ? 'ngm' : 'ng';
+    const dir1m = sym === 'ngm' ? '1m_ngm' : '1m';
+    const sCache = cache[sym] || cache.ng;
+    const sTS = cacheTimestamps[sym] || cacheTimestamps.ng;
+
     if (currentResolution === '1m') {
       const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
       try {
-        const res = await fetch(`data/deep/1m/${nowYm}.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${dir1m}/${nowYm}.json?_v=${Date.now()}`);
         if (res.ok) {
           const freshBars = await res.json();
-          const prevLen = cache.m1[nowYm] ? cache.m1[nowYm].length : 0;
+          const prevLen = sCache.m1[nowYm] ? sCache.m1[nowYm].length : 0;
           if (freshBars.length !== prevLen) {
-            cache.m1[nowYm] = freshBars;
-            cacheTimestamps.m1[nowYm] = Date.now();
+            sCache.m1[nowYm] = freshBars;
+            sTS.m1[nowYm] = Date.now();
             render1mRaw(freshBars);
             if (curRange && curRange.from && curRange.to) {
               chart.timeScale().setVisibleRange(curRange);
@@ -717,13 +745,13 @@
       } catch (e) {}
     } else if (currentResolution === '15m') {
       try {
-        const res = await fetch(`data/deep/ng_15m.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`);
         if (res.ok) {
           const freshBars = await res.json();
-          const prevLen = cache.m15 ? cache.m15.length : 0;
+          const prevLen = sCache.m15 ? sCache.m15.length : 0;
           if (freshBars.length !== prevLen) {
-            cache.m15 = freshBars;
-            cacheTimestamps.m15 = Date.now();
+            sCache.m15 = freshBars;
+            sTS.m15 = Date.now();
             load15mTier();
             if (curRange && curRange.from && curRange.to) {
               chart.timeScale().setVisibleRange(curRange);
@@ -733,11 +761,11 @@
       } catch (e) {}
     } else if (currentResolution === 'daily') {
       try {
-        const res = await fetch(`data/deep/ng_daily.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${symPrefix}_daily.json?_v=${Date.now()}`);
         if (res.ok) {
           const freshBars = await res.json();
-          cache.daily = freshBars;
-          cacheTimestamps.daily = Date.now();
+          sCache.daily = freshBars;
+          sTS.daily = Date.now();
           loadDailyTier(false);
           if (curRange && curRange.from && curRange.to) {
             chart.timeScale().setVisibleRange(curRange);
@@ -1070,11 +1098,21 @@
 
     // Style continuous pill
     const btnCont = document.getElementById('deepBtnContinuous');
+    const isMini = (activeContractSym === 'ngm');
+    const spanYears = isMini ? '4Y' : '8Y';
+    const spanRange = isMini ? '2023–2026' : '2019–2026';
+    const symLabel = isMini ? 'Natural Gas Mini' : 'Natural Gas';
+
     if (btnCont) {
       btnCont.classList.add('active');
       btnCont.style.background = '';
       btnCont.style.color = '';
       btnCont.style.border = '';
+      const spanEl = btnCont.querySelector('span');
+      if (spanEl) {
+        spanEl.textContent = `Continuous (${spanYears})`;
+      }
+      btnCont.setAttribute('title', `Switch to Continuous ${spanYears} Front-Month Stitched View (${spanRange})`);
     }
 
     // Reset Month dropdown to placeholder
@@ -1087,20 +1125,20 @@
     const scopeBadge = document.getElementById('deepContractDataScopeBadge');
 
     if (titleEl) {
-      titleEl.textContent = 'Natural Gas Futures Price Action & Structure';
-      titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries.');
+      titleEl.textContent = `${symLabel} Futures Price Action & Structure`;
+      titleEl.setAttribute('data-dyn-body', `Continuous front-month contract price series spanning ${spanRange} across roll boundaries.`);
     }
     if (scopeBadge) {
-      scopeBadge.innerHTML = '<strong>Data</strong> 8Y Continuous';
-      scopeBadge.setAttribute('data-dyn-title', 'Continuous Front-Month');
-      scopeBadge.setAttribute('data-dyn-body', 'Continuous front-month price and volume history from 2019 to 2026.');
+      scopeBadge.innerHTML = `<strong>Data</strong> ${spanYears} Continuous`;
+      scopeBadge.setAttribute('data-dyn-title', `Continuous Front-Month (${symLabel})`);
+      scopeBadge.setAttribute('data-dyn-body', `Continuous front-month price and volume history from ${spanRange}.`);
     }
 
     const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
     if (allBtn) {
-      allBtn.textContent = '8Y (All)';
-      allBtn.setAttribute('data-dyn-title', '8-Year Macro View');
-      allBtn.setAttribute('data-dyn-body', 'Full historical daily price history (2019 to 2026).');
+      allBtn.textContent = `${spanYears} (All)`;
+      allBtn.setAttribute('data-dyn-title', `${spanYears} Macro View`);
+      allBtn.setAttribute('data-dyn-body', `Full historical daily price history (${spanRange}).`);
     }
 
     await loadDailyTier(true);
@@ -1249,31 +1287,41 @@
     const symNGM = document.getElementById('deepSymNGM');
     if (symNG && symNGM) {
       symNG.addEventListener('click', () => {
+        if (activeContractSym === 'ng' && symNG.classList.contains('active')) return;
         symNG.classList.add('active');
         symNG.style.background = '';
         symNG.style.color = '';
         symNGM.classList.remove('active');
         symNGM.style.background = '';
         symNGM.style.color = '';
-        buildDeepContractDropdowns('ng', null).then(() => {
+        const prevExpiry = (activeContractMode !== 'continuous') ? activeContractMode : null;
+        activeContractSym = 'ng';
+        buildDeepContractDropdowns('ng', prevExpiry).then(() => {
           const mSel = document.getElementById('deepMonthSelect');
           if (activeContractMode !== 'continuous' && mSel && mSel.value) {
             activateContract('ng', mSel.value);
+          } else {
+            activateContinuous();
           }
         });
       });
 
       symNGM.addEventListener('click', () => {
+        if (activeContractSym === 'ngm' && symNGM.classList.contains('active')) return;
         symNGM.classList.add('active');
         symNGM.style.background = '';
         symNGM.style.color = '';
         symNG.classList.remove('active');
         symNG.style.background = '';
         symNG.style.color = '';
-        buildDeepContractDropdowns('ngm', null).then(() => {
+        const prevExpiry = (activeContractMode !== 'continuous') ? activeContractMode : null;
+        activeContractSym = 'ngm';
+        buildDeepContractDropdowns('ngm', prevExpiry).then(() => {
           const mSel = document.getElementById('deepMonthSelect');
           if (activeContractMode !== 'continuous' && mSel && mSel.value) {
             activateContract('ngm', mSel.value);
+          } else {
+            activateContinuous();
           }
         });
       });
@@ -1382,11 +1430,12 @@
       return;
     }
 
-    const latestDaily = cache.daily?.[cache.daily.length - 1]?.time || 0;
-    const latest15m = cache.m15?.[cache.m15.length - 1]?.time || 0;
+    const sCache = cache[activeContractSym] || cache.ng;
+    const latestDaily = sCache.daily?.[sCache.daily.length - 1]?.time || 0;
+    const latest15m = sCache.m15?.[sCache.m15.length - 1]?.time || 0;
     let latest1m = 0;
-    for (const ym in cache.m1) {
-      const arr = cache.m1[ym];
+    for (const ym in sCache.m1) {
+      const arr = sCache.m1[ym];
       if (arr && arr.length) {
         const lastT = arr[arr.length - 1][0];
         if (lastT > latest1m) latest1m = lastT;

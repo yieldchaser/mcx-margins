@@ -27,54 +27,67 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-VAULT_PARQUET = Path("data/mcx_vault/NATURALGAS_1m_continuous_2019_2026.parquet")
+VAULT_DIR = Path("data/mcx_vault")
 PRICE_DB = Path("data/prices.db")
 OUTPUT_DIR = Path("docs/data/deep")
-OUTPUT_1M_DIR = OUTPUT_DIR / "1m"
-DAILY_JSON = OUTPUT_DIR / "ng_daily.json"
 
-def update_daily_incremental():
-    """Updates docs/data/deep/ng_daily.json using data/prices.db in CI."""
+SYMBOLS_CONFIG = [
+    {
+        "name": "NATURALGAS",
+        "prefix": "ng",
+        "vault_parquet": VAULT_DIR / "NATURALGAS_1m_continuous_2019_2026.parquet",
+        "recent_parquet": VAULT_DIR / "contract_wise" / "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet",
+        "dir_1m": OUTPUT_DIR / "1m",
+        "manifest_1m_prefix": "data/deep/1m"
+    },
+    {
+        "name": "NATGASMINI",
+        "prefix": "ngm",
+        "vault_parquet": VAULT_DIR / "NATGASMINI_1m_continuous_2019_2026.parquet",
+        "recent_parquet": VAULT_DIR / "contract_wise" / "MCX_NATGASMINI26OCTFUT_1m_contract_wise.parquet",
+        "dir_1m": OUTPUT_DIR / "1m_ngm",
+        "manifest_1m_prefix": "data/deep/1m_ngm"
+    }
+]
+
+def update_daily_incremental_for_sym(sym_cfg):
+    """Updates docs/data/deep/{prefix}_daily.json using data/prices.db in CI."""
     if not PRICE_DB.exists():
-        print(f"Warning: Neither vault parquet nor {PRICE_DB} exists. Skipping.")
+        print(f"Warning: Neither vault parquet nor {PRICE_DB} exists for {sym_cfg['name']}. Skipping.")
         return
 
-    print("Running in CI Incremental Mode: Updating ng_daily.json from prices.db...")
-    if not DAILY_JSON.exists():
-        print(f"Error: {DAILY_JSON} does not exist to update incrementally.")
+    daily_json = OUTPUT_DIR / f"{sym_cfg['prefix']}_daily.json"
+    if not daily_json.exists():
+        print(f"Warning: {daily_json} does not exist to update incrementally.")
         return
 
-    with open(DAILY_JSON, "r") as f:
+    print(f"Running in CI Incremental Mode: Updating {daily_json.name} from prices.db...")
+    with open(daily_json, "r") as f:
         daily_bars = json.load(f)
 
     latest_epoch = daily_bars[-1]["time"] if daily_bars else 0
     latest_dt = pd.to_datetime(latest_epoch, unit="s", utc=True).tz_convert("Asia/Kolkata")
     latest_date_str = latest_dt.strftime("%Y-%m-%d")
-    print(f"Latest bar in ng_daily.json: {latest_date_str} (epoch {latest_epoch})")
+    print(f"Latest bar in {daily_json.name}: {latest_date_str} (epoch {latest_epoch})")
 
-    # Connect to prices.db and get front-month prices for subsequent dates
     conn = sqlite3.connect(PRICE_DB)
     query = """
         SELECT date, open, high, low, close, volume_lots as volume
         FROM prices
-        WHERE symbol = 'NATURALGAS' AND instrument = 'FUTCOM' AND date >= ?
+        WHERE symbol = ? AND instrument = 'FUTCOM' AND date >= ?
         ORDER BY date ASC, volume_lots DESC
     """
-    df = pd.read_sql_query(query, conn, params=(latest_date_str,))
+    df = pd.read_sql_query(query, conn, params=(sym_cfg["name"], latest_date_str))
     conn.close()
 
     if df.empty:
-        print("No newer price data found in prices.db.")
+        print(f"No newer price data found for {sym_cfg['name']} in prices.db.")
         return
 
-    # Keep highest-volume contract for each date (front-month)
     df = df.drop_duplicates(subset=["date"], keep="first")
-
-    # Filter strictly newer dates
     added = 0
     existing_epochs = {b["time"] for b in daily_bars}
     for _, row in df.iterrows():
-        # Set timestamp to 09:00:00 IST for consistent trading session epoch
         ts = pd.Timestamp(f"{row['date']} 09:00:00", tz="Asia/Kolkata")
         epoch_sec = int(ts.timestamp())
         if epoch_sec not in existing_epochs and row["close"] > 0:
@@ -91,27 +104,45 @@ def update_daily_incremental():
 
     if added > 0:
         daily_bars.sort(key=lambda x: x["time"])
-        with open(DAILY_JSON, "w") as f:
+        with open(daily_json, "w") as f:
             json.dump(daily_bars, f, separators=(',', ':'))
-        print(f"Successfully added {added} new trading day(s) to {DAILY_JSON}. Total bars: {len(daily_bars)}")
+        print(f"Successfully added {added} new trading day(s) to {daily_json}. Total bars: {len(daily_bars)}")
     else:
-        print("ng_daily.json is already completely up to date.")
+        print(f"{daily_json.name} is already completely up to date.")
 
-def full_vault_rebuild():
-    """Builds full 3-tier LOD pyramid from 1.65M 1-minute continuous vault."""
-    print(f"Loading 1m vault: {VAULT_PARQUET}...")
-    df = pd.read_parquet(VAULT_PARQUET)
-    print(f"Loaded {len(df):,} raw bars.")
+def build_symbol_pyramid(sym_cfg):
+    """Builds full 3-tier LOD pyramid for a specific symbol configuration."""
+    vault_parquet = sym_cfg["vault_parquet"]
+    if not vault_parquet.exists():
+        print(f"Vault parquet not found for {sym_cfg['name']} ({vault_parquet}). Skipping.")
+        return None
+
+    print(f"\n[{sym_cfg['name']}] Loading vault: {vault_parquet}...")
+    df = pd.read_parquet(vault_parquet)
+    print(f"[{sym_cfg['name']}] Loaded {len(df):,} raw bars from vault.")
+
+    # Merge recent 1m contract-wise bars if available
+    recent_parquet = sym_cfg["recent_parquet"]
+    if recent_parquet.exists():
+        try:
+            df_recent = pd.read_parquet(recent_parquet)
+            df = pd.concat([df, df_recent], ignore_index=True)
+            df = df.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
+            print(f"[{sym_cfg['name']}] Merged {len(df_recent):,} recent contract bars (Total: {len(df):,}).")
+        except Exception as e:
+            print(f"[{sym_cfg['name']}] Notice merging recent contract bars: {e}")
 
     df["dt"] = pd.to_datetime(df["epoch"], unit="s", utc=True).dt.tz_convert("Asia/Kolkata")
     df = df.set_index("dt").sort_index()
     df = df[~df.index.duplicated(keep="first")]
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    OUTPUT_1M_DIR.mkdir(parents=True, exist_ok=True)
+    dir_1m = sym_cfg["dir_1m"]
+    dir_1m.mkdir(parents=True, exist_ok=True)
+    prefix = sym_cfg["prefix"]
 
     # ── Tier 0: Daily ──
-    print("Resampling Daily tier (2019-2026)...")
+    print(f"[{sym_cfg['name']}] Resampling Daily tier...")
     daily = df.resample("1D").agg({
         "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum", "epoch": "first"
     }).dropna(subset=["close"])
@@ -126,12 +157,13 @@ def full_vault_rebuild():
             "close": round(float(row["close"]), 2),
             "volume": int(row["volume"])
         })
-    with open(DAILY_JSON, "w") as f:
+    daily_file = OUTPUT_DIR / f"{prefix}_daily.json"
+    with open(daily_file, "w") as f:
         json.dump(daily_bars, f, separators=(',', ':'))
-    print(f"Wrote Tier 0 Daily: {len(daily_bars):,} bars -> {DAILY_JSON} ({DAILY_JSON.stat().st_size / 1024:.1f} KB)")
+    print(f"[{sym_cfg['name']}] Wrote Tier 0 Daily: {len(daily_bars):,} bars -> {daily_file.name} ({daily_file.stat().st_size / 1024:.1f} KB)")
 
     # ── Tier 1: 1-Hour ──
-    print("Resampling 1-Hour tier (2019-2026)...")
+    print(f"[{sym_cfg['name']}] Resampling 1-Hour tier...")
     h1 = df.resample("1h").agg({
         "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum", "epoch": "first"
     }).dropna(subset=["close"])
@@ -146,13 +178,13 @@ def full_vault_rebuild():
             "close": round(float(row["close"]), 2),
             "volume": int(row["volume"])
         })
-    h1_file = OUTPUT_DIR / "ng_1h.json"
+    h1_file = OUTPUT_DIR / f"{prefix}_1h.json"
     with open(h1_file, "w") as f:
         json.dump(h1_bars, f, separators=(',', ':'))
-    print(f"Wrote Tier 1 1-Hour: {len(h1_bars):,} bars -> {h1_file} ({h1_file.stat().st_size / 1024:.1f} KB)")
+    print(f"[{sym_cfg['name']}] Wrote Tier 1 1-Hour: {len(h1_bars):,} bars -> {h1_file.name} ({h1_file.stat().st_size / 1024:.1f} KB)")
 
     # ── Tier 2: 15-Minute ──
-    print("Resampling 15-Minute tier (2025-2026)...")
+    print(f"[{sym_cfg['name']}] Resampling 15-Minute tier (2025-2026)...")
     df_recent = df[df.index >= "2025-01-01"]
     m15 = df_recent.resample("15min").agg({
         "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum", "epoch": "first"
@@ -168,13 +200,13 @@ def full_vault_rebuild():
             "close": round(float(row["close"]), 2),
             "volume": int(row["volume"])
         })
-    m15_file = OUTPUT_DIR / "ng_15m.json"
+    m15_file = OUTPUT_DIR / f"{prefix}_15m.json"
     with open(m15_file, "w") as f:
         json.dump(m15_bars, f, separators=(',', ':'))
-    print(f"Wrote Tier 2 15-Minute: {len(m15_bars):,} bars -> {m15_file} ({m15_file.stat().st_size / 1024:.1f} KB)")
+    print(f"[{sym_cfg['name']}] Wrote Tier 2 15-Minute: {len(m15_bars):,} bars -> {m15_file.name} ({m15_file.stat().st_size / 1024:.1f} KB)")
 
     # ── Tier 3: 1-Minute Monthly Chunks ──
-    print("Generating Tier 3 Monthly 1-Minute chunks for trailing 12 months...")
+    print(f"[{sym_cfg['name']}] Generating Tier 3 Monthly 1-Minute chunks for trailing 12 months...")
     df_1m = df[df.index >= "2025-10-01"].copy()
     df_1m["ym"] = df_1m.index.strftime("%Y_%m")
 
@@ -190,34 +222,45 @@ def full_vault_rebuild():
                 round(float(row["close"]), 2),
                 int(row["volume"])
             ])
-        target_file = OUTPUT_1M_DIR / f"{ym}.json"
+        target_file = dir_1m / f"{ym}.json"
         with open(target_file, "w") as f:
             json.dump(month_bars, f, separators=(',', ':'))
-        print(f"  Month {ym}: {len(month_bars):,} 1m bars -> {target_file.name} ({target_file.stat().st_size / 1024:.1f} KB)")
+        print(f"  [{sym_cfg['name']}] Month {ym}: {len(month_bars):,} 1m bars -> {target_file.name} ({target_file.stat().st_size / 1024:.1f} KB)")
         manifest_1m.append({
             "month": ym,
             "bars": len(month_bars),
             "start": int(group["epoch"].iloc[0]),
             "end": int(group["epoch"].iloc[-1]),
-            "file": f"data/deep/1m/{ym}.json"
+            "file": f"{sym_cfg['manifest_1m_prefix']}/{ym}.json"
         })
 
-    manifest_file = OUTPUT_DIR / "manifest.json"
-    manifest_data = {
-        "daily": {"file": "data/deep/ng_daily.json", "bars": len(daily_bars)},
-        "h1": {"file": "data/deep/ng_1h.json", "bars": len(h1_bars)},
-        "m15": {"file": "data/deep/ng_15m.json", "bars": len(m15_bars)},
+    return {
+        "daily": {"file": f"data/deep/{prefix}_daily.json", "bars": len(daily_bars)},
+        "h1": {"file": f"data/deep/{prefix}_1h.json", "bars": len(h1_bars)},
+        "m15": {"file": f"data/deep/{prefix}_15m.json", "bars": len(m15_bars)},
         "m1_months": manifest_1m
     }
+
+def full_vault_rebuild():
+    """Builds full LOD pyramids for both NATURALGAS and NATGASMINI."""
+    manifest_data = {}
+    for sym_cfg in SYMBOLS_CONFIG:
+        meta = build_symbol_pyramid(sym_cfg)
+        if meta:
+            manifest_data[sym_cfg["prefix"]] = meta
+
+    manifest_file = OUTPUT_DIR / "manifest.json"
     with open(manifest_file, "w") as f:
         json.dump(manifest_data, f, indent=2)
-    print("LOD data pyramid successfully built.")
+    print(f"\nManifest successfully updated -> {manifest_file}")
 
 def main():
-    if VAULT_PARQUET.exists() and "--incremental" not in sys.argv:
+    has_any_vault = any(cfg["vault_parquet"].exists() for cfg in SYMBOLS_CONFIG)
+    if has_any_vault and "--incremental" not in sys.argv:
         full_vault_rebuild()
     else:
-        update_daily_incremental()
+        for sym_cfg in SYMBOLS_CONFIG:
+            update_daily_incremental_for_sym(sym_cfg)
 
 if __name__ == "__main__":
     main()

@@ -156,7 +156,7 @@ def resolve_active_contracts(fyers_client, now_dt):
         pfile_ng = os.path.join(vault_dir, f"{c[3].replace(':', '_')}_1m_contract_wise.parquet")
         contracts.append(("NATURALGAS", c[2], c[3], pfile_ng, is_front, c[0], c[1]))
         pfile_mini = os.path.join(vault_dir, f"{c[4].replace(':', '_')}_1m_contract_wise.parquet")
-        contracts.append(("NATGASMINI", c[2], c[4], pfile_mini, False, c[0], c[1]))
+        contracts.append(("NATGASMINI", c[2], c[4], pfile_mini, is_front, c[0], c[1]))
         
     return contracts
 
@@ -202,11 +202,13 @@ def run_snapshot_cycle():
                 df_combined.to_parquet(pfile, compression="zstd", index=False)
                 log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
 
-                # If front month, update the deep chart LOD tiers
+                # If front month, update the deep chart LOD tiers for this symbol
                 if is_front:
                     try:
+                        sym_prefix = "ngm" if base == "NATGASMINI" else "ng"
+                        dir_1m = "1m_ngm" if base == "NATGASMINI" else "1m"
                         month_str = f"{front_yr}_{front_mo:02d}"
-                        deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", "1m")
+                        deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", dir_1m)
                         os.makedirs(deep_1m_dir, exist_ok=True)
                         deep_1m_file = os.path.join(deep_1m_dir, f"{month_str}.json")
                         existing_bars = []
@@ -229,10 +231,10 @@ def run_snapshot_cycle():
                         with open(deep_1m_file, "w", encoding="utf-8") as f:
                             json.dump(merged_bars, f, separators=(',', ':'))
                         last_ts = df_cur_month['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_cur_month) > 0 else 'recent'
-                        log(f"Synchronized docs/data/deep/1m/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
+                        log(f"Synchronized docs/data/deep/{dir_1m}/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
 
-                        # Synchronize Tier 2: ng_15m.json
-                        m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
+                        # Synchronize Tier 2: {sym_prefix}_15m.json
+                        m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_15m.json")
                         if os.path.exists(m15_file):
                             # ONLY resample the active recent 5-day window to preserve continuous historical front-month data
                             recent_start_epoch = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp())
@@ -265,15 +267,14 @@ def run_snapshot_cycle():
                                 merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
                                 with open(m15_file, "w", encoding="utf-8") as f:
                                     json.dump(merged_m15, f, separators=(',', ':'))
-                                log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
+                                log(f"Synchronized docs/data/deep/{sym_prefix}_15m.json ({len(merged_m15):,} bars).")
 
-                        # Synchronize Tier 0: ng_daily.json today's bar
-                        daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_daily.json")
+                        # Synchronize Tier 0: {sym_prefix}_daily.json today's bar
+                        daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_daily.json")
                         if os.path.exists(daily_file):
                             today_str = now.strftime("%Y-%m-%d")
                             today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                             if len(today_bars) > 0:
-                                # Dynamically set timestamp to the latest available traded minute of today
                                 today_epoch = int(today_bars["epoch"].iloc[-1])
                                 today_daily = {
                                     "time": today_epoch,
@@ -294,9 +295,9 @@ def run_snapshot_cycle():
                                 merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
                                 with open(daily_file, "w", encoding="utf-8") as f:
                                     json.dump(merged_daily, f, separators=(',', ':'))
-                                log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars, latest: {datetime.fromtimestamp(today_epoch, ist_tz).strftime('%H:%M IST')})")
+                                log(f"Updated docs/data/deep/{sym_prefix}_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars, latest: {datetime.fromtimestamp(today_epoch, ist_tz).strftime('%H:%M IST')})")
                     except Exception as e:
-                        log(f"Notice updating deep LOD tiers: {e}")
+                        log(f"Notice updating deep LOD tiers for {base}: {e}")
             else:
                 log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
             time.sleep(0.35)
