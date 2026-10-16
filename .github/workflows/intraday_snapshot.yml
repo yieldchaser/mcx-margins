@@ -7,8 +7,10 @@ name: Intraday Market Snapshot
 on:
   schedule:
     # Triggered every 20 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
-    # Runner stays active for 20 minutes, performing 2 snapshot cycles spaced 10 minutes apart.
-    - cron: '*/20 3-18 * * 1-5'
+    # Morning market open trigger (Mon–Fri 03:30 UTC = 09:00 AM IST)
+    - cron: '30 3 * * 1-5'
+    # Safety net heartbeat during MCX trading hours
+    - cron: '*/30 4-18 * * 1-5'
   repository_dispatch:
     types: [intraday_sync]
   workflow_dispatch:
@@ -60,4 +62,30 @@ jobs:
           python scripts/auto_market_snapshot.py --loop 600 --iterations 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Chain Next Continuous Market Run
+        if: steps.check_token.outputs.token_present == 'true'
+        run: |
+          python -c "
+          import sys
+          from datetime import datetime, timezone, timedelta
+          import subprocess
+          
+          now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+          is_weekday = now_ist.weekday() < 5
+          total_mins = now_ist.hour * 60 + now_ist.minute
+          # Market trading hours: Mon-Fri 09:00 to 23:30 IST
+          is_market_open = is_weekday and (9 * 60 <= total_mins < 23 * 60 + 30)
+          
+          if is_market_open:
+              print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is OPEN. Dispatching continuous chain runner...')
+              res = subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+              print(res.stdout)
+              if res.returncode != 0:
+                  print('Notice dispatching next chain:', res.stderr)
+          else:
+              print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is CLOSED. Ending continuous runner loop for the day.')
+          "
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

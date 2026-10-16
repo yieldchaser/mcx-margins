@@ -18,8 +18,12 @@ import time
 import json
 import subprocess
 from datetime import datetime, timedelta, timezone
+try:
+    import pyarrow
+    pyarrow.set_cpu_count(1)
+except Exception:
+    pass
 import pandas as pd
-import duckdb
 from fyers_apiv3 import fyersModel
 
 # Absolute Repository Root Path
@@ -195,7 +199,7 @@ def run_snapshot_cycle():
                 else:
                     df_combined = df_new
                     
-                df_combined.to_parquet(pfile, compression="zstd")
+                df_combined.to_parquet(pfile, compression="zstd", index=False)
                 log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
 
                 # If front month, update the deep chart LOD tiers
