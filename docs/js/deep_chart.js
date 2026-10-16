@@ -624,8 +624,34 @@
   let livePollingTimer = null;
 
   async function pollLiveUpdate() {
-    if (activeContractMode !== 'continuous' || isSwitchingResolution) return;
+    if (isSwitchingResolution) return;
     const curRange = chart ? chart.timeScale().getVisibleRange() : null;
+
+    if (activeContractMode !== 'continuous') {
+      const prefix = activeContractSym === 'ngm' ? 'NGM' : 'NG';
+      const m = (activeContractMode || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+      if (m) {
+        const tag = `${prefix}_${m[2].slice(-2)}${m[1]}`;
+        const targetRes = (currentResolution === '1m') ? '1m' : '15m';
+        try {
+          const res = await fetch(`data/market/${tag}_${targetRes}.json?_v=${Date.now()}`);
+          if (res.ok) {
+            const jsonFresh = await res.json();
+            const freshBars = parseColumnarBars(jsonFresh);
+            const prevLen = (contractCache[tag] && contractCache[tag][targetRes]) ? contractCache[tag][targetRes].length : 0;
+            if (freshBars.length !== prevLen) {
+              if (!contractCache[tag]) contractCache[tag] = {};
+              contractCache[tag][targetRes] = freshBars;
+              renderContractBars(freshBars, targetRes);
+              if (curRange && curRange.from && curRange.to) {
+                chart.timeScale().setVisibleRange(curRange);
+              }
+            }
+          }
+        } catch (e) {}
+      }
+      return;
+    }
 
     if (currentResolution === '1m') {
       const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
@@ -845,6 +871,7 @@
     currentResolution = res;
     const resLabel = res === '1m' ? '1-Minute (Microstructure)' : (res === '15m' ? '15-Minute (Swing)' : 'Daily (Lifecycle)');
     updateBadges(resLabel, `${cleanBars.length.toLocaleString()} bars`);
+    if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
   }
 
   async function loadContractData(sym, expiry) {
@@ -863,7 +890,7 @@
     }
 
     try {
-      const res15 = await fetch(`data/market/${tag}_15m.json`);
+      const res15 = await fetch(`data/market/${tag}_15m.json?_v=${Date.now()}`);
       if (res15.ok) {
         const json15 = await res15.json();
         const bars15 = parseColumnarBars(json15);
@@ -881,7 +908,7 @@
 
     try {
       const symFolder = sym.toLowerCase();
-      const resDaily = await fetch(`data/market/contract/${symFolder}/${expiry}.json`);
+      const resDaily = await fetch(`data/market/contract/${symFolder}/${expiry}.json?_v=${Date.now()}`);
       if (resDaily.ok) {
         const jsonDaily = await resDaily.json();
         const rows = jsonDaily.rows || [];
@@ -1041,7 +1068,7 @@
 
     if (!contractCache[tag][res]) {
       try {
-        const fetchRes = await fetch(`data/market/${tag}_${res}.json`);
+        const fetchRes = await fetch(`data/market/${tag}_${res}.json?_v=${Date.now()}`);
         if (!fetchRes.ok) {
           if (res === '1m') {
             console.warn(`1m data for ${tag} not found, falling back to 15m`);

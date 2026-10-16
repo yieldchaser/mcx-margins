@@ -5,6 +5,10 @@ on:
     branches: ["main"]
     paths:
       - 'docs/**'
+  workflow_run:
+    workflows: ["Intraday Market Snapshot", "Daily Prices Fetch", "Daily Margin Fetch"]
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
