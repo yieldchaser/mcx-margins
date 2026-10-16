@@ -2034,26 +2034,31 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Level of Detail (LOD)" data-dyn-body="Intelligent data pyramid dynamically streaming from 1,940 daily macro bars down to 1.65 million one-minute candles on demand with 60 FPS canvas acceleration.">Multi-Resolution Deep Zoom · 1.65M Candles</div>
           <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Front-Month Continuous Futures" data-dyn-body="Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery." style="margin-bottom:2px; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Front-Month Historical Price Action & Intraday Structure</div>
           <div class="scope-row" style="margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <div style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:2px 8px;">
+            <!-- Dynamic Contract Selector Toolbar (Zero Hardcoding - Auto-ingests from contract_index.json) -->
+            <div style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:2px 6px; flex-wrap:wrap;">
               <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">CONTRACT:</span>
-              <select id="deepContractSelect" style="background:transparent; color:var(--accent); font-weight:600; border:none; outline:none; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; padding:2px 0;">
-                <option value="continuous">⭐️ Continuous (8Y Stitched 2019–2026)</option>
-                <optgroup label="NATURALGAS (Big 1250 mmBtu)">
-                  <option value="NG_26OCT">NATURALGAS 26OCT (Oct 2026)</option>
-                  <option value="NG_26NOV">NATURALGAS 26NOV (Nov 2026)</option>
-                  <option value="NG_26DEC">NATURALGAS 26DEC (Dec 2026)</option>
-                  <option value="NG_27JAN">NATURALGAS 27JAN (Jan 2027)</option>
-                  <option value="NG_27FEB">NATURALGAS 27FEB (Feb 2027)</option>
-                  <option value="NG_27MAR">NATURALGAS 27MAR (Mar 2027)</option>
-                </optgroup>
-                <optgroup label="NATGASMINI (Mini 250 mmBtu)">
-                  <option value="NGM_26OCT">NATGASMINI 26OCT (Oct 2026)</option>
-                  <option value="NGM_26NOV">NATGASMINI 26NOV (Nov 2026)</option>
-                  <option value="NGM_26DEC">NATGASMINI 26DEC (Dec 2026)</option>
-                  <option value="NGM_27JAN">NATGASMINI 27JAN (Jan 2027)</option>
-                  <option value="NGM_27FEB">NATGASMINI 27FEB (Feb 2027)</option>
-                  <option value="NGM_27MAR">NATGASMINI 27MAR (Mar 2027)</option>
-                </optgroup>
+              
+              <!-- Quick 8Y Continuous Front-Month Button -->
+              <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)" style="background:var(--accent); color:#fff; border:none; border-radius:3px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s ease;">
+                ⭐️ Continuous 8Y
+              </button>
+
+              <span style="color:var(--border); font-size:12px; margin:0 1px;">|</span>
+
+              <!-- Big vs Mini Symbol Toggle -->
+              <div style="display:inline-flex; border:1px solid var(--border); border-radius:3px; overflow:hidden;">
+                <button type="button" id="deepSymNG" class="deep-sym-btn active" style="background:var(--surface); color:var(--accent); border:none; padding:3px 8px; font-size:11px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;" title="NATURALGAS (Big 1250 mmBtu)">NATURALGAS</button>
+                <button type="button" id="deepSymNGM" class="deep-sym-btn" style="background:transparent; color:var(--text-muted); border:none; padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;" title="NATGASMINI (Mini 250 mmBtu)">NATGASMINI</button>
+              </div>
+
+              <!-- Dynamic Year Selector (Populated from contract_index.json) -->
+              <select id="deepYearSelect" title="Select contract delivery year" style="background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:3px; padding:3px 6px; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; outline:none;">
+                <option value="">Year</option>
+              </select>
+
+              <!-- Dynamic Expiry / Month Selector (Populated from contract_index.json) -->
+              <select id="deepMonthSelect" title="Select contract expiry month" style="background:var(--surface); color:var(--accent); font-weight:600; border:1px solid var(--border); border-radius:3px; padding:3px 6px; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; min-width:145px; outline:none;">
+                <option value="">— Month —</option>
               </select>
             </div>
             <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="8-Year Continuous Front-Month" data-dyn-body="Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts."><strong>Data</strong> 8Y Front-Month</span>

@@ -34,8 +34,11 @@
   let pendingLODTimeout = null;
   let floatingTooltip = null;
 
-  let activeContractMode = 'continuous'; // 'continuous' or standalone contract tag (e.g. 'NG_26OCT')
-  const contractCache = {}; // tag -> { '15m': bars, '1m': bars }
+  let activeContractMode = 'continuous'; // 'continuous' or expiry string (e.g. '27OCT2026', '28OCT2025')
+  let activeContractSym = 'ng'; // 'ng' or 'ngm'
+  let activeContractType = 'none'; // 'none' | 'intraday' | 'daily'
+  let contractIndexCache = null; // cached contract_index.json
+  const contractCache = {}; // tag -> { '15m': bars, '1m': bars, 'daily': bars }
 
   // In-memory data caches
   const cache = {
@@ -321,7 +324,10 @@
           ohlc = pBar;
         } else if (pBar.value !== undefined) {
           if (activeContractMode !== 'continuous') {
-            const cBars = contractCache[activeContractMode]?.[currentResolution];
+            const prefix = activeContractSym === 'ngm' ? 'NGM' : 'NG';
+            const m = (activeContractMode || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+            const tag = m ? `${prefix}_${m[2].slice(-2)}${m[1]}` : activeContractMode;
+            const cBars = contractCache[tag]?.[currentResolution] || contractCache[tag]?.['15m'] || contractCache[tag]?.['daily'] || contractCache[tag]?.['1m'];
             if (cBars) ohlc = findBarByTime(cBars, param.time);
           } else if (currentResolution === 'daily' && cache.daily) {
             ohlc = findBarByTime(cache.daily, param.time);
@@ -572,6 +578,128 @@
     updateBadges('1-Minute (Microstructure)', `${cleanBars.length.toLocaleString()} bars`);
   }
 
+  // ── Standalone Contract & Dynamic Ingestion Helpers ──
+  const _DEEP_MON = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+  const _DEEP_MON_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const _DEEP_MON_KEYS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+  function parseExpiryDate(exp) {
+    if (!exp || exp.length < 7) return new Date();
+    const day = parseInt(exp.slice(0, 2), 10) || 1;
+    const mon = _DEEP_MON[exp.slice(2, 5).toUpperCase()] ?? 0;
+    const yr = parseInt(exp.slice(5), 10) || 2026;
+    return new Date(Date.UTC(yr, mon, day));
+  }
+
+  function getDeliveryYear(exp) {
+    const mon3 = exp.slice(2, 5).toUpperCase();
+    const yr = parseInt(exp.slice(5), 10);
+    return mon3 === 'DEC' ? yr + 1 : yr;
+  }
+
+  function formatExpiryLabel(sym, exp) {
+    const prefix = sym === 'ngm' ? 'NATGASMINI' : 'NATURALGAS';
+    const day = exp.slice(0, 2);
+    const mon3 = exp.slice(2, 5).toUpperCase();
+    const yr = exp.slice(5);
+    const mi = _DEEP_MON_KEYS.indexOf(mon3);
+    const dmi = (mi + 1) % 12;
+    const dyr = mi === 11 ? parseInt(yr, 10) + 1 : parseInt(yr, 10);
+    const delivName = _DEEP_MON_NAMES[dmi] + ' ' + dyr;
+    const shortExp = `${day} ${_DEEP_MON_NAMES[mi]} '${yr.slice(-2)}`;
+    return { delivName, shortExp, fullLabel: `${prefix} ${delivName} (${shortExp})` };
+  }
+
+  async function buildDeepContractDropdowns(sym = 'ng', autoSelectExpiry = null) {
+    activeContractSym = sym;
+    const yrSel = document.getElementById('deepYearSelect');
+    const mSel = document.getElementById('deepMonthSelect');
+    if (!yrSel || !mSel) return;
+
+    if (!contractIndexCache) {
+      try {
+        const res = await fetch('data/market/contract_index.json');
+        if (res.ok) contractIndexCache = await res.json();
+      } catch (e) {
+        console.error('Failed to load contract_index.json:', e);
+      }
+    }
+
+    const entries = (contractIndexCache && contractIndexCache[sym]) ? contractIndexCache[sym] : [];
+    if (!entries.length) return;
+
+    // Resolve front-month
+    const now = Date.now();
+    let bfe = null, bfd = Infinity, bpe = null, bpd = -Infinity;
+    entries.forEach(e => {
+      const d = parseExpiryDate(e.expiry).getTime() - now;
+      if (d >= 0 && d < bfd) { bfd = d; bfe = e.expiry; }
+      if (d < 0 && d > bpd) { bpd = d; bpe = e.expiry; }
+    });
+    const frontExp = bfe || bpe;
+
+    // Populate Year selector
+    const years = [...new Set(entries.map(e => getDeliveryYear(e.expiry).toString()))]
+      .sort((a, b) => +b - +a);
+
+    const prevYear = yrSel.value;
+    yrSel.innerHTML = '<option value="all">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+    const defaultYear = frontExp ? getDeliveryYear(frontExp).toString() : (years[0] || '2026');
+    yrSel.value = (prevYear && (prevYear === 'all' || years.includes(prevYear))) ? prevYear : defaultYear;
+
+    populateDeepMonths(entries, yrSel.value, frontExp, autoSelectExpiry);
+  }
+
+  function populateDeepMonths(entries, selectedYear, frontExp, autoSelectExpiry) {
+    const mSel = document.getElementById('deepMonthSelect');
+    if (!mSel) return;
+    mSel.innerHTML = '<option value="">— Select Month —</option>';
+
+    const now = Date.now();
+
+    const renderOption = (e) => {
+      const expDate = parseExpiryDate(e.expiry).getTime();
+      const isFront = (e.expiry === frontExp);
+      const isUpcoming = (expDate > now);
+      const badge = isFront ? ' ⭐️ Front' : (isUpcoming ? ' · Active' : ' · Expired');
+      const { delivName, shortExp } = formatExpiryLabel(activeContractSym, e.expiry);
+      const o = document.createElement('option');
+      o.value = e.expiry;
+      o.textContent = `${delivName} (${shortExp})${badge}`;
+      return o;
+    };
+
+    if (selectedYear === 'all') {
+      const sorted = [...entries].sort((a, b) => parseExpiryDate(b.expiry) - parseExpiryDate(a.expiry));
+      const byYr = {};
+      sorted.forEach(e => {
+        const y = getDeliveryYear(e.expiry).toString();
+        if (!byYr[y]) byYr[y] = [];
+        byYr[y].push(e);
+      });
+      Object.keys(byYr).sort((a, b) => +b - +a).forEach(y => {
+        const og = document.createElement('optgroup');
+        og.label = y;
+        byYr[y].forEach(e => og.appendChild(renderOption(e)));
+        mSel.appendChild(og);
+      });
+    } else {
+      const inYear = entries
+        .filter(e => getDeliveryYear(e.expiry).toString() === selectedYear)
+        .sort((a, b) => parseExpiryDate(b.expiry) - parseExpiryDate(a.expiry));
+      inYear.forEach(e => mSel.appendChild(renderOption(e)));
+    }
+
+    if (autoSelectExpiry && mSel.querySelector(`option[value="${autoSelectExpiry}"]`)) {
+      mSel.value = autoSelectExpiry;
+    } else if (frontExp && (selectedYear === 'all' || getDeliveryYear(frontExp).toString() === selectedYear)) {
+      mSel.value = frontExp;
+    } else if (mSel.options.length > 1) {
+      mSel.selectedIndex = 1;
+    }
+  }
+
   function renderContractBars(cleanBars, res) {
     if (!cleanBars || !cleanBars.length) return;
     const areaData = [];
@@ -594,80 +722,126 @@
     volumeSeries.setData(volumeData);
 
     currentResolution = res;
-    const resLabel = res === '1m' ? '1-Minute (Microstructure)' : '15-Minute (Swing)';
+    const resLabel = res === '1m' ? '1-Minute (Microstructure)' : (res === '15m' ? '15-Minute (Swing)' : 'Daily (Lifecycle)');
     updateBadges(resLabel, `${cleanBars.length.toLocaleString()} bars`);
   }
 
-  async function loadContractTier(tag, res) {
-    updateBadges(`Loading ${res}...`, '--');
+  async function loadContractData(sym, expiry) {
+    const prefix = sym === 'ngm' ? 'NGM' : 'NG';
+    const m = (expiry || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+    if (!m) return null;
+    const month = m[1];
+    const yy = m[2].slice(-2);
+    const tag = `${prefix}_${yy}${month}`;
+
     if (!contractCache[tag]) contractCache[tag] = {};
 
-    if (!contractCache[tag][res]) {
-      try {
-        const fetchRes = await fetch(`data/market/${tag}_${res}.json`);
-        if (!fetchRes.ok) {
-          if (res === '1m') {
-            console.warn(`1m data for ${tag} not found, falling back to 15m`);
-            return await loadContractTier(tag, '15m');
-          }
-          throw new Error(`Failed to load data/market/${tag}_${res}.json`);
-        }
-        const json = await fetchRes.json();
-        contractCache[tag][res] = parseColumnarBars(json);
-      } catch (err) {
-        console.error(`Error loading ${tag} ${res}:`, err);
-        updateBadges('Error', 'Failed to load');
-        return;
-      }
+    // 1. Try Intraday 15m file first (active/recent contracts)
+    if (contractCache[tag]['15m']) {
+      return { type: 'intraday', tag, bars: contractCache[tag]['15m'], res: '15m' };
     }
 
-    renderContractBars(contractCache[tag][res], res);
+    try {
+      const res15 = await fetch(`data/market/${tag}_15m.json`);
+      if (res15.ok) {
+        const json15 = await res15.json();
+        const bars15 = parseColumnarBars(json15);
+        contractCache[tag]['15m'] = bars15;
+        return { type: 'intraday', tag, bars: bars15, res: '15m' };
+      }
+    } catch (e) {
+      // Fall through to daily
+    }
+
+    // 2. Try Historical Daily contract file: data/market/contract/{sym}/{expiry}.json
+    if (contractCache[tag]['daily']) {
+      return { type: 'daily', tag, bars: contractCache[tag]['daily'], res: 'daily' };
+    }
+
+    try {
+      const symFolder = sym.toLowerCase();
+      const resDaily = await fetch(`data/market/contract/${symFolder}/${expiry}.json`);
+      if (resDaily.ok) {
+        const jsonDaily = await resDaily.json();
+        const rows = jsonDaily.rows || [];
+        const bars = [];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r.date || r.close == null || r.close <= 0) continue;
+          const parts = r.date.split('-');
+          const ts = Date.UTC(+parts[0], +parts[1] - 1, +parts[2]) / 1000;
+          const open = (r.open && r.open > 0) ? r.open : r.close;
+          const high = (r.high && r.high > 0) ? Math.max(r.high, open, r.close) : Math.max(open, r.close);
+          const low = (r.low && r.low > 0) ? Math.min(r.low, open, r.close) : Math.min(open, r.close);
+          bars.push({
+            time: ts,
+            open,
+            high,
+            low,
+            close: r.close,
+            volume: r.volume_lots || 0
+          });
+        }
+        const cleanBars = sanitizeBars(bars);
+        contractCache[tag]['daily'] = cleanBars;
+        return { type: 'daily', tag, bars: cleanBars, res: 'daily' };
+      }
+    } catch (e) {
+      console.error(`Failed to load historical daily contract ${sym} ${expiry}:`, e);
+    }
+
+    return null;
   }
 
-  async function switchContract(tag) {
+  async function activateContract(sym, expiry) {
+    if (!expiry) return;
     isSwitchingResolution = true;
     if (pendingLODTimeout) {
       clearTimeout(pendingLODTimeout);
       pendingLODTimeout = null;
     }
 
+    // Continuous button becomes inactive
+    const btnCont = document.getElementById('deepBtnContinuous');
+    if (btnCont) {
+      btnCont.classList.remove('active');
+      btnCont.style.background = 'transparent';
+      btnCont.style.color = 'var(--text-muted)';
+      btnCont.style.border = '1px solid var(--border)';
+    }
+
+    activeContractMode = expiry;
+    activeContractSym = sym;
+
+    const { fullLabel } = formatExpiryLabel(sym, expiry);
+    const prefix = sym === 'ngm' ? 'NGM' : 'NG';
+    const m = (expiry || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+    const tag = m ? `${prefix}_${m[2].slice(-2)}${m[1]}` : expiry;
+
     const titleEl = document.getElementById('deepChartTitle');
     const scopeBadge = document.getElementById('deepContractDataScopeBadge');
 
-    if (tag === 'continuous') {
-      activeContractMode = 'continuous';
-      if (titleEl) {
-        titleEl.textContent = 'Front-Month Historical Price Action & Intraday Structure';
-        titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery.');
-      }
-      if (scopeBadge) {
-        scopeBadge.innerHTML = '<strong>Data</strong> 8Y Front-Month';
-        scopeBadge.setAttribute('data-dyn-title', '8-Year Continuous Front-Month');
-        scopeBadge.setAttribute('data-dyn-body', 'Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts.');
-      }
+    if (titleEl) {
+      titleEl.textContent = `${fullLabel} · Standalone Price Action & Lifecycle`;
+      titleEl.setAttribute('data-dyn-body', `Individual standalone price discovery for ${fullLabel} from inception date to expiry.`);
+    }
 
-      const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
-      if (allBtn) {
-        allBtn.textContent = '8Y (All)';
-        allBtn.setAttribute('data-dyn-title', '8Y Full Macro View');
-        allBtn.setAttribute('data-dyn-body', 'Displays all 8 years of historical daily prices (2019 to 2026).');
-      }
+    updateBadges('Loading Contract...', '--');
 
-      await loadDailyTier(true);
-      setTimeout(() => { isSwitchingResolution = false; }, 200);
+    const result = await loadContractData(sym, expiry);
+    if (!result || !result.bars.length) {
+      updateBadges('Error', 'No data');
+      isSwitchingResolution = false;
       return;
     }
 
-    activeContractMode = tag;
-    const formattedTag = tag.replace('_', ' ');
-    if (titleEl) {
-      titleEl.textContent = `${formattedTag} Contract Lifecycle & Price Discovery`;
-      titleEl.setAttribute('data-dyn-body', `Individual standalone price action for ${formattedTag} from contract inception to current live market, with direct 15m and 1m resolution streaming.`);
-    }
+    activeContractType = result.type;
+    renderContractBars(result.bars, result.res);
+
     if (scopeBadge) {
-      scopeBadge.innerHTML = `<strong>Contract</strong> ${formattedTag}`;
-      scopeBadge.setAttribute('data-dyn-title', `${formattedTag} Standalone History`);
-      scopeBadge.setAttribute('data-dyn-body', `Full standalone contract price history from inception date.`);
+      scopeBadge.innerHTML = `<strong>Contract</strong> ${tag}`;
+      scopeBadge.setAttribute('data-dyn-title', `${fullLabel} Standalone`);
+      scopeBadge.setAttribute('data-dyn-body', `Full standalone contract data with ${result.bars.length.toLocaleString()} bars.`);
     }
 
     const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
@@ -681,66 +855,51 @@
     tfButtons.forEach(b => b.classList.remove('active'));
     if (allBtn) allBtn.classList.add('active');
 
-    await loadContractTier(tag, '15m');
     chart.timeScale().fitContent();
     setTimeout(() => { isSwitchingResolution = false; }, 200);
   }
 
-  function onTimeRangeChanged(range) {
-    if (!range || !range.from || !range.to || isSwitchingResolution) return;
-
+  async function activateContinuous() {
+    isSwitchingResolution = true;
     if (pendingLODTimeout) {
       clearTimeout(pendingLODTimeout);
+      pendingLODTimeout = null;
     }
 
-    pendingLODTimeout = setTimeout(() => {
-      const spanDays = (range.to - range.from) / 86400;
+    activeContractMode = 'continuous';
+    activeContractType = 'none';
 
-      if (activeContractMode !== 'continuous') {
-        if (spanDays <= 7 && currentResolution !== '1m') {
-          isSwitchingResolution = true;
-          const cur = chart.timeScale().getVisibleRange();
-          loadContractTier(activeContractMode, '1m').finally(() => {
-            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
-            setTimeout(() => { isSwitchingResolution = false; }, 200);
-          });
-        } else if (spanDays > 7 && currentResolution !== '15m') {
-          isSwitchingResolution = true;
-          const cur = chart.timeScale().getVisibleRange();
-          loadContractTier(activeContractMode, '15m').finally(() => {
-            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
-            setTimeout(() => { isSwitchingResolution = false; }, 200);
-          });
-        }
-        return;
-      }
+    // Style continuous pill
+    const btnCont = document.getElementById('deepBtnContinuous');
+    if (btnCont) {
+      btnCont.classList.add('active');
+      btnCont.style.background = 'var(--accent)';
+      btnCont.style.color = '#fff';
+      btnCont.style.border = 'none';
+    }
 
-      const m15StartTs = 1735702200; // 2025-01-01
-      const isPre2025 = range.from < m15StartTs;
+    const titleEl = document.getElementById('deepChartTitle');
+    const scopeBadge = document.getElementById('deepContractDataScopeBadge');
 
-      if ((spanDays > 120 || isPre2025) && currentResolution !== 'daily') {
-        isSwitchingResolution = true;
-        const cur = chart.timeScale().getVisibleRange();
-        loadDailyTier(false).finally(() => {
-          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
-          setTimeout(() => { isSwitchingResolution = false; }, 200);
-        });
-      } else if (spanDays <= 120 && spanDays > 7 && !isPre2025 && currentResolution !== '15m') {
-        isSwitchingResolution = true;
-        const cur = chart.timeScale().getVisibleRange();
-        load15mTier().finally(() => {
-          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
-          setTimeout(() => { isSwitchingResolution = false; }, 200);
-        });
-      } else if (spanDays <= 7 && !isPre2025 && currentResolution !== '1m') {
-        isSwitchingResolution = true;
-        const cur = chart.timeScale().getVisibleRange();
-        load1mTier(range.from, range.to).finally(() => {
-          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
-          setTimeout(() => { isSwitchingResolution = false; }, 200);
-        });
-      }
-    }, 300);
+    if (titleEl) {
+      titleEl.textContent = 'Front-Month Historical Price Action & Intraday Structure';
+      titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery.');
+    }
+    if (scopeBadge) {
+      scopeBadge.innerHTML = '<strong>Data</strong> 8Y Front-Month';
+      scopeBadge.setAttribute('data-dyn-title', '8-Year Continuous Front-Month');
+      scopeBadge.setAttribute('data-dyn-body', 'Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts.');
+    }
+
+    const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
+    if (allBtn) {
+      allBtn.textContent = '8Y (All)';
+      allBtn.setAttribute('data-dyn-title', '8Y Full Macro View');
+      allBtn.setAttribute('data-dyn-body', 'Displays all 8 years of historical daily prices (2019 to 2026).');
+    }
+
+    await loadDailyTier(true);
+    setTimeout(() => { isSwitchingResolution = false; }, 200);
   }
 
   function updateBadges(resText, countText) {
@@ -783,11 +942,66 @@
       });
     }
 
-    // Contract Selector Dropdown
-    const contractSelect = document.getElementById('deepContractSelect');
-    if (contractSelect) {
-      contractSelect.addEventListener('change', (e) => {
-        switchContract(e.target.value);
+    // ── Dynamic Contract Selector Controls ──
+    const btnCont = document.getElementById('deepBtnContinuous');
+    if (btnCont) {
+      btnCont.addEventListener('click', () => {
+        activateContinuous();
+      });
+    }
+
+    const symNG = document.getElementById('deepSymNG');
+    const symNGM = document.getElementById('deepSymNGM');
+    if (symNG && symNGM) {
+      symNG.addEventListener('click', () => {
+        symNG.classList.add('active');
+        symNG.style.background = 'var(--surface)';
+        symNG.style.color = 'var(--accent)';
+        symNGM.classList.remove('active');
+        symNGM.style.background = 'transparent';
+        symNGM.style.color = 'var(--text-muted)';
+        buildDeepContractDropdowns('ng', null).then(() => {
+          const mSel = document.getElementById('deepMonthSelect');
+          if (activeContractMode !== 'continuous' && mSel && mSel.value) {
+            activateContract('ng', mSel.value);
+          }
+        });
+      });
+
+      symNGM.addEventListener('click', () => {
+        symNGM.classList.add('active');
+        symNGM.style.background = 'var(--surface)';
+        symNGM.style.color = 'var(--accent)';
+        symNG.classList.remove('active');
+        symNG.style.background = 'transparent';
+        symNG.style.color = 'var(--text-muted)';
+        buildDeepContractDropdowns('ngm', null).then(() => {
+          const mSel = document.getElementById('deepMonthSelect');
+          if (activeContractMode !== 'continuous' && mSel && mSel.value) {
+            activateContract('ngm', mSel.value);
+          }
+        });
+      });
+    }
+
+    const yrSel = document.getElementById('deepYearSelect');
+    if (yrSel) {
+      yrSel.addEventListener('change', () => {
+        const entries = (contractIndexCache && contractIndexCache[activeContractSym]) ? contractIndexCache[activeContractSym] : [];
+        populateDeepMonths(entries, yrSel.value, null, null);
+        const mSel = document.getElementById('deepMonthSelect');
+        if (mSel && mSel.value) {
+          activateContract(activeContractSym, mSel.value);
+        }
+      });
+    }
+
+    const mSel = document.getElementById('deepMonthSelect');
+    if (mSel) {
+      mSel.addEventListener('change', () => {
+        if (mSel.value) {
+          activateContract(activeContractSym, mSel.value);
+        }
       });
     }
 
@@ -801,12 +1015,13 @@
         if (activeContractMode === 'continuous') {
           loadDailyTier(true);
         } else {
-          loadContractTier(activeContractMode, '15m').then(() => {
-            chart.timeScale().fitContent();
-          });
+          chart.timeScale().fitContent();
         }
       });
     }
+
+    // Initialize contract dropdowns dynamically from contract_index.json
+    buildDeepContractDropdowns('ng', null);
   }
 
   function applyTimeframe(tf) {
@@ -818,16 +1033,25 @@
     }
 
     if (activeContractMode !== 'continuous') {
-      const bars = contractCache[activeContractMode]?.[currentResolution] ||
-                   contractCache[activeContractMode]?.['15m'] ||
-                   contractCache[activeContractMode]?.['1m'];
+      const prefix = activeContractSym === 'ngm' ? 'NGM' : 'NG';
+      const m = (activeContractMode || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+      const tag = m ? `${prefix}_${m[2].slice(-2)}${m[1]}` : activeContractMode;
+      const bars = contractCache[tag]?.[currentResolution] ||
+                   contractCache[tag]?.['15m'] ||
+                   contractCache[tag]?.['daily'] ||
+                   contractCache[tag]?.['1m'];
       const nowTs = (bars && bars.length) ? bars[bars.length - 1].time : 1792068300;
 
       if (tf === 'ALL') {
-        loadContractTier(activeContractMode, '15m').then(() => {
+        if (activeContractType === 'intraday') {
+          loadContractTier(tag, '15m').then(() => {
+            chart.timeScale().fitContent();
+            setTimeout(() => { isSwitchingResolution = false; }, 250);
+          });
+        } else {
           chart.timeScale().fitContent();
           setTimeout(() => { isSwitchingResolution = false; }, 250);
-        });
+        }
         return;
       }
 
@@ -847,12 +1071,17 @@
 
       const fromTs = nowTs - Math.round(days * 86400);
       const toTs = nowTs;
-      const targetRes = (days <= 7) ? '1m' : '15m';
 
-      loadContractTier(activeContractMode, targetRes).then(() => {
+      if (activeContractType === 'intraday') {
+        const targetRes = (days <= 7) ? '1m' : '15m';
+        loadContractTier(tag, targetRes).then(() => {
+          chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+          setTimeout(() => { isSwitchingResolution = false; }, 250);
+        });
+      } else {
         chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
         setTimeout(() => { isSwitchingResolution = false; }, 250);
-      });
+      }
       return;
     }
 
