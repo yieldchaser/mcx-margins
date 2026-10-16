@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-10-15T11:11:01Z",
+  "generated_at": "2026-10-16T01:32:44Z",
   "series_scope": "front_month",
   "symbols": {
     "NATURALGAS": {
@@ -55488,22 +55488,22 @@
           "rolling_realized_vol_20d": 52.23,
           "initial_margin_pct": 15.97,
           "liquidity_score": 80.4
+        },
+        {
+          "date": "2026-10-15",
+          "series_scope": "front_month",
+          "matched_expiry": "27OCT2026",
+          "vol_regime": "ELEVATED",
+          "margin_regime": "ELEVATED",
+          "liquidity_regime": "STRESS",
+          "funding_friction_score": 50.0,
+          "return_1d_pct": 0.691,
+          "rolling_realized_vol_20d": 52.039,
+          "initial_margin_pct": 16.28,
+          "liquidity_score": 89.3
         }
       ],
       "event_windows": [
-        {
-          "date": "2025-10-28",
-          "matched_expiry": "28OCT2025",
-          "events": [
-            "volume_shock",
-            "oi_shift"
-          ],
-          "margin_change_1d": -0.38,
-          "return_1d_pct": -2.272,
-          "volume_z_20d": -2.418,
-          "oi_change_pct": -21.633,
-          "funding_friction_score": 89.8
-        },
         {
           "date": "2025-10-29",
           "matched_expiry": "24NOV2025",
@@ -57744,6 +57744,18 @@
           "volume_z_20d": 0.844,
           "oi_change_pct": 23.321,
           "funding_friction_score": 52.4
+        },
+        {
+          "date": "2026-10-15",
+          "matched_expiry": "27OCT2026",
+          "events": [
+            "volume_shock"
+          ],
+          "margin_change_1d": 0.31,
+          "return_1d_pct": 0.691,
+          "volume_z_20d": 2.049,
+          "oi_change_pct": -5.992,
+          "funding_friction_score": 50.0
         }
       ],
       "correlations": {
@@ -57754,15 +57766,15 @@
           "oi_change_pct": -0.1872
         },
         "lag_1": {
-          "price_return": 0.0296,
+          "price_return": 0.0295,
           "realized_vol_20d": -0.0659,
-          "volume_z_20d": 0.1275,
+          "volume_z_20d": 0.1276,
           "oi_change_pct": 0.0265
         },
         "lag_5": {
           "price_return": 0.0017,
           "realized_vol_20d": -0.0663,
-          "volume_z_20d": -0.0065,
+          "volume_z_20d": -0.0064,
           "oi_change_pct": 0.0035
         }
       }
@@ -69741,6 +69753,19 @@
           "rolling_realized_vol_20d": 51.928,
           "initial_margin_pct": 15.86,
           "liquidity_score": 86.2
+        },
+        {
+          "date": "2026-10-15",
+          "series_scope": "front_month",
+          "matched_expiry": "27OCT2026",
+          "vol_regime": "NORMAL",
+          "margin_regime": "CALM",
+          "liquidity_regime": "STRESS",
+          "funding_friction_score": 23.6,
+          "return_1d_pct": 0.7571,
+          "rolling_realized_vol_20d": 51.757,
+          "initial_margin_pct": 16.17,
+          "liquidity_score": 89.4
         }
       ],
       "event_windows": [
@@ -72013,20 +72038,20 @@
         "lag_0": {
           "price_return": 0.1317,
           "realized_vol_20d": 0.0148,
-          "volume_z_20d": 0.0209,
-          "oi_change_pct": -0.2468
+          "volume_z_20d": 0.0211,
+          "oi_change_pct": -0.2469
         },
         "lag_1": {
-          "price_return": -0.0308,
+          "price_return": -0.0309,
           "realized_vol_20d": -0.0721,
           "volume_z_20d": 0.1767,
           "oi_change_pct": 0.0392
         },
         "lag_5": {
           "price_return": 0.0245,
-          "realized_vol_20d": -0.0687,
-          "volume_z_20d": 0.0494,
-          "oi_change_pct": 0.0101
+          "realized_vol_20d": -0.0688,
+          "volume_z_20d": 0.0495,
+          "oi_change_pct": 0.01
         }
       }
     }
