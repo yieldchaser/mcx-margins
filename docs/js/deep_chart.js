@@ -52,7 +52,10 @@
     const container = document.getElementById('deepLightweightChartContainer');
     if (!container) return;
     if (chart) {
-      chart.applyOptions({ width: container.clientWidth });
+      if (container.clientWidth > 0) {
+        chart.applyOptions({ width: container.clientWidth });
+        chart.timeScale().fitContent();
+      }
       return;
     }
 
@@ -62,9 +65,14 @@
       return;
     }
 
+    if (container.clientWidth === 0) {
+      // Container not visible yet (e.g. another tab is active); defer initialization until tab is opened
+      return;
+    }
+
     // Create TradingView Lightweight Chart
     chart = LightweightCharts.createChart(container, {
-      width: container.clientWidth || 800,
+      width: container.clientWidth,
       height: 460,
       layout: {
         background: { type: 'solid', color: '#161b22' },
@@ -900,6 +908,96 @@
 
     await loadDailyTier(true);
     setTimeout(() => { isSwitchingResolution = false; }, 200);
+  }
+
+  async function loadContractTier(tag, res) {
+    updateBadges(`Loading ${res}...`, '--');
+    if (!contractCache[tag]) contractCache[tag] = {};
+
+    if (!contractCache[tag][res]) {
+      try {
+        const fetchRes = await fetch(`data/market/${tag}_${res}.json`);
+        if (!fetchRes.ok) {
+          if (res === '1m') {
+            console.warn(`1m data for ${tag} not found, falling back to 15m`);
+            return await loadContractTier(tag, '15m');
+          }
+          throw new Error(`Failed to load data/market/${tag}_${res}.json`);
+        }
+        const json = await fetchRes.json();
+        contractCache[tag][res] = parseColumnarBars(json);
+      } catch (err) {
+        console.error(`Error loading ${tag} ${res}:`, err);
+        updateBadges('Error', 'Failed to load');
+        return;
+      }
+    }
+
+    renderContractBars(contractCache[tag][res], res);
+  }
+
+  function onTimeRangeChanged(range) {
+    if (!range || !range.from || !range.to || isSwitchingResolution) return;
+
+    if (pendingLODTimeout) {
+      clearTimeout(pendingLODTimeout);
+    }
+
+    pendingLODTimeout = setTimeout(() => {
+      const spanDays = (range.to - range.from) / 86400;
+
+      if (activeContractMode !== 'continuous') {
+        if (activeContractType === 'daily') {
+          // Historical contract is daily only - no intraday LOD needed
+          return;
+        }
+        const prefix = activeContractSym === 'ngm' ? 'NGM' : 'NG';
+        const m = (activeContractMode || '').match(/^[0-9]{1,2}([A-Z]{3})(20[0-9]{2})$/);
+        const tag = m ? `${prefix}_${m[2].slice(-2)}${m[1]}` : activeContractMode;
+        if (spanDays <= 7 && currentResolution !== '1m') {
+          isSwitchingResolution = true;
+          const cur = chart.timeScale().getVisibleRange();
+          loadContractTier(tag, '1m').finally(() => {
+            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+            setTimeout(() => { isSwitchingResolution = false; }, 200);
+          });
+        } else if (spanDays > 7 && currentResolution !== '15m') {
+          isSwitchingResolution = true;
+          const cur = chart.timeScale().getVisibleRange();
+          loadContractTier(tag, '15m').finally(() => {
+            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+            setTimeout(() => { isSwitchingResolution = false; }, 200);
+          });
+        }
+        return;
+      }
+
+      const m15StartTs = 1735702200; // 2025-01-01
+      const isPre2025 = range.from < m15StartTs;
+
+      if ((spanDays > 120 || isPre2025) && currentResolution !== 'daily') {
+        isSwitchingResolution = true;
+        const cur = chart.timeScale().getVisibleRange();
+        loadDailyTier(false).finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
+      } else if (spanDays <= 120 && spanDays > 7 && !isPre2025 && currentResolution !== '15m') {
+        isSwitchingResolution = true;
+        const cur = chart.timeScale().getVisibleRange();
+        load15mTier().finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
+      } else if (spanDays <= 7 && !isPre2025 && currentResolution !== '1m') {
+        isSwitchingResolution = true;
+        const cur = chart.timeScale().getVisibleRange();
+        load1mTier(range.from, range.to).finally(() => {
+          if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+          setTimeout(() => { isSwitchingResolution = false; }, 200);
+        });
+      }
+    }, 300);
   }
 
   function updateBadges(resText, countText) {
