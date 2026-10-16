@@ -52,66 +52,67 @@ def clear_stale_git_locks():
         except Exception as e:
             log(f"Notice on git lock check: {e}")
 
-# 1. Check Authentication Token
+# Add scripts directory to sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# 1. Check & Ensure Authentication Token
 clear_stale_git_locks()
 
-if not os.path.exists(TOKEN_PATH):
-    env_token = os.environ.get("FYERS_ACCESS_TOKEN", "").strip()
-    if env_token:
-        os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
-        with open(TOKEN_PATH, "w", encoding="utf-8") as f:
-            f.write(env_token)
-        log("Loaded FYERS_ACCESS_TOKEN from environment variable.")
-    else:
-        log("ERROR: No access_token.txt found and FYERS_ACCESS_TOKEN env var not set.")
-        with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({"status": "missing", "message": "No access_token.txt found.", "last_check": datetime.now().isoformat()}, f)
-        sys.exit(1)
+def get_authenticated_fyers():
+    """Retrieves or autonomously generates an active FYERS model instance via TOTP."""
+    token = ""
+    if os.path.exists(TOKEN_PATH):
+        try:
+            with open(TOKEN_PATH, encoding="utf-8") as f:
+                token = f.read().strip()
+        except Exception:
+            token = ""
+            
+    if not token:
+        token = os.environ.get("FYERS_ACCESS_TOKEN", "").strip()
+        if token:
+            os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
+            with open(TOKEN_PATH, "w", encoding="utf-8") as f:
+                f.write(token)
+            log("Loaded FYERS_ACCESS_TOKEN from environment.")
 
-with open(TOKEN_PATH, encoding="utf-8") as f:
-    token = f.read().strip()
+    fyers_inst = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=token, log_path="") if token else None
+    prof = fyers_inst.get_profile() if fyers_inst else {"s": "error"}
 
-fyers = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=token, log_path="")
-
-# Verify Profile & Token Validity
-try:
-    prof = fyers.get_profile()
     if prof.get("s") != "ok":
-        log(f"WARN: FYERS Token expired ({prof.get('message', 'unknown')}). Attempting automated TOTP login...")
+        log(f"WARN: FYERS Token expired or missing ({prof.get('message', 're-auth required')}). Running headless TOTP auto-login...")
         try:
             from auto_fyers_login import auto_login
             if auto_login():
                 log("Automated TOTP login succeeded! Fresh token acquired.")
                 with open(TOKEN_PATH, encoding="utf-8") as f:
                     token = f.read().strip()
-                fyers = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=token, log_path="")
-                prof = fyers.get_profile()
-                user_name = prof.get("data", {}).get("name", "Authorized User")
+                fyers_inst = fyersModel.FyersModel(client_id="3WWLJD8YE4-200", is_async=False, token=token, log_path="")
+                prof = fyers_inst.get_profile()
             else:
-                log("Automated login credentials not yet configured. Exiting silently.")
+                log("ERROR: Headless auto-login failed.")
                 with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
                     json.dump({
                         "status": "expired",
-                        "message": f"Token expired. Re-authenticate via scripts/fyers_login_and_fetch.py or configure data/fyers_auth/credentials.json.",
+                        "message": "Token expired and automated TOTP login failed.",
                         "last_check": datetime.now().isoformat()
                     }, f)
-                sys.exit(0)
+                sys.exit(1)
         except Exception as e:
-            log(f"Notice on auto-login attempt: {e}")
-            sys.exit(0)
-    else:
-        user_name = prof.get("data", {}).get("name", "Authorized User")
-        with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({
-                "status": "active",
-                "user": user_name,
-                "message": "Token active and verified.",
-                "last_check": datetime.now().isoformat()
-            }, f)
-except Exception as e:
-    log(f"ERROR: Exception validating profile: {e}")
-    sys.exit(1)
+            log(f"ERROR during automated login: {e}")
+            sys.exit(1)
 
+    user_name = prof.get("data", {}).get("name", "Authorized User")
+    with open(TOKEN_STATUS_FILE, "w", encoding="utf-8") as f:
+        json.dump({
+            "status": "active",
+            "user": user_name,
+            "message": "Token active and verified.",
+            "last_check": datetime.now().isoformat()
+        }, f)
+    return fyers_inst, user_name
+
+fyers, user_name = get_authenticated_fyers()
 log(f"FYERS Session active for {user_name}. Checking active contracts...")
 
 # 2. Contracts to update
