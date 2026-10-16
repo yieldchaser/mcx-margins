@@ -212,6 +212,7 @@
 
     // ── Initial Load: Daily Tier 0 ──
     loadDailyTier(true);
+    startLivePolling();
   }
 
   function createFloatingTooltip(container) {
@@ -450,13 +451,35 @@
     });
   }
 
+  const cacheTimestamps = {
+    daily: 0,
+    m15: 0,
+    m1: {}
+  };
+
+  function updateGlobalLiveTimestamp(lastBar) {
+    if (!lastBar) return;
+    const priceLabel = document.getElementById('lastPriceUpdated');
+    if (priceLabel) {
+      const ts = lastBar.time;
+      const d = new Date(ts * 1000);
+      const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
+      const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+      const closePrice = (lastBar.close !== undefined) ? lastBar.close : lastBar.value;
+      const formattedPrice = (closePrice && closePrice > 0) ? ` · ₹${closePrice.toFixed(2)}` : '';
+      priceLabel.textContent = `MCX Live: ${dateStr} ${timeStr} IST${formattedPrice}`;
+    }
+  }
+
   async function loadDailyTier(fit) {
     updateBadges('Loading Daily...', '--');
     try {
-      if (!cache.daily) {
-        const res = await fetch('data/deep/ng_daily.json');
+      const isStale = ((Date.now() - (cacheTimestamps.daily || 0)) > 60000);
+      if (!cache.daily || isStale) {
+        const res = await fetch(`data/deep/ng_daily.json?_v=${Date.now()}`);
         if (!res.ok) throw new Error('Failed to load ng_daily.json');
         cache.daily = await res.json();
+        cacheTimestamps.daily = Date.now();
       }
 
       const cleanBars = sanitizeBars(cache.daily);
@@ -481,6 +504,7 @@
 
       currentResolution = 'daily';
       updateBadges('Daily (Macro)', `${cleanBars.length.toLocaleString()} bars`);
+      if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
 
       if (fit) {
         chart.timeScale().fitContent();
@@ -494,10 +518,12 @@
   async function load15mTier() {
     updateBadges('Loading 15m...', '--');
     try {
-      if (!cache.m15) {
-        const res = await fetch('data/deep/ng_15m.json');
+      const isStale = ((Date.now() - (cacheTimestamps.m15 || 0)) > 30000);
+      if (!cache.m15 || isStale) {
+        const res = await fetch(`data/deep/ng_15m.json?_v=${Date.now()}`);
         if (!res.ok) throw new Error('Failed to load ng_15m.json');
         cache.m15 = await res.json();
+        cacheTimestamps.m15 = Date.now();
       }
 
       const cleanBars = sanitizeBars(cache.m15);
@@ -522,6 +548,7 @@
 
       currentResolution = '15m';
       updateBadges('15-Minute (Swing)', `${cleanBars.length.toLocaleString()} bars`);
+      if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
     } catch (err) {
       console.error('Error loading 15m tier:', err);
     }
@@ -535,14 +562,20 @@
       const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const ym = istDateStr.slice(0, 7).replace('-', '_');
 
-      if (!cache.m1[ym]) {
-        const res = await fetch(`data/deep/1m/${ym}.json`);
+      const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
+      const isCurrentMonth = (ym === nowYm);
+      const isStale = isCurrentMonth && ((Date.now() - (cacheTimestamps.m1[ym] || 0)) > 30000);
+
+      if (!cache.m1[ym] || isStale) {
+        const url = isCurrentMonth ? `data/deep/1m/${ym}.json?_v=${Date.now()}` : `data/deep/1m/${ym}.json`;
+        const res = await fetch(url);
         if (!res.ok) {
           console.info(`1m data for ${ym} not found, falling back to 15m tier`);
           await load15mTier();
           return;
         }
         cache.m1[ym] = await res.json();
+        cacheTimestamps.m1[ym] = Date.now();
       }
 
       render1mRaw(cache.m1[ym]);
@@ -584,6 +617,80 @@
 
     currentResolution = '1m';
     updateBadges('1-Minute (Microstructure)', `${cleanBars.length.toLocaleString()} bars`);
+    if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
+  }
+
+  // ── Client-side Silent Live Polling (60-second Interval) ──
+  let livePollingTimer = null;
+
+  async function pollLiveUpdate() {
+    if (activeContractMode !== 'continuous' || isSwitchingResolution) return;
+    const curRange = chart ? chart.timeScale().getVisibleRange() : null;
+
+    if (currentResolution === '1m') {
+      const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
+      try {
+        const res = await fetch(`data/deep/1m/${nowYm}.json?_v=${Date.now()}`);
+        if (res.ok) {
+          const freshBars = await res.json();
+          const prevLen = cache.m1[nowYm] ? cache.m1[nowYm].length : 0;
+          if (freshBars.length !== prevLen) {
+            cache.m1[nowYm] = freshBars;
+            cacheTimestamps.m1[nowYm] = Date.now();
+            render1mRaw(freshBars);
+            if (curRange && curRange.from && curRange.to) {
+              chart.timeScale().setVisibleRange(curRange);
+            }
+          }
+        }
+      } catch (e) {}
+    } else if (currentResolution === '15m') {
+      try {
+        const res = await fetch(`data/deep/ng_15m.json?_v=${Date.now()}`);
+        if (res.ok) {
+          const freshBars = await res.json();
+          const prevLen = cache.m15 ? cache.m15.length : 0;
+          if (freshBars.length !== prevLen) {
+            cache.m15 = freshBars;
+            cacheTimestamps.m15 = Date.now();
+            load15mTier();
+            if (curRange && curRange.from && curRange.to) {
+              chart.timeScale().setVisibleRange(curRange);
+            }
+          }
+        }
+      } catch (e) {}
+    } else if (currentResolution === 'daily') {
+      try {
+        const res = await fetch(`data/deep/ng_daily.json?_v=${Date.now()}`);
+        if (res.ok) {
+          const freshBars = await res.json();
+          cache.daily = freshBars;
+          cacheTimestamps.daily = Date.now();
+          loadDailyTier(false);
+          if (curRange && curRange.from && curRange.to) {
+            chart.timeScale().setVisibleRange(curRange);
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  function startLivePolling() {
+    if (livePollingTimer) clearInterval(livePollingTimer);
+    livePollingTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        pollLiveUpdate();
+      }
+    }, 60000);
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        pollLiveUpdate();
+      }
+    });
   }
 
   // ── Standalone Contract & Dynamic Ingestion Helpers ──

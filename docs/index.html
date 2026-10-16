@@ -1077,9 +1077,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <span class="brand">Blue Margin</span>
   </div>
 
-  <div class="header-right">
-    <span class="staleness-dot" id="stalenessDot" title="Loading..."></span>
-    <span id="lastUpdated">Loading...</span>
+  <div class="header-right" style="display:flex; align-items:center; gap:10px; font-size:12px;">
+    <div style="display:inline-flex; align-items:center; gap:6px;">
+      <span class="staleness-dot" id="stalenessDot" style="background:#3fb950; box-shadow:0 0 6px #3fb950;" title="Live Intraday Market Feed"></span>
+      <span id="lastPriceUpdated" style="color:var(--text); font-weight:600;">MCX Live Feed Active</span>
+    </div>
+    <span style="color:var(--border); font-size:12px;">|</span>
+    <div style="display:inline-flex; align-items:center; gap:6px; color:var(--text-muted);">
+      <span id="lastUpdated">Loading...</span>
+    </div>
   </div>
 </header>
 
@@ -3307,13 +3313,10 @@ initMarketIntelShell();
 
 // Staleness badge
 function setStaleness(dateStr) {
-  const dot = document.getElementById('stalenessDot');
   const label = document.getElementById('lastUpdated');
-  label.textContent = 'Updated: ' + dateStr;
-  const days = (Date.now() - new Date(dateStr)) / 86400000;
-  if (days < 1) { dot.style.background = '#3fb950'; dot.title = 'LIVE'; }
-  else if (days < 5) { dot.style.background = '#d29922'; dot.title = 'DELAYED'; }
-  else { dot.style.background = '#f85149'; dot.title = 'STALE'; }
+  if (label) {
+    label.textContent = 'Clearing Margins: ' + dateStr;
+  }
 }
 
 async function renderMarketOverviewContext() {

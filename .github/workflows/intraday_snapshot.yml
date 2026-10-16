@@ -8,6 +8,8 @@ on:
   schedule:
     # Runs every 10 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
     - cron: '*/10 3-18 * * 1-5'
+  repository_dispatch:
+    types: [intraday_sync]
   workflow_dispatch:
 
 concurrency:

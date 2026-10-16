@@ -112,9 +112,6 @@ def get_authenticated_fyers():
         }, f)
     return fyers_inst, user_name
 
-fyers, user_name = get_authenticated_fyers()
-log(f"FYERS Session active for {user_name}. Checking active contracts...")
-
 MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
 def resolve_active_contracts(fyers_client, now_dt):
@@ -155,187 +152,222 @@ def resolve_active_contracts(fyers_client, now_dt):
     ]
     return contracts
 
-now = datetime.now()
-active_contracts = resolve_active_contracts(fyers, now)
-start_dt = now - timedelta(days=5)
-
-for base, exp, sym, pfile, is_front, front_yr, front_mo in active_contracts:
-    payload = {
-        "symbol": sym,
-        "resolution": "1",
-        "date_format": "1",
-        "range_from": start_dt.strftime("%Y-%m-%d"),
-        "range_to": now.strftime("%Y-%m-%d"),
-        "cont_flag": "0",
-        "oi_flag": "1"
-    }
-    
-    try:
-        r = fyers.history(data=payload)
-        if r.get("s") == "ok" and r.get("candles") and len(r["candles"]) > 0:
-            candles = r["candles"]
-            cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
-            df_new = pd.DataFrame(candles, columns=cols[:len(candles[0])])
-            df_new["symbol"] = sym
-            df_new["commodity"] = base
-            df_new["expiry"] = exp
-            df_new["ts_ist"] = pd.to_datetime(df_new["epoch"], unit="s", utc=True).dt.tz_convert("Asia/Kolkata")
-            
-            # Robust merge and deduplication
-            if os.path.exists(pfile):
-                df_existing = pd.read_parquet(pfile)
-                df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-                df_combined = df_combined.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
-            else:
-                df_combined = df_new
-                
-            df_combined.to_parquet(pfile, compression="zstd")
-            log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
-
-            # If front month, update the deep chart LOD tiers
-            if is_front:
-                try:
-                    month_str = f"{front_yr}_{front_mo:02d}"
-                    deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", "1m")
-                    os.makedirs(deep_1m_dir, exist_ok=True)
-                    deep_1m_file = os.path.join(deep_1m_dir, f"{month_str}.json")
-                    existing_bars = []
-                    if os.path.exists(deep_1m_file):
-                        with open(deep_1m_file, "r", encoding="utf-8") as f:
-                            existing_bars = json.load(f)
-                    bar_map = {b[0]: b for b in existing_bars}
-                    month_start_epoch = int(datetime(front_yr, front_mo, 1, 0, 0, tzinfo=timezone.utc).timestamp())
-                    df_cur_month = df_combined[df_combined["epoch"] >= month_start_epoch]
-                    for _, row in df_cur_month.iterrows():
-                        bar_map[int(row["epoch"])] = [
-                            int(row["epoch"]),
-                            round(float(row["open"]), 2),
-                            round(float(row["high"]), 2),
-                            round(float(row["low"]), 2),
-                            round(float(row["close"]), 2),
-                            int(row["volume"])
-                        ]
-                    merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
-                    with open(deep_1m_file, "w", encoding="utf-8") as f:
-                        json.dump(merged_bars, f, separators=(',', ':'))
-                    last_ts = df_cur_month['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_cur_month) > 0 else 'recent'
-                    log(f"Synchronized docs/data/deep/1m/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
-
-                    # Synchronize Tier 2: ng_15m.json
-                    m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
-                    if os.path.exists(m15_file):
-                        # ONLY resample the active recent 5-day window to preserve continuous historical front-month data
-                        recent_start_epoch = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp())
-                        df_resample = df_combined[df_combined["epoch"] >= recent_start_epoch].copy()
-                        if len(df_resample) > 0:
-                            df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
-                            m15_res = df_resample.resample("15min").agg({
-                                "open": "first",
-                                "high": "max",
-                                "low": "min",
-                                "close": "last",
-                                "volume": "sum",
-                                "epoch": "first"
-                            }).dropna()
-                            m15_new_bars = []
-                            for dt_idx, r in m15_res.iterrows():
-                                m15_new_bars.append({
-                                    "time": int(dt_idx.timestamp()),
-                                    "open": round(float(r["open"]), 2),
-                                    "high": round(float(r["high"]), 2),
-                                    "low": round(float(r["low"]), 2),
-                                    "close": round(float(r["close"]), 2),
-                                    "volume": int(r["volume"])
-                                })
-                            with open(m15_file, "r", encoding="utf-8") as f:
-                                existing_m15 = json.load(f)
-                            existing_map = {b["time"]: b for b in existing_m15}
-                            for nb in m15_new_bars:
-                                existing_map[nb["time"]] = nb
-                            merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
-                            with open(m15_file, "w", encoding="utf-8") as f:
-                                json.dump(merged_m15, f, separators=(',', ':'))
-                            log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
-
-                    # Synchronize Tier 0: ng_daily.json today's bar
-                    daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_daily.json")
-                    if os.path.exists(daily_file):
-                        today_str = now.strftime("%Y-%m-%d")
-                        today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
-                        if len(today_bars) > 0:
-                            # In ng_daily.json, daily timestamps are aligned at 03:30:00 UTC (12600s) to match continuous vault
-                            today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 12600
-                            today_daily = {
-                                "time": today_epoch,
-                                "open": round(float(today_bars["open"].iloc[0]), 2),
-                                "high": round(float(today_bars["high"].max()), 2),
-                                "low": round(float(today_bars["low"].min()), 2),
-                                "close": round(float(today_bars["close"].iloc[-1]), 2),
-                                "volume": int(today_bars["volume"].sum())
-                            }
-                            with open(daily_file, "r", encoding="utf-8") as f:
-                                daily_bars = json.load(f)
-                            existing_daily_map = {b["time"]: b for b in daily_bars}
-                            existing_daily_map[today_epoch] = today_daily
-                            merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
-                            with open(daily_file, "w", encoding="utf-8") as f:
-                                json.dump(merged_daily, f, separators=(',', ':'))
-                            log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars)")
-                except Exception as e:
-                    log(f"Notice updating deep LOD tiers: {e}")
-        else:
-            log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
-        time.sleep(0.35)
-    except Exception as e:
-        log(f"Error updating {sym}: {e}")
-
-# 3. Re-run Pre-Computation Pipeline
-log("Re-running pre-computation exporters...")
-scripts_to_run = []
-
-# Only run TOD seasonality if historical continuous vault exists
-vault_continuous = os.path.join(REPO_DIR, "data", "mcx_vault", "NATURALGAS_1m_continuous_2019_2026.parquet")
-if os.path.exists(vault_continuous):
-    scripts_to_run.append(os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"))
-
-scripts_to_run.extend([
-    os.path.join(REPO_DIR, "scripts", "export_options_chain.py"),
-    os.path.join(REPO_DIR, "scripts", "export_intraday_rollups.py")
-])
-
-for script in scripts_to_run:
-    try:
-        res = subprocess.run([PYTHON_EXE, script], cwd=REPO_DIR, check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as e:
-        log(f"Notice on {os.path.basename(script)}: {e.stderr[:200] if e.stderr else 'error'}")
-    except Exception as e:
-        log(f"Notice running {os.path.basename(script)}: {e}")
-
-# 4. Fault-Tolerant Git Commit & Push
-try:
+def run_snapshot_cycle():
     clear_stale_git_locks()
-    status_res = subprocess.run(["git", "status", "--porcelain", "docs/data/"], cwd=REPO_DIR, capture_output=True, text=True)
-    if status_res.stdout.strip():
-        log("Changes detected in docs/data/. Syncing with GitHub Pages...")
-        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=REPO_DIR, check=False)
-        subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=REPO_DIR, check=False)
-        subprocess.run(["git", "add", "docs/data/"], cwd=REPO_DIR, check=True)
-        commit_msg = f"data: automated market snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        subprocess.run(["git", "commit", "-m", commit_msg], cwd=REPO_DIR, check=True)
-        
-        # Pull rebase with auto-recovery and autostash
-        try:
-            subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "main"], cwd=REPO_DIR, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            log(f"Rebase notice: {e.stderr}. Attempting auto-recovery...")
-            subprocess.run(["git", "rebase", "--abort"], cwd=REPO_DIR, capture_output=True)
-            subprocess.run(["git", "pull", "--no-rebase", "origin", "main"], cwd=REPO_DIR, check=False)
-            
-        subprocess.run(["git", "push", "origin", "main"], cwd=REPO_DIR, check=True)
-        log("SUCCESS: Pushed automated market snapshot to GitHub Pages!")
-    else:
-        log("docs/data/ is fully synchronized. No git push required.")
-except Exception as e:
-    log(f"Git auto-sync notice: {e}")
+    fyers, user_name = get_authenticated_fyers()
+    log(f"FYERS Session active for {user_name}. Checking active contracts...")
 
-log("Snapshot completed cleanly.")
+    now = datetime.now()
+    active_contracts = resolve_active_contracts(fyers, now)
+    start_dt = now - timedelta(days=5)
+
+    for base, exp, sym, pfile, is_front, front_yr, front_mo in active_contracts:
+        payload = {
+            "symbol": sym,
+            "resolution": "1",
+            "date_format": "1",
+            "range_from": start_dt.strftime("%Y-%m-%d"),
+            "range_to": now.strftime("%Y-%m-%d"),
+            "cont_flag": "0",
+            "oi_flag": "1"
+        }
+        
+        try:
+            r = fyers.history(data=payload)
+            if r.get("s") == "ok" and r.get("candles") and len(r["candles"]) > 0:
+                candles = r["candles"]
+                cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
+                df_new = pd.DataFrame(candles, columns=cols[:len(candles[0])])
+                df_new["symbol"] = sym
+                df_new["commodity"] = base
+                df_new["expiry"] = exp
+                df_new["ts_ist"] = pd.to_datetime(df_new["epoch"], unit="s", utc=True).dt.tz_convert("Asia/Kolkata")
+                
+                # Robust merge and deduplication
+                if os.path.exists(pfile):
+                    df_existing = pd.read_parquet(pfile)
+                    df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+                    df_combined = df_combined.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
+                else:
+                    df_combined = df_new
+                    
+                df_combined.to_parquet(pfile, compression="zstd")
+                log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
+
+                # If front month, update the deep chart LOD tiers
+                if is_front:
+                    try:
+                        month_str = f"{front_yr}_{front_mo:02d}"
+                        deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", "1m")
+                        os.makedirs(deep_1m_dir, exist_ok=True)
+                        deep_1m_file = os.path.join(deep_1m_dir, f"{month_str}.json")
+                        existing_bars = []
+                        if os.path.exists(deep_1m_file):
+                            with open(deep_1m_file, "r", encoding="utf-8") as f:
+                                existing_bars = json.load(f)
+                        bar_map = {b[0]: b for b in existing_bars}
+                        month_start_epoch = int(datetime(front_yr, front_mo, 1, 0, 0, tzinfo=timezone.utc).timestamp())
+                        df_cur_month = df_combined[df_combined["epoch"] >= month_start_epoch]
+                        for _, row in df_cur_month.iterrows():
+                            bar_map[int(row["epoch"])] = [
+                                int(row["epoch"]),
+                                round(float(row["open"]), 2),
+                                round(float(row["high"]), 2),
+                                round(float(row["low"]), 2),
+                                round(float(row["close"]), 2),
+                                int(row["volume"])
+                            ]
+                        merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
+                        with open(deep_1m_file, "w", encoding="utf-8") as f:
+                            json.dump(merged_bars, f, separators=(',', ':'))
+                        last_ts = df_cur_month['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_cur_month) > 0 else 'recent'
+                        log(f"Synchronized docs/data/deep/1m/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
+
+                        # Synchronize Tier 2: ng_15m.json
+                        m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
+                        if os.path.exists(m15_file):
+                            # ONLY resample the active recent 5-day window to preserve continuous historical front-month data
+                            recent_start_epoch = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp())
+                            df_resample = df_combined[df_combined["epoch"] >= recent_start_epoch].copy()
+                            if len(df_resample) > 0:
+                                df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
+                                m15_res = df_resample.resample("15min").agg({
+                                    "open": "first",
+                                    "high": "max",
+                                    "low": "min",
+                                    "close": "last",
+                                    "volume": "sum",
+                                    "epoch": "first"
+                                }).dropna()
+                                m15_new_bars = []
+                                for dt_idx, r in m15_res.iterrows():
+                                    m15_new_bars.append({
+                                        "time": int(dt_idx.timestamp()),
+                                        "open": round(float(r["open"]), 2),
+                                        "high": round(float(r["high"]), 2),
+                                        "low": round(float(r["low"]), 2),
+                                        "close": round(float(r["close"]), 2),
+                                        "volume": int(r["volume"])
+                                    })
+                                with open(m15_file, "r", encoding="utf-8") as f:
+                                    existing_m15 = json.load(f)
+                                existing_map = {b["time"]: b for b in existing_m15}
+                                for nb in m15_new_bars:
+                                    existing_map[nb["time"]] = nb
+                                merged_m15 = sorted(existing_map.values(), key=lambda x: x["time"])
+                                with open(m15_file, "w", encoding="utf-8") as f:
+                                    json.dump(merged_m15, f, separators=(',', ':'))
+                                log(f"Synchronized docs/data/deep/ng_15m.json ({len(merged_m15):,} bars).")
+
+                        # Synchronize Tier 0: ng_daily.json today's bar
+                        daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_daily.json")
+                        if os.path.exists(daily_file):
+                            today_str = now.strftime("%Y-%m-%d")
+                            today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
+                            if len(today_bars) > 0:
+                                # In ng_daily.json, daily timestamps are aligned at 03:30:00 UTC (12600s) to match continuous vault
+                                today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 12600
+                                today_daily = {
+                                    "time": today_epoch,
+                                    "open": round(float(today_bars["open"].iloc[0]), 2),
+                                    "high": round(float(today_bars["high"].max()), 2),
+                                    "low": round(float(today_bars["low"].min()), 2),
+                                    "close": round(float(today_bars["close"].iloc[-1]), 2),
+                                    "volume": int(today_bars["volume"].sum())
+                                }
+                                with open(daily_file, "r", encoding="utf-8") as f:
+                                    daily_bars = json.load(f)
+                                existing_daily_map = {b["time"]: b for b in daily_bars}
+                                existing_daily_map[today_epoch] = today_daily
+                                merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
+                                with open(daily_file, "w", encoding="utf-8") as f:
+                                    json.dump(merged_daily, f, separators=(',', ':'))
+                                log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars)")
+                    except Exception as e:
+                        log(f"Notice updating deep LOD tiers: {e}")
+            else:
+                log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
+            time.sleep(0.35)
+        except Exception as e:
+            log(f"Error updating {sym}: {e}")
+
+    # 3. Re-run Pre-Computation Pipeline
+    log("Re-running pre-computation exporters...")
+    scripts_to_run = []
+
+    # Only run TOD seasonality if historical continuous vault exists
+    vault_continuous = os.path.join(REPO_DIR, "data", "mcx_vault", "NATURALGAS_1m_continuous_2019_2026.parquet")
+    if os.path.exists(vault_continuous):
+        scripts_to_run.append(os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"))
+
+    scripts_to_run.extend([
+        os.path.join(REPO_DIR, "scripts", "export_options_chain.py"),
+        os.path.join(REPO_DIR, "scripts", "export_intraday_rollups.py")
+    ])
+
+    for script in scripts_to_run:
+        try:
+            res = subprocess.run([PYTHON_EXE, script], cwd=REPO_DIR, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            log(f"Notice on {os.path.basename(script)}: {e.stderr[:200] if e.stderr else 'error'}")
+        except Exception as e:
+            log(f"Notice running {os.path.basename(script)}: {e}")
+
+    # 4. Fault-Tolerant Git Commit & Push
+    try:
+        clear_stale_git_locks()
+        status_res = subprocess.run(["git", "status", "--porcelain", "docs/data/"], cwd=REPO_DIR, capture_output=True, text=True)
+        if status_res.stdout.strip():
+            log("Changes detected in docs/data/. Syncing with GitHub Pages...")
+            subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=REPO_DIR, check=False)
+            subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=REPO_DIR, check=False)
+            subprocess.run(["git", "add", "docs/data/"], cwd=REPO_DIR, check=True)
+            commit_msg = f"data: automated market snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            subprocess.run(["git", "commit", "-m", commit_msg], cwd=REPO_DIR, check=True)
+            
+            # Pull rebase with auto-recovery and autostash
+            try:
+                subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "main"], cwd=REPO_DIR, check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                log(f"Rebase notice: {e.stderr}. Attempting auto-recovery...")
+                subprocess.run(["git", "rebase", "--abort"], cwd=REPO_DIR, capture_output=True)
+                subprocess.run(["git", "pull", "--no-rebase", "origin", "main"], cwd=REPO_DIR, check=False)
+                
+            subprocess.run(["git", "push", "origin", "main"], cwd=REPO_DIR, check=True)
+            log("SUCCESS: Pushed automated market snapshot to GitHub Pages!")
+        else:
+            log("docs/data/ is fully synchronized. No git push required.")
+    except Exception as e:
+        log(f"Git auto-sync notice: {e}")
+
+    log("Snapshot completed cleanly.")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Automated Market Snapshot & Synchronizer")
+    parser.add_argument("--loop", type=int, default=0, help="Loop interval in seconds (e.g. 600 for every 10 mins). If 0, runs once.")
+    args, _ = parser.parse_known_args()
+
+    run_snapshot_cycle()
+
+    if args.loop > 0:
+        log(f"Continuous daemon active. Polling every {args.loop}s during MCX trading hours...")
+        while True:
+            time.sleep(args.loop)
+            try:
+                now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                # Weekend check: Saturday=5, Sunday=6
+                if now_ist.weekday() >= 5:
+                    log("Market closed (Weekend). Skipping poll.")
+                    continue
+                cur_min = now_ist.hour * 60 + now_ist.minute
+                # MCX trading hours: 09:00 to 23:35 IST
+                if cur_min < 9 * 60 or cur_min > 23 * 60 + 35:
+                    log(f"Market closed (Outside 09:00 - 23:35 IST, current: {now_ist.strftime('%H:%M')} IST). Waiting...")
+                    continue
+                run_snapshot_cycle()
+            except KeyboardInterrupt:
+                log("Daemon stopped by user.")
+                break
+            except Exception as e:
+                log(f"Error in snapshot cycle: {e}. Retrying in {args.loop}s...")
