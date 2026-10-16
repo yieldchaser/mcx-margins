@@ -1307,14 +1307,26 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </div>
         <!-- Resolution Mode Switch: Daily Macro vs Granular Intraday -->
         <div style="display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;flex-shrink:0;">
-          <button id="lcModeMacro" class="lc-ctrl lc-active" title="Daily Macro View (Margins & Flow Overlays)">📊 Daily Macro</button>
-          <button id="lcModeIntra" class="lc-ctrl" title="Granular 15m & 1m Intraday Microstructure">⚡ Intraday 15m/1m</button>
+          <button id="lcModeMacro" class="lc-ctrl lc-active" title="Daily Macro View (Margins & Flow Overlays)" style="display:inline-flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Daily Macro
+          </button>
+          <button id="lcModeIntra" class="lc-ctrl" title="Granular 15m & 1m Intraday Microstructure" style="display:inline-flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Intraday 15m/1m
+          </button>
         </div>
         <!-- Daily Macro Controls -->
         <div id="lcMacroControls" style="display:contents;">
           <div style="display:flex;gap:4px;flex-shrink:0;">
-            <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date">&#x1F4C5; Date</button>
-            <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)">&#x23F1; DTE &#x2193;</button>
+            <button id="lcAxisDate" class="lc-ctrl lc-active" title="X-axis: calendar date" style="display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              Date
+            </button>
+            <button id="lcAxisDTE"  class="lc-ctrl"           title="X-axis: days-to-expiry countdown (far &#x2192; 0)" style="display:inline-flex;align-items:center;gap:5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg>
+              DTE &darr;
+            </button>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0;">
             <button class="lc-ctrl lc-active lc-metric-btn" data-metric="initial" title="Initial Margin %">Initial %</button>
@@ -1357,7 +1369,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <!-- Chart with empty-state overlay -->
       <div style="position:relative;">
         <div id="lcEmptyState" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;background:var(--surface);border-radius:6px;border:1px dashed var(--border);text-align:center;gap:6px;padding:24px;pointer-events:none;">
-          <div style="font-size:34px;line-height:1;opacity:0.28;">&#x1F4C8;</div>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35; margin-bottom:4px;" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
           <div style="font-size:14px;font-weight:600;color:var(--text-muted);">Select a contract above to explore its lifecycle</div>
           <div style="font-size:11px;color:var(--text-muted);opacity:0.65;">196+ contracts tracked &#x00B7; new ones auto-appear from daily updates</div>
         </div>
@@ -1379,7 +1391,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
       <!-- Quick prompt to switch to Intraday if short window -->
       <div id="lcIntraPrompt" style="display:none;margin-top:10px;padding:8px 14px;background:rgba(56,139,253,0.08);border:1px solid rgba(56,139,253,0.25);border-radius:6px;align-items:center;justify-content:space-between;font-size:12px;">
-        <span style="color:#e6edf3;">⚡ Granular 15-minute and 1-minute intraday tick microstructure is available for this contract.</span>
+        <span style="color:#e6edf3; display:inline-flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Granular 15-minute and 1-minute intraday tick microstructure is available for this contract.
+        </span>
         <button id="btnSwitchToIntra" class="btn" style="padding:4px 10px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">View Intraday (15m / 1m)</button>
       </div>
 
@@ -2039,8 +2054,9 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">CONTRACT:</span>
               
               <!-- Quick 8Y Continuous Front-Month Button -->
-              <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)" style="background:var(--accent); color:#fff; border:none; border-radius:3px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s ease;">
-                ⭐️ Continuous 8Y
+              <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)" style="background:var(--accent); color:#fff; border:none; border-radius:3px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s ease; display:inline-flex; align-items:center; gap:5px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.178-8-12.356-8-5.096 0-5.096 8 0 8 5.178 0 7.261-8 12.356-8z"/></svg>
+                <span>Continuous (8Y)</span>
               </button>
 
               <span style="color:var(--border); font-size:12px; margin:0 1px;">|</span>
@@ -2125,7 +2141,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="chart-container" style="height:320px;"><canvas id="chartTODSeasonality"></canvas></div>
       
       <div id="todInsightText" style="margin-top:12px; font-size:12px; color:var(--text); background:var(--surface2); border:1px solid var(--border); padding:10px 14px; border-radius:6px; line-height:1.5;">
-        💡 <strong>Intraday Cycle:</strong> Morning session (09:00–10:30 IST) exhibits elevated opening jump volatility. Peak session liquidity and maximum range expansion occur during US NYMEX overlap (18:30–21:30 IST).
+        <span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>Intraday Cycle:</span> Morning session (09:00–10:30 IST) exhibits elevated opening jump volatility. Peak session liquidity and maximum range expansion occur during US NYMEX overlap (18:30–21:30 IST).
       </div>
     </div>
     <div class="grid-2 market-grid mb-4">
@@ -3429,10 +3445,9 @@ async function renderPriceMarginConfluence() {
       const stressData = await loadJSON('stress_score');
       const sc = stressData.stress_score;
       const lbl = stressData.stress_label;
-      const icons = {CALM:'🟢', NORMAL:'🟡', MONITOR:'🟠', ELEVATED:'🔴', STRESS:'🔴'};
       const cls   = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
-      rEl.textContent = `${icons[lbl]||'⚪'} ${lbl}`;
       rEl.className = 'stat-value ' + (cls[lbl]||'');
+      rEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>${lbl}`;
       rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
       // FIX 5: position the white notch on the gradient bar
       const notchPct = Math.min(100, Math.max(0, sc));
@@ -3451,10 +3466,10 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
     } catch(e) {
       // Fallback to margin-based
       const m = front.initial_margin_pct;
-      if (m < 20) { rEl.textContent='🟢 CALM'; rEl.className='stat-value regime-calm'; rsEl.textContent='Low cost'; }
-      else if (m < 35) { rEl.textContent='🟡 NORMAL'; rEl.className='stat-value regime-elevated'; rsEl.textContent='Monitor'; }
-      else if (m < 50) { rEl.textContent='🟠 STRESSED'; rEl.className='stat-value regime-stressed'; rsEl.textContent='High margin'; }
-      else { rEl.textContent='🔴 CRISIS'; rEl.className='stat-value regime-crisis'; rsEl.textContent='Extreme'; }
+      if (m < 20) { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>CALM'; rEl.className='stat-value regime-calm'; rsEl.textContent='Low cost'; }
+      else if (m < 35) { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>NORMAL'; rEl.className='stat-value regime-elevated'; rsEl.textContent='Monitor'; }
+      else if (m < 50) { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>STRESSED'; rEl.className='stat-value regime-stressed'; rsEl.textContent='High margin'; }
+      else { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>CRISIS'; rEl.className='stat-value regime-crisis'; rsEl.textContent='Extreme'; }
     }
 
     // Item 3: Regime percentile display
@@ -3761,7 +3776,7 @@ async function renderOverview() {
       }
       const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
       let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Point Estimate (Initial tomorrow):</b> ${predicted.toFixed(2)}%<br><b>Current Initial Margin:</b> ${im.toFixed(2)}%<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%`;
-      if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>⚠ Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
+      if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>[Warning] Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
       return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
         <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)}</div></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
@@ -4584,7 +4599,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 
   if (!expiry) {
     _lcViewState = { rows: [], metricFn: null, contractLabel: '' };
-    emptyEl.innerHTML = '<div style="font-size:34px;line-height:1;opacity:0.28;">&#x1F4C8;</div><div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:8px;">Select a contract above</div><div style="font-size:11px;color:var(--text-muted);opacity:0.65;margin-top:4px;">Explore full margin history from first observation to expiry</div>';
+    emptyEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35;margin-bottom:4px;" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg><div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:8px;">Select a contract above</div><div style="font-size:11px;color:var(--text-muted);opacity:0.65;margin-top:4px;">Explore full margin history from first observation to expiry</div>';
     emptyEl.style.display = 'flex';
     statsEl.style.display  = 'none';
     rangeEl.style.display  = 'none';
@@ -4611,7 +4626,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
     if (_lcFullRows.length < 2) {
       _lcViewState = { rows: [], metricFn: null, contractLabel: '' };
       const lbl = _contractLabel(expiry);
-      emptyEl.innerHTML = '<div style="font-size:28px;opacity:0.3;">&#x26A0;&#xFE0F;</div><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + _lcFullRows.length + '</strong> observation for <strong>' + lbl + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
+      emptyEl.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35;margin-bottom:4px;" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><div style="font-size:13px;font-weight:600;margin-top:8px;">Only <strong>' + _lcFullRows.length + '</strong> observation for <strong>' + lbl + '</strong></div><div style="font-size:11px;margin-top:4px;opacity:0.7;">Insufficient data to render lifecycle chart</div>';
       emptyEl.style.display = 'flex';
       statsEl.style.display  = 'none';
       rangeEl.style.display  = 'none';
@@ -6288,7 +6303,7 @@ async function renderAnalytics() {
                       const val = binMidVals[idx];
                       const binLabel = h.bins[idx];
                       const type = val > 0.05 ? 'Margin Hike' : val < -0.05 ? 'Margin Cut' : 'Neutral Hold';
-                      return `📊 Daily Margin Delta: ${binLabel}% [${type}]`;
+                      return `Daily Margin Delta: ${binLabel}% [${type}]`;
                     },
                     label: ctx => {
                       const idx = ctx.dataIndex;
@@ -8751,18 +8766,18 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
     title: "Monthly Margin Heatmap — Year × Calendar Month",
     body: `Averages the margins of whatever contract was the **active front-month** on each trading day *during that calendar month*.<br><br>
 <strong>Example:</strong> The Jan 2022 cell averages the daily front-month margins from January 1 to January 31, 2022. It represents the actual market stress during that exact calendar window.<br><br>
-🟢 <em>Dark green</em> = Calm, low-margin market environment.<br>
-🟡 <em>Yellow</em> = Normal active market.<br>
-🔴 <em>Red</em> = High market-wide stress (e.g. 2022–2023).<br><br>
+<span style="color:var(--accent-green);font-size:12px;">●</span> <em>Dark green</em> = Calm, low-margin market environment.<br>
+<span style="color:var(--accent-yellow);font-size:12px;">●</span> <em>Yellow</em> = Normal active market.<br>
+<span style="color:var(--accent-red);font-size:12px;">●</span> <em>Red</em> = High market-wide stress (e.g. 2022–2023).<br><br>
 <strong>Key Difference:</strong> Unlike the Contract Lifecycle Heatmap below, this shows calendar-month conditions (when you traded), not a specific contract's lifecycle (which contract you traded).`
   },
   "Contract Lifecycle Heatmap": {
     title: "Contract Lifecycle Heatmap — Year × Expiry Month",
     body: `Each cell represents the average margin for a **single specific contract** across its active lifespan (DTE ≤ 90 days), regardless of which calendar months those days fell in.<br><br>
 <strong>Example:</strong> The Jan 2022 cell isolates the Jan 2022 contract and averages its margins from its active life (e.g. DTE ≤ 90d, spanning Nov 2021, Dec 2021, and Jan 2022).<br><br>
-🟢 <em>Dark green</em> = Low-cost contract lifecycle.<br>
-🟡 <em>Yellow</em> = Moderate capital requirements.<br>
-🔴 <em>Red</em> = Expensive contract — high margin throughout its active life.<br><br>
+<span style="color:var(--accent-green);font-size:12px;">●</span> <em>Dark green</em> = Low-cost contract lifecycle.<br>
+<span style="color:var(--accent-yellow);font-size:12px;">●</span> <em>Yellow</em> = Moderate capital requirements.<br>
+<span style="color:var(--accent-red);font-size:12px;">●</span> <em>Red</em> = Expensive contract — high margin throughout its active life.<br><br>
 <strong>Key Difference:</strong> Unlike the Monthly Margin Heatmap above, this groups by **contract identity** (which contract you traded). For instance, a sudden panic in Jan 2022 will be diluted in the Jan 2022 contract average by the calm months of Nov/Dec, but will show up fully red in the calendar-month view above.`
   },
   "heatmap-contract-metric": {
@@ -8830,10 +8845,10 @@ When blue is <em>below</em> yellow: Margins are easing. Capital efficiency impro
   "Regime": {
     title: "Current Margin Regime",
     body: `A real-time classification of the MCX margin environment.<br><br>
-🟢 <strong>CALM</strong> — Below 20%, stable. Cheap to hold NG positions.<br>
-🟡 <strong>NORMAL</strong> — 20–35%. Standard active market conditions. Monitor weekly.<br>
-🟠 <strong>STRESSED</strong> — 35–50%. Elevated vol. MCX may hike further. Reduce speculative exposure.<br>
-🔴 <strong>CRISIS</strong> — Above 50%. Extreme conditions (Feb 2026 spike). Serious margin call risk for underfunded accounts. Consider exiting or cutting size significantly.`
+<span style="color:var(--accent-green);font-size:12px;">●</span> <strong>CALM</strong> — Below 20%, stable. Cheap to hold NG positions.<br>
+<span style="color:var(--accent-yellow);font-size:12px;">●</span> <strong>NORMAL</strong> — 20–35%. Standard active market conditions. Monitor weekly.<br>
+<span style="color:var(--accent-orange);font-size:12px;">●</span> <strong>STRESSED</strong> — 35–50%. Elevated vol. MCX may hike further. Reduce speculative exposure.<br>
+<span style="color:var(--accent-red);font-size:12px;">●</span> <strong>CRISIS</strong> — Above 50%. Extreme conditions (Feb 2026 spike). Serious margin call risk for underfunded accounts. Consider exiting or cutting size significantly.`
   },
   "Henry Hub": {
     title: "Henry Hub Price Overlay (NG=F)",

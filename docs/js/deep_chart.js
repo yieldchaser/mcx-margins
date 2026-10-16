@@ -662,7 +662,7 @@
       const expDate = parseExpiryDate(e.expiry).getTime();
       const isFront = (e.expiry === frontExp);
       const isUpcoming = (expDate > now);
-      const badge = isFront ? ' ⭐️ Front' : (isUpcoming ? ' · Active' : ' · Expired');
+      const badge = isFront ? ' [Front Month]' : (isUpcoming ? ' [Active]' : ' [Expired]');
       const { delivName, shortExp } = formatExpiryLabel(activeContractSym, e.expiry);
       const o = document.createElement('option');
       o.value = e.expiry;
@@ -1258,7 +1258,7 @@
                         (key === 'thursday_eia' && interval >= '20:00' && interval <= '21:00');
     if (isEIAWindow) {
       return {
-        phase: '🚨 US EIA STORAGE REPORT RELEASE WINDOW',
+        phase: 'US EIA STORAGE REPORT RELEASE WINDOW',
         catalyst: 'Weekly US EIA underground storage inventory release. Extreme volatility shock up to 2.8x baseline.',
         execution: 'Risk: Violent 15m price dislocation (1.5%–4.0%). Spreads widen instantly; avoid market orders.'
       };
@@ -1353,19 +1353,19 @@
               title: items => {
                 const interval = profile.intervals[items[0].dataIndex];
                 const next = getNextInterval(interval);
-                return `⏰ Window: ${interval} – ${next} IST`;
+                return `Window: ${interval} – ${next} IST`;
               },
               label: (ctx) => {
                 if (ctx.datasetIndex === 0) {
                   const vol = ctx.raw || 0;
                   const med = profile.median_volume ? profile.median_volume[ctx.dataIndex] : 0;
                   const ratio = med > 0 ? (vol / med).toFixed(1) : '1.0';
-                  return `📊 Average Traded Volume: ${Math.round(vol).toLocaleString()} lots · Median: ${Math.round(med).toLocaleString()} (${ratio}x skew)`;
+                  return `Average Traded Volume: ${Math.round(vol).toLocaleString()} lots · Median: ${Math.round(med).toLocaleString()} (${ratio}x skew)`;
                 }
                 const gk = ctx.raw || 0;
                 const rng = profile.avg_range_pct ? profile.avg_range_pct[ctx.dataIndex].toFixed(2) : '—';
-                const regime = gk >= 20 ? '🔴 ELEVATED VOL' : gk >= 15 ? '🟡 ACTIVE' : '🟢 CALM';
-                return `⚡ GK Realized Volatility: ${gk.toFixed(2)}% [${regime}] · Avg 15m Range: ${rng}%`;
+                const regime = gk >= 20 ? 'ELEVATED VOL' : gk >= 15 ? 'ACTIVE' : 'CALM';
+                return `GK Realized Volatility: ${gk.toFixed(2)}% [${regime}] · Avg 15m Range: ${rng}%`;
               },
               afterBody: (items) => {
                 const idx = items[0].dataIndex;
@@ -1406,15 +1406,15 @@
     const insight = document.getElementById('todInsightText');
     if (insight) {
       if (key === 'summer_edt') {
-        insight.innerHTML = `☀️ <strong>US Summer (EDT):</strong> NYMEX Pit opens at <strong>18:30 IST</strong>. Thursday US EIA Storage release occurs at <strong>20:00 IST</strong>. Prime liquidity and volatility surge during 18:30–20:30 IST.`;
+        insight.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent-orange); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>US Summer (EDT):</span> NYMEX Pit opens at <strong>18:30 IST</strong>. Thursday US EIA Storage release occurs at <strong>20:00 IST</strong>. Prime liquidity and volatility surge during 18:30–20:30 IST.`;
       } else if (key === 'winter_est') {
-        insight.innerHTML = `❄️ <strong>US Winter (EST):</strong> NYMEX Pit opens at <strong>19:30 IST</strong>. Thursday US EIA Storage release shifts to <strong>21:00 IST</strong>. Peak liquidity occurs 19:30–21:30 IST.`;
+        insight.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>US Winter (EST):</span> NYMEX Pit opens at <strong>19:30 IST</strong>. Thursday US EIA Storage release shifts to <strong>21:00 IST</strong>. Peak liquidity occurs 19:30–21:30 IST.`;
       } else if (key === 'thursday_eia') {
-        insight.innerHTML = `⚡ <strong>Thursday Inventory Day:</strong> Volatility explodes up to <strong>2.8x baseline</strong> during the 20:00–21:00 IST release window, driving immediate intraday margin and VaR spikes.`;
+        insight.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent-yellow); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>Thursday Inventory Day:</span> Volatility explodes up to <strong>2.8x baseline</strong> during the 20:00–21:00 IST release window, driving immediate intraday margin and VaR spikes.`;
       } else if (key === 'regular_weekdays') {
-        insight.innerHTML = `📅 <strong>Regular Weekdays (Mon-Wed, Fri):</strong> Baseline organic volume curve showing steady afternoon pickup and peak liquidity between 18:30 and 22:00 IST without Thursday report distortion.`;
+        insight.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--text-muted); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Regular Weekdays (Mon-Wed, Fri):</span> Baseline organic volume curve showing steady afternoon pickup and peak liquidity between 18:30 and 22:00 IST without Thursday report distortion.`;
       } else {
-        insight.innerHTML = `💡 <strong>Combined 8-Year Profile:</strong> Morning open (09:00 IST) features elevated overnight gap volatility, followed by session peak liquidity during US pit hours (18:30–21:30 IST).`;
+        insight.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>Combined 8-Year Profile:</span> Morning open (09:00 IST) features elevated overnight gap volatility, followed by session peak liquidity during US pit hours (18:30–21:30 IST).`;
       }
     }
   }
