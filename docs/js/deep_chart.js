@@ -34,6 +34,9 @@
   let pendingLODTimeout = null;
   let floatingTooltip = null;
 
+  let activeContractMode = 'continuous'; // 'continuous' or standalone contract tag (e.g. 'NG_26OCT')
+  const contractCache = {}; // tag -> { '15m': bars, '1m': bars }
+
   // In-memory data caches
   const cache = {
     daily: null,
@@ -263,6 +266,30 @@
     return deduped;
   }
 
+  // Parse compact columnar JSON format { dt: [...], o: [...], h: [...], l: [...], c: [...], v: [...] }
+  function parseColumnarBars(json) {
+    if (!json || !json.data || !json.data.dt) return [];
+    const dt = json.data.dt;
+    const o = json.data.o;
+    const h = json.data.h;
+    const l = json.data.l;
+    const c = json.data.c;
+    const v = json.data.v;
+    const n = dt.length;
+    const bars = new Array(n);
+    for (let i = 0; i < n; i++) {
+      bars[i] = {
+        time: dt[i],
+        open: o[i],
+        high: h[i],
+        low: l[i],
+        close: c[i],
+        volume: v[i] || 0
+      };
+    }
+    return sanitizeBars(bars);
+  }
+
   function setupCrosshairHud(container) {
     const hudDate = document.getElementById('hudDate');
     const hudOpen = document.getElementById('hudOpen');
@@ -293,7 +320,10 @@
         if (pBar.open !== undefined) {
           ohlc = pBar;
         } else if (pBar.value !== undefined) {
-          if (currentResolution === 'daily' && cache.daily) {
+          if (activeContractMode !== 'continuous') {
+            const cBars = contractCache[activeContractMode]?.[currentResolution];
+            if (cBars) ohlc = findBarByTime(cBars, param.time);
+          } else if (currentResolution === 'daily' && cache.daily) {
             ohlc = findBarByTime(cache.daily, param.time);
           } else if (currentResolution === '15m' && cache.m15) {
             ohlc = findBarByTime(cache.m15, param.time);
@@ -542,6 +572,120 @@
     updateBadges('1-Minute (Microstructure)', `${cleanBars.length.toLocaleString()} bars`);
   }
 
+  function renderContractBars(cleanBars, res) {
+    if (!cleanBars || !cleanBars.length) return;
+    const areaData = [];
+    const candleData = [];
+    const volumeData = [];
+
+    for (let i = 0; i < cleanBars.length; i++) {
+      const b = cleanBars[i];
+      areaData.push({ time: b.time, value: b.close });
+      candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
+      volumeData.push({
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
+      });
+    }
+
+    areaSeries.setData(areaData);
+    candleSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+
+    currentResolution = res;
+    const resLabel = res === '1m' ? '1-Minute (Microstructure)' : '15-Minute (Swing)';
+    updateBadges(resLabel, `${cleanBars.length.toLocaleString()} bars`);
+  }
+
+  async function loadContractTier(tag, res) {
+    updateBadges(`Loading ${res}...`, '--');
+    if (!contractCache[tag]) contractCache[tag] = {};
+
+    if (!contractCache[tag][res]) {
+      try {
+        const fetchRes = await fetch(`data/market/${tag}_${res}.json`);
+        if (!fetchRes.ok) {
+          if (res === '1m') {
+            console.warn(`1m data for ${tag} not found, falling back to 15m`);
+            return await loadContractTier(tag, '15m');
+          }
+          throw new Error(`Failed to load data/market/${tag}_${res}.json`);
+        }
+        const json = await fetchRes.json();
+        contractCache[tag][res] = parseColumnarBars(json);
+      } catch (err) {
+        console.error(`Error loading ${tag} ${res}:`, err);
+        updateBadges('Error', 'Failed to load');
+        return;
+      }
+    }
+
+    renderContractBars(contractCache[tag][res], res);
+  }
+
+  async function switchContract(tag) {
+    isSwitchingResolution = true;
+    if (pendingLODTimeout) {
+      clearTimeout(pendingLODTimeout);
+      pendingLODTimeout = null;
+    }
+
+    const titleEl = document.getElementById('deepChartTitle');
+    const scopeBadge = document.getElementById('deepContractDataScopeBadge');
+
+    if (tag === 'continuous') {
+      activeContractMode = 'continuous';
+      if (titleEl) {
+        titleEl.textContent = 'Front-Month Historical Price Action & Intraday Structure';
+        titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery.');
+      }
+      if (scopeBadge) {
+        scopeBadge.innerHTML = '<strong>Data</strong> 8Y Front-Month';
+        scopeBadge.setAttribute('data-dyn-title', '8-Year Continuous Front-Month');
+        scopeBadge.setAttribute('data-dyn-body', 'Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts.');
+      }
+
+      const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
+      if (allBtn) {
+        allBtn.textContent = '8Y (All)';
+        allBtn.setAttribute('data-dyn-title', '8Y Full Macro View');
+        allBtn.setAttribute('data-dyn-body', 'Displays all 8 years of historical daily prices (2019 to 2026).');
+      }
+
+      await loadDailyTier(true);
+      setTimeout(() => { isSwitchingResolution = false; }, 200);
+      return;
+    }
+
+    activeContractMode = tag;
+    const formattedTag = tag.replace('_', ' ');
+    if (titleEl) {
+      titleEl.textContent = `${formattedTag} Contract Lifecycle & Price Discovery`;
+      titleEl.setAttribute('data-dyn-body', `Individual standalone price action for ${formattedTag} from contract inception to current live market, with direct 15m and 1m resolution streaming.`);
+    }
+    if (scopeBadge) {
+      scopeBadge.innerHTML = `<strong>Contract</strong> ${formattedTag}`;
+      scopeBadge.setAttribute('data-dyn-title', `${formattedTag} Standalone History`);
+      scopeBadge.setAttribute('data-dyn-body', `Full standalone contract price history from inception date.`);
+    }
+
+    const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
+    if (allBtn) {
+      allBtn.textContent = 'Full Life';
+      allBtn.setAttribute('data-dyn-title', 'Full Contract Lifecycle');
+      allBtn.setAttribute('data-dyn-body', 'Displays entire lifecycle from contract inception date.');
+    }
+
+    const tfButtons = document.querySelectorAll('.deep-tf-btn[data-tf]');
+    tfButtons.forEach(b => b.classList.remove('active'));
+    if (allBtn) allBtn.classList.add('active');
+
+    await loadContractTier(tag, '15m');
+    chart.timeScale().fitContent();
+    setTimeout(() => { isSwitchingResolution = false; }, 200);
+  }
+
   function onTimeRangeChanged(range) {
     if (!range || !range.from || !range.to || isSwitchingResolution) return;
 
@@ -551,6 +695,26 @@
 
     pendingLODTimeout = setTimeout(() => {
       const spanDays = (range.to - range.from) / 86400;
+
+      if (activeContractMode !== 'continuous') {
+        if (spanDays <= 7 && currentResolution !== '1m') {
+          isSwitchingResolution = true;
+          const cur = chart.timeScale().getVisibleRange();
+          loadContractTier(activeContractMode, '1m').finally(() => {
+            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+            setTimeout(() => { isSwitchingResolution = false; }, 200);
+          });
+        } else if (spanDays > 7 && currentResolution !== '15m') {
+          isSwitchingResolution = true;
+          const cur = chart.timeScale().getVisibleRange();
+          loadContractTier(activeContractMode, '15m').finally(() => {
+            if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
+            setTimeout(() => { isSwitchingResolution = false; }, 200);
+          });
+        }
+        return;
+      }
+
       const m15StartTs = 1735702200; // 2025-01-01
       const isPre2025 = range.from < m15StartTs;
 
@@ -619,6 +783,14 @@
       });
     }
 
+    // Contract Selector Dropdown
+    const contractSelect = document.getElementById('deepContractSelect');
+    if (contractSelect) {
+      contractSelect.addEventListener('change', (e) => {
+        switchContract(e.target.value);
+      });
+    }
+
     // Reset Zoom
     const btnReset = document.getElementById('btnResetDeepZoom');
     if (btnReset) {
@@ -626,7 +798,13 @@
         tfButtons.forEach(b => b.classList.remove('active'));
         const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
         if (allBtn) allBtn.classList.add('active');
-        loadDailyTier(true);
+        if (activeContractMode === 'continuous') {
+          loadDailyTier(true);
+        } else {
+          loadContractTier(activeContractMode, '15m').then(() => {
+            chart.timeScale().fitContent();
+          });
+        }
       });
     }
   }
@@ -637,6 +815,45 @@
     if (pendingLODTimeout) {
       clearTimeout(pendingLODTimeout);
       pendingLODTimeout = null;
+    }
+
+    if (activeContractMode !== 'continuous') {
+      const bars = contractCache[activeContractMode]?.[currentResolution] ||
+                   contractCache[activeContractMode]?.['15m'] ||
+                   contractCache[activeContractMode]?.['1m'];
+      const nowTs = (bars && bars.length) ? bars[bars.length - 1].time : 1792068300;
+
+      if (tf === 'ALL') {
+        loadContractTier(activeContractMode, '15m').then(() => {
+          chart.timeScale().fitContent();
+          setTimeout(() => { isSwitchingResolution = false; }, 250);
+        });
+        return;
+      }
+
+      let days = 1;
+      switch (tf) {
+        case '1D': days = 1; break;
+        case '1W': days = 7; break;
+        case '1M': days = 30; break;
+        case '3M': days = 90; break;
+        case 'YTD':
+        case '1Y':
+        case '5Y':
+        default:
+          days = 180;
+          break;
+      }
+
+      const fromTs = nowTs - Math.round(days * 86400);
+      const toTs = nowTs;
+      const targetRes = (days <= 7) ? '1m' : '15m';
+
+      loadContractTier(activeContractMode, targetRes).then(() => {
+        chart.timeScale().setVisibleRange({ from: fromTs, to: toTs });
+        setTimeout(() => { isSwitchingResolution = false; }, 250);
+      });
+      return;
     }
 
     const latestDaily = cache.daily?.[cache.daily.length - 1]?.time || 0;

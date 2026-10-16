@@ -2032,9 +2032,31 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:12px; flex-wrap:nowrap;">
         <div style="min-width:0; flex:1;">
           <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Level of Detail (LOD)" data-dyn-body="Intelligent data pyramid dynamically streaming from 1,940 daily macro bars down to 1.65 million one-minute candles on demand with 60 FPS canvas acceleration.">Multi-Resolution Deep Zoom · 1.65M Candles</div>
-          <div class="card-title has-tooltip" data-dyn-title="Front-Month Continuous Futures" data-dyn-body="Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery." style="margin-bottom:2px; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Front-Month Historical Price Action & Intraday Structure</div>
-          <div class="scope-row" style="margin-top:2px;">
-            <span class="scope-chip has-tooltip" data-dyn-title="8-Year Continuous Front-Month" data-dyn-body="Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts."><strong>Data</strong> 8Y Front-Month</span>
+          <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Front-Month Continuous Futures" data-dyn-body="Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery." style="margin-bottom:2px; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Front-Month Historical Price Action & Intraday Structure</div>
+          <div class="scope-row" style="margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <div style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:2px 8px;">
+              <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">CONTRACT:</span>
+              <select id="deepContractSelect" style="background:transparent; color:var(--accent); font-weight:600; border:none; outline:none; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; padding:2px 0;">
+                <option value="continuous">⭐️ Continuous (8Y Stitched 2019–2026)</option>
+                <optgroup label="NATURALGAS (Big 1250 mmBtu)">
+                  <option value="NG_26OCT">NATURALGAS 26OCT (Oct 2026)</option>
+                  <option value="NG_26NOV">NATURALGAS 26NOV (Nov 2026)</option>
+                  <option value="NG_26DEC">NATURALGAS 26DEC (Dec 2026)</option>
+                  <option value="NG_27JAN">NATURALGAS 27JAN (Jan 2027)</option>
+                  <option value="NG_27FEB">NATURALGAS 27FEB (Feb 2027)</option>
+                  <option value="NG_27MAR">NATURALGAS 27MAR (Mar 2027)</option>
+                </optgroup>
+                <optgroup label="NATGASMINI (Mini 250 mmBtu)">
+                  <option value="NGM_26OCT">NATGASMINI 26OCT (Oct 2026)</option>
+                  <option value="NGM_26NOV">NATGASMINI 26NOV (Nov 2026)</option>
+                  <option value="NGM_26DEC">NATGASMINI 26DEC (Dec 2026)</option>
+                  <option value="NGM_27JAN">NATGASMINI 27JAN (Jan 2027)</option>
+                  <option value="NGM_27FEB">NATGASMINI 27FEB (Feb 2027)</option>
+                  <option value="NGM_27MAR">NATGASMINI 27MAR (Mar 2027)</option>
+                </optgroup>
+              </select>
+            </div>
+            <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="8-Year Continuous Front-Month" data-dyn-body="Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts."><strong>Data</strong> 8Y Front-Month</span>
             <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Active Level of Detail" data-dyn-body="Automatically switches between Daily (Macro), 15-Minute (Swing), and 1-Minute (Microstructure) based on visible zoom range." style="border-color:var(--accent); color:var(--accent);"><strong>Resolution:</strong> Daily (Macro)</span>
             <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Memory Footprint" data-dyn-body="Current number of bars held in browser memory (< 20 MB footprint, zero browser freezing)."><strong>Loaded:</strong> 1,940 bars</span>
           </div>

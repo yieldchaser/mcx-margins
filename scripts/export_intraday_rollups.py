@@ -165,8 +165,8 @@ for sym, pfile, tag in contracts:
     kb = os.path.getsize(out_path) / 1024
     print(f"  {sym:26s} -> Saved 15m Rollup ({len(df_15m):,} bars, {kb:.1f} KB) | POC: ₹{poc_price:.2f}, VAH: ₹{vah_price:.2f}, VAL: ₹{val_price:.2f}")
 
-    # Also export 1m columnar JSON for near active contracts
-    if tag in ["NG_26OCT", "NG_26NOV", "NGM_26OCT", "NGM_26NOV"]:
+    # Export 1m columnar JSON for all available contracts
+    if len(df) > 0:
         out_1m = {
             "symbol": sym,
             "tag": tag,
