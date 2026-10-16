@@ -348,9 +348,13 @@ def run_snapshot_cycle():
             else:
                 # Trigger GitHub Pages deployment workflow directly if gh is available
                 try:
-                    subprocess.run(["gh", "workflow", "run", "deploy_pages.yml"], cwd=REPO_DIR, capture_output=True, text=True)
-                except Exception:
-                    pass
+                    res_gh = subprocess.run(["gh", "workflow", "run", "deploy_pages.yml"], cwd=REPO_DIR, capture_output=True, text=True)
+                    if res_gh.returncode == 0:
+                        log("SUCCESS: Dispatched deploy_pages.yml workflow!")
+                    else:
+                        log(f"Notice dispatching deploy_pages: {res_gh.stderr.strip()[:100]}")
+                except Exception as e:
+                    log(f"Notice dispatching deploy_pages: {e}")
         else:
             log("docs/data/ is fully synchronized. No git push required.")
     except Exception as e:
