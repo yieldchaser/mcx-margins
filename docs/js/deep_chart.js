@@ -662,7 +662,7 @@
   function populateDeepMonths(entries, selectedYear, frontExp, autoSelectExpiry) {
     const mSel = document.getElementById('deepMonthSelect');
     if (!mSel) return;
-    mSel.innerHTML = '<option value="">— Select Month —</option>';
+    mSel.innerHTML = '<option value="">— Select Contract Month —</option>';
 
     const now = Date.now();
 
@@ -699,12 +699,18 @@
       inYear.forEach(e => mSel.appendChild(renderOption(e)));
     }
 
-    if (autoSelectExpiry && mSel.querySelector(`option[value="${autoSelectExpiry}"]`)) {
-      mSel.value = autoSelectExpiry;
-    } else if (frontExp && (selectedYear === 'all' || getDeliveryYear(frontExp).toString() === selectedYear)) {
-      mSel.value = frontExp;
-    } else if (mSel.options.length > 1) {
-      mSel.selectedIndex = 1;
+    if (activeContractMode !== 'continuous') {
+      if (autoSelectExpiry && mSel.querySelector(`option[value="${autoSelectExpiry}"]`)) {
+        mSel.value = autoSelectExpiry;
+      } else if (mSel.querySelector(`option[value="${activeContractMode}"]`)) {
+        mSel.value = activeContractMode;
+      } else if (frontExp && (selectedYear === 'all' || getDeliveryYear(frontExp).toString() === selectedYear)) {
+        mSel.value = frontExp;
+      } else if (mSel.options.length > 1) {
+        mSel.selectedIndex = 1;
+      }
+    } else {
+      mSel.value = '';
     }
   }
 
@@ -813,9 +819,15 @@
     const btnCont = document.getElementById('deepBtnContinuous');
     if (btnCont) {
       btnCont.classList.remove('active');
-      btnCont.style.background = 'transparent';
-      btnCont.style.color = 'var(--text-muted)';
-      btnCont.style.border = '1px solid var(--border)';
+      btnCont.style.background = '';
+      btnCont.style.color = '';
+      btnCont.style.border = '';
+    }
+
+    // Sync month dropdown
+    const mSel = document.getElementById('deepMonthSelect');
+    if (mSel && mSel.value !== expiry) {
+      mSel.value = expiry;
     }
 
     activeContractMode = expiry;
@@ -830,7 +842,7 @@
     const scopeBadge = document.getElementById('deepContractDataScopeBadge');
 
     if (titleEl) {
-      titleEl.textContent = `${fullLabel} · Standalone Price Action & Lifecycle`;
+      titleEl.textContent = `${fullLabel} · Contract Price Discovery`;
       titleEl.setAttribute('data-dyn-body', `Individual standalone price discovery for ${fullLabel} from inception date to expiry.`);
     }
 
@@ -881,20 +893,26 @@
     const btnCont = document.getElementById('deepBtnContinuous');
     if (btnCont) {
       btnCont.classList.add('active');
-      btnCont.style.background = 'var(--accent)';
-      btnCont.style.color = '#fff';
-      btnCont.style.border = 'none';
+      btnCont.style.background = '';
+      btnCont.style.color = '';
+      btnCont.style.border = '';
+    }
+
+    // Reset Month dropdown to placeholder
+    const mSel = document.getElementById('deepMonthSelect');
+    if (mSel) {
+      mSel.value = '';
     }
 
     const titleEl = document.getElementById('deepChartTitle');
     const scopeBadge = document.getElementById('deepContractDataScopeBadge');
 
     if (titleEl) {
-      titleEl.textContent = 'Front-Month Historical Price Action & Intraday Structure';
+      titleEl.textContent = 'Natural Gas Futures Price Action & Structure';
       titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries.');
     }
     if (scopeBadge) {
-      scopeBadge.innerHTML = '<strong>Data</strong> 8Y Front-Month';
+      scopeBadge.innerHTML = '<strong>Data</strong> 8Y Continuous';
       scopeBadge.setAttribute('data-dyn-title', 'Continuous Front-Month');
       scopeBadge.setAttribute('data-dyn-body', 'Continuous front-month price and volume history from 2019 to 2026.');
     }
@@ -1053,11 +1071,11 @@
     if (symNG && symNGM) {
       symNG.addEventListener('click', () => {
         symNG.classList.add('active');
-        symNG.style.background = 'var(--surface)';
-        symNG.style.color = 'var(--accent)';
+        symNG.style.background = '';
+        symNG.style.color = '';
         symNGM.classList.remove('active');
-        symNGM.style.background = 'transparent';
-        symNGM.style.color = 'var(--text-muted)';
+        symNGM.style.background = '';
+        symNGM.style.color = '';
         buildDeepContractDropdowns('ng', null).then(() => {
           const mSel = document.getElementById('deepMonthSelect');
           if (activeContractMode !== 'continuous' && mSel && mSel.value) {
@@ -1068,11 +1086,11 @@
 
       symNGM.addEventListener('click', () => {
         symNGM.classList.add('active');
-        symNGM.style.background = 'var(--surface)';
-        symNGM.style.color = 'var(--accent)';
+        symNGM.style.background = '';
+        symNGM.style.color = '';
         symNG.classList.remove('active');
-        symNG.style.background = 'transparent';
-        symNG.style.color = 'var(--text-muted)';
+        symNG.style.background = '';
+        symNG.style.color = '';
         buildDeepContractDropdowns('ngm', null).then(() => {
           const mSel = document.getElementById('deepMonthSelect');
           if (activeContractMode !== 'continuous' && mSel && mSel.value) {
@@ -1088,7 +1106,7 @@
         const entries = (contractIndexCache && contractIndexCache[activeContractSym]) ? contractIndexCache[activeContractSym] : [];
         populateDeepMonths(entries, yrSel.value, null, null);
         const mSel = document.getElementById('deepMonthSelect');
-        if (mSel && mSel.value) {
+        if (activeContractMode !== 'continuous' && mSel && mSel.value) {
           activateContract(activeContractSym, mSel.value);
         }
       });
@@ -1099,6 +1117,8 @@
       mSel.addEventListener('change', () => {
         if (mSel.value) {
           activateContract(activeContractSym, mSel.value);
+        } else {
+          activateContinuous();
         }
       });
     }

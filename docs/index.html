@@ -27,7 +27,7 @@
   --accent-purple: #a371f7;
 }
 
-/* ── Deep Multi-Resolution Chart ── */
+/* ── Deep Multi-Resolution Chart Toolbar & Controls ── */
 .deep-tf-btn {
   background: var(--surface2);
   color: var(--text-muted);
@@ -49,6 +49,107 @@
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+}
+
+.deep-contract-pill {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+.deep-contract-pill:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.deep-contract-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.deep-sym-group {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.deep-sym-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.deep-sym-btn:hover {
+  color: var(--text);
+}
+.deep-sym-btn.active {
+  background: #30363d;
+  color: #fff;
+  font-weight: 700;
+}
+
+.deep-select {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.deep-select:hover, .deep-select:focus {
+  border-color: var(--accent);
+}
+
+.deep-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  background: rgba(22, 27, 34, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.deep-hud-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  color: var(--text-muted);
+  background: rgba(22, 27, 34, 0.7);
+  border: 1px solid rgba(48, 54, 61, 0.6);
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  min-height: 32px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
 }
 
 /* ── Reset ── */
@@ -2044,46 +2145,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- ── Deep Multi-Resolution Historical Price & Microstructure Chart (2019-2026) ── -->
     <div class="card mb-4" id="deepMarketCard">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:12px; flex-wrap:nowrap;">
-        <div style="min-width:0; flex:1;">
-          <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Price Action" data-dyn-body="Continuous historical price action and intraday microstructure from daily bars down to 1-minute execution candles.">Price History & Intraday Structure</div>
-          <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Continuous Futures Series" data-dyn-body="Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries." style="margin-bottom:2px; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Front-Month Historical Price Action & Intraday Structure</div>
-          <div class="scope-row" style="margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <!-- Dynamic Contract Selector Toolbar (Zero Hardcoding - Auto-ingests from contract_index.json) -->
-            <div style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:2px 6px; flex-wrap:wrap;">
-              <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">CONTRACT:</span>
-              
-              <!-- Quick 8Y Continuous Front-Month Button -->
-              <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)" style="background:var(--accent); color:#fff; border:none; border-radius:3px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s ease; display:inline-flex; align-items:center; gap:5px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.178-8-12.356-8-5.096 0-5.096 8 0 8 5.178 0 7.261-8 12.356-8z"/></svg>
-                <span>Continuous (8Y)</span>
-              </button>
-
-              <span style="color:var(--border); font-size:12px; margin:0 1px;">|</span>
-
-              <!-- Big vs Mini Symbol Toggle -->
-              <div style="display:inline-flex; border:1px solid var(--border); border-radius:3px; overflow:hidden;">
-                <button type="button" id="deepSymNG" class="deep-sym-btn active" style="background:var(--surface); color:var(--accent); border:none; padding:3px 8px; font-size:11px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;" title="NATURALGAS (Big 1250 mmBtu)">NATURALGAS</button>
-                <button type="button" id="deepSymNGM" class="deep-sym-btn" style="background:transparent; color:var(--text-muted); border:none; padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;" title="NATGASMINI (Mini 250 mmBtu)">NATGASMINI</button>
-              </div>
-
-              <!-- Dynamic Year Selector (Populated from contract_index.json) -->
-              <select id="deepYearSelect" title="Select contract delivery year" style="background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:3px; padding:3px 6px; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; outline:none;">
-                <option value="">Year</option>
-              </select>
-
-              <!-- Dynamic Expiry / Month Selector (Populated from contract_index.json) -->
-              <select id="deepMonthSelect" title="Select contract expiry month" style="background:var(--surface); color:var(--accent); font-weight:600; border:1px solid var(--border); border-radius:3px; padding:3px 6px; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; min-width:145px; outline:none;">
-                <option value="">— Month —</option>
-              </select>
-            </div>
-            <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="Continuous Front-Month" data-dyn-body="Continuous front-month price and volume history from 2019 to 2026."><strong>Data</strong> 8Y Front-Month</span>
-            <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Chart Resolution" data-dyn-body="Active bar timeframe (Daily, 15-Minute, or 1-Minute). Adjusts automatically based on zoom range." style="border-color:var(--accent); color:var(--accent);"><strong>Resolution:</strong> Daily (Macro)</span>
-            <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Loaded Bars" data-dyn-body="Total number of price bars loaded for the active series."><strong>Loaded:</strong> --</span>
-          </div>
+      <!-- Row 1: Header (Title on left, Timeframe presets on right) -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
+        <div>
+          <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Price Action" data-dyn-body="Continuous historical price action and intraday microstructure from daily bars down to 1-minute execution candles.">Market Overview</div>
+          <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Continuous Futures Series" data-dyn-body="Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries." style="margin:0; font-size:15px; font-weight:700;">Natural Gas Futures Price Action & Structure</div>
         </div>
-        <!-- Timeframe Preset Buttons & Mode Toggle (Pinned to Top Right) -->
-        <div style="display:flex; align-items:center; gap:5px; flex-shrink:0; margin-left:auto; white-space:nowrap;">
+        <!-- Timeframe Preset Buttons & Mode Toggle (Pinned to Right) -->
+        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
           <button class="deep-tf-btn active has-tooltip" data-tf="ALL" data-dyn-title="8-Year Macro View" data-dyn-body="Full historical daily price history (2019 to 2026).">8Y (All)</button>
           <button class="deep-tf-btn has-tooltip" data-tf="5Y" data-dyn-title="5-Year Horizon" data-dyn-body="Trailing 5-year price action.">5Y</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1Y" data-dyn-title="1-Year Horizon" data-dyn-body="Trailing 365-day price action.">1Y</button>
@@ -2097,10 +2166,49 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <button class="deep-tf-btn has-tooltip" id="btnResetDeepZoom" data-dyn-title="Reset View" data-dyn-body="Resets zoom and pans to the full view." title="Reset Zoom to Full View">Reset</button>
         </div>
       </div>
+
+      <!-- Row 2: Unified Control & Status Bar (Contract toolbar left, Status chips right) -->
+      <div class="deep-control-bar">
+        <!-- Left Side: Dynamic Contract Selector Toolbar -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Contract:</span>
+          
+          <!-- Quick 8Y Continuous Front-Month Button -->
+          <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.178-8-12.356-8-5.096 0-5.096 8 0 8 5.178 0 7.261-8 12.356-8z"/></svg>
+            <span>Continuous (8Y)</span>
+          </button>
+
+          <span style="color:var(--border); font-size:12px; margin:0 1px;">|</span>
+
+          <!-- Big vs Mini Symbol Toggle -->
+          <div class="deep-sym-group">
+            <button type="button" id="deepSymNG" class="deep-sym-btn active" title="NATURALGAS (Big 1250 mmBtu)">NATURALGAS</button>
+            <button type="button" id="deepSymNGM" class="deep-sym-btn" title="NATGASMINI (Mini 250 mmBtu)">NATGASMINI</button>
+          </div>
+
+          <!-- Dynamic Year Selector (Populated from contract_index.json) -->
+          <select id="deepYearSelect" class="deep-select" title="Select contract delivery year">
+            <option value="">Year</option>
+          </select>
+
+          <!-- Dynamic Expiry / Month Selector (Populated from contract_index.json) -->
+          <select id="deepMonthSelect" class="deep-select" title="Select contract expiry month" style="min-width:160px;">
+            <option value="">— Select Contract Month —</option>
+          </select>
+        </div>
+
+        <!-- Right Side: Scope & LOD Status Badges -->
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="Continuous Front-Month" data-dyn-body="Continuous front-month price and volume history from 2019 to 2026."><strong>Data</strong> 8Y Continuous</span>
+          <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Chart Resolution" data-dyn-body="Active bar timeframe (Daily, 15-Minute, or 1-Minute). Adjusts automatically based on zoom range."><strong>Resolution:</strong> Daily (Macro)</span>
+          <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Loaded Bars" data-dyn-body="Total number of price bars loaded for the active series."><strong>Loaded:</strong> --</span>
+        </div>
+      </div>
       
-      <!-- Crosshair HUD / OHLC readout -->
-      <div id="deepChartHud" style="display:flex; gap:16px; font-size:12px; font-family:monospace; color:var(--text-muted); margin-bottom:8px; min-height:18px; flex-wrap:wrap;">
-        <span id="hudDate">Date: Hover over chart</span>
+      <!-- Row 3: Anchored Crosshair HUD / OHLC readout -->
+      <div id="deepChartHud" class="deep-hud-bar">
+        <span id="hudDate" style="color:var(--text); font-weight:600;">Date: Hover over chart</span>
         <span id="hudOpen"></span>
         <span id="hudHigh"></span>
         <span id="hudLow"></span>
