@@ -360,16 +360,21 @@ def run_snapshot_cycle():
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Automated Market Snapshot & Synchronizer")
     parser.add_argument("--loop", type=int, default=0, help="Loop interval in seconds (e.g. 600 for every 10 mins). If 0, runs once.")
+    parser.add_argument("--iterations", type=int, default=1, help="Number of loop iterations. Default 1. If 0, runs forever.")
     args, _ = parser.parse_known_args()
 
     run_snapshot_cycle()
 
     if args.loop > 0:
         log(f"Continuous daemon active. Polling every {args.loop}s during MCX trading hours...")
+        count = 1
         while True:
+            if args.iterations > 0 and count >= args.iterations:
+                log(f"Completed {count} iterations. Exiting cleanly.")
+                break
             time.sleep(args.loop)
+            count += 1
             try:
                 now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
                 # Weekend check: Saturday=5, Sunday=6

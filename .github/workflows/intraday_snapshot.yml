@@ -6,8 +6,9 @@ name: Intraday Market Snapshot
 
 on:
   schedule:
-    # Runs every 10 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
-    - cron: '*/10 3-18 * * 1-5'
+    # Triggered every 20 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
+    # Runner stays active for 20 minutes, performing 2 snapshot cycles spaced 10 minutes apart.
+    - cron: '*/20 3-18 * * 1-5'
   repository_dispatch:
     types: [intraday_sync]
   workflow_dispatch:
@@ -55,6 +56,6 @@ jobs:
       - name: Run Intraday Market Snapshot & LOD Sync
         if: steps.check_token.outputs.token_present == 'true'
         run: |
-          python scripts/auto_market_snapshot.py
+          python scripts/auto_market_snapshot.py --loop 600 --iterations 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
