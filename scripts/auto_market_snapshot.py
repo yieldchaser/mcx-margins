@@ -115,17 +115,51 @@ def get_authenticated_fyers():
 fyers, user_name = get_authenticated_fyers()
 log(f"FYERS Session active for {user_name}. Checking active contracts...")
 
-# 2. Contracts to update
-active_contracts = [
-    ("NATURALGAS", "26OCT", "MCX:NATURALGAS26OCTFUT", os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise", "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet")),
-    ("NATURALGAS", "26NOV", "MCX:NATURALGAS26NOVFUT", os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise", "MCX_NATURALGAS26NOVFUT_1m_contract_wise.parquet")),
-    ("NATGASMINI", "26OCT", "MCX:NATGASMINI26OCTFUT", os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise", "MCX_NATGASMINI26OCTFUT_1m_contract_wise.parquet"))
-]
+MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+def resolve_active_contracts(fyers_client, now_dt):
+    """Dynamically resolves front-month, near-month, and mini contracts for ANY date of the year."""
+    candidates = []
+    for offset in range(3):
+        m_idx = (now_dt.month - 1 + offset) % 12
+        y = now_dt.year + ((now_dt.month - 1 + offset) // 12)
+        yy = str(y)[-2:]
+        mmm = MONTH_CODES[m_idx]
+        exp_code = f"{yy}{mmm}"
+        sym_ng = f"MCX:NATURALGAS{exp_code}FUT"
+        sym_mini = f"MCX:NATGASMINI{exp_code}FUT"
+        candidates.append((y, m_idx + 1, exp_code, sym_ng, sym_mini))
+        
+    is_roll = (now_dt.day >= 27)
+    try:
+        q = fyers_client.quotes({"symbols": f"{candidates[0][3]},{candidates[1][3]}"})
+        if q.get("s") == "ok":
+            for item in q.get("d", []):
+                if item.get("n") == candidates[0][3]:
+                    v = item.get("v", {})
+                    if now_dt.day >= 25 and v.get("volume", 0) == 0 and v.get("lp", 0) <= 0:
+                        is_roll = True
+    except Exception:
+        pass
+        
+    front = candidates[1] if is_roll else candidates[0]
+    nxt = candidates[2] if is_roll else candidates[1]
+    
+    vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")
+    os.makedirs(vault_dir, exist_ok=True)
+    
+    contracts = [
+        ("NATURALGAS", front[2], front[3], os.path.join(vault_dir, f"{front[3].replace(':', '_')}_1m_contract_wise.parquet"), True, front[0], front[1]),
+        ("NATURALGAS", nxt[2], nxt[3], os.path.join(vault_dir, f"{nxt[3].replace(':', '_')}_1m_contract_wise.parquet"), False, nxt[0], nxt[1]),
+        ("NATGASMINI", front[2], front[4], os.path.join(vault_dir, f"{front[4].replace(':', '_')}_1m_contract_wise.parquet"), False, front[0], front[1]),
+    ]
+    return contracts
 
 now = datetime.now()
+active_contracts = resolve_active_contracts(fyers, now)
 start_dt = now - timedelta(days=5)
 
-for base, exp, sym, pfile in active_contracts:
+for base, exp, sym, pfile, is_front, front_yr, front_mo in active_contracts:
     payload = {
         "symbol": sym,
         "resolution": "1",
@@ -158,30 +192,34 @@ for base, exp, sym, pfile in active_contracts:
             df_combined.to_parquet(pfile, compression="zstd")
             log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
 
-            # If front month October, update the deep chart LOD tiers
-            if base == "NATURALGAS" and exp == "26OCT":
+            # If front month, update the deep chart LOD tiers
+            if is_front:
                 try:
-                    deep_1m_file = os.path.join(REPO_DIR, "docs", "data", "deep", "1m", "2026_10.json")
+                    month_str = f"{front_yr}_{front_mo:02d}"
+                    deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", "1m")
+                    os.makedirs(deep_1m_dir, exist_ok=True)
+                    deep_1m_file = os.path.join(deep_1m_dir, f"{month_str}.json")
+                    existing_bars = []
                     if os.path.exists(deep_1m_file):
                         with open(deep_1m_file, "r", encoding="utf-8") as f:
                             existing_bars = json.load(f)
-                        bar_map = {b[0]: b for b in existing_bars}
-                        oct_start_epoch = int(datetime(2026, 10, 1, 0, 0, tzinfo=timezone.utc).timestamp())
-                        df_oct = df_combined[df_combined["epoch"] >= oct_start_epoch]
-                        for _, row in df_oct.iterrows():
-                            bar_map[int(row["epoch"])] = [
-                                int(row["epoch"]),
-                                round(float(row["open"]), 2),
-                                round(float(row["high"]), 2),
-                                round(float(row["low"]), 2),
-                                round(float(row["close"]), 2),
-                                int(row["volume"])
-                            ]
-                        merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
-                        with open(deep_1m_file, "w", encoding="utf-8") as f:
-                            json.dump(merged_bars, f, separators=(',', ':'))
-                        last_ts = df_oct['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_oct) > 0 else 'recent'
-                        log(f"Synchronized docs/data/deep/1m/2026_10.json ({len(merged_bars):,} bars up to {last_ts}).")
+                    bar_map = {b[0]: b for b in existing_bars}
+                    month_start_epoch = int(datetime(front_yr, front_mo, 1, 0, 0, tzinfo=timezone.utc).timestamp())
+                    df_cur_month = df_combined[df_combined["epoch"] >= month_start_epoch]
+                    for _, row in df_cur_month.iterrows():
+                        bar_map[int(row["epoch"])] = [
+                            int(row["epoch"]),
+                            round(float(row["open"]), 2),
+                            round(float(row["high"]), 2),
+                            round(float(row["low"]), 2),
+                            round(float(row["close"]), 2),
+                            int(row["volume"])
+                        ]
+                    merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
+                    with open(deep_1m_file, "w", encoding="utf-8") as f:
+                        json.dump(merged_bars, f, separators=(',', ':'))
+                    last_ts = df_cur_month['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_cur_month) > 0 else 'recent'
+                    log(f"Synchronized docs/data/deep/1m/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
 
                     # Synchronize Tier 2: ng_15m.json
                     m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", "ng_15m.json")
