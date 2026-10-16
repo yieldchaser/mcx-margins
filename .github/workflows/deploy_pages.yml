@@ -6,7 +6,7 @@ on:
     paths:
       - 'docs/**'
   workflow_run:
-    workflows: ["Intraday Market Snapshot", "Daily Prices Fetch", "Daily Margin Fetch"]
+    workflows: ["Intraday Market Snapshot", "Daily Prices Fetch", "Daily Margin Fetch", "MCX All-Commodities Vault Harvester"]
     types:
       - completed
   workflow_dispatch:

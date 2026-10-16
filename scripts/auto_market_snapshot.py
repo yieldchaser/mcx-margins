@@ -134,15 +134,17 @@ def resolve_active_contracts(fyers_client, now_dt):
         sym_mini = f"MCX:NATGASMINI{exp_code}FUT"
         candidates.append((y, m_idx + 1, exp_code, sym_ng, sym_mini))
         
-    is_roll = (now_dt.day >= 27)
+    is_roll = (now_dt.day >= 26)
     try:
         q = fyers_client.quotes({"symbols": f"{candidates[0][3]},{candidates[1][3]}"})
         if q.get("s") == "ok":
             for item in q.get("d", []):
                 if item.get("n") == candidates[0][3]:
                     v = item.get("v", {})
-                    if now_dt.day >= 25 and v.get("volume", 0) == 0 and v.get("lp", 0) <= 0:
+                    if now_dt.day >= 23 and (v.get("volume", 0) == 0 or v.get("lp", 0) <= 0):
                         is_roll = True
+        elif q.get("code") in (-300, 400, 404):
+            is_roll = True
     except Exception:
         pass
         
@@ -165,8 +167,10 @@ def run_snapshot_cycle():
     fyers, user_name = get_authenticated_fyers()
     log(f"FYERS Session active for {user_name}. Checking active contracts...")
 
-    now = datetime.now()
-    active_contracts = resolve_active_contracts(fyers, now)
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.now(timezone.utc)
+    now_ist = now.astimezone(ist_tz)
+    active_contracts = resolve_active_contracts(fyers, now_ist)
     start_dt = now - timedelta(days=5)
 
     for base, exp, sym, pfile, is_front, front_yr, front_mo in active_contracts:
@@ -207,31 +211,64 @@ def run_snapshot_cycle():
                     try:
                         sym_prefix = "ngm" if base == "NATGASMINI" else "ng"
                         dir_1m = "1m_ngm" if base == "NATGASMINI" else "1m"
-                        month_str = f"{front_yr}_{front_mo:02d}"
+                        manifest_prefix = f"data/deep/{dir_1m}"
                         deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", dir_1m)
                         os.makedirs(deep_1m_dir, exist_ok=True)
-                        deep_1m_file = os.path.join(deep_1m_dir, f"{month_str}.json")
-                        existing_bars = []
-                        if os.path.exists(deep_1m_file):
-                            with open(deep_1m_file, "r", encoding="utf-8") as f:
-                                existing_bars = json.load(f)
-                        bar_map = {b[0]: b for b in existing_bars}
-                        month_start_epoch = int(datetime(front_yr, front_mo, 1, 0, 0, tzinfo=timezone.utc).timestamp())
-                        df_cur_month = df_combined[df_combined["epoch"] >= month_start_epoch]
-                        for _, row in df_cur_month.iterrows():
-                            bar_map[int(row["epoch"])] = [
-                                int(row["epoch"]),
-                                round(float(row["open"]), 2),
-                                round(float(row["high"]), 2),
-                                round(float(row["low"]), 2),
-                                round(float(row["close"]), 2),
-                                int(row["volume"])
-                            ]
-                        merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
-                        with open(deep_1m_file, "w", encoding="utf-8") as f:
-                            json.dump(merged_bars, f, separators=(',', ':'))
-                        last_ts = df_cur_month['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(df_cur_month) > 0 else 'recent'
-                        log(f"Synchronized docs/data/deep/{dir_1m}/{month_str}.json ({len(merged_bars):,} bars up to {last_ts}).")
+
+                        # Partition recent candles by calendar month of trading (not contract month)
+                        recent_threshold = int((now - timedelta(days=7)).timestamp())
+                        df_recent_1m = df_combined[df_combined["epoch"] >= recent_threshold].copy()
+                        df_recent_1m["ym"] = df_recent_1m["ts_ist"].dt.strftime("%Y_%m")
+
+                        for ym, grp in df_recent_1m.groupby("ym"):
+                            deep_1m_file = os.path.join(deep_1m_dir, f"{ym}.json")
+                            existing_bars = []
+                            if os.path.exists(deep_1m_file):
+                                with open(deep_1m_file, "r", encoding="utf-8") as f:
+                                    existing_bars = json.load(f)
+                            bar_map = {b[0]: b for b in existing_bars}
+                            for _, row in grp.iterrows():
+                                bar_map[int(row["epoch"])] = [
+                                    int(row["epoch"]),
+                                    round(float(row["open"]), 2),
+                                    round(float(row["high"]), 2),
+                                    round(float(row["low"]), 2),
+                                    round(float(row["close"]), 2),
+                                    int(row["volume"])
+                                ]
+                            merged_bars = sorted(bar_map.values(), key=lambda x: x[0])
+                            with open(deep_1m_file, "w", encoding="utf-8") as f:
+                                json.dump(merged_bars, f, separators=(',', ':'))
+                            last_ts = grp['ts_ist'].iloc[-1].strftime('%H:%M IST') if len(grp) > 0 else 'recent'
+                            log(f"Synchronized docs/data/deep/{dir_1m}/{ym}.json ({len(merged_bars):,} bars up to {last_ts}).")
+
+                        # Synchronize manifest.json with updated 1m months
+                        manifest_path = os.path.join(REPO_DIR, "docs", "data", "deep", "manifest.json")
+                        if os.path.exists(manifest_path):
+                            try:
+                                with open(manifest_path, "r", encoding="utf-8") as f_man:
+                                    manifest_obj = json.load(f_man)
+                                if sym_prefix in manifest_obj:
+                                    m1_list = manifest_obj[sym_prefix].get("m1_months", [])
+                                    m1_months_dict = {m["month"]: m for m in m1_list}
+                                    for ym, grp in df_recent_1m.groupby("ym"):
+                                        deep_1m_file = os.path.join(deep_1m_dir, f"{ym}.json")
+                                        if os.path.exists(deep_1m_file):
+                                            with open(deep_1m_file, "r", encoding="utf-8") as f_cur:
+                                                cur_bars = json.load(f_cur)
+                                            if cur_bars:
+                                                m1_months_dict[ym] = {
+                                                    "month": ym,
+                                                    "bars": len(cur_bars),
+                                                    "start": cur_bars[0][0],
+                                                    "end": cur_bars[-1][0],
+                                                    "file": f"{manifest_prefix}/{ym}.json"
+                                                }
+                                    manifest_obj[sym_prefix]["m1_months"] = sorted(m1_months_dict.values(), key=lambda x: x["month"])
+                                    with open(manifest_path, "w", encoding="utf-8") as f_man:
+                                        json.dump(manifest_obj, f_man, indent=2)
+                            except Exception as e_man:
+                                log(f"Notice updating manifest.json for {base}: {e_man}")
 
                         # Synchronize Tier 2: {sym_prefix}_15m.json
                         m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_15m.json")
