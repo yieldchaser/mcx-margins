@@ -22,9 +22,9 @@ on:
         required: false
         default: 'ALL'
       days:
-        description: 'Lookback days for historical 1-minute candles'
+        description: 'Lookback days (0 = dynamic full lifetime from inception to today)'
         required: false
-        default: '90'
+        default: '0'
 
 concurrency:
   group: mcx-commodity-vault-sync
@@ -74,8 +74,8 @@ jobs:
         if: steps.check_token.outputs.token_present == 'true'
         run: |
           COMMODITY="${{ github.event.inputs.commodity || 'ALL' }}"
-          DAYS="${{ github.event.inputs.days || '90' }}"
-          echo "Starting MCX Commodity Harvester (Commodity: $COMMODITY, Lookback: $DAYS days)..."
+          DAYS="${{ github.event.inputs.days || '0' }}"
+          echo "Starting MCX Commodity Harvester (Commodity: $COMMODITY, Dynamic Lifetime: $DAYS days)..."
           python scripts/harvest_all_mcx_commodities.py --commodity "$COMMODITY" --days "$DAYS" --push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

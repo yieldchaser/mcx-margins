@@ -112,10 +112,14 @@ def fetch_active_mcx_symbols(commodity_filter=None):
 def base_symbol_clean(sym):
     return re.sub(r"[^A-Z0-9]", "", str(sym).upper())
 
-def harvest_single_contract(fyers, contract, lookback_days=90):
+def harvest_single_contract(fyers, contract, lookback_days=0):
     """
-    Downloads unstitched 1-minute historical candles for a specific contract,
-    applies zero-shrink upsert with existing parquet, and updates storage.
+    Downloads unstitched 1-minute historical candles for a specific contract.
+    If lookback_days == 0 (default): Dynamically pages backwards in 60-day chunks
+    until FYERS returns 0 candles (the true contract inception date!), capturing
+    100% of available historical microstructure without any hardcoded limit.
+    If lookback_days > 0: Limits historical fetch to the specified number of days.
+    Applies zero-shrink upsert with existing parquet.
     """
     sym = contract["symbol"]
     clean_name = sym.replace(":", "_")
@@ -127,7 +131,6 @@ def harvest_single_contract(fyers, contract, lookback_days=90):
     existing_df = None
     min_epoch = 0
     max_epoch = 0
-    start_dt = now - timedelta(days=lookback_days)
 
     if os.path.exists(parquet_path):
         try:
@@ -135,44 +138,108 @@ def harvest_single_contract(fyers, contract, lookback_days=90):
             if len(existing_df) > 0 and "epoch" in existing_df.columns:
                 max_epoch = int(existing_df["epoch"].max())
                 min_epoch = int(existing_df["epoch"].min())
-                # If existing file is already reasonably recent, only fetch incrementally from max_epoch - 2 days
-                recency_window = datetime.fromtimestamp(max_epoch, timezone.utc) - timedelta(days=2)
-                start_dt = max(start_dt, recency_window)
         except Exception as e:
             log(f"Notice reading existing parquet {parquet_path}: {e}")
             existing_df = None
 
-    # FYERS 1-minute history query
-    # If date range > 80 days, break into 60-day chunks
     chunks = []
-    curr_end = now
-    while curr_end > start_dt:
-        curr_start = max(start_dt, curr_end - timedelta(days=60))
+
+    # 1. Forward incremental fetch: from max_epoch - 2 days up to now (captures recent trades)
+    if max_epoch > 0:
+        start_forward = datetime.fromtimestamp(max_epoch, timezone.utc) - timedelta(days=2)
         payload = {
             "symbol": sym,
             "resolution": "1",
             "date_format": "1",
-            "range_from": curr_start.strftime("%Y-%m-%d"),
-            "range_to": curr_end.strftime("%Y-%m-%d"),
-            "cont_flag": "0",  # UNSTITCHED contract-specific history!
-            "oi_flag": "1"     # Open Interest included
+            "range_from": start_forward.strftime("%Y-%m-%d"),
+            "range_to": now.strftime("%Y-%m-%d"),
+            "cont_flag": "0",
+            "oi_flag": "1"
         }
-
         try:
             resp = fyers.history(data=payload)
             if resp.get("s") == "ok" and resp.get("candles"):
                 candles = resp["candles"]
-                cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
-                df_chunk = pd.DataFrame(candles, columns=cols[:len(candles[0])])
-                chunks.append(df_chunk)
-            elif resp.get("code") == -300:
-                # Contract expired and purged by broker
-                break
+                if candles:
+                    cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
+                    chunks.append(pd.DataFrame(candles, columns=cols[:len(candles[0])]))
         except Exception as e:
-            log(f"Notice querying {sym} ({curr_start.strftime('%Y-%m-%d')}): {e}")
+            log(f"Notice forward querying {sym}: {e}")
+        time.sleep(0.25)
 
-        curr_end = curr_start - timedelta(days=1)
-        time.sleep(0.25)  # Rate-limit safety
+    # 2. Backward fetch towards inception:
+    if existing_df is None or len(existing_df) == 0:
+        # Fresh contract: page backwards from now in 60-day chunks until 0 candles returned
+        curr_end = now
+        chunk_count = 0
+        max_safety_chunks = (lookback_days // 60 + 1) if lookback_days > 0 else 10  # Up to 600 days (full lifetime)
+
+        while chunk_count < max_safety_chunks:
+            curr_start = curr_end - timedelta(days=60)
+            if lookback_days > 0 and curr_start < (now - timedelta(days=lookback_days)) and chunk_count > 0:
+                curr_start = now - timedelta(days=lookback_days)
+
+            payload = {
+                "symbol": sym,
+                "resolution": "1",
+                "date_format": "1",
+                "range_from": curr_start.strftime("%Y-%m-%d"),
+                "range_to": curr_end.strftime("%Y-%m-%d"),
+                "cont_flag": "0",
+                "oi_flag": "1"
+            }
+
+            try:
+                resp = fyers.history(data=payload)
+                if resp.get("s") == "ok" and resp.get("candles"):
+                    candles = resp["candles"]
+                    if not candles:
+                        # Reached true inception of contract!
+                        break
+                    cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
+                    chunks.append(pd.DataFrame(candles, columns=cols[:len(candles[0])]))
+                    chunk_count += 1
+                elif resp.get("code") == -300:
+                    break
+                else:
+                    break
+            except Exception as e:
+                log(f"Notice backward querying {sym} ({curr_start.strftime('%Y-%m-%d')}): {e}")
+                break
+
+            curr_end = curr_start - timedelta(days=1)
+            time.sleep(0.25)
+    elif lookback_days == 0 and min_epoch > 0:
+        # Existing contract: backfill backward from min_epoch to true inception
+        curr_end = datetime.fromtimestamp(min_epoch, timezone.utc) - timedelta(days=1)
+        chunk_count = 0
+        while chunk_count < 8:  # Up to 480 days back
+            curr_start = curr_end - timedelta(days=60)
+            payload = {
+                "symbol": sym,
+                "resolution": "1",
+                "date_format": "1",
+                "range_from": curr_start.strftime("%Y-%m-%d"),
+                "range_to": curr_end.strftime("%Y-%m-%d"),
+                "cont_flag": "0",
+                "oi_flag": "1"
+            }
+            try:
+                resp = fyers.history(data=payload)
+                if resp.get("s") == "ok" and resp.get("candles"):
+                    candles = resp["candles"]
+                    if not candles:
+                        # Reached true inception!
+                        break
+                    cols = ["epoch", "open", "high", "low", "close", "volume", "oi"]
+                    chunks.append(pd.DataFrame(candles, columns=cols[:len(candles[0])]))
+                    chunk_count += 1
+                else:
+                    break
+            except Exception:
+                break
+            curr_end = curr_start - timedelta(days=1)
+            time.sleep(0.25)
 
     new_bars_count = 0
     if chunks:
@@ -380,7 +447,7 @@ def git_commit_and_push():
 def main():
     parser = argparse.ArgumentParser(description="MCX Multi-Commodity Vault Harvester")
     parser.add_argument("--commodity", type=str, default="ALL", help="Filter by commodity (e.g. CRUDEOIL, GOLD, NATURALGAS, ALL).")
-    parser.add_argument("--days", type=int, default=90, help="Lookback days for historical 1-minute data (default: 90).")
+    parser.add_argument("--days", type=int, default=0, help="Lookback days for historical 1-minute data (default: 0 = dynamic full lifetime from inception to today).")
     parser.add_argument("--limit", type=int, default=0, help="Limit number of contracts to process (for testing).")
     parser.add_argument("--dry-run", action="store_true", help="Discover contracts without downloading.")
     parser.add_argument("--push", action="store_true", help="Commit and push changes to git.")
