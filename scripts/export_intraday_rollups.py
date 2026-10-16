@@ -50,20 +50,25 @@ for ppath in sorted(glob.glob(pattern)):
     if m:
         base, exp_code = m.group(1), m.group(2)
         sym = f"MCX:{base}{exp_code}FUT"
-        prefix = "NGM" if "MINI" in base else "NG"
-        tag = f"{prefix}_{exp_code}"
-        contracts.append((sym, pfile, tag))
+        if base == "NATURALGAS":
+            tag = f"NG_{exp_code}"
+        elif base == "NATGASMINI":
+            tag = f"NGM_{exp_code}"
+        else:
+            tag = f"{base}_{exp_code}"
+        contracts.append((sym, pfile, tag, base))
 
-for sym, pfile, tag in contracts:
+for sym, pfile, tag, base in contracts:
     full_path = os.path.join(CONTRACT_DIR, pfile)
     if not os.path.exists(full_path):
         continue
     
-    # Load 1-minute bars
+    # Load 1-minute bars with commodity-appropriate sanity filter
+    sanity_filter = "AND open < 1000 AND high < 1000 AND close < 1000" if base in ("NATURALGAS", "NATGASMINI") else ""
     df = con.execute(f"""
         SELECT epoch as dt, open, high, low, close, volume, oi
         FROM read_parquet('{full_path}')
-        WHERE open > 0 AND high >= low AND volume >= 0
+        WHERE open > 0 AND high >= low AND volume >= 0 {sanity_filter}
         ORDER BY epoch ASC
     """).df()
     
@@ -164,30 +169,34 @@ for sym, pfile, tag in contracts:
         try:
             with open(out_path, "r", encoding="utf-8") as f_ex:
                 ex_json = json.load(f_ex)
-            ex_d = ex_json.get("data", {})
-            ex_dt = ex_d.get("dt", [])
-            if len(ex_dt) > len(df_15m):
-                m_map = {ex_dt[i]: {
-                    "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
-                    "c": ex_d["c"][i], "v": ex_d["v"][i], "oi": ex_d.get("oi", [0]*len(ex_dt))[i]
-                } for i in range(len(ex_dt))}
-                for _, r in df_15m.iterrows():
-                    m_map[int(r["dt"])] = {
-                        "o": round(float(r["o"]), 2), "h": round(float(r["h"]), 2),
-                        "l": round(float(r["l"]), 2), "c": round(float(r["c"]), 2),
-                        "v": int(r["v"]), "oi": int(r["oi"])
+            # CRITICAL: Only merge if the existing file belongs to this exact symbol
+            if ex_json.get("symbol") == sym:
+                ex_d = ex_json.get("data", {})
+                ex_dt = ex_d.get("dt", [])
+                ex_c = ex_d.get("c", [])
+                is_corrupted = (base in ("NATURALGAS", "NATGASMINI") and any(x > 1000 for x in ex_c))
+                if not is_corrupted and len(ex_dt) > len(df_15m):
+                    m_map = {ex_dt[i]: {
+                        "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
+                        "c": ex_d["c"][i], "v": ex_d["v"][i], "oi": ex_d.get("oi", [0]*len(ex_dt))[i]
+                    } for i in range(len(ex_dt))}
+                    for _, r in df_15m.iterrows():
+                        m_map[int(r["dt"])] = {
+                            "o": round(float(r["o"]), 2), "h": round(float(r["h"]), 2),
+                            "l": round(float(r["l"]), 2), "c": round(float(r["c"]), 2),
+                            "v": int(r["v"]), "oi": int(r["oi"])
+                        }
+                    sorted_dt = sorted(m_map.keys())
+                    out_15m["candles_count"] = len(sorted_dt)
+                    out_15m["data"] = {
+                        "dt": sorted_dt,
+                        "o": [m_map[t]["o"] for t in sorted_dt],
+                        "h": [m_map[t]["h"] for t in sorted_dt],
+                        "l": [m_map[t]["l"] for t in sorted_dt],
+                        "c": [m_map[t]["c"] for t in sorted_dt],
+                        "v": [m_map[t]["v"] for t in sorted_dt],
+                        "oi": [m_map[t]["oi"] for t in sorted_dt]
                     }
-                sorted_dt = sorted(m_map.keys())
-                out_15m["candles_count"] = len(sorted_dt)
-                out_15m["data"] = {
-                    "dt": sorted_dt,
-                    "o": [m_map[t]["o"] for t in sorted_dt],
-                    "h": [m_map[t]["h"] for t in sorted_dt],
-                    "l": [m_map[t]["l"] for t in sorted_dt],
-                    "c": [m_map[t]["c"] for t in sorted_dt],
-                    "v": [m_map[t]["v"] for t in sorted_dt],
-                    "oi": [m_map[t]["oi"] for t in sorted_dt]
-                }
         except Exception:
             pass
 
@@ -220,29 +229,32 @@ for sym, pfile, tag in contracts:
             try:
                 with open(out_1m_path, "r", encoding="utf-8") as f_ex:
                     ex_json = json.load(f_ex)
-                ex_d = ex_json.get("data", {})
-                ex_dt = ex_d.get("dt", [])
-                if len(ex_dt) > len(df):
-                    m_map = {ex_dt[i]: {
-                        "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
-                        "c": ex_d["c"][i], "v": ex_d["v"][i]
-                    } for i in range(len(ex_dt))}
-                    for _, r in df.iterrows():
-                        m_map[int(r["dt"])] = {
-                            "o": round(float(r["open"]), 2), "h": round(float(r["high"]), 2),
-                            "l": round(float(r["low"]), 2), "c": round(float(r["close"]), 2),
-                            "v": int(r["volume"])
+                if ex_json.get("symbol") == sym:
+                    ex_d = ex_json.get("data", {})
+                    ex_dt = ex_d.get("dt", [])
+                    ex_c = ex_d.get("c", [])
+                    is_corrupted = (base in ("NATURALGAS", "NATGASMINI") and any(x > 1000 for x in ex_c))
+                    if not is_corrupted and len(ex_dt) > len(df):
+                        m_map = {ex_dt[i]: {
+                            "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
+                            "c": ex_d["c"][i], "v": ex_d["v"][i]
+                        } for i in range(len(ex_dt))}
+                        for _, r in df.iterrows():
+                            m_map[int(r["dt"])] = {
+                                "o": round(float(r["open"]), 2), "h": round(float(r["high"]), 2),
+                                "l": round(float(r["low"]), 2), "c": round(float(r["close"]), 2),
+                                "v": int(r["volume"])
+                            }
+                        sorted_dt = sorted(m_map.keys())
+                        out_1m["candles_count"] = len(sorted_dt)
+                        out_1m["data"] = {
+                            "dt": sorted_dt,
+                            "o": [m_map[t]["o"] for t in sorted_dt],
+                            "h": [m_map[t]["h"] for t in sorted_dt],
+                            "l": [m_map[t]["l"] for t in sorted_dt],
+                            "c": [m_map[t]["c"] for t in sorted_dt],
+                            "v": [m_map[t]["v"] for t in sorted_dt]
                         }
-                    sorted_dt = sorted(m_map.keys())
-                    out_1m["candles_count"] = len(sorted_dt)
-                    out_1m["data"] = {
-                        "dt": sorted_dt,
-                        "o": [m_map[t]["o"] for t in sorted_dt],
-                        "h": [m_map[t]["h"] for t in sorted_dt],
-                        "l": [m_map[t]["l"] for t in sorted_dt],
-                        "c": [m_map[t]["c"] for t in sorted_dt],
-                        "v": [m_map[t]["v"] for t in sorted_dt]
-                    }
             except Exception:
                 pass
 
@@ -256,7 +268,7 @@ print("\nDynamically Resolving Active Calendar Roll Spread Pair...")
 MONTH_ORDER = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
 
 ng_contracts = []
-for sym, pfile, tag in contracts:
+for sym, pfile, tag, base in contracts:
     m = re.match(r"^MCX_NATURALGAS(\d{2})([A-Z]{3})FUT_1m_contract_wise\.parquet$", pfile)
     if m:
         yr = 2000 + int(m.group(1))
