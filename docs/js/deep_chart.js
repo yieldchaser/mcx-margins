@@ -849,7 +849,7 @@
     if (scopeBadge) {
       scopeBadge.innerHTML = `<strong>Contract</strong> ${tag}`;
       scopeBadge.setAttribute('data-dyn-title', `${fullLabel} Standalone`);
-      scopeBadge.setAttribute('data-dyn-body', `Full standalone contract data with ${result.bars.length.toLocaleString()} bars.`);
+      scopeBadge.setAttribute('data-dyn-body', `Historical price series for ${fullLabel} with ${result.bars.length.toLocaleString()} bars.`);
     }
 
     const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
@@ -891,19 +891,19 @@
 
     if (titleEl) {
       titleEl.textContent = 'Front-Month Historical Price Action & Intraday Structure';
-      titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 8 full years (2019 to 2026), unstitched across roll boundaries to preserve true historical price discovery.');
+      titleEl.setAttribute('data-dyn-body', 'Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries.');
     }
     if (scopeBadge) {
       scopeBadge.innerHTML = '<strong>Data</strong> 8Y Front-Month';
-      scopeBadge.setAttribute('data-dyn-title', '8-Year Continuous Front-Month');
-      scopeBadge.setAttribute('data-dyn-body', 'Aggregated from 1,653,214 historical 1-minute execution ticks across 92 monthly contracts.');
+      scopeBadge.setAttribute('data-dyn-title', 'Continuous Front-Month');
+      scopeBadge.setAttribute('data-dyn-body', 'Continuous front-month price and volume history from 2019 to 2026.');
     }
 
     const allBtn = document.querySelector('.deep-tf-btn[data-tf="ALL"]');
     if (allBtn) {
       allBtn.textContent = '8Y (All)';
-      allBtn.setAttribute('data-dyn-title', '8Y Full Macro View');
-      allBtn.setAttribute('data-dyn-body', 'Displays all 8 years of historical daily prices (2019 to 2026).');
+      allBtn.setAttribute('data-dyn-title', '8-Year Macro View');
+      allBtn.setAttribute('data-dyn-body', 'Full historical daily price history (2019 to 2026).');
     }
 
     await loadDailyTier(true);
