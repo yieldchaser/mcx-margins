@@ -837,79 +837,85 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .data-table tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .data-table tr:nth-child(even) td { background: rgba(33,38,45,0.5); }
 
-/* ── Universal Custom Scrollbars & Sliders (Sleek Dark Blue Theme) ── */
+/* ── Universal Native Dark Theme Scrollbars & Sliders ── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 139, 253, 0.45) var(--surface2);
+  scrollbar-color: rgba(139, 148, 158, 0.35) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 *::-webkit-scrollbar-track {
-  background: var(--surface2);
-  border-radius: 4px;
+  background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(56, 139, 253, 0.45);
-  border-radius: 4px;
-  border: 1px solid var(--surface2);
-  transition: background 0.2s ease;
+  background: rgba(139, 148, 158, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.15s ease;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 139, 253, 0.85);
+  background: rgba(139, 148, 158, 0.65);
+  background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:active {
-  background: var(--accent);
+  background: rgba(139, 148, 158, 0.9);
+  background-clip: padding-box;
 }
 *::-webkit-scrollbar-corner {
-  background: var(--surface);
+  background: transparent;
 }
 
 input[type="range"] {
-  accent-color: var(--accent);
+  accent-color: #6e7681;
 }
 
 #heatmapContractContainer {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 139, 253, 0.5) var(--surface2);
+  scrollbar-color: rgba(139, 148, 158, 0.35) transparent;
 }
 #heatmapContractContainer::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 #heatmapContractContainer::-webkit-scrollbar-track {
-  background: var(--surface2);
-  border-radius: 4px;
+  background: transparent;
 }
 #heatmapContractContainer::-webkit-scrollbar-thumb {
-  background: rgba(56, 139, 253, 0.5);
-  border-radius: 4px;
-  border: 1px solid var(--surface2);
+  background: rgba(139, 148, 158, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.15s ease;
 }
 #heatmapContractContainer::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 139, 253, 0.85);
+  background: rgba(139, 148, 158, 0.65);
+  background-clip: padding-box;
 }
 
 /* ── Market Table Shell Scrollbar ── */
 .market-table-shell {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 139, 253, 0.45) var(--surface2);
+  scrollbar-color: rgba(139, 148, 158, 0.35) transparent;
 }
 .market-table-shell::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 .market-table-shell::-webkit-scrollbar-track {
-  background: var(--surface2);
-  border-radius: 3px;
+  background: transparent;
 }
 .market-table-shell::-webkit-scrollbar-thumb {
-  background: rgba(56, 139, 253, 0.45);
-  border-radius: 3px;
+  background: rgba(139, 148, 158, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 .market-table-shell::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 139, 253, 0.85);
+  background: rgba(139, 148, 158, 0.65);
+  background-clip: padding-box;
 }
 
 /* ── Utility ── */
