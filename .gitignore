@@ -22,6 +22,7 @@ fyersRequests.log
 # Raw Large Data Vaults & Scratch Dumps
 data/mcx_vault/*
 !data/mcx_vault/contract_wise/
+!data/mcx_vault/commodities_catalog.json
 data/historical_intraday/
 data/fyers_*.csv
 data/fyers_*.parquet

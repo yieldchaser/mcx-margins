@@ -1,0 +1,89 @@
+name: MCX All-Commodities Vault Harvester
+
+# Weekly and Bi-weekly Automated Vault Archive
+# Proactively harvests and preserves unstitched 1-minute historical data
+# for ALL active MCX commodity futures before brokers purge expired contracts.
+#
+# Schedule:
+# 1. Weekly on Saturday 04:00 UTC (09:30 AM IST) when MCX markets are closed.
+# 2. Bi-weekly on the 1st and 15th of each month at 04:00 UTC before expiry cycles.
+# 3. On-demand manual trigger via workflow_dispatch.
+
+on:
+  schedule:
+    # Every Saturday at 04:00 UTC (09:30 AM IST)
+    - cron: '0 4 * * 6'
+    # Bi-weekly mid-month safety sync (1st and 15th of every month)
+    - cron: '0 4 1,15 * *'
+  workflow_dispatch:
+    inputs:
+      commodity:
+        description: 'Commodity to harvest (or ALL for all 31 commodities)'
+        required: false
+        default: 'ALL'
+      days:
+        description: 'Lookback days for historical 1-minute candles'
+        required: false
+        default: '90'
+
+concurrency:
+  group: mcx-commodity-vault-sync
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FYERS_ACCESS_TOKEN: ${{ secrets.FYERS_ACCESS_TOKEN }}
+      FYERS_FY_ID: ${{ secrets.FYERS_FY_ID }}
+      FYERS_PIN: ${{ secrets.FYERS_PIN }}
+      FYERS_TOTP_KEY: ${{ secrets.FYERS_TOTP_KEY }}
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyarrow duckdb fyers-apiv3 scipy pyotp
+
+      - name: Check Fyers Token Secrets
+        id: check_token
+        run: |
+          if [ -z "$FYERS_ACCESS_TOKEN" ] && [ -z "$FYERS_TOTP_KEY" ]; then
+            echo "Neither FYERS_ACCESS_TOKEN nor FYERS_TOTP_KEY secret is configured. Skipping harvester run."
+            echo "token_present=false" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "token_present=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Multi-Commodity Vault Harvester
+        if: steps.check_token.outputs.token_present == 'true'
+        run: |
+          COMMODITY="${{ github.event.inputs.commodity || 'ALL' }}"
+          DAYS="${{ github.event.inputs.days || '90' }}"
+          echo "Starting MCX Commodity Harvester (Commodity: $COMMODITY, Lookback: $DAYS days)..."
+          python scripts/harvest_all_mcx_commodities.py --commodity "$COMMODITY" --days "$DAYS" --push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Pages Deployment
+        if: steps.check_token.outputs.token_present == 'true'
+        run: |
+          gh workflow run deploy_pages.yml || echo "Notice: deploy_pages workflow dispatched or skipped."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
