@@ -360,6 +360,7 @@ def run_snapshot_cycle():
 
 if __name__ == "__main__":
     import argparse
+    parser = argparse.ArgumentParser(description="Automated Market Snapshot & Synchronizer")
     parser.add_argument("--loop", type=int, default=0, help="Loop interval in seconds (e.g. 600 for every 10 mins). If 0, runs once.")
     parser.add_argument("--iterations", type=int, default=1, help="Number of loop iterations. Default 1. If 0, runs forever.")
     args, _ = parser.parse_known_args()
