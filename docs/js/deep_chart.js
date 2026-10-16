@@ -504,7 +504,52 @@
 
       currentResolution = 'daily';
       updateBadges('Daily (Macro)', `${cleanBars.length.toLocaleString()} bars`);
-      if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
+
+      // Ensure today's daily bar dynamically reflects the latest available intraday trade time
+      if (cleanBars.length > 0) {
+        const lastBar = cleanBars[cleanBars.length - 1];
+        updateGlobalLiveTimestamp(lastBar);
+
+        const trySyncLatestIntraday = (fresh15) => {
+          if (fresh15 && fresh15.length) {
+            const latest15 = fresh15[fresh15.length - 1];
+            if (latest15 && latest15.time > lastBar.time) {
+              lastBar.time = latest15.time;
+              lastBar.close = latest15.close;
+              if (areaData.length) {
+                areaData[areaData.length - 1].time = latest15.time;
+                areaData[areaData.length - 1].value = latest15.close;
+              }
+              if (candleData.length) {
+                candleData[candleData.length - 1].time = latest15.time;
+                candleData[candleData.length - 1].close = latest15.close;
+              }
+              if (volumeData.length) {
+                volumeData[volumeData.length - 1].time = latest15.time;
+              }
+              areaSeries.setData(areaData);
+              candleSeries.setData(candleData);
+              volumeSeries.setData(volumeData);
+              updateGlobalLiveTimestamp(latest15);
+            }
+          }
+        };
+
+        if (cache.m15 && cache.m15.length) {
+          trySyncLatestIntraday(cache.m15);
+        } else {
+          fetch(`data/deep/ng_15m.json?_v=${Date.now()}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(m15 => {
+              if (m15) {
+                cache.m15 = m15;
+                cacheTimestamps.m15 = Date.now();
+                trySyncLatestIntraday(m15);
+              }
+            })
+            .catch(() => {});
+        }
+      }
 
       if (fit) {
         chart.timeScale().fitContent();
@@ -557,7 +602,7 @@
   async function load1mTier(fromTs, toTs) {
     updateBadges('Loading 1-Minute...', '--');
     try {
-      const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || 1792066980;
+      const centerTs = Math.floor(((fromTs || 0) + (toTs || fromTs || 0)) / 2) || Math.floor(Date.now() / 1000);
       const d = new Date(centerTs * 1000);
       const istDateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const ym = istDateStr.slice(0, 7).replace('-', '_');
@@ -1292,7 +1337,7 @@
                    contractCache[tag]?.['15m'] ||
                    contractCache[tag]?.['daily'] ||
                    contractCache[tag]?.['1m'];
-      const nowTs = (bars && bars.length) ? bars[bars.length - 1].time : 1792068300;
+      const nowTs = (bars && bars.length) ? bars[bars.length - 1].time : Math.floor(Date.now() / 1000);
 
       if (tf === 'ALL') {
         if (activeContractType === 'intraday') {
@@ -1339,7 +1384,15 @@
 
     const latestDaily = cache.daily?.[cache.daily.length - 1]?.time || 0;
     const latest15m = cache.m15?.[cache.m15.length - 1]?.time || 0;
-    const nowTs = Math.max(latestDaily, latest15m, 1792068300);
+    let latest1m = 0;
+    for (const ym in cache.m1) {
+      const arr = cache.m1[ym];
+      if (arr && arr.length) {
+        const lastT = arr[arr.length - 1][0];
+        if (lastT > latest1m) latest1m = lastT;
+      }
+    }
+    const nowTs = Math.max(latestDaily, latest15m, latest1m) || Math.floor(Date.now() / 1000);
 
     let days = 0;
     switch (tf) {

@@ -837,10 +837,64 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .data-table tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .data-table tr:nth-child(even) td { background: rgba(33,38,45,0.5); }
 
+/* ── Universal Custom Scrollbars & Sliders (Sleek Dark Blue Theme) ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 139, 253, 0.45) var(--surface2);
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--surface2);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(56, 139, 253, 0.45);
+  border-radius: 4px;
+  border: 1px solid var(--surface2);
+  transition: background 0.2s ease;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 139, 253, 0.85);
+}
+*::-webkit-scrollbar-thumb:active {
+  background: var(--accent);
+}
+*::-webkit-scrollbar-corner {
+  background: var(--surface);
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
+#heatmapContractContainer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 139, 253, 0.5) var(--surface2);
+}
+#heatmapContractContainer::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+#heatmapContractContainer::-webkit-scrollbar-track {
+  background: var(--surface2);
+  border-radius: 4px;
+}
+#heatmapContractContainer::-webkit-scrollbar-thumb {
+  background: rgba(56, 139, 253, 0.5);
+  border-radius: 4px;
+  border: 1px solid var(--surface2);
+}
+#heatmapContractContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 139, 253, 0.85);
+}
+
 /* ── Market Table Shell Scrollbar ── */
 .market-table-shell {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 139, 253, 0.4) var(--surface2);
+  scrollbar-color: rgba(56, 139, 253, 0.45) var(--surface2);
 }
 .market-table-shell::-webkit-scrollbar {
   width: 6px;
@@ -851,11 +905,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   border-radius: 3px;
 }
 .market-table-shell::-webkit-scrollbar-thumb {
-  background: rgba(56, 139, 253, 0.4);
+  background: rgba(56, 139, 253, 0.45);
   border-radius: 3px;
 }
 .market-table-shell::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 139, 253, 0.7);
+  background: rgba(56, 139, 253, 0.85);
 }
 
 /* ── Utility ── */

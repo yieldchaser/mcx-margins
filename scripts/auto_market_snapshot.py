@@ -273,8 +273,8 @@ def run_snapshot_cycle():
                             today_str = now.strftime("%Y-%m-%d")
                             today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                             if len(today_bars) > 0:
-                                # In ng_daily.json, daily timestamps are aligned at 03:30:00 UTC (12600s) to match continuous vault
-                                today_epoch = int(datetime.strptime(today_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 12600
+                                # Dynamically set timestamp to the latest available traded minute of today
+                                today_epoch = int(today_bars["epoch"].iloc[-1])
                                 today_daily = {
                                     "time": today_epoch,
                                     "open": round(float(today_bars["open"].iloc[0]), 2),
@@ -285,12 +285,16 @@ def run_snapshot_cycle():
                                 }
                                 with open(daily_file, "r", encoding="utf-8") as f:
                                     daily_bars = json.load(f)
-                                existing_daily_map = {b["time"]: b for b in daily_bars}
-                                existing_daily_map[today_epoch] = today_daily
+                                ist_tz = timezone(timedelta(hours=5, minutes=30))
+                                existing_daily_map = {}
+                                for b in daily_bars:
+                                    b_date = datetime.fromtimestamp(b["time"], ist_tz).strftime("%Y-%m-%d")
+                                    existing_daily_map[b_date] = b
+                                existing_daily_map[today_str] = today_daily
                                 merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
                                 with open(daily_file, "w", encoding="utf-8") as f:
                                     json.dump(merged_daily, f, separators=(',', ':'))
-                                log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars)")
+                                log(f"Updated docs/data/deep/ng_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars, latest: {datetime.fromtimestamp(today_epoch, ist_tz).strftime('%H:%M IST')})")
                     except Exception as e:
                         log(f"Notice updating deep LOD tiers: {e}")
             else:
