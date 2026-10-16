@@ -120,7 +120,7 @@ MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'O
 def resolve_active_contracts(fyers_client, now_dt):
     """Dynamically resolves front-month, near-month, and mini contracts for ANY date of the year."""
     candidates = []
-    for offset in range(3):
+    for offset in range(6):
         m_idx = (now_dt.month - 1 + offset) % 12
         y = now_dt.year + ((now_dt.month - 1 + offset) // 12)
         yy = str(y)[-2:]
@@ -142,17 +142,18 @@ def resolve_active_contracts(fyers_client, now_dt):
     except Exception:
         pass
         
-    front = candidates[1] if is_roll else candidates[0]
-    nxt = candidates[2] if is_roll else candidates[1]
-    
+    front_idx = 1 if is_roll else 0
     vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")
     os.makedirs(vault_dir, exist_ok=True)
     
-    contracts = [
-        ("NATURALGAS", front[2], front[3], os.path.join(vault_dir, f"{front[3].replace(':', '_')}_1m_contract_wise.parquet"), True, front[0], front[1]),
-        ("NATURALGAS", nxt[2], nxt[3], os.path.join(vault_dir, f"{nxt[3].replace(':', '_')}_1m_contract_wise.parquet"), False, nxt[0], nxt[1]),
-        ("NATGASMINI", front[2], front[4], os.path.join(vault_dir, f"{front[4].replace(':', '_')}_1m_contract_wise.parquet"), False, front[0], front[1]),
-    ]
+    contracts = []
+    for i, c in enumerate(candidates):
+        is_front = (i == front_idx)
+        pfile_ng = os.path.join(vault_dir, f"{c[3].replace(':', '_')}_1m_contract_wise.parquet")
+        contracts.append(("NATURALGAS", c[2], c[3], pfile_ng, is_front, c[0], c[1]))
+        pfile_mini = os.path.join(vault_dir, f"{c[4].replace(':', '_')}_1m_contract_wise.parquet")
+        contracts.append(("NATGASMINI", c[2], c[4], pfile_mini, False, c[0], c[1]))
+        
     return contracts
 
 def run_snapshot_cycle():

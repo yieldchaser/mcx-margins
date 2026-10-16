@@ -38,21 +38,21 @@ print("=" * 80)
 
 con = duckdb.connect()
 
-# 1. Process Active Natural Gas & Mini Contracts
-contracts = [
-    ("MCX:NATURALGAS26OCTFUT", "MCX_NATURALGAS26OCTFUT_1m_contract_wise.parquet", "NG_26OCT"),
-    ("MCX:NATURALGAS26NOVFUT", "MCX_NATURALGAS26NOVFUT_1m_contract_wise.parquet", "NG_26NOV"),
-    ("MCX:NATURALGAS26DECFUT", "MCX_NATURALGAS26DECFUT_1m_contract_wise.parquet", "NG_26DEC"),
-    ("MCX:NATURALGAS27JANFUT", "MCX_NATURALGAS27JANFUT_1m_contract_wise.parquet", "NG_27JAN"),
-    ("MCX:NATURALGAS27FEBFUT", "MCX_NATURALGAS27FEBFUT_1m_contract_wise.parquet", "NG_27FEB"),
-    ("MCX:NATURALGAS27MARFUT", "MCX_NATURALGAS27MARFUT_1m_contract_wise.parquet", "NG_27MAR"),
-    ("MCX:NATGASMINI26OCTFUT", "MCX_NATGASMINI26OCTFUT_1m_contract_wise.parquet", "NGM_26OCT"),
-    ("MCX:NATGASMINI26NOVFUT", "MCX_NATGASMINI26NOVFUT_1m_contract_wise.parquet", "NGM_26NOV"),
-    ("MCX:NATGASMINI26DECFUT", "MCX_NATGASMINI26DECFUT_1m_contract_wise.parquet", "NGM_26DEC"),
-    ("MCX:NATGASMINI27JANFUT", "MCX_NATGASMINI27JANFUT_1m_contract_wise.parquet", "NGM_27JAN"),
-    ("MCX:NATGASMINI27FEBFUT", "MCX_NATGASMINI27FEBFUT_1m_contract_wise.parquet", "NGM_27FEB"),
-    ("MCX:NATGASMINI27MARFUT", "MCX_NATGASMINI27MARFUT_1m_contract_wise.parquet", "NGM_27MAR"),
-]
+# 1. Dynamically Discover All Contract Parquets in Vault (Both Active & Expired)
+import glob
+import re
+
+contracts = []
+pattern = os.path.join(CONTRACT_DIR, "MCX_*_1m_contract_wise.parquet")
+for ppath in sorted(glob.glob(pattern)):
+    pfile = os.path.basename(ppath)
+    m = re.match(r"^MCX_([A-Z]+)(\d{2}[A-Z]{3})FUT_1m_contract_wise\.parquet$", pfile)
+    if m:
+        base, exp_code = m.group(1), m.group(2)
+        sym = f"MCX:{base}{exp_code}FUT"
+        prefix = "NGM" if "MINI" in base else "NG"
+        tag = f"{prefix}_{exp_code}"
+        contracts.append((sym, pfile, tag))
 
 for sym, pfile, tag in contracts:
     full_path = os.path.join(CONTRACT_DIR, pfile)
