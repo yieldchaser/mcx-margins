@@ -2060,7 +2060,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Year">Average Margin by Year (2010–2026)</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Year">Average Margin by Year (NATURALGAS, All Years)</div>
         <div class="chart-container"><canvas id="chartSeasonYear"></canvas></div>
       </div>
     </div>
@@ -2215,11 +2215,11 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
         <div>
           <div class="module-kicker has-tooltip" data-dyn-title="Multi-Resolution Price Action" data-dyn-body="Continuous historical price action and intraday microstructure from daily bars down to 1-minute execution candles.">Market Overview</div>
-          <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Continuous Futures Series" data-dyn-body="Continuous front-month contract price series spanning 2019 to 2026 across roll boundaries." style="margin:0; font-size:15px; font-weight:700;">Natural Gas Futures Price Action & Structure</div>
+          <div class="card-title has-tooltip" id="deepChartTitle" data-dyn-title="Continuous Futures Series" data-dyn-body="Continuous front-month contract price series spanning 2019 to present across roll boundaries." style="margin:0; font-size:15px; font-weight:700;">Natural Gas Futures Price Action & Structure</div>
         </div>
         <!-- Timeframe Preset Buttons & Mode Toggle (Pinned to Right) -->
         <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
-          <button class="deep-tf-btn active has-tooltip" data-tf="ALL" data-dyn-title="8-Year Macro View" data-dyn-body="Full historical daily price history (2019 to 2026).">8Y (All)</button>
+          <button class="deep-tf-btn active has-tooltip" data-tf="ALL" data-dyn-title="Full Macro View" data-dyn-body="Full historical daily price history (2019 to present).">All (Macro)</button>
           <button class="deep-tf-btn has-tooltip" data-tf="5Y" data-dyn-title="5-Year Horizon" data-dyn-body="Trailing 5-year price action.">5Y</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1Y" data-dyn-title="1-Year Horizon" data-dyn-body="Trailing 365-day price action.">1Y</button>
           <button class="deep-tf-btn has-tooltip" data-tf="YTD" data-dyn-title="Year-To-Date (YTD)" data-dyn-body="Price action from January 1st to date.">YTD</button>
@@ -2239,10 +2239,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Contract:</span>
           
-          <!-- Quick 8Y Continuous Front-Month Button -->
-          <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous 8-Year Front-Month Stitched View (2019–2026)">
+          <!-- Quick Continuous Front-Month Button -->
+          <button type="button" id="deepBtnContinuous" class="deep-contract-pill active" title="Switch to Continuous Front-Month Stitched View">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.178-8-12.356-8-5.096 0-5.096 8 0 8 5.178 0 7.261-8 12.356-8z"/></svg>
-            <span>Continuous (8Y)</span>
+            <span>Continuous</span>
           </button>
 
           <span style="color:var(--border); font-size:12px; margin:0 1px;">|</span>
@@ -2266,7 +2266,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
         <!-- Right Side: Scope & LOD Status Badges -->
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="Continuous Front-Month" data-dyn-body="Continuous front-month price and volume history from 2019 to 2026."><strong>Data</strong> 8Y Continuous</span>
+          <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="Continuous Front-Month" data-dyn-body="Continuous front-month price and volume history from 2019 to present."><strong>Data</strong> Continuous</span>
           <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Chart Resolution" data-dyn-body="Active bar timeframe (Daily, 15-Minute, or 1-Minute). Adjusts automatically based on zoom range."><strong>Resolution:</strong> Daily (Macro)</span>
           <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Loaded Bars" data-dyn-body="Total number of price bars loaded for the active series."><strong>Loaded:</strong> --</span>
         </div>
@@ -2298,13 +2298,13 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <div class="module-kicker has-tooltip" data-dyn-title="Intraday Volatility Profile" data-dyn-body="Average volume and Garman-Klass realized volatility across 15-minute session intervals (09:00 to 23:30 IST).">Intraday Liquidity & Volatility Cycle</div>
           <div class="card-title has-tooltip" data-dyn-title="Time-of-Day Seasonality" data-dyn-body="15-minute interval distribution showing NYMEX pit open and Thursday EIA storage report windows across seasonal daylight saving time shifts.">Intraday Time-of-Day Seasonality Profile (15-Min Intervals)</div>
           <div class="scope-row" style="margin-top:2px;">
-            <span class="scope-chip has-tooltip" data-dyn-title="Historical Coverage" data-dyn-body="Aggregated from 1-minute futures data across 2019 to 2026."><strong>Scope</strong> 2019–2026</span>
+            <span class="scope-chip has-tooltip" data-dyn-title="Historical Coverage" data-dyn-body="Aggregated from 1-minute futures data across full historical continuous vault."><strong>Scope</strong> Continuous (2019–Present)</span>
             <span class="scope-chip has-tooltip" data-dyn-title="DST Adjustment" data-dyn-body="Accounts for the 1-hour daylight saving shift between US EDT (Summer) and US EST (Winter) to isolate NYMEX trading hours."><strong>DST-Aware</strong> US EDT / EST Separated</span>
           </div>
         </div>
         <!-- DST Profile Buttons -->
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="deep-tf-btn active has-tooltip" data-tod-profile="combined" data-dyn-title="Combined Profile" data-dyn-body="All trading sessions from 2019 to 2026, displaying average volume and Garman-Klass volatility from 09:00 to 23:30 IST.">Combined</button>
+          <button class="deep-tf-btn active has-tooltip" data-tod-profile="combined" data-dyn-title="Combined Profile" data-dyn-body="All trading sessions across historical vault, displaying average volume and Garman-Klass volatility from 09:00 to 23:30 IST.">Combined</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="summer_edt" data-dyn-title="US Summer (EDT)" data-dyn-body="During US Daylight Saving Time (March to November), US NYMEX Pit opens at 18:30 IST and Thursday EIA storage reports release at 20:00 IST.">US Summer (EDT)</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="winter_est" data-dyn-title="US Winter (EST)" data-dyn-body="During US Standard Time (November to March), US NYMEX Pit opens at 19:30 IST and Thursday EIA storage reports release at 21:00 IST.">US Winter (EST)</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="thursday_eia" data-dyn-title="Thursday Inventory Day (EIA)" data-dyn-body="Thursday trading sessions specifically isolated to demonstrate the 2.8x volatility explosion during the weekly storage injection/withdrawal announcement.">Thursday (EIA)</button>
@@ -5107,8 +5107,8 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
 
   const promptEl = document.getElementById('lcIntraPrompt');
   if (promptEl) {
-    const isShort = rows.length <= 20;
-    const isAvailable = (expiry || '').includes('2026') || (expiry || '').includes('2027');
+    const expYear = parseInt((expiry || '').slice(5), 10) || 0;
+    const isAvailable = expYear >= 2026;
     promptEl.style.display = (isShort && isAvailable && _lcMode === 'macro') ? 'flex' : 'none';
   }
 }
@@ -5472,7 +5472,7 @@ async function loadLcContractIntraday(sym, expiry) {
   try {
     const res15 = await fetch(`data/market/${tag}_15m.json`);
     if (!res15.ok) {
-      alert(`Intraday tick data is available for active 2026/2027 contracts. Switching to Daily Macro view.`);
+      alert(`Intraday tick data is available for active contracts (2026 onwards). Switching to Daily Macro view.`);
       setLcMode('macro');
       return;
     }

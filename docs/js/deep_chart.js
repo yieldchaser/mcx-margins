@@ -1208,24 +1208,25 @@
         return;
       }
 
-      const m15StartTs = 1735702200; // 2025-01-01
-      const isPre2025 = range.from < m15StartTs;
+      const sCache = cache[activeContractSym] || cache.ng;
+      const m15StartTs = (sCache && sCache.m15 && sCache.m15.length > 0) ? sCache.m15[0].time : (Math.floor(Date.now() / 1000) - 86400 * 730);
+      const isPreM15 = range.from < m15StartTs;
 
-      if ((spanDays > 120 || isPre2025) && currentResolution !== 'daily') {
+      if ((spanDays > 120 || isPreM15) && currentResolution !== 'daily') {
         isSwitchingResolution = true;
         const cur = chart.timeScale().getVisibleRange();
         loadDailyTier(false).finally(() => {
           if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
           setTimeout(() => { isSwitchingResolution = false; }, 200);
         });
-      } else if (spanDays <= 120 && spanDays > 7 && !isPre2025 && currentResolution !== '15m') {
+      } else if (spanDays <= 120 && spanDays > 7 && !isPreM15 && currentResolution !== '15m') {
         isSwitchingResolution = true;
         const cur = chart.timeScale().getVisibleRange();
         load15mTier().finally(() => {
           if (cur && cur.from && cur.to) chart.timeScale().setVisibleRange(cur);
           setTimeout(() => { isSwitchingResolution = false; }, 200);
         });
-      } else if (spanDays <= 7 && !isPre2025 && currentResolution !== '1m') {
+      } else if (spanDays <= 7 && !isPreM15 && currentResolution !== '1m') {
         isSwitchingResolution = true;
         const cur = chart.timeScale().getVisibleRange();
         load1mTier(range.from, range.to).finally(() => {
