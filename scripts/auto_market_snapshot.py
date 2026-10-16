@@ -320,12 +320,12 @@ def run_snapshot_cycle():
     # 4. Fault-Tolerant Git Commit & Push
     try:
         clear_stale_git_locks()
-        status_res = subprocess.run(["git", "status", "--porcelain", "docs/data/"], cwd=REPO_DIR, capture_output=True, text=True)
+        status_res = subprocess.run(["git", "status", "--porcelain", "docs/data/", "data/mcx_vault/contract_wise/"], cwd=REPO_DIR, capture_output=True, text=True)
         if status_res.stdout.strip():
-            log("Changes detected in docs/data/. Syncing with GitHub Pages...")
+            log("Changes detected in docs/data/ or vault. Syncing with GitHub Pages...")
             subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=REPO_DIR, check=False)
             subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=REPO_DIR, check=False)
-            subprocess.run(["git", "add", "docs/data/"], cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "add", "docs/data/", "data/mcx_vault/contract_wise/"], cwd=REPO_DIR, check=True)
             commit_msg = f"data: automated market snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}"
             subprocess.run(["git", "commit", "--no-verify", "-m", commit_msg], cwd=REPO_DIR, check=True, capture_output=True, text=True)
             

@@ -159,11 +159,43 @@ for sym, pfile, tag in contracts:
     }
     
     out_path = os.path.join(OUTPUT_DIR, f"{tag}_15m.json")
+    # Guard: If existing 15m JSON has bars, merge to guarantee zero-shrink
+    if os.path.exists(out_path):
+        try:
+            with open(out_path, "r", encoding="utf-8") as f_ex:
+                ex_json = json.load(f_ex)
+            ex_d = ex_json.get("data", {})
+            ex_dt = ex_d.get("dt", [])
+            if len(ex_dt) > len(df_15m):
+                m_map = {ex_dt[i]: {
+                    "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
+                    "c": ex_d["c"][i], "v": ex_d["v"][i], "oi": ex_d.get("oi", [0]*len(ex_dt))[i]
+                } for i in range(len(ex_dt))}
+                for _, r in df_15m.iterrows():
+                    m_map[int(r["dt"])] = {
+                        "o": round(float(r["o"]), 2), "h": round(float(r["h"]), 2),
+                        "l": round(float(r["l"]), 2), "c": round(float(r["c"]), 2),
+                        "v": int(r["v"]), "oi": int(r["oi"])
+                    }
+                sorted_dt = sorted(m_map.keys())
+                out_15m["candles_count"] = len(sorted_dt)
+                out_15m["data"] = {
+                    "dt": sorted_dt,
+                    "o": [m_map[t]["o"] for t in sorted_dt],
+                    "h": [m_map[t]["h"] for t in sorted_dt],
+                    "l": [m_map[t]["l"] for t in sorted_dt],
+                    "c": [m_map[t]["c"] for t in sorted_dt],
+                    "v": [m_map[t]["v"] for t in sorted_dt],
+                    "oi": [m_map[t]["oi"] for t in sorted_dt]
+                }
+        except Exception:
+            pass
+
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out_15m, f, cls=NpEncoder, separators=(",", ":"))
         
     kb = os.path.getsize(out_path) / 1024
-    print(f"  {sym:26s} -> Saved 15m Rollup ({len(df_15m):,} bars, {kb:.1f} KB) | POC: ₹{poc_price:.2f}, VAH: ₹{vah_price:.2f}, VAL: ₹{val_price:.2f}")
+    print(f"  {sym:26s} -> Saved 15m Rollup ({out_15m['candles_count']:,} bars, {kb:.1f} KB) | POC: ₹{poc_price:.2f}, VAH: ₹{vah_price:.2f}, VAL: ₹{val_price:.2f}")
 
     # Export 1m columnar JSON for all available contracts
     if len(df) > 0:
@@ -182,10 +214,42 @@ for sym, pfile, tag in contracts:
             }
         }
         out_1m_path = os.path.join(OUTPUT_DIR, f"{tag}_1m.json")
+
+        # Guard: If existing 1m JSON has more bars, merge to guarantee zero-shrink
+        if os.path.exists(out_1m_path):
+            try:
+                with open(out_1m_path, "r", encoding="utf-8") as f_ex:
+                    ex_json = json.load(f_ex)
+                ex_d = ex_json.get("data", {})
+                ex_dt = ex_d.get("dt", [])
+                if len(ex_dt) > len(df):
+                    m_map = {ex_dt[i]: {
+                        "o": ex_d["o"][i], "h": ex_d["h"][i], "l": ex_d["l"][i],
+                        "c": ex_d["c"][i], "v": ex_d["v"][i]
+                    } for i in range(len(ex_dt))}
+                    for _, r in df.iterrows():
+                        m_map[int(r["dt"])] = {
+                            "o": round(float(r["open"]), 2), "h": round(float(r["high"]), 2),
+                            "l": round(float(r["low"]), 2), "c": round(float(r["close"]), 2),
+                            "v": int(r["volume"])
+                        }
+                    sorted_dt = sorted(m_map.keys())
+                    out_1m["candles_count"] = len(sorted_dt)
+                    out_1m["data"] = {
+                        "dt": sorted_dt,
+                        "o": [m_map[t]["o"] for t in sorted_dt],
+                        "h": [m_map[t]["h"] for t in sorted_dt],
+                        "l": [m_map[t]["l"] for t in sorted_dt],
+                        "c": [m_map[t]["c"] for t in sorted_dt],
+                        "v": [m_map[t]["v"] for t in sorted_dt]
+                    }
+            except Exception:
+                pass
+
         with open(out_1m_path, "w", encoding="utf-8") as f:
             json.dump(out_1m, f, cls=NpEncoder, separators=(",", ":"))
         kb_1m = os.path.getsize(out_1m_path) / 1024
-        print(f"    └─ Saved 1m Microstructure ({len(df):,} bars, {kb_1m:.1f} KB)")
+        print(f"    └─ Saved 1m Microstructure ({out_1m['candles_count']:,} bars, {kb_1m:.1f} KB)")
 
 # 2. Compute Session-Bounded ASOF Calendar Spread (Nov26 - Oct26)
 print("\nComputing Session-Bounded Calendar Roll Spread (Nov26 - Oct26)...")
