@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-16 23:15:59 IST",
-  "total_contracts": 23,
+  "generated_at": "2026-10-16 23:19:20 IST",
+  "total_contracts": 26,
   "total_commodities": 7,
-  "total_bars": 904680,
+  "total_bars": 938580,
   "commodities": {
     "ALUMINI": {
       "commodity": "ALUMINI",
@@ -30,11 +30,11 @@
     },
     "CRUDEOIL": {
       "commodity": "CRUDEOIL",
-      "contracts_count": 2,
-      "active_contracts": 2,
+      "contracts_count": 5,
+      "active_contracts": 5,
       "expired_contracts": 0,
-      "total_bars": 108830,
-      "latest_price": 9591.0
+      "total_bars": 142730,
+      "latest_price": 9083.0
     },
     "GOLD": {
       "commodity": "GOLD",
@@ -147,15 +147,27 @@
       "file": "data/mcx_vault/contract_wise/MCX_COPPER26OCTFUT_1m_contract_wise.parquet"
     },
     {
+      "symbol": "MCX:CRUDEOIL26DECFUT",
+      "commodity": "CRUDEOIL",
+      "expiry": "26DEC",
+      "status": "active",
+      "total_bars": 19119,
+      "start_time": "2026-09-16 09:00",
+      "end_time": "2026-10-16 23:19",
+      "latest_close": 9247.0,
+      "latest_oi": 1795,
+      "file": "data/mcx_vault/contract_wise/MCX_CRUDEOIL26DECFUT_1m_contract_wise.parquet"
+    },
+    {
       "symbol": "MCX:CRUDEOIL26NOVFUT",
       "commodity": "CRUDEOIL",
       "expiry": "26NOV",
       "status": "active",
-      "total_bars": 53709,
+      "total_bars": 53719,
       "start_time": "2026-07-20 11:58",
-      "end_time": "2026-10-16 23:09",
-      "latest_close": 9419.0,
-      "latest_oi": 11582,
+      "end_time": "2026-10-16 23:19",
+      "latest_close": 9400.0,
+      "latest_oi": 11456,
       "file": "data/mcx_vault/contract_wise/MCX_CRUDEOIL26NOVFUT_1m_contract_wise.parquet"
     },
     {
@@ -163,12 +175,36 @@
       "commodity": "CRUDEOIL",
       "expiry": "26OCT",
       "status": "active",
-      "total_bars": 55121,
+      "total_bars": 55131,
       "start_time": "2026-07-20 09:04",
-      "end_time": "2026-10-16 23:09",
-      "latest_close": 9591.0,
-      "latest_oi": 7642,
+      "end_time": "2026-10-16 23:19",
+      "latest_close": 9574.0,
+      "latest_oi": 7668,
       "file": "data/mcx_vault/contract_wise/MCX_CRUDEOIL26OCTFUT_1m_contract_wise.parquet"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL27FEBFUT",
+      "commodity": "CRUDEOIL",
+      "expiry": "27FEB",
+      "status": "active",
+      "total_bars": 3468,
+      "start_time": "2026-09-18 15:56",
+      "end_time": "2026-10-16 23:19",
+      "latest_close": 8983.0,
+      "latest_oi": 4,
+      "file": "data/mcx_vault/contract_wise/MCX_CRUDEOIL27FEBFUT_1m_contract_wise.parquet"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL27JANFUT",
+      "commodity": "CRUDEOIL",
+      "expiry": "27JAN",
+      "status": "active",
+      "total_bars": 11293,
+      "start_time": "2026-09-17 15:14",
+      "end_time": "2026-10-16 23:19",
+      "latest_close": 9083.0,
+      "latest_oi": 126,
+      "file": "data/mcx_vault/contract_wise/MCX_CRUDEOIL27JANFUT_1m_contract_wise.parquet"
     },
     {
       "symbol": "MCX:GOLD26DECFUT",
