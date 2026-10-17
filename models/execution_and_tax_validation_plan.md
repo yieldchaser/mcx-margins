@@ -486,86 +486,124 @@ flowchart TD
 
 ### 7.7 Contract Delta Moves Frequency & Annual Return Translation Matrix
 
-A fundamental institutional question is: **How many percentage (delta) moves occur in Natural Gas contracts each year, and how many must you capture to achieve 50%, 75%, 85%, 100%, or 120% annual returns?**
-
-Our empirical audit of all 237 completed contracts in [`data/prices.db`](file:///c:/Users/Dell/Github/mcx-margins/data/prices.db) across 19 years (2007–2026) reveals that Natural Gas is the most convex, high-amplitude commodity in existence:
-
-```mermaid
-flowchart TD
-    Market["Annual MCX Natural Gas Market<br/>(12 Monthly Contracts per Year)"]
-    
-    subgraph TotalSwings["Historical Swings Produced Every Year (Average)"]
-        S1["Swings >=12%: 11.8 Contracts / yr (98.7% of all contracts)"]
-        S2["Swings >=15%: 11.3 Contracts / yr (94.5% of all contracts)"]
-        S3["Swings >=20%: 10.4 Contracts / yr (86.9% of all contracts)"]
-        S4["Swings >=25%: 8.9 Contracts / yr (75.5% of all contracts)"]
-    end
-    
-    subgraph DeskPicks["The Institutional Capture Mandate (Strict Selectivity)"]
-        C50["50% Target: Need ONLY ONE 15% move OR TWO 7.5% moves"]
-        C75["75% Target: Need ONLY TWO 11.0% moves"]
-        C85["85% Target: Need ONLY TWO 12.5% to 13.0% moves"]
-        C100["100% Target: Need ONLY TWO 14.5% to 15.0% moves"]
-        C120["120% Target: Need ONLY TWO 17.5% moves OR THREE 11.5% moves"]
-    end
-
-    Market --> TotalSwings
-    TotalSwings -->|"Capture Efficiency: Only 8% to 12% of Total Annual Swings!"| DeskPicks
-```
-
-#### 1. Historical Contract Delta Moves Frequency (2010–2025 Audit)
-Across 12 monthly futures contracts per calendar year, here is the exact number of large delta moves ($\ge 12\%, \ge 15\%, \ge 20\%, \ge 25\%$) that occurred within the active trading window:
-
-| Calendar Year | Contracts Traded | Short Dominant (Peak First) | Long Dominant (Trough First) | Average Contract Swing % | Moves $\ge 12\%$ | Moves $\ge 15\%$ | Moves $\ge 20\%$ | Moves $\ge 25\%$ |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **2010** | 12 | 7 | 5 | 37.91% | 12 / 12 | 12 / 12 | 11 / 12 | 10 / 12 |
-| **2011** | 12 | 10 | 2 | 23.85% | 12 / 12 | 12 / 12 | 8 / 12 | 4 / 12 |
-| **2012** | 12 | 6 | 6 | 45.74% | 12 / 12 | 12 / 12 | 12 / 12 | 12 / 12 |
-| **2013** | 12 | 6 | 6 | 26.71% | 12 / 12 | 11 / 12 | 10 / 12 | 9 / 12 |
-| **2014** | 12 | 8 | 4 | 31.23% | 11 / 12 | 11 / 12 | 8 / 12 | 7 / 12 |
-| **2015** | 12 | 10 | 2 | 39.46% | 12 / 12 | 11 / 12 | 10 / 12 | 6 / 12 |
-| **2016** | 12 | 6 | 6 | 34.73% | 12 / 12 | 12 / 12 | 12 / 12 | 10 / 12 |
-| **2017** | 12 | 9 | 3 | 26.29% | 12 / 12 | 9 / 12 | 8 / 12 | 4 / 12 |
-| **2018** | 12 | 4 | 8 | 26.23% | 10 / 12 | 8 / 12 | 5 / 12 | 5 / 12 |
-| **2019** | 12 | 10 | 2 | 29.41% | 12 / 12 | 10 / 12 | 10 / 12 | 7 / 12 |
-| **2020** | 12 | 10 | 2 | 45.50% | 12 / 12 | 12 / 12 | 12 / 12 | 12 / 12 |
-| **2021** | 12 | 3 | 9 | 46.56% | 12 / 12 | 12 / 12 | 12 / 12 | 11 / 12 |
-| **2022** | 12 | 5 | 7 | 74.75% | 12 / 12 | 12 / 12 | 12 / 12 | 12 / 12 |
-| **2023** | 12 | 9 | 3 | 74.26% | 12 / 12 | 12 / 12 | 12 / 12 | 10 / 12 |
-| **2024** | 12 | 8 | 4 | 53.49% | 12 / 12 | 12 / 12 | 12 / 12 | 12 / 12 |
-| **2025** | 12 | 8 | 4 | 50.19% | 12 / 12 | 12 / 12 | 12 / 12 | 12 / 12 |
-| **16-Yr Mean**| **12** | **7.5 (62.5%)** | **4.5 (37.5%)** | **41.71%** | **11.8 / yr (98.4%)** | **11.3 / yr (94.2%)** | **10.4 / yr (86.7%)** | **8.9 / yr (74.2%)** |
-
-> [!IMPORTANT]
-> **Key Empirical Discovery**: In MCX Natural Gas, large moves are not rare anomalies. **Over 11 out of 12 contracts every single year generate moves $\ge 15\%$!** The market provides an overwhelming surplus of moves. Your success depends entirely on **filtering out 90% of the noise** and capturing only the 2 highest-probability structural setups.
+A fundamental institutional inquiry is:
+1. **How many true, independent percentage (delta) moves occur in Natural Gas each year without double-counting overlapping contracts?**
+2. **Is the modeled return based on the cash buffer maintained, or are you swinging the entire capital every time? What happens during adverse moves?**
 
 ---
 
-#### 2. The Annual Return Translation Matrix (How Many Moves to Capture)
-With a **25% Cash Buffer** (earning 6.5% liquid overnight yield) and 75% active margin deployed at standard MCX clearing margin (~22.5% baseline), your **effective account leverage is $3.33\times$**:
+#### 1. Independent Continuous Front-Month Swings (Eliminating Multi-Contract Overlap)
+In commodity futures, multiple contract months (e.g., July, August, September) trade concurrently. If Natural Gas experiences a macro event in July (such as a heat wave or pipeline outage), all active contracts rise simultaneously. Evaluating contracts individually without stitching them counts the same macro move across multiple contracts.
 
-$$\text{Account Return on Capital (ROC)} = (3.33 \times \Delta P_{\text{underlying}}) + \underbrace{(0.25 \times 6.5\%)}_{\text{Buffer Yield: }+1.625\%}$$
+To eliminate all double counting, we constructed a **True Continuous Front-Month Timeline (5,070 trading days from 2007 to 2026)** in [`data/prices.db`](file:///c:/Users/Dell/Github/mcx-margins/data/prices.db), automatically rolling to the next contract on the exact day volume shifts (DTE 3 crossover). Running the Zigzag swing algorithm on this single continuous timeline yields the **pure, independent, non-overlapping directional swings** produced by the market:
 
-| Annual Return Target | Total Underlying Delta Move Needed | Required Number & Size of Swings (Option A: 2 Swings) | Required Number & Size of Swings (Option B: 3 Swings) | Annual Opportunity Pool ($\ge 15\%$ Swings) | Required Capture Efficiency |
+```mermaid
+flowchart TD
+    Continuous["Continuous Front-Month Natural Gas Series (5,070 Trading Days: 2007 - 2026)<br/>• Single sequential timeline | Zero multi-contract double-counting"]
+    
+    subgraph RealSwings["Independent Annual Macro Swings (16-Year Average)"]
+        S1["Swings >= 10%: 22.9 Swings / Year (Avg Move: 21.7% over 11.2 days)"]
+        S2["Swings >= 12%: 16.6 Swings / Year (Avg Move: 25.9% over 15.4 days)"]
+        S3["Swings >= 15%: 11.0 Swings / Year (Avg Move: 32.1% over 23.2 days)"]
+        S4["Swings >= 20%: 5.9 Swings / Year (Avg Move: 45.2% over 43.4 days)"]
+        S5["Swings >= 25%: 4.7 Swings / Year (Avg Move: 54.2% over 58.3 days)"]
+    end
+    
+    subgraph Selection["The Institutional Capture Mandate (Strict Selectivity)"]
+        P1["50% Target: Capture ONLY 1 of the 11 annual swings (8.8% Capture Efficiency)"]
+        P2["75% - 85% Target: Capture ONLY 2 of the 11 annual swings (17.7% Capture Efficiency)"]
+        P3["100% Target: Capture ONLY 2 strong 15% swings (e.g. 2020: +16.8% short, +13.5% long)"]
+    end
+
+    Continuous --> RealSwings
+    RealSwings --> Selection
+```
+
+##### Empirical Continuous Non-Overlapping Swings (16-Year Audit: 2010–2025)
+
+| Swing Threshold | Total Independent Swings (16 Yrs) | Average Swings / Year | Min Swings / Yr | Max Swings / Yr | Long Swings / Yr | Short Swings / Yr | Average Move Magnitude | Average Swing Duration |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **$\ge 10\%$ Swing** | 366 | **22.88 / yr** | 11 | 45 | 11.44 | 11.44 | **21.69%** | 11.2 trading days |
+| **$\ge 12\%$ Swing** | 266 | **16.63 / yr** | 7 | 33 | 8.31 | 8.31 | **25.86%** | 15.4 trading days |
+| **$\ge 15\%$ Swing** | 176 | **11.00 / yr** | 3 | 23 | 5.50 | 5.50 | **32.10%** | 23.2 trading days (~1 month) |
+| **$\ge 18\%$ Swing** | 126 | **7.88 / yr** | 3 | 19 | 3.94 | 3.94 | **38.45%** | 32.4 trading days |
+| **$\ge 20\%$ Swing** | 94 | **5.88 / yr** | 1 | 15 | 2.94 | 2.94 | **45.19%** | 43.4 trading days (~2 months) |
+| **$\ge 25\%$ Swing** | 70 | **4.67 / yr** | 1 | 11 | 2.19 | 2.19 | **54.21%** | 58.3 trading days (~3 months) |
+
+##### Year-by-Year Independent Swings ($\ge 15\%$ Threshold on Continuous Contract)
+
+| Calendar Year | Total Independent $\ge 15\%$ Swings | Upswings (Long) | Downswings (Short) | Average Swing % | Peak Swing in Year % | Average Duration (Trading Days) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **2010** | 5 | 2 | 3 | 29.82% | 40.42% | 41.4 days |
+| **2011** | 3 | 2 | 1 | 35.91% | 52.04% | 53.7 days |
+| **2012** | 10 | 5 | 5 | 33.70% | 55.58% | 37.8 days |
+| **2013** | 5 | 2 | 3 | 27.11% | 41.64% | 48.2 days |
+| **2014** | 9 | 5 | 4 | 29.96% | 70.74% | 30.0 days |
+| **2015** | 13 | 6 | 7 | 22.81% | 38.23% | 21.0 days |
+| **2016** | 9 | 5 | 4 | 36.33% | 84.77% | 28.8 days |
+| **2017** | 5 | 2 | 3 | 25.77% | 36.01% | 50.2 days |
+| **2018** | 7 | 4 | 3 | 38.64% | 120.74% | 35.3 days |
+| **2019** | 6 | 3 | 3 | 33.72% | 45.31% | 38.7 days |
+| **2020** | 23 | 11 | 12 | 27.55% | 68.60% | 12.7 days |
+| **2021** | 12 | 6 | 6 | 35.84% | 135.41% | 21.8 days |
+| **2022** | 21 | 11 | 10 | 38.38% | 110.68% | 11.6 days |
+| **2023** | 17 | 8 | 9 | 29.80% | 49.10% | 15.1 days |
+| **2024** | 15 | 8 | 7 | 36.72% | 90.38% | 17.8 days |
+| **2025** | 16 | 8 | 8 | 31.19% | 94.31% | 15.1 days |
+| **16-Yr Mean**| **11.00 / yr** | **5.50 / yr** | **5.50 / yr** | **32.10%** | **70.62%** | **23.2 days** |
+
+---
+
+#### 2. Position Sizing, Cash Buffer Reality & Adverse Move Mechanics
+Are you swinging the entire capital every time? **NO.** 
+
+In professional commodity treasury management, **capital is never 100% committed to margin**. Doing so would trigger an immediate liquidation on the first 3% adverse tick.
+
+Here is how position sizing, margin, cash buffers, and adverse moves mathematically interact across 4 distinct sizing regimes:
+
+```mermaid
+flowchart LR
+    Capital["Total Account Equity: ₹60.00 Lakhs"]
+    
+    Capital --> Cash["25% Unencumbered Cash Buffer<br/>(₹15.00 Lakhs in Overnight Yield @ 6.5%)<br/>• Shock Absorber for Gaps & Margin Spikes<br/>• Yields +1.63% Risk-Free Return on Total Equity"]
+    
+    Capital --> Active["75% Active Margin Allocation<br/>(₹45.00 Lakhs Initial Margin Pledged)<br/>• Sized at 22.5% Median Margin<br/>• Controls ₹200 Lakhs Notional (64 Lots / 3.33x Leverage)"]
+    
+    Active --> Stop["Mandatory Institutional Stop-Loss<br/>(-3.5% on Underlying Price)<br/>• Max Account Hit: -11.7%<br/>• Cash Buffer is NEVER Breached!"]
+```
+
+##### Comparison of the 4 Position Sizing Regimes (Based on ₹60.00 Lakhs Capital)
+
+| Sizing Regime | Buffer Allocation | Active Margin Deployed | Effective Leverage ($L_{\text{eff}}$) | Notional Position Size | Position in Lots (@ ₹250) | Max Adverse Move Before Margin Call | Risk Management Protocol | Underlying Move Needed for 85% Return |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :---: |
+| **Regime A: Desk Standard (25% Buffer in Yield + Stop)** | **25% Cash (₹15L)** | **75% Active (₹45L)** | **$3.33\times$** | **₹200.00 Lakhs** | **64 Lots** | **7.5%** *(if no stop)* | **Mandatory $-3.5\%$ Stop** *(Max account loss: $-11.7\%$, Buffer intact)* | **+25.0%** *(Two 12.5% moves)* |
+| **Regime B: Conservative Buffer (35% Buffer in Yield + Stop)** | **35% Cash (₹21L)** | **65% Active (₹39L)** | **$2.60\times$** | **₹156.00 Lakhs** | **50 Lots** | **13.5%** *(if no stop)* | **Mandatory $-4.0\%$ Stop** *(Max account loss: $-10.4\%$, Buffer intact)* | **+32.1%** *(Two 16.0% moves)* |
+| **Regime C: Stress-Proof (Zero Stop Needed)** | **Dynamic Cash (31.7%)** | **44% Active (₹26.4L)** | **$2.27\times$** | **₹136.20 Lakhs** | **43 Lots** | **20.0%** *(Survives full crash)* | **Zero Stop Needed** *(Survives a $-20\%$ crash + $30\%$ margin spike)* | **+36.7%** *(Two 18.5% moves)* |
+| **Regime D: Ultra-Conservative (Zero Stop Needed)** | **Dynamic Cash (48.8%)** | **35% Active (₹21.0L)** | **$1.45\times$** | **₹87.00 Lakhs** | **28 Lots** | **25.0%** *(Survives short squeeze)* | **Zero Stop Needed** *(Survives a $-25\%$ squeeze + $35\%$ margin spike)* | **+57.3%** *(Three 19.0% moves)* |
+
+##### Why Regime A (Desk Standard with Stop) is Superior:
+1. **Mathematical Return on Capital**:
+   $$\text{Annual Account ROC} = \underbrace{(3.33 \times \Delta P_{\text{underlying}})}_{\text{Trading Gains on 75% Capital}} + \underbrace{(0.25 \times 6.5\%)}_{\text{Yield on 25% Buffer: }+1.625\%}$$
+   * If you capture a **+15.0% underlying move**:
+     $$\text{Gain} = (3.33 \times 15.0\%) + 1.625\% = \mathbf{+51.58\% \text{ Net Return on Total Capital}}.$$
+   * Capturing strictly **TWO 12.5% to 13.0% moves** in an entire year generates the modeled **+85.0% Annual Return**.
+2. **Adverse Move Protection via Stop Loss**:
+   * If you trade without a stop, a $-7.5\%$ move would consume the 25% cash buffer.
+   * Therefore, **holding through a $-10\%$ or $-20\%$ adverse move without a stop is strictly prohibited by desk rules**.
+   * Positions carry a hard structural stop at **$-3.0\%$ to $-3.5\%$** on the underlying. If triggered, the account suffers a controlled loss of only $3.5\% \times 3.33 = \mathbf{-11.66\%}$. The remaining ₹15 Lakh cash buffer absorbs clearinghouse intraday margin hikes and overnight gaps without ever facing a margin call.
+
+---
+
+#### 3. Summary Translation Matrix Across All Return Profiles (Desk Standard)
+
+| Annual Return Target | Total Underlying Delta Move Needed | Option A: Capturing TWO Swings | Option B: Capturing THREE Swings | Annual Opportunity Pool ($\ge 15\%$ Swings) | Required Capture Efficiency |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **50% Return** | **+14.5%** | **ONE single 15% move** (or two 7.5% moves) | Three small 5.0% moves | ~11.3 contracts / yr | **8.8%** (1 in 11) |
-| **75% Return** | **+22.0%** | **TWO 11.0% moves** | Three 7.5% moves | ~11.3 contracts / yr | **17.7%** (2 in 11) |
-| **80% Return** | **+23.5%** | **TWO 11.5% to 12.0% moves** | Three 8.0% moves | ~11.3 contracts / yr | **17.7%** (2 in 11) |
-| **85% Return (Target)** | **+25.0%** | **TWO 12.5% to 13.0% moves** | **THREE 8.5% moves** | ~11.3 contracts / yr | **17.7%** (2 in 11) |
-| **100% Return** | **+29.5%** | **TWO 14.5% to 15.0% moves** | Three 10.0% moves | ~11.3 contracts / yr | **17.7%** (2 in 11) |
-| **120% Return** | **+35.5%** | **TWO 17.5% to 18.0% moves** | Three 12.0% moves | ~11.3 contracts / yr | **17.7%** (2 in 11) |
-
-#### 3. Recommended Annual Blueprint (The "Two-Swing" Rule):
-To safely capture **75% to 85% net annual returns** without overtrading or taking overnight gap shocks:
-1. **Swing 1 (The Winter Meltdown Short: Jan–Mar Contracts)**:
-   * **Setup**: Enter short in the front contract at DTE 22 following the peak of the winter heating withdrawal season.
-   * **Historical Edge**: 61.7% to 83.3% short dominance, supported by **+2.88% contango roll dividend**.
-   * **Target Capture**: Capture an **12% to 15% downside slide** (e.g., ₹280 $\to$ ₹240).
-2. **Swing 2 (The Spring Injection / Summer Cooling Long: May or August Contracts)**:
-   * **Setup**: Enter long in May (spring storage floor) or August (summer heat wave peak cooling demand) in the DTE 25–5 window.
-   * **Historical Edge**: Upside rockets move at **12.24%/day velocity** with a **1.97x profit factor** (asymmetric upside payoff).
-   * **Target Capture**: Capture a **12% to 15% upside burst** (e.g., ₹210 $\to$ ₹240).
-3. **Rest of the Year**: Remain flat in cash earning 6.5% risk-free yield, immune to choppy summer injections and surprise shoulder-month drawdowns.
+| **50% Return** | **+14.5%** | **ONE single 15.0% move** (or two 7.5% moves) | Three 5.0% moves | 11.0 swings / yr | **9.1%** (1 in 11) |
+| **75% Return** | **+22.0%** | **TWO 11.0% moves** | Three 7.5% moves | 11.0 swings / yr | **18.2%** (2 in 11) |
+| **80% Return** | **+23.5%** | **TWO 11.5% to 12.0% moves** | Three 8.0% moves | 11.0 swings / yr | **18.2%** (2 in 11) |
+| **85% Return (Target)** | **+25.0%** | **TWO 12.5% to 13.0% moves** | **THREE 8.5% moves** | 11.0 swings / yr | **18.2%** (2 in 11) |
+| **100% Return** | **+29.5%** | **TWO 14.5% to 15.0% moves** | Three 10.0% moves | 11.0 swings / yr | **18.2%** (2 in 11) |
+| **120% Return** | **+35.5%** | **TWO 17.5% to 18.0% moves** | Three 12.0% moves | 11.0 swings / yr | **18.2%** (2 in 11) |
 
 ---
 
