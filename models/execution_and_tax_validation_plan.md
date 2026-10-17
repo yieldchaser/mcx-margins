@@ -574,18 +574,20 @@ flowchart LR
 
 ##### Comparison of the 4 Position Sizing Regimes (Based on ₹60.00 Lakhs Capital)
 
-| Sizing Regime | Buffer Allocation | Active Margin Deployed | Effective Leverage ($L_{\text{eff}}$) | Notional Position Size | Position in Lots (@ ₹250) | Max Adverse Move Before Margin Call | Risk Management Protocol | Underlying Move Needed for 85% Return |
+| Sizing Regime | Cash Buffer | Active Margin | Leverage | Notional | Lots (@ ₹250) | Adverse Move to Margin Call | Risk Protocol | Move Needed for 85% Return |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :---: |
-| **Regime A: Desk Standard (25% Buffer in Yield + Stop)** | **25% Cash (₹15L)** | **75% Active (₹45L)** | **$3.33\times$** | **₹200.00 Lakhs** | **64 Lots** | **7.5%** *(if no stop)* | **Mandatory $-3.5\%$ Stop** *(Max account loss: $-11.7\%$, Buffer intact)* | **+25.0%** *(Two 12.5% moves)* |
-| **Regime B: Conservative Buffer (35% Buffer in Yield + Stop)** | **35% Cash (₹21L)** | **65% Active (₹39L)** | **$2.60\times$** | **₹156.00 Lakhs** | **50 Lots** | **13.5%** *(if no stop)* | **Mandatory $-4.0\%$ Stop** *(Max account loss: $-10.4\%$, Buffer intact)* | **+32.1%** *(Two 16.0% moves)* |
-| **Regime C: Stress-Proof (Zero Stop Needed)** | **Dynamic Cash (31.7%)** | **44% Active (₹26.4L)** | **$2.27\times$** | **₹136.20 Lakhs** | **43 Lots** | **20.0%** *(Survives full crash)* | **Zero Stop Needed** *(Survives a $-20\%$ crash + $30\%$ margin spike)* | **+36.7%** *(Two 18.5% moves)* |
-| **Regime D: Ultra-Conservative (Zero Stop Needed)** | **Dynamic Cash (48.8%)** | **35% Active (₹21.0L)** | **$1.45\times$** | **₹87.00 Lakhs** | **28 Lots** | **25.0%** *(Survives short squeeze)* | **Zero Stop Needed** *(Survives a $-25\%$ squeeze + $35\%$ margin spike)* | **+57.3%** *(Three 19.0% moves)* |
+| **Regime A: Desk Standard (25% Buffer + Stop)** | **25% (₹15L)** | **75% (₹45L)** | **3.33x** | **₹200L** | **64 Lots** | 7.5% *(if no stop)* | **Mandatory -3.5% Stop** *(Max hit: -11.7%, Buffer intact)* | **+25.0%** *(Two 12.5% moves)* |
+| **Regime B: Conservative (35% Buffer + Stop)** | **35% (₹21L)** | **65% (₹39L)** | **2.60x** | **₹156L** | **50 Lots** | 13.5% *(if no stop)* | **Mandatory -4.0% Stop** *(Max hit: -10.4%, Buffer intact)* | **+32.1%** *(Two 16.0% moves)* |
+| **Regime C: Stress-Proof (No Stop Needed)** | **31.7% (₹19L)** | **44% (₹26.4L)** | **2.27x** | **₹136L** | **43 Lots** | 20.0% *(Full crash)* | **Zero Stop Needed** *(Survives -20% crash + 30% margin)* | **+36.7%** *(Two 18.5% moves)* |
+| **Regime D: Ultra-Conservative (No Stop Needed)** | **48.8% (₹29L)** | **35% (₹21.0L)** | **1.45x** | **₹87L** | **28 Lots** | 25.0% *(Squeeze)* | **Zero Stop Needed** *(Survives -25% squeeze + 35% margin)* | **+57.3%** *(Three 19.0% moves)* |
 
 ##### Why Regime A (Desk Standard with Stop) is Superior:
 1. **Mathematical Return on Capital**:
-   $$\text{Annual Account ROC} = \underbrace{(3.33 \times \Delta P_{\text{underlying}})}_{\text{Trading Gains on 75% Capital}} + \underbrace{(0.25 \times 6.5\%)}_{\text{Yield on 25% Buffer: }+1.625\%}$$
+   $$\text{Annual Account ROC} = (3.33 \times \Delta P_{\text{underlying}}) + 1.625\%$$
+   * **Trading Gain on 75% Active Capital**: $3.33 \times \Delta P_{\text{underlying}}$
+   * **Risk-Free Yield on 25% Buffer**: $0.25 \times 6.5\% = \mathbf{+1.625\%}$
    * If you capture a **+15.0% underlying move**:
-     $$\text{Gain} = (3.33 \times 15.0\%) + 1.625\% = \mathbf{+51.58\% \text{ Net Return on Total Capital}}.$$
+     $$\text{Account Gain} = (3.33 \times 15.0\%) + 1.625\% = \mathbf{+51.58\% \text{ Net Return on Total Capital}}$$
    * Capturing strictly **TWO 12.5% to 13.0% moves** in an entire year generates the modeled **+85.0% Annual Return**.
 2. **Adverse Move Protection via Stop Loss**:
    * If you trade without a stop, a $-7.5\%$ move would consume the 25% cash buffer.
