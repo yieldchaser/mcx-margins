@@ -24,33 +24,15 @@ This roadmap provides a step-by-step institutional plan for scaling an MCX commo
 
 ```mermaid
 flowchart TD
-    L0["LEVEL 0: Genesis Foundation (Capital: ₹60 Lakhs to ₹5 Cr)
-- Single Domestic Pvt Ltd under Section 115BAA (25.168% Flat Corporate Tax)
-- 3-Employee Payroll Optimization (Mother, Gran, 3rd Relative: Saves ₹9.63L/yr cash tax)
-- Standard MCX Corporate Client Account (SEBI Limit: 4,800 Lots)
-- Margin Deployed: ~₹36L (14.25% margin) | Buffer: ~₹24L (40% buffer in liquid yield)"]
+    L0["LEVEL 0: Genesis Foundation (Capital: ₹60 Lakhs to ₹5 Cr)<br/>• Single Domestic Pvt Ltd under Section 115BAA (25.168% Flat Corporate Tax)<br/>• 3-Employee Payroll Optimization (Mother, Gran, 3rd Relative: Saves ₹9.63L/yr cash tax)<br/>• Standard MCX Corporate Client Account (SEBI Limit: 4,800 Lots)<br/>• Margin Deployed: ~₹36L (14.25% margin) | Buffer: ~₹24L (40% buffer in liquid yield)"]
     
-    L1["LEVEL 1: Automated Algorithmic Slicing (Capital: ₹5 Cr to ₹15 Cr)
-- Automated 48-Lot Execution Engine (5:30 PM - 10:30 PM IST US Overlap)
-- Section 44AB Tax Audit & Advance Tax Compliance (Form 280)
-- Build Balance Sheet Net Worth for Institutional Upgrades"]
+    L1["LEVEL 1: Automated Algorithmic Slicing (Capital: ₹5 Cr to ₹15 Cr)<br/>• Automated 48-Lot Execution Engine (5:30 PM - 10:30 PM IST US Overlap)<br/>• Section 44AB Tax Audit & Advance Tax Compliance (Form 280)<br/>• Build Balance Sheet Net Worth for Institutional Upgrades"]
     
-    L2["LEVEL 2: Dual-Track Gating Milestone (Net Worth: ₹15 Cr to ₹25 Cr)
-⚡ INITIATE BOTH APPROVAL TRACKS IN PARALLEL (Takes 45-60 Days):
-1. MCX Proprietary Trading Member (TM) Application (>₹1 Cr Net Worth)
-2. GIFT City IFSC Subsidiary Setup (RBI ODI Rules: 400% of Net Worth unlocks ₹100 Cr)"]
+    L2["LEVEL 2: Dual-Track Gating Milestone (Net Worth: ₹15 Cr to ₹25 Cr)<br/>⚡ INITIATE BOTH APPROVAL TRACKS IN PARALLEL (Takes 45-60 Days):<br/>(1) MCX Proprietary Trading Member (TM) Application (>₹1 Cr Net Worth)<br/>(2) GIFT City IFSC Subsidiary Setup (RBI ODI Rules: 400% of Net Worth unlocks ₹100 Cr)"]
     
-    L3["LEVEL 3: Domestic Market Dominance (Capital: ₹25 Cr to ₹60 Cr)
-- MCX Proprietary Trading Member Active
-- Position Limit Jumps 10x to 48,000 LOTS (~₹2,017 Cr Notional)
-- Professional Clearing Member (PCM: Orbis / Nuvama) | Direct MCXCCL Clearing
-- ZERO Mother's Trading Account Needed | 100% Owned by You"]
+    L3["LEVEL 3: Domestic Market Dominance (Capital: ₹25 Cr to ₹60 Cr)<br/>• MCX Proprietary Trading Member Active<br/>• Position Limit Jumps 10x to 48,000 LOTS (~₹2,017 Cr Notional)<br/>• Professional Clearing Member (PCM: Orbis / Nuvama) | Direct MCXCCL Clearing<br/>• ZERO Mother's Trading Account Needed | 100% Owned by You"]
     
-    L4["LEVEL 4: Sovereign Global Super-Scale (Capital: ₹60 Cr to ₹700+ Cr)
-- GIFT City IFSC Subsidiary Active (100% Owned by You)
-- Trade CME Henry Hub Futures (NG) in USD via Institutional FCM (StoneX / IBKR)
-- Position Limit: 12,000 CME Contracts (= 96,000 MCX Lots / ~₹4,035 Cr Notional)
-- Section 80LA: 0.00% Corporate Tax for 10 Consecutive Years | Zero CTT | Zero STT"]
+    L4["LEVEL 4: Sovereign Global Super-Scale (Capital: ₹60 Cr to ₹700+ Cr)<br/>• GIFT City IFSC Subsidiary Active (100% Owned by You)<br/>• Trade CME Henry Hub Futures (NG) in USD via Institutional FCM (StoneX / IBKR)<br/>• Position Limit: 12,000 CME Contracts (= 96,000 MCX Lots / ~₹4,035 Cr Notional)<br/>• Section 80LA: 0.00% Corporate Tax for 10 Consecutive Years | Zero CTT | Zero STT"]
 
     L0 ==> L1 ==> L2 ==> L3 ==> L4
 ```
@@ -65,25 +47,17 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    You["You
-(Managing Director)"] --> Company["Domestic Trading Pvt Ltd
-(Form 10-IC: 25.168% Flat Tax)"]
-    Company --> Broker["MCX Corporate Client Account
-(Fyers / Zerodha Corporate Desk)"]
+    You["You<br/>(Managing Director)"] --> Company["Domestic Trading Pvt Ltd<br/>(Form 10-IC: 25.168% Flat Tax)"]
+    Company --> Broker["MCX Corporate Client Account<br/>(Fyers / Zerodha Corporate Desk)"]
     
-    Company -->|"₹12.75L Gross Salary
-(Zero Personal Tax u/s 87A)"| Mother["Mother (Operations)"]
-    Mother -->|"Unsecured Loan back u/r 2(1)(c)(viii)
-[Form DPT-3 Annual Filing]"| Company
+    Company -->|"₹12.75L Gross Salary<br/>(Zero Personal Tax u/s 87A)"| Mother["Mother (Operations)"]
+    Mother -->|"Unsecured Loan back u/r 2(1)(c)(viii)<br/>[Form DPT-3 Annual Filing]"| Company
     
-    Company -->|"₹12.75L Gross Salary
-(Zero Personal Tax u/s 87A)"| Gran["Grandmother (Advisor)"]
+    Company -->|"₹12.75L Gross Salary<br/>(Zero Personal Tax u/s 87A)"| Gran["Grandmother (Advisor)"]
     Gran -->|"Tax-Free Blood Gift u/s 56(2)(x)"| Mother
     
-    Company -->|"₹12.75L Gross Salary
-(Zero Personal Tax u/s 87A)"| Rel3["3rd Relative (Father/Sibling)"]
-    Rel3 -->|"Unsecured Loan back u/r 2(1)(c)(viii)
-[Form DPT-3 Annual Filing]"| Company
+    Company -->|"₹12.75L Gross Salary<br/>(Zero Personal Tax u/s 87A)"| Rel3["3rd Relative (Father/Sibling)"]
+    Rel3 -->|"Unsecured Loan back u/r 2(1)(c)(viii)<br/>[Form DPT-3 Annual Filing]"| Company
 ```
 
 #### 1. Entity Setup & Approvals
@@ -131,8 +105,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     Strategy["Quantitative Directional Engine"] --> Slicer["Automated 48-Lot Slicer API"]
-    Slicer -->|"5:30 PM - 10:30 PM IST Only
-(87.4% of Daily Volume)"| MCX["MCX Matching Engine"]
+    Slicer -->|"5:30 PM - 10:30 PM IST Only<br/>(87.4% of Daily Volume)"| MCX["MCX Matching Engine"]
     MCX --> Settlement["Daily MTM & Advance Tax Reserve"]
 ```
 
@@ -152,8 +125,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    Milestone["Net Worth Hits ₹15 Cr - ₹25 Cr
-⚡ CRITICAL APPROVAL INITIATION WINDOW"]
+    Milestone["Net Worth Hits ₹15 Cr - ₹25 Cr<br/>⚡ CRITICAL APPROVAL INITIATION WINDOW"]
     
     subgraph TrackA["Track 1: MCX Proprietary Trading Member (TM)"]
         A1["Net Worth Gating: >₹1.00 Crore (You have 15x-25x hurdle)"]
@@ -180,7 +152,8 @@ flowchart TD
 #### Why Approvals Are Initiated NOW:
 * Regulatory approvals take **45 to 60 days**. Initiating approvals at ₹20 Cr ensures your desk transitions seamlessly into Level 3 and Level 4 without compounding delays.
 * **At ₹15 Cr to ₹25 Cr Net Worth, you already satisfy 100% of statutory eligibility criteria**:
-  1. MCX TM Net Worth Hurdle: **₹1.00 Crore** (You have ₹15 Cr–₹25 Cr $ightarrow$ **15x to 25x the requirement**).
+  1. MCX TM Net Worth Hurdle: **₹1.00 Crore** (You have ₹15 Cr–₹25 Cr $
+ightarrow$ **15x to 25x the requirement**).
   2. RBI ODI Remittance Ceiling: **400% of Net Worth** (At ₹25 Cr net worth, you are legally authorized to remit up to **₹100 Crores / ~$12M USD** abroad under the Automatic Route).
 
 ---
@@ -189,17 +162,12 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    You["You (100% Owner & MD)"] --> PropCo["MCX Proprietary Member Co
-(Desk India Pvt Ltd)"]
-    PropCo --> PCM["Professional Clearing Member
-(Orbis Financial / Nuvama)"]
+    You["You (100% Owner & MD)"] --> PropCo["MCX Proprietary Member Co<br/>(Desk India Pvt Ltd)"]
+    PropCo --> PCM["Professional Clearing Member<br/>(Orbis Financial / Nuvama)"]
     PCM --> MCXCCL["MCX Clearing Corporation"]
     
     subgraph Power["10x Position Limit Power"]
-        Cap["Limit: 48,000 Lots (~₹2,017 Cr Notional)
-- Zero Client Restrictions
-- Zero AIF Concentration Caps
-- ZERO Mother's Trading Account Needed"]
+        Cap["Limit: 48,000 Lots (~₹2,017 Cr Notional)<br/>• Zero Client Restrictions<br/>• Zero AIF Concentration Caps<br/>• ZERO Mother's Trading Account Needed"]
     end
     
     PropCo --- Power
@@ -223,9 +191,7 @@ flowchart LR
 flowchart TD
     Cap["Capital Surpasses ₹60 Crores"] --> Dilemma{"The MCX Liquidity Reality"}
     
-    Dilemma -->|"Why MCX Cannot Take ₹150 Cr+" | Friction["MCX Next-Month OI is only ~6,000 - 9,500 lots!
-Holding >10,000 lots means owning >100% of the next-month market.
-Rolling contracts causes catastrophic contango slippage."]
+    Dilemma -->|"Why MCX Cannot Take ₹150 Cr+" | Friction["MCX Next-Month OI is only ~6,000 - 9,500 lots!<br/>Holding >10,000 lots means owning >100% of the next-month market.<br/>Rolling contracts causes catastrophic contango slippage."]
     
     Dilemma -->|"The Institutional Solution"| Global["Scale via GIFT City IFSC Subsidiary (100% Owned by You)"]
     
@@ -278,10 +244,11 @@ Here is the exact financial and regulatory ledger from [`Master_Commodity_Treasu
 
 | Annual Return Rate | Year 1 | Year 3 | Year 5 | Year 7 | Year 10 | Year 15 | Year 20 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **75% Annual Return** | ₹0.96 Cr | ₹2.44 Cr | ₹6.07 Cr | ₹14.92 Cr | **₹57.02 Cr** | ₹326.95 Cr | **₹706.07 Cr** |
-| **80% Annual Return** | ₹0.98 Cr | ₹2.62 Cr | ₹6.82 Cr | ₹17.57 Cr | **₹72.05 Cr** | ₹383.47 Cr | **₹799.00 Cr** |
-| **85% Annual Return** | ₹1.00 Cr | ₹2.81 Cr | ₹7.66 Cr | ₹20.63 Cr | **₹90.61 Cr** | ₹440.03 Cr | **₹891.98 Cr** |
-| **100% Annual Return** | ₹1.08 Cr | ₹3.43 Cr | ₹10.63 Cr | ₹32.63 Cr | **₹174.65 Cr** | ₹619.23 Cr | **₹1,182.98 Cr** |
+| **50% Annual Return (Conservative)** | ₹0.83 Cr | ₹1.63 Cr | ₹3.18 Cr | ₹6.12 Cr | **₹16.11 Cr** | ₹79.44 Cr | **₹276.63 Cr** |
+| **75% Annual Return (Baseline)** | ₹0.96 Cr | ₹2.44 Cr | ₹6.07 Cr | ₹14.92 Cr | **₹57.02 Cr** | ₹326.95 Cr | **₹706.07 Cr** |
+| **80% Annual Return (Steady Quant)** | ₹0.98 Cr | ₹2.62 Cr | ₹6.82 Cr | ₹17.57 Cr | **₹72.05 Cr** | ₹383.47 Cr | **₹799.00 Cr** |
+| **85% Annual Return (Target)** | ₹1.00 Cr | ₹2.81 Cr | ₹7.66 Cr | ₹20.63 Cr | **₹90.61 Cr** | ₹440.03 Cr | **₹891.98 Cr** |
+| **100% Annual Return (High Growth)** | ₹1.08 Cr | ₹3.43 Cr | ₹10.63 Cr | ₹32.63 Cr | **₹174.65 Cr** | ₹619.23 Cr | **₹1,182.98 Cr** |
 
 ---
 
@@ -289,18 +256,9 @@ Here is the exact financial and regulatory ledger from [`Master_Commodity_Treasu
 
 ```mermaid
 flowchart LR
-    Statutory["Statutory Tax Rate (The Law)
-Domestic MCX: 25.168% (s.115BAA)
-GIFT City IFSC: 0.00% (s.80LA)"]
-    --> Engine["Shenanigans / Tax Shield Engine
-- ₹38.25L Annual Salary Shield (3 Family Members)
-- Section 87A Rebate: Zero Personal Tax
-- Rule 2(1)(c)(viii) 90% Loanback (Form DPT-3)"]
-    --> Effective["Actual Effective Tax Rate Paid
-- Year 1: 14.80% (Saves 41% of Tax)
-- Year 3: 18.28% (Saves 27% of Tax)
-- Year 5: 22.67% (Saves 10% of Tax)
-- Level 4 GIFT City: 0.00% (Saves 100% of Tax)"]
+    Statutory["Statutory Tax Rate (The Law)<br/>Domestic MCX: 25.168% (s.115BAA)<br/>GIFT City IFSC: 0.00% (s.80LA)"]
+    --> Engine["Shenanigans / Tax Shield Engine<br/>• ₹38.25L Annual Salary Shield (3 Family Members)<br/>• Section 87A Rebate: Zero Personal Tax<br/>• Rule 2(1)(c)(viii) 90% Loanback (Form DPT-3)"]
+    --> Effective["Actual Effective Tax Rate Paid<br/>• Year 1: 14.80% (Saves 41% of Tax)<br/>• Year 3: 18.28% (Saves 27% of Tax)<br/>• Year 5: 22.67% (Saves 10% of Tax)<br/>• Level 4 GIFT City: 0.00% (Saves 100% of Tax)"]
 ```
 
 ### Statutory vs. Effective Tax Rates Across 20 Years
@@ -326,25 +284,13 @@ GIFT City IFSC: 0.00% (s.80LA)"]
 
 ```mermaid
 flowchart TD
-    P1["PILLAR 1: Section 115BAA Election
-- Flat 22% base + 10% surcharge + 4% cess = 25.168%
-- Official electronic Form 10-IC on Income Tax Portal
-- Explicitly exempts company from MAT u/s 115JB(5A)"]
+    P1["PILLAR 1: Section 115BAA Election<br/>• Flat 22% base + 10% surcharge + 4% cess = 25.168%<br/>• Official electronic Form 10-IC on Income Tax Portal<br/>• Explicitly exempts company from MAT u/s 115JB(5A)"]
 
-    P2["PILLAR 2: Family Salaries & Section 87A Eraser
-- Mother, Grandmother & 3rd Relative have formal employment contracts
-- ₹12.75L Gross - ₹75k Std Deduction = ₹12.00L Taxable
-- Section 87A wipes personal tax to ₹0.00 (Statutory Law)"]
+    P2["PILLAR 2: Family Salaries & Section 87A Eraser<br/>• Mother, Grandmother & 3rd Relative have formal employment contracts<br/>• ₹12.75L Gross - ₹75k Std Deduction = ₹12.00L Taxable<br/>• Section 87A wipes personal tax to ₹0.00 (Statutory Law)"]
 
-    P3["PILLAR 3: Flowback Loan u/r 2(1)(c)(viii)
-- Companies (Acceptance of Deposits) Rules, 2014
-- Unsecured loans from director relatives are EXEMPT from public deposit bans
-- Formal written declaration + annual Form DPT-3 ROC filing"]
+    P3["PILLAR 3: Flowback Loan u/r 2(1)(c)(viii)<br/>• Companies (Acceptance of Deposits) Rules, 2014<br/>• Unsecured loans from director relatives are EXEMPT from public deposit bans<br/>• Formal written declaration + annual Form DPT-3 ROC filing"]
 
-    P4["PILLAR 4: GIFT City IFSC u/s 80LA & RBI ODI Rules
-- Enacted under IFSCA Act, 2019
-- Section 80LA(1A) grants 100% deduction for 10 consecutive years
-- RBI FEMA ODI Rules 2022 allows 400% of Net Worth overseas investment"]
+    P4["PILLAR 4: GIFT City IFSC u/s 80LA & RBI ODI Rules<br/>• Enacted under IFSCA Act, 2019<br/>• Section 80LA(1A) grants 100% deduction for 10 consecutive years<br/>• RBI FEMA ODI Rules 2022 allows 400% of Net Worth overseas investment"]
 
     P1 --- P2 --- P3 --- P4
 ```
@@ -377,8 +323,7 @@ flowchart TD
     subgraph MarginBuffer["Margin Regime & Safe Buffer Policy"]
         B1["Baseline Normal Volatility Margin: 14.0% - 15.0% (~₹70,000 / lot)"]
         B2["Extreme Volatility Margin Spike: 25.0% - 28.0% (2022-style regime)"]
-        B3["DESK MANDATE: Maintain 40% - 50% Cash Buffer in liquid yield (6.5%)
-Deploy only 50% - 60% of capital into initial margin"]
+        B3["DESK MANDATE: Maintain 40% - 50% Cash Buffer in liquid yield (6.5%)<br/>Deploy only 50% - 60% of capital into initial margin"]
     end
 
     Liquidity --> TheTrap
@@ -416,7 +361,8 @@ flowchart TD
 * **Base Minimum Capital (BMC) Deposit**: **$75,000 USD (~₹63 Lakhs)** for algorithmic trading. *(Note: This is an earmarked capital asset, not an expense).*
 
 ### 2. The Financial Reality: Why Timing is Everything
-* **At ₹1 Crore Capital (Level 0)**: A ₹35 Lakh burn eats **41% of entire profit** $ightarrow$ Suicidal.
+* **At ₹1 Crore Capital (Level 0)**: A ₹35 Lakh burn eats **41% of entire profit** $
+ightarrow$ Suicidal.
 * **At ₹35 Crores Capital (Level 4)**: Gross profit is ₹30.00 Crores. 
   * On MCX, tax at 25.168% takes **₹7.55 Crores in cash every year**.
   * In GIFT City, tax is **₹0.00** and operating burn is **₹35 Lakhs**.
@@ -434,27 +380,18 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph Traps["The 5 Operational & Legal Traps"]
-        T1["TRAP 1: The Dividend Repatriation Trap
-(39% Personal Slab Leakage)"]
-        T2["TRAP 2: Economic Substance Requirements (ESR)
-(₹30L-₹45L/yr Fixed Burn)"]
-        T3["TRAP 3: RBI FEMA ODI 400% Net Worth Cap
-(Cannot fund GIFT Co without domestic balance sheet)"]
-        T4["TRAP 4: IFSCA Proprietary Licensing Scope
-(FCM Direct Access vs Fund Structure)"]
-        T5["TRAP 5: Foreign Exchange Spread & APR Filing
-(15-25 bps FX drag + RBI Form APR)"]
+        T1["TRAP 1: The Dividend Repatriation Trap<br/>(39% Personal Slab Leakage)"]
+        T2["TRAP 2: Economic Substance Requirements (ESR)<br/>(₹30L-₹45L/yr Fixed Burn)"]
+        T3["TRAP 3: RBI FEMA ODI 400% Net Worth Cap<br/>(Cannot fund GIFT Co without domestic balance sheet)"]
+        T4["TRAP 4: IFSCA Proprietary Licensing Scope<br/>(FCM Direct Access vs Fund Structure)"]
+        T5["TRAP 5: Foreign Exchange Spread & APR Filing<br/>(15-25 bps FX drag + RBI Form APR)"]
     end
 
     subgraph Antidotes["The Institutional Antidotes"]
-        A1["ANTIDOTE 1: Retain 100% Gains in USD Corporate Treasury
-Reinvest in CME Margin + US T-Bills | Draw Salary Only"]
-        A2["ANTIDOTE 2: Net Worth Gating at Level 4 (>₹25 Cr - ₹60 Cr)
-Fixed burn is <0.05% of capital at scale"]
-        A3["ANTIDOTE 3: Complete Levels 0 to 3 First
-Build ₹25 Cr audited net worth to unlock ₹100 Cr ODI ceiling"]
-        A4["ANTIDOTE 4: WOS Corporate Structure with Outbound Broker
-Direct institutional clearing via StoneX / Interactive Brokers LLC"]
+        A1["ANTIDOTE 1: Retain 100% Gains in USD Corporate Treasury<br/>Reinvest in CME Margin + US T-Bills | Draw Salary Only"]
+        A2["ANTIDOTE 2: Net Worth Gating at Level 4 (>₹25 Cr - ₹60 Cr)<br/>Fixed burn is <0.05% of capital at scale"]
+        A3["ANTIDOTE 3: Complete Levels 0 to 3 First<br/>Build ₹25 Cr audited net worth to unlock ₹100 Cr ODI ceiling"]
+        A4["ANTIDOTE 4: WOS Corporate Structure with Outbound Broker<br/>Direct institutional clearing via StoneX / Interactive Brokers LLC"]
         A5["ANTIDOTE 5: Direct IBU Treasury Spreads & Form FC-GPR/APR Automation"]
     end
 
