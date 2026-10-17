@@ -243,13 +243,29 @@ flowchart TD
     SetupWindow ==> Decade1 ==> TheTransition ==> Decade2
 ```
 
-#### 1. Statutory Sunset Clause (Finance Act Window)
-* **The Enabling Law**: **Section 80LA(1A)** of the Income-tax Act, 1961 provides a **100% deduction** of profits and gains derived from business operations in an International Financial Services Centre (IFSC).
-* **The Sunset Deadline**: Under the Finance Act, the statutory window mandates that the unit must be registered and commence operations **on or before March 31, 2030**.
-* **Statutory Guarantee**: Once an eligible IFSC unit commences operations before the sunset date, its right to claim the 100% deduction for **10 consecutive assessment years** (out of a 15-year block) is **statutorily protected and grandfathered**. Parliament cannot retroactively cancel an already vested deduction block without violating Article 14 promissory estoppel doctrines.
-* **Extended Provisions**: For specific fund management and aircraft/ship leasing entities, the block has been extended up to **20 consecutive years out of 25**. For proprietary commodity trading desks, the standard **10 consecutive assessment years** remains the locked statutory timeline.
+#### 1. Statutory Reality: Section 80LA(2)(c) vs The 2030 Leasing Sunset (Clause d)
+* **The Common Misconception**: Media reports often cite "March 31, 2030" as the GIFT City sunset date. 
+* **The Exact Statutory Text**:
+  * **Section 80LA(2)(d)** imposes a March 31, 2030 deadline specifically on **aircraft and ship leasing units** and Section 10(4D) offshore fund relocations.
+  * In contrast, **Section 80LA(2)(c)** covers:
+    > *"income from any Unit of the International Financial Services Centre from its business for which it has been approved for setting up in such a Centre in a Special Economic Zone."*
+  * **Clause (c) is a permanent, standing statutory provision with NO operational sunset cutoff date.**
+* **The "10 Out of 15 Years" Clock Trigger**:
+  * Under **Section 80LA(1A)**, the deduction is available:
+    > *"for any ten consecutive assessment years, at the option of the assessee, out of fifteen years beginning with the year in which the permission, or registration, as the case may be, under the IFSCA Act, 2019 was obtained."*
+  * **Crucial Implication**: The 10-year clock does **NOT** begin until you actually apply for and obtain IFSCA registration.
+  * If it takes you until **2031, 2032, or 2034** to safely compound your capital through Levels 0, 1, 2, and 3 on MCX without blowing up, **your 0% tax holiday is NOT lost**. Whenever you hit ₹25 Cr net worth and obtain your IFSCA license, your 10-year 0.00% tax holiday begins on that exact date!
 
-#### 2. The Section 115BAA + Section 80LA Synergy: True 0.00% Corporate Tax + 0.00% MAT
+#### 2. Why Rushing to Set Up Before 2030 is a Fatal Mistake
+* Naive traders think: *"Let me register a dormant company in GIFT City today (2026/2027) just to lock it in."*
+* **Why this is financially suicidal**:
+  1. **Premature Economic Substance Burn**: Incorporating immediately triggers IFSCA Economic Substance Requirements (office lease + resident KMP salary + compliance = **₹28L to ₹46L every year**). Incurring ₹1.5 Cr in dead overhead while trading small capital on MCX will bleed your accounts.
+  2. **Wasting the 15-Year Statutory Block**: The 15-year statutory block begins in the year registration is granted. Registering 5 years before you are ready wastes 5 years of your statutory eligibility window.
+* **The Disciplined Institutional Mandate**:
+  * **Do NOT rush.** Scale slowly, safely, and systematically on MCX.
+  * Only trigger GIFT City registration when your domestic balance sheet reaches **₹20 Cr to ₹25 Cr Net Worth**, fully unlocking RBI's 400% ODI remittance ceiling ($₹25\text{ Cr} \times 400\% = ₹100\text{ Cr}$).
+
+#### 3. The Section 115BAA + Section 80LA Synergy: True 0.00% Corporate Tax + 0.00% MAT
 * **The Normal Regime Trap (Concessional MAT at 9%)**: Under the standard regime, Section 115JB(7) levies a Minimum Alternate Tax (MAT) of 9% (plus surcharge and cess = **~9.75% to 10.5% effective**) on book profits of IFSC units.
 * **The Legal Masterstroke (The Section 115BAA(4) Carve-Out)**:
   * Section 115BAA generally disallows Chapter VI-A deductions.
