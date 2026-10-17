@@ -194,12 +194,36 @@ flowchart LR
 ## 6. When Should You Start Thinking About CME Scaling?
 
 ```mermaid
-timeline
-    title Multi-Market Scaling Roadmap & Decision Inflection Points
-    Phase 1 (₹60L to ₹10 Cr) : Domestic MCX Futures (Client Level) : Mother & Grandmother Payroll Optimization : Single Pvt Ltd (s.115BAA)
-    Phase 2 (₹10 Cr to ₹25 Cr) : Dual-Track Preparation : Form GIFT City IFSC Unit ($100k test account) : Test CME Henry Hub Execution
-    Phase 3 (₹25 Cr to ₹60 Cr) : Domestic MCX Cap Approaching : Option A - Register as MCX Proprietary TM (48,000 lots) : Option B - Scale Mother's Entity (9,600 lots)
-    Phase 4 (₹60 Cr to ₹150+ Cr) : Global Transition : Sweep 100% of overflow capital into GIFT City CME : Compound at 0% Tax with 12,000 CME Contracts
+flowchart TD
+    subgraph P1["Phase 1: ₹60L to ₹10 Cr (Years 1 to 6)"]
+        A1["Domestic MCX Futures (Client Level)"]
+        B1["Mother & Grandmother Payroll (Save ₹6.42L/yr tax)"]
+        C1["Single Pvt Ltd under Section 115BAA (25.17% Tax)"]
+        A1 --- B1 --- C1
+    end
+
+    subgraph P2["Phase 2: ₹10 Cr to ₹25 Cr (Years 6 to 8)"]
+        A2["Dual-Track Global Preparation"]
+        B2["Incorporate GIFT City IFSC Unit (60-90 Days Setup)"]
+        C2["Fund $100k-$250k Testbed Account on CME Henry Hub"]
+        A2 --- B2 --- C2
+    end
+
+    subgraph P3["Phase 3: ₹25 Cr to ₹60 Cr (Years 8 to 10)"]
+        A3["Domestic MCX Limit Approaching (4,800 Lots Cap)"]
+        B3["Choice A: Register as MCX Proprietary TM (48,000 Lots Limit)"]
+        C3["Choice B: Deploy Mother's Independent Entity (9,600 Lots Total)"]
+        A3 --- B3 --- C3
+    end
+
+    subgraph P4["Phase 4: ₹60 Cr to ₹150+ Cr (Years 10 to 20)"]
+        A4["Full Global Expansion via GIFT City IFSC"]
+        B4["Trade CME Henry Hub Futures (12,000 Contracts = 96,000 MCX Lots)"]
+        C4["10-Year 100% Tax Holiday under Section 80LA (0.00% Tax)"]
+        A4 --- B4 --- C4
+    end
+
+    P1 ==> P2 ==> P3 ==> P4
 ```
 
 ### The 4 Capital Inflection Points:
