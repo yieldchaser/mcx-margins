@@ -36,6 +36,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -82,3 +83,41 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Step 3: Relay Intraday Market Snapshot ──────────────────────────
+      # Ensures the intraday live loop is running during MCX market hours.
+      - name: Relay Intraday Market Snapshot
+        run: |
+          python -c "
+          from datetime import datetime, timezone, timedelta
+          import subprocess, json
+          now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+          is_weekday = now_ist.weekday() < 5
+          total_mins = now_ist.hour * 60 + now_ist.minute
+          # If it is a weekday between 08:50 AM and 23:30 IST
+          if is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 30):
+              check_res = subprocess.run(['gh', 'run', 'list', '--workflow=intraday_snapshot.yml', '--status', 'in_progress', '--json', 'databaseId'], capture_output=True, text=True)
+              active = False
+              if check_res.returncode == 0:
+                  try:
+                      active = len(json.loads(check_res.stdout)) > 0
+                  except Exception:
+                      pass
+              if not active:
+                  check_q = subprocess.run(['gh', 'run', 'list', '--workflow=intraday_snapshot.yml', '--status', 'queued', '--json', 'databaseId'], capture_output=True, text=True)
+                  queued = False
+                  if check_q.returncode == 0:
+                      try:
+                          queued = len(json.loads(check_q.stdout)) > 0
+                      except Exception:
+                          pass
+                  if not queued:
+                      print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Price fetch relay: waking up intraday market snapshot...')
+                      subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+                  else:
+                      print('Intraday snapshot runner is already queued.')
+              else:
+                  print('Intraday snapshot runner is already actively running.')
+          "
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -416,6 +416,19 @@ if __name__ == "__main__":
     parser.add_argument("--iterations", type=int, default=1, help="Number of loop iterations. Default 1. If 0, runs forever.")
     args, _ = parser.parse_known_args()
 
+    # Pre-market stand-by:
+    # If starting on a weekday between 08:45 AM and 09:00 AM IST, wait until 09:00:05 AM IST so iteration 1 pulls live market open candles!
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    now_ist = datetime.now(ist_tz)
+    if now_ist.weekday() < 5:
+        total_mins = now_ist.hour * 60 + now_ist.minute
+        if 525 <= total_mins < 540:  # 08:45 to 08:59 IST
+            market_open_time = now_ist.replace(hour=9, minute=0, second=5, microsecond=0)
+            wait_sec = (market_open_time - now_ist).total_seconds()
+            if 0 < wait_sec <= 900:
+                log(f"Pre-market stand-by: current time is {now_ist.strftime('%H:%M:%S IST')}. Waiting {int(wait_sec)}s until 09:00:05 IST market open...")
+                time.sleep(wait_sec)
+
     run_snapshot_cycle()
 
     if args.loop > 0:
