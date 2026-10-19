@@ -5109,6 +5109,7 @@ async function renderLifecycle(startIdx, endIdx, isZoomOnly) {
   if (promptEl) {
     const expYear = parseInt((expiry || '').slice(5), 10) || 0;
     const isAvailable = expYear >= 2026;
+    const isShort = (rows.length <= 45);
     promptEl.style.display = (isShort && isAvailable && _lcMode === 'macro') ? 'flex' : 'none';
   }
 }
