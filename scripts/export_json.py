@@ -1733,6 +1733,9 @@ def _export_delta_distribution(fm_series):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
+        # Skip roll transitions across distinct contract expiries
+        if today.get("expiry") != tomorrow.get("expiry"):
+            continue
         delta = tomorrow["initial_margin_pct"] - today["initial_margin_pct"]
         dte = today["dte"]
         margin = today["initial_margin_pct"]
@@ -2279,6 +2282,7 @@ def _export_vamb_analytics(cur, fm_series):
                 SELECT date, symbol, expiry, close, prev_close, volume_lots
                 FROM prices
                 WHERE symbol = 'NATURALGAS' AND volume_lots >= 500
+                  AND UPPER(COALESCE(instrument, 'FUTCOM')) = 'FUTCOM'
                 ORDER BY date, expiry
             """).fetchall()
         finally:
@@ -2407,6 +2411,7 @@ def main():
                 SELECT symbol, expiry, close, date
                 FROM prices
                 WHERE date = ? AND symbol IN ('NATURALGAS', 'NATGASMINI')
+                  AND UPPER(COALESCE(instrument, 'FUTCOM')) = 'FUTCOM'
             """, (latest_date,)).fetchall()
             for pr in p_rows:
                 price_lookup[(pr["symbol"], pr["expiry"])] = pr["close"]
@@ -2415,6 +2420,7 @@ def main():
                 SELECT symbol, expiry, close, date
                 FROM prices
                 WHERE symbol IN ('NATURALGAS', 'NATGASMINI')
+                  AND UPPER(COALESCE(instrument, 'FUTCOM')) = 'FUTCOM'
                 ORDER BY date DESC
             """).fetchall()
             for pr in p_rows_fallback:

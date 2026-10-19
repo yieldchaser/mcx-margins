@@ -309,7 +309,7 @@ def run_snapshot_cycle():
                         # Synchronize Tier 0: {sym_prefix}_daily.json today's bar
                         daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_daily.json")
                         if os.path.exists(daily_file):
-                            today_str = now.strftime("%Y-%m-%d")
+                            today_str = now_ist.strftime("%Y-%m-%d")
                             today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                             if len(today_bars) > 0:
                                 today_epoch = int(today_bars["epoch"].iloc[-1])

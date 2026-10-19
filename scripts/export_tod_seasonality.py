@@ -73,7 +73,7 @@ def aggregate_profile(sub_df):
         median_volume=("volume", "median"),
         total_volume=("volume", "sum"),
         avg_range_pct=("range_pct", "mean"),
-        gk_vol_annualized=("gk_var", lambda x: float(np.sqrt(np.mean(np.maximum(x, 0)) * 252 * 58) * 100)), # Annualized ~58 15m intervals/day
+        gk_vol_annualized=("gk_var", lambda x: float(np.sqrt(np.mean(np.maximum(x, 0)) * 252 * 58 * 15) * 100)), # Annualized 870 1m minutes/day (~58 15m intervals * 15m)
         obs_count=("volume", "count")
     ).reset_index()
     

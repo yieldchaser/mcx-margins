@@ -7204,8 +7204,11 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const roiOnCapital = capital > 0 ? (totalPL / capital) * 100 : 0;
   const roiOnMargin = peakMargin > 0 ? (totalPL / peakMargin) * 100 : 0;
 
-  let bestDay = 0, worstDay = 0, bestDate = '', worstDate = '';
-  for (let i = 1; i < dailyPL.length; i++) {
+  let bestDay = dailyPL.length > 1 ? dailyPL[1] : 0;
+  let worstDay = dailyPL.length > 1 ? dailyPL[1] : 0;
+  let bestDate = labels.length > 1 ? labels[1] : '';
+  let worstDate = labels.length > 1 ? labels[1] : '';
+  for (let i = 2; i < dailyPL.length; i++) {
     if (dailyPL[i] > bestDay) { bestDay = dailyPL[i]; bestDate = labels[i]; }
     if (dailyPL[i] < worstDay) { worstDay = dailyPL[i]; worstDate = labels[i]; }
   }

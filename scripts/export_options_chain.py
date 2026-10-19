@@ -140,7 +140,7 @@ def calculate_greeks(F, K, T, r, sigma, is_call):
     if is_call:
         theta = float((- (disc * F * sigma * n_d1) / (2.0 * np.sqrt(T)) + r * disc * (F * norm.cdf(d1) - K * norm.cdf(d2))) / 365.25)
     else:
-        theta = float((- (disc * F * sigma * n_d1) / (2.0 * np.sqrt(T)) - r * disc * (K * norm.cdf(-d2) - F * norm.cdf(-d1))) / 365.25)
+        theta = float((- (disc * F * sigma * n_d1) / (2.0 * np.sqrt(T)) + r * disc * (K * norm.cdf(-d2) - F * norm.cdf(-d1))) / 365.25)
         
     return {"delta": round(delta, 4), "gamma": round(gamma, 5), "theta": round(theta, 3), "vega": round(vega, 3)}
 
@@ -238,9 +238,11 @@ curr_T = max((EXPIRY_EPOCH - latest_fut_epoch) / 60.0 / 525600.0, 1.0 / 525600.0
 one_sd_move = latest_fut_price * atm_avg_iv * np.sqrt(curr_T)
 
 # 25-Delta Risk Reversal
-call_25d = min(all_chain_list, key=lambda x: abs(x.get("call", {}).get("delta", 0.5) - 0.25))
-put_25d = min(all_chain_list, key=lambda x: abs(x.get("put", {}).get("delta", -0.5) - (-0.25)))
-risk_reversal_25d = call_25d.get("call", {}).get("iv", 0.0) - put_25d.get("put", {}).get("iv", 0.0)
+calls_available = [x for x in all_chain_list if "call" in x and x["call"].get("delta") is not None]
+puts_available = [x for x in all_chain_list if "put" in x and x["put"].get("delta") is not None]
+call_25d = min(calls_available, key=lambda x: abs(x["call"]["delta"] - 0.25)) if calls_available else None
+put_25d = min(puts_available, key=lambda x: abs(x["put"]["delta"] - (-0.25))) if puts_available else None
+risk_reversal_25d = round((call_25d["call"]["iv"] - put_25d["put"]["iv"]), 2) if (call_25d and put_25d) else 0.0
 
 # Filtered Active Ladder (Liquid strikes: OI > 10 or within +- 15 strikes of ATM)
 filtered_strikes = [

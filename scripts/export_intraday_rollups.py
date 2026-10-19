@@ -130,10 +130,10 @@ for sym, pfile, tag, base in contracts:
     poc_price = float(vap_series.idxmax())
     total_vap_vol = float(vap_series.sum())
     
-    # Value Area (70% of total volume around POC)
+    # Value Area (at least 70% of total volume inclusive of crossing bin)
     sorted_vap = vap_series.sort_values(ascending=False)
     cum_vol = sorted_vap.cumsum()
-    va_mask = cum_vol <= (total_vap_vol * 0.70)
+    va_mask = (cum_vol.shift(1, fill_value=0) < (total_vap_vol * 0.70)) if total_vap_vol > 0 else pd.Series(True, index=sorted_vap.index)
     va_prices = [float(p) for p in sorted_vap[va_mask].index]
     vah_price = max(va_prices) if va_prices else poc_price
     val_price = min(va_prices) if va_prices else poc_price

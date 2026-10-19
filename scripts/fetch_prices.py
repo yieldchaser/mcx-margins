@@ -301,6 +301,13 @@ def normalize(raw: dict, date_str: str) -> dict | None:
     if symbol not in TARGET_SYMBOLS:
         return None
 
+    # Strictly futures only: options on futures (OPTFUT) have separate strikes and option types
+    instrument = str(raw.get("InstrumentName", "")).strip().upper()
+    if instrument and instrument != "FUTCOM":
+        return None
+    if raw.get("OptionType") and str(raw.get("OptionType")).strip() not in ("", "-"):
+        return None
+
     expiry = str(raw.get("ExpiryDate", "")).strip()
     if not expiry or expiry == "-":
         return None
