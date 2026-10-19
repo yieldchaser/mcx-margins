@@ -1098,6 +1098,7 @@
 
     // Style continuous pill
     const btnCont = document.getElementById('deepBtnContinuous');
+    const isMini = (activeContractSym === 'ngm');
     const curYear = new Date().getFullYear();
     const startYear = isMini ? 2023 : 2019;
     const spanYears = `${curYear - startYear + 1}Y`;
@@ -1142,7 +1143,14 @@
       allBtn.setAttribute('data-dyn-body', `Full historical daily price history (${spanRange}).`);
     }
 
-    await loadDailyTier(true);
+    // Preserve active timeframe if not on ALL
+    const activeTfBtn = document.querySelector('.deep-tf-btn.active');
+    const activeTf = activeTfBtn ? activeTfBtn.getAttribute('data-tf') : 'ALL';
+    if (activeTf && activeTf !== 'ALL') {
+      applyTimeframe(activeTf);
+    } else {
+      await loadDailyTier(true);
+    }
     setTimeout(() => { isSwitchingResolution = false; }, 200);
   }
 
