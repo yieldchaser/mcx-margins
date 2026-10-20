@@ -1530,6 +1530,7 @@
   }
 
   function getNextInterval(t) {
+    if (t === '23:45') return '23:55';
     const [h, m] = t.split(':').map(Number);
     let nm = m + 15;
     let nh = h;

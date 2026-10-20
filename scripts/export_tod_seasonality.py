@@ -50,11 +50,23 @@ df["weekday"] = ts_ist.dt.weekday # 3 = Thursday
 # Exact DST detection via America/New_York zoneinfo
 df["is_us_dst"] = ts_ny.apply(lambda x: bool(x.dst() and x.dst().total_seconds() > 0))
 
-# Filter strictly to MCX Natural Gas trading hours (09:00 to 23:30 IST)
-df = df[(df["minute_of_day"] >= 9 * 60) & (df["minute_of_day"] <= 23 * 60 + 30)].copy()
+# Filter strictly to valid MCX Natural Gas trading hours:
+# Summer (US EDT): 09:00 to 23:30 IST (minutes 540 to 1410)
+# Winter (US EST): 09:00 to 23:55 IST (minutes 540 to 1435)
+summer_mask = (df["is_us_dst"] == True) & (df["minute_of_day"] >= 540) & (df["minute_of_day"] <= 1410)
+winter_mask = (df["is_us_dst"] == False) & (df["minute_of_day"] >= 540) & (df["minute_of_day"] <= 1435)
+df = df[summer_mask | winter_mask].copy()
 
-# 15-Minute Interval Binning
-df["interval_min"] = (df["minute_of_day"] // 15) * 15
+# 15-Minute Interval Binning:
+# In Summer, session closes at 23:30 (minute 1410). The final 15m interval is 23:15–23:30 (interval 1395).
+# Clamping minute >= 1410 to 1409 merges rare post-close/settlement auction ticks into 23:15.
+# In Winter, session closes at 23:55 (minute 1435). The final interval is 23:45–23:55 (interval 1425).
+# Clamping minute >= 1435 to 1434 merges rare post-close/settlement ticks into 23:45.
+clamped_min = df["minute_of_day"].copy()
+clamped_min = np.where((df["is_us_dst"] == True) & (clamped_min >= 1410), 1409, clamped_min)
+clamped_min = np.where((df["is_us_dst"] == False) & (clamped_min >= 1435), 1434, clamped_min)
+
+df["interval_min"] = (clamped_min // 15) * 15
 df["time_label"] = df["interval_min"].apply(lambda m: f"{m // 60:02d}:{m % 60:02d}")
 
 # High-Low Range in %: (H - L) / O * 100
@@ -104,7 +116,7 @@ output_data = {
         "winter_candles": int((~df["is_us_dst"]).sum()),
         "thursday_eia_candles": int((df["weekday"] == 3).sum()),
         "resolution": "15m",
-        "session": "09:00 - 23:30 IST"
+        "session": "Summer: 09:00–23:30 IST · Winter: 09:00–23:55 IST"
     },
     "profiles": {
         "combined": profile_combined,
