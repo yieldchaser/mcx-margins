@@ -747,7 +747,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .stat-card:hover { background: rgba(255,255,255,0.02); }
 .stat-card:last-child { border-right: none; }
 .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 2px; }
-.stat-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; text-shadow: 0 0 20px rgba(255,255,255,0.1); font-variant-numeric: tabular-nums; }
 
 /* ── Tab Navigation ── */
 .tab-nav {
@@ -832,6 +832,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   padding: 9px 12px; font-size: 12px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
+  font-variant-numeric: tabular-nums;
 }
 .data-table tr:hover td { background: rgba(56, 139, 253, 0.04); }
 .data-table tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
@@ -986,7 +987,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 .stats-bar { display:flex; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:1px; scrollbar-width:none; }
 .stats-bar::-webkit-scrollbar { display:none; }
 .stat-card { min-width:120px; flex:1; }
-.stat-sub { font-size:11px; margin-top:2px; font-weight:500; }
+.stat-sub { font-size:11px; margin-top:2px; font-weight:500; font-variant-numeric: tabular-nums; }
 .stat-sub.up   { color: var(--accent-red); }
 .stat-sub.down { color: var(--accent-green); }
 .stat-sub.flat { color: var(--text-muted); }

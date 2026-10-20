@@ -312,7 +312,8 @@ def run_snapshot_cycle():
                             today_str = now_ist.strftime("%Y-%m-%d")
                             today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                             if len(today_bars) > 0:
-                                today_epoch = int(today_bars["epoch"].iloc[-1])
+                                today_epoch = int(pd.Timestamp(f"{today_str} 09:00:00", tz="Asia/Kolkata").timestamp())
+                                latest_bar_epoch = int(today_bars["epoch"].iloc[-1])
                                 today_daily = {
                                     "time": today_epoch,
                                     "open": round(float(today_bars["open"].iloc[0]), 2),
@@ -332,7 +333,7 @@ def run_snapshot_cycle():
                                 merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
                                 with open(daily_file, "w", encoding="utf-8") as f:
                                     json.dump(merged_daily, f, separators=(',', ':'))
-                                log(f"Updated docs/data/deep/{sym_prefix}_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars, latest: {datetime.fromtimestamp(today_epoch, ist_tz).strftime('%H:%M IST')})")
+                                log(f"Updated docs/data/deep/{sym_prefix}_daily.json today bar: Close ₹{today_daily['close']:.2f} ({len(merged_daily)} bars, latest: {datetime.fromtimestamp(latest_bar_epoch, ist_tz).strftime('%H:%M IST')})")
                     except Exception as e:
                         log(f"Notice updating deep LOD tiers for {base}: {e}")
             else:

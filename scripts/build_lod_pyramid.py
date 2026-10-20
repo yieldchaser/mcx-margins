@@ -99,10 +99,15 @@ def update_daily_incremental_for_sym(sym_cfg):
     df = df.drop_duplicates(subset=["date"], keep="first")
     added = 0
     existing_epochs = {b["time"] for b in daily_bars}
+    existing_dates = {
+        pd.to_datetime(b["time"], unit="s", utc=True).tz_convert("Asia/Kolkata").strftime("%Y-%m-%d")
+        for b in daily_bars
+    }
     for _, row in df.iterrows():
-        ts = pd.Timestamp(f"{row['date']} 09:00:00", tz="Asia/Kolkata")
+        row_date = str(row["date"])
+        ts = pd.Timestamp(f"{row_date} 09:00:00", tz="Asia/Kolkata")
         epoch_sec = int(ts.timestamp())
-        if epoch_sec not in existing_epochs and row["close"] > 0:
+        if epoch_sec not in existing_epochs and row_date not in existing_dates and row["close"] > 0:
             daily_bars.append({
                 "time": epoch_sec,
                 "open": round(float(row["open"] if row["open"] > 0 else row["close"]), 2),
@@ -112,6 +117,7 @@ def update_daily_incremental_for_sym(sym_cfg):
                 "volume": int(row["volume"])
             })
             existing_epochs.add(epoch_sec)
+            existing_dates.add(row_date)
             added += 1
 
     if added > 0:

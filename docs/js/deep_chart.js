@@ -397,7 +397,7 @@
 
           let ohlcHtml = '';
           if (openPrice !== undefined && highPrice !== undefined && lowPrice !== undefined) {
-            const ret = ((closePrice - openPrice) / openPrice) * 100;
+            const ret = (openPrice && openPrice > 0) ? ((closePrice - openPrice) / openPrice) * 100 : 0;
             const diff = closePrice - openPrice;
             const retColor = ret >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
             ohlcHtml = `
@@ -1501,6 +1501,7 @@
   // ─────────────────────────────────────────────────────────────
   let todChartInstance = null;
   let todData = null;
+  let todButtonsBound = false;
 
   async function initTODSeasonality() {
     const canvas = document.getElementById('chartTODSeasonality');
@@ -1513,15 +1514,18 @@
         todData = await res.json();
       }
 
-      const buttons = document.querySelectorAll('[data-tod-profile]');
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          buttons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const profileKey = btn.getAttribute('data-tod-profile');
-          renderTODChart(todData.profiles[profileKey] || todData.profiles.combined, profileKey);
+      if (!todButtonsBound) {
+        const buttons = document.querySelectorAll('[data-tod-profile]');
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const profileKey = btn.getAttribute('data-tod-profile');
+            renderTODChart(todData.profiles[profileKey] || todData.profiles.combined, profileKey);
+          });
         });
-      });
+        todButtonsBound = true;
+      }
 
       renderTODChart(todData.profiles.combined, 'combined');
     } catch (err) {

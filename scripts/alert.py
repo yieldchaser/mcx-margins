@@ -58,9 +58,10 @@ def get_front_month_margins():
         # Front month = smallest non-negative DTE
         cur.execute("""
             SELECT m.initial_margin_pct, m.expiry, m.total_margin_pct,
-                   m.daily_volatility, m.annualized_volatility
+                   m.daily_volatility, m.annualized_volatility, m.file_id
             FROM margins m
             WHERE m.date = ? AND m.symbol = ?
+            ORDER BY m.file_id DESC
         """, (d, SYMBOL))
         candidates = []
         for row in cur.fetchall():
@@ -68,7 +69,7 @@ def get_front_month_margins():
             if dte is not None and dte >= 0:
                 candidates.append((dte, row))
         if candidates:
-            best = min(candidates, key=lambda x: (x[0], x[1][1]))[1]
+            best = min(candidates, key=lambda x: (x[0], -(x[1][5] or 0), x[1][1]))[1]
             results.append((d, best[0], best[1], best[2], best[3], best[4]))
 
     conn.close()
