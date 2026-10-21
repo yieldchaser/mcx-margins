@@ -14,6 +14,7 @@ import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import json
+import time
 import urllib.parse
 import requests
 import pyotp
@@ -73,125 +74,162 @@ def auto_login():
     print(f"INITIATING 100% HEADLESS FYERS TOTP AUTHENTICATION FOR {fy_id}")
     print("=" * 80)
 
-    session = requests.Session()
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-    }
+    for attempt in range(1, 4):
+        if attempt > 1:
+            print(f"\n[Login Attempt {attempt}/3] Retrying authentication in 3s...")
+            time.sleep(3)
 
-    # Step 1: Send Login OTP (initializes request_key)
-    print("Step 1: Sending login request...")
-    res1 = session.post(URL_SEND_OTP, json={"fy_id": fy_id, "app_id": "2"}, headers=headers)
-    d1 = res1.json()
-    if d1.get("s") != "ok":
-        # Fallback endpoint if api-t2 is alternate
-        alt_url = "https://api-t1.fyers.in/vagator/v2/send_login_otp"
-        res1 = session.post(alt_url, json={"fy_id": fy_id, "app_id": "2"}, headers=headers)
-        d1 = res1.json()
-        if d1.get("s") != "ok":
-            print(f"Step 1 Failed: {d1}")
-            return False
+        session = requests.Session()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
 
-    request_key_1 = d1.get("request_key")
-    print("Step 1 OK: Request Key obtained.")
-
-    # Step 2: Generate & Verify TOTP
-    print("Step 2: Generating and verifying 6-digit TOTP...")
-    totp_now = pyotp.TOTP(totp_secret).now()
-    res2 = session.post(URL_VERIFY_TOTP, json={"request_key": request_key_1, "otp": totp_now}, headers=headers)
-    d2 = res2.json()
-    if d2.get("s") != "ok":
-        print(f"Step 2 (TOTP verification) Failed: {d2}")
-        return False
-
-    request_key_2 = d2.get("request_key")
-    print("Step 2 OK: TOTP Verified successfully.")
-
-    # Step 3: Verify 4-Digit Trading PIN
-    print("Step 3: Verifying 4-digit Trading PIN...")
-    res3 = session.post(URL_VERIFY_PIN, json={"request_key": request_key_2, "identity_type": "pin", "identifier": pin}, headers=headers)
-    d3 = res3.json()
-    if d3.get("s") != "ok":
-        # Check alternate field name identity_pin
-        res3 = session.post(URL_VERIFY_PIN, json={"request_key": request_key_2, "identity_pin": pin}, headers=headers)
-        d3 = res3.json()
-        if d3.get("s") != "ok":
-            print(f"Step 3 (PIN verification) Failed: {d3}")
-            return False
-
-    data_token = d3.get("data", {}).get("token") or d3.get("data", {}).get("access_token")
-    if not data_token:
-        print(f"Step 3 Failed to retrieve data_token: {d3}")
-        return False
-
-    print("Step 3 OK: PIN Verified.")
-
-    # Step 4: Exchange data_token for authorization code
-    print("Step 4: Requesting Auth Code...")
-    token_headers = {
-        **headers,
-        "Authorization": f"Bearer {data_token}"
-    }
-    base_app_id, app_type = CLIENT_ID.split("-") if "-" in CLIENT_ID else (CLIENT_ID, "100")
-    payload_token = {
-        "fyers_id": fy_id,
-        "app_id": base_app_id,
-        "redirect_uri": REDIRECT_URI,
-        "appType": app_type,
-        "code_challenge": "",
-        "state": "None",
-        "scope": "",
-        "nonce": "",
-        "response_type": "code",
-        "create_cookie": True
-    }
-    res4 = session.post(URL_TOKEN, json=payload_token, headers=token_headers)
-    d4 = res4.json()
-    if d4.get("s") != "ok":
-        print(f"Step 4 Failed: {d4}")
-        return False
-
-    redirect_url = d4.get("Url") or d4.get("data", {}).get("url")
-    parsed = urllib.parse.urlparse(redirect_url)
-    params = urllib.parse.parse_qs(parsed.query)
-    auth_code = params.get("auth_code", [None])[0]
-    if not auth_code:
-        print(f"Failed to extract auth_code from {redirect_url}")
-        return False
-
-    print("Step 4 OK: Auth Code extracted.")
-
-    # Step 5: Generate Final Trading Access Token via SDK
-    print("Step 5: Generating final Access Token...")
-    fyers_session = fyersModel.SessionModel(
-        client_id=CLIENT_ID,
-        secret_key=SECRET_KEY,
-        redirect_uri=REDIRECT_URI,
-        response_type='code',
-        grant_type='authorization_code'
-    )
-    fyers_session.set_token(auth_code)
-    resp_token = fyers_session.generate_token()
-
-    if resp_token.get("s") == "ok":
-        access_token = resp_token.get("access_token")
-        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-            f.write(access_token)
+        # Step 1: Send Login OTP (initializes request_key)
+        print("Step 1: Sending login request...")
         try:
-            import subprocess
-            res = subprocess.run(["gh", "secret", "set", "FYERS_ACCESS_TOKEN"], input=access_token, text=True, capture_output=True)
-            if res.returncode == 0:
-                print("✓ Automatically synchronized FYERS_ACCESS_TOKEN to GitHub Secrets!")
-        except Exception:
-            pass
-        print("=" * 80)
-        print("SUCCESS! FRESH FYERS ACCESS TOKEN GENERATED AND SAVED TO data/fyers_auth/access_token.txt!")
-        print("=" * 80)
-        return True
-    else:
-        print(f"Step 5 Failed: {resp_token}")
-        return False
+            res1 = session.post(URL_SEND_OTP, json={"fy_id": fy_id, "app_id": "2"}, headers=headers, timeout=15)
+            d1 = res1.json()
+        except Exception as e:
+            d1 = {"s": "error", "message": str(e)}
+
+        if d1.get("s") != "ok":
+            alt_url = "https://api-t1.fyers.in/vagator/v2/send_login_otp"
+            try:
+                res1 = session.post(alt_url, json={"fy_id": fy_id, "app_id": "2"}, headers=headers, timeout=15)
+                d1 = res1.json()
+            except Exception as e:
+                d1 = {"s": "error", "message": str(e)}
+
+            if d1.get("s") != "ok":
+                print(f"Step 1 Failed (attempt {attempt}): {d1}")
+                continue
+
+        request_key_1 = d1.get("request_key")
+        print("Step 1 OK: Request Key obtained.")
+
+        # Guard against window rollover (if in last 4s of 30s window, wait for fresh window)
+        sec_in_window = time.time() % 30
+        if sec_in_window > 26:
+            sleep_wait = int(30 - sec_in_window) + 1
+            print(f"TOTP window near rollover ({sec_in_window:.1f}s). Waiting {sleep_wait}s for fresh window...")
+            time.sleep(sleep_wait)
+
+        # Step 2: Generate & Verify TOTP
+        print("Step 2: Generating and verifying 6-digit TOTP...")
+        totp_now = pyotp.TOTP(totp_secret).now()
+        try:
+            res2 = session.post(URL_VERIFY_TOTP, json={"request_key": request_key_1, "otp": totp_now}, headers=headers, timeout=15)
+            d2 = res2.json()
+        except Exception as e:
+            d2 = {"s": "error", "message": str(e)}
+
+        if d2.get("s") != "ok":
+            print(f"Step 2 (TOTP verification) Failed (attempt {attempt}): {d2}")
+            continue
+
+        request_key_2 = d2.get("request_key")
+        print("Step 2 OK: TOTP Verified successfully.")
+
+        # Step 3: Verify 4-Digit Trading PIN
+        print("Step 3: Verifying 4-digit Trading PIN...")
+        try:
+            res3 = session.post(URL_VERIFY_PIN, json={"request_key": request_key_2, "identity_type": "pin", "identifier": pin}, headers=headers, timeout=15)
+            d3 = res3.json()
+        except Exception as e:
+            d3 = {"s": "error", "message": str(e)}
+
+        if d3.get("s") != "ok":
+            try:
+                res3 = session.post(URL_VERIFY_PIN, json={"request_key": request_key_2, "identity_pin": pin}, headers=headers, timeout=15)
+                d3 = res3.json()
+            except Exception as e:
+                d3 = {"s": "error", "message": str(e)}
+
+            if d3.get("s") != "ok":
+                print(f"Step 3 (PIN verification) Failed (attempt {attempt}): {d3}")
+                continue
+
+        data_token = d3.get("data", {}).get("token") or d3.get("data", {}).get("access_token")
+        if not data_token:
+            print(f"Step 3 Failed to retrieve data_token: {d3}")
+            continue
+
+        print("Step 3 OK: PIN Verified.")
+
+        # Step 4: Exchange data_token for authorization code
+        print("Step 4: Requesting Auth Code...")
+        token_headers = {
+            **headers,
+            "Authorization": f"Bearer {data_token}"
+        }
+        base_app_id, app_type = CLIENT_ID.split("-") if "-" in CLIENT_ID else (CLIENT_ID, "100")
+        payload_token = {
+            "fyers_id": fy_id,
+            "app_id": base_app_id,
+            "redirect_uri": REDIRECT_URI,
+            "appType": app_type,
+            "code_challenge": "",
+            "state": "None",
+            "scope": "",
+            "nonce": "",
+            "response_type": "code",
+            "create_cookie": True
+        }
+        try:
+            res4 = session.post(URL_TOKEN, json=payload_token, headers=token_headers, timeout=15)
+            d4 = res4.json()
+        except Exception as e:
+            d4 = {"s": "error", "message": str(e)}
+
+        if d4.get("s") != "ok":
+            print(f"Step 4 Failed (attempt {attempt}): {d4}")
+            continue
+
+        redirect_url = d4.get("Url") or d4.get("data", {}).get("url")
+        parsed = urllib.parse.urlparse(redirect_url)
+        params = urllib.parse.parse_qs(parsed.query)
+        auth_code = params.get("auth_code", [None])[0]
+        if not auth_code:
+            print(f"Failed to extract auth_code from {redirect_url}")
+            continue
+
+        print("Step 4 OK: Auth Code extracted.")
+
+        # Step 5: Generate Final Trading Access Token via SDK
+        print("Step 5: Generating final Access Token...")
+        fyers_session = fyersModel.SessionModel(
+            client_id=CLIENT_ID,
+            secret_key=SECRET_KEY,
+            redirect_uri=REDIRECT_URI,
+            response_type='code',
+            grant_type='authorization_code'
+        )
+        fyers_session.set_token(auth_code)
+        resp_token = fyers_session.generate_token()
+
+        if resp_token.get("s") == "ok":
+            access_token = resp_token.get("access_token")
+            with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+                f.write(access_token)
+            try:
+                import subprocess
+                res = subprocess.run(["gh", "secret", "set", "FYERS_ACCESS_TOKEN"], input=access_token, text=True, capture_output=True)
+                if res.returncode == 0:
+                    print("✓ Automatically synchronized FYERS_ACCESS_TOKEN to GitHub Secrets!")
+            except Exception:
+                pass
+            print("=" * 80)
+            print("SUCCESS! FRESH FYERS ACCESS TOKEN GENERATED AND SAVED TO data/fyers_auth/access_token.txt!")
+            print("=" * 80)
+            return True
+        else:
+            print(f"Step 5 Failed (attempt {attempt}): {resp_token}")
+            continue
+
+    print("ERROR: All 3 authentication attempts failed.")
+    return False
 
 if __name__ == "__main__":
     auto_login()
