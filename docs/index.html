@@ -680,6 +680,35 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .calc-meta-dot.is-stale { background: var(--accent-yellow); }
 .calc-meta-dot.is-error { background: var(--accent-red); }
+.calc-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(56, 139, 253, 0.15);
+  border: 1px solid rgba(56, 139, 253, 0.35);
+  color: #58a6ff;
+  border-radius: 12px;
+  padding: 1px 7px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.calc-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3fb950;
+  box-shadow: 0 0 6px #3fb950;
+  animation: pulse-live 2s infinite ease-in-out;
+  display: inline-block;
+}
+@keyframes pulse-live {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
 
 /* sr-only for a11y announcements */
 .calc-sr {
@@ -3258,9 +3287,12 @@ const TTL_LIVE = new Set([
   'current', 'meta', 'stress_score', 'manifest',
   'market/meta', 'market/current', 'market/signals', 'market/calendar_spread'
 ]);
+function isLiveFeed(name) {
+  return TTL_LIVE.has(name) || /^(market\/)?(NG_|NGM_)[0-9]{2}[A-Z]{3}_15m$/.test(name);
+}
 async function loadJSON(name) {
   const now = Date.now();
-  const maxAge = TTL_LIVE.has(name) ? 30_000 : 300_000;
+  const maxAge = isLiveFeed(name) ? 30_000 : 300_000;
   if (DATA[name]) {
     if ((now - (DATA_TS[name] || 0)) < maxAge)
       return DATA[name];
@@ -6893,7 +6925,61 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
 
   const mByDate = {}; (marginData.rows || []).forEach(r => mByDate[r.date] = r);
   const pByDate = {}; (marketData.rows || []).forEach(r => pByDate[r.date] = r);
-  const allDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
+
+  // Approach 2: Live-Marked Hybrid Integration for Active Contracts
+  const isContractActive = _expiryDate(expiry).getTime() >= (Date.now() - 86400000);
+  let liveBar = null;
+
+  if (isContractActive) {
+    try {
+      const expCode = expiry.slice(7) + expiry.slice(2, 5);
+      const liveTag = (sym === 'ngm' ? 'NGM_' : 'NG_') + expCode;
+      const live15m = await loadMarketJSON(`${liveTag}_15m`);
+      if (live15m?.data?.dt?.length > 0) {
+        const d = live15m.data;
+        const lastIdx = d.dt.length - 1;
+        const lastEpoch = d.dt[lastIdx];
+        const isoStr = new Date((lastEpoch + 19800) * 1000).toISOString();
+        const istDate = isoStr.slice(0, 10);
+        const istTime = isoStr.slice(11, 16) + ' IST';
+
+        liveBar = {
+          date: istDate,
+          time: istTime,
+          close: d.c[lastIdx],
+          open: d.o ? d.o[lastIdx] : d.c[lastIdx],
+          high: d.h ? d.h[lastIdx] : d.c[lastIdx],
+          low: d.l ? d.l[lastIdx] : d.c[lastIdx],
+          volume: d.v ? d.v[lastIdx] : 0,
+          oi: d.oi ? d.oi[lastIdx] : null
+        };
+
+        // If today is NOT already settled in pByDate, inject live bar
+        if (!pByDate[istDate]) {
+          pByDate[istDate] = {
+            date: istDate,
+            close: liveBar.close,
+            open: liveBar.open,
+            high: liveBar.high,
+            low: liveBar.low,
+            volume_lots: liveBar.volume,
+            open_interest: liveBar.oi,
+            is_live: true,
+            live_time: liveBar.time,
+            unsettled: true
+          };
+        }
+      }
+    } catch(e) {
+      liveBar = null;
+    }
+  }
+
+  // Strict Admissibility Filter:
+  // A date can ONLY enter allDates if it has a valid, verified price (settled EOD or live LTP).
+  // This strictly eliminates Regime 4 phantom dates where BOD margin exists but market has not traded yet.
+  const rawDates = [...new Set([...Object.keys(mByDate), ...Object.keys(pByDate)])].sort();
+  const allDates = rawDates.filter(d => pByDate[d] != null && pByDate[d].close != null);
   window._calcAllDates = allDates;
   if (allDates.length === 0) return;
 
@@ -7324,10 +7410,15 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   // Dynamic mode footnote — updates on every recalc to reflect active capital model
   const infoEl = document.getElementById('calcInfo');
   if (infoEl) {
+    const lastD = labels[labels.length - 1];
+    const isLastLive = !!pByDate[lastD]?.is_live;
     const modeNote = isM2M
       ? 'Dynamic M2M: margin calls measured against your live ledger balance.'
       : 'Static capital: margin calls measured against fixed initial deposit.';
-    infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em></span>`;
+    const liveNote = isLastLive
+      ? ` <strong>Live Mark:</strong> Final valuation uses real-time intraday LTP (₹${fmtNum(pByDate[lastD].close, 2)} at ${pByDate[lastD].live_time}). Official exchange settlement occurs at 23:30 IST.`
+      : '';
+    infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em>${liveNote}</span>`;
   }
 
   // Calculate dynamic exit shield
@@ -7390,7 +7481,13 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const metaRow = document.getElementById('calcMetaRow');
   if (metaRow && labels.length) {
     metaRow.style.display = 'flex';
-    document.getElementById('calcMetaText').textContent = `${cumPL.length} obs · entry ${labels[0]} · last ${labels[labels.length-1]}`;
+    const lastD = labels[labels.length - 1];
+    const lastRow = pByDate[lastD];
+    let metaHTML = `${cumPL.length} obs · entry ${labels[0]} · last ${lastD}`;
+    if (lastRow?.is_live) {
+      metaHTML += ` <span class="calc-live-pill"><span class="calc-pulse-dot"></span> LIVE (${lastRow.live_time} · ₹${fmtNum(lastRow.close, 2)} LTP · Unsettled)</span>`;
+    }
+    document.getElementById('calcMetaText').innerHTML = metaHTML;
   }
 
   // Chart render based on selected view
@@ -7505,7 +7602,25 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
           bodyColor: cssText,
           padding: 10,
           callbacks: {
-            label: (item) => `${label}: ${(view === 'margin' || view === 'marginPct' || view === 'shield') ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`
+            title: (items) => {
+              if (!items.length) return '';
+              const d = items[0].label;
+              const r = pByDate[d];
+              if (r?.is_live) {
+                return `${d} · LIVE Intraday (${r.live_time} · Unsettled)`;
+              }
+              return d;
+            },
+            label: (item) => `${label}: ${(view === 'margin' || view === 'marginPct' || view === 'shield') ? pctFmt(item.raw) : '₹' + fmtNum(item.raw, 0)}`,
+            afterBody: (items) => {
+              if (!items.length) return [];
+              const d = items[0].label;
+              const r = pByDate[d];
+              if (r?.is_live) {
+                return [`LTP: ₹${fmtNum(r.close, 2)} (Live Unsettled)`];
+              }
+              return [];
+            }
           }
         }
       },
