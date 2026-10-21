@@ -1,17 +1,17 @@
 name: Intraday Market Snapshot
 
-# Runs every 30 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
+# Runs every 15-20 minutes during MCX Trading Hours (09:00 to 23:30 IST = 03:30 to 18:00 UTC Mon-Fri)
 # Pulls latest 1-minute execution candles from FYERS API in the cloud,
 # updates deep LOD tiers (1m, 15m, daily), and synchronizes with GitHub Pages.
 
 on:
   schedule:
     # High-Reliability Staggered Schedule (Mon–Fri during MCX hours 09:00 to 23:30 IST = 03:30 to 18:00 UTC)
-    # 1. Pre-market wake-up & warm-up (Mon–Fri 03:26 UTC = 08:56 AM IST).
-    #    Bypasses GitHub's crowded 03:30 queue; stands by cleanly until 09:00:05 open.
+    # 1. Pre-market wake-up & warm-up safety nets (Mon–Fri 03:00, 03:15, 03:26 UTC = 08:30, 08:45, 08:56 AM IST).
+    - cron: '0 3 * * 1-5'
+    - cron: '15 3 * * 1-5'
     - cron: '26 3 * * 1-5'
     # 2. Market-open safety nets (03:33, 03:41, 03:51 UTC = 09:03, 09:11, 09:21 AM IST).
-    #    Guarantees ignition even if GitHub delays one of the triggers.
     - cron: '33 3 * * 1-5'
     - cron: '41 3 * * 1-5'
     - cron: '51 3 * * 1-5'
@@ -73,7 +73,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Chain Next Continuous Market Run
-        if: steps.check_token.outputs.token_present == 'true'
+        if: always() && steps.check_token.outputs.token_present == 'true'
         run: |
           python -c "
           import sys
@@ -107,7 +107,13 @@ jobs:
                   if res.returncode != 0:
                       print('Notice dispatching next chain:', res.stderr)
           else:
-              print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is CLOSED. Ending continuous runner loop for the day.')
+              print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is CLOSED.')
+              # Mon-Thu night or Sunday: dispatch Overnight Sentinel to bridge to tomorrow morning 08:55 AM IST!
+              if now_ist.weekday() in (0, 1, 2, 3, 6):
+                  print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Igniting Overnight Bridge Sentinel for next morning 08:55 AM IST...')
+                  subprocess.run(['gh', 'workflow', 'run', 'market_sentinel.yml'], capture_output=True, text=True)
+              else:
+                  print('Weekend session closed. Sentinel standing by.')
           "
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

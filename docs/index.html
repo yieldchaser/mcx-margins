@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Blue Margin</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta name="description" content="Live MCX NATURALGAS and NATGASMINI futures margin intelligence dashboard — forward curve, history, seasonality, analytics.">
@@ -3251,14 +3254,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 const ENABLE_MARKET_INTEL = true;
 const DATA = {};
 const DATA_TS = {};
-const TTL_LIVE = new Set(['current', 'meta', 'stress_score', 'market/meta', 'market/current']);
+const TTL_LIVE = new Set([
+  'current', 'meta', 'stress_score', 'manifest',
+  'market/meta', 'market/current', 'market/signals', 'market/calendar_spread'
+]);
 async function loadJSON(name) {
   const now = Date.now();
+  const maxAge = TTL_LIVE.has(name) ? 30_000 : 300_000;
   if (DATA[name]) {
-    if (!TTL_LIVE.has(name) || (now - (DATA_TS[name] || 0)) < 300_000)
+    if ((now - (DATA_TS[name] || 0)) < maxAge)
       return DATA[name];
   }
-  const r = await fetch(`data/${name}.json`);
+  const r = await fetch(`data/${name}.json?_v=${now}`, { cache: 'no-cache' });
   if (!r.ok) throw new Error(`Failed to load ${name}.json: ${r.status}`);
   DATA[name] = await r.json();
   DATA_TS[name] = now;
@@ -5472,7 +5479,7 @@ async function loadLcContractIntraday(sym, expiry) {
   if (countBadge) countBadge.innerHTML = '<strong>Loading...</strong>';
 
   try {
-    const res15 = await fetch(`data/market/${tag}_15m.json`);
+    const res15 = await fetch(`data/market/${tag}_15m.json?_v=${Date.now()}`, { cache: 'no-cache' });
     if (!res15.ok) {
       alert(`Intraday tick data is available for active contracts (2026 onwards). Switching to Daily Macro view.`);
       setLcMode('macro');
@@ -5482,7 +5489,7 @@ async function loadLcContractIntraday(sym, expiry) {
     _lcLwData15m = json15.data;
 
     _lcLwData1m = null;
-    fetch(`data/market/${tag}_1m.json`).then(r => r.ok ? r.json() : null).then(j => {
+    fetch(`data/market/${tag}_1m.json?_v=${Date.now()}`, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => {
       if (j && j.data) _lcLwData1m = j.data;
     }).catch(() => {});
 

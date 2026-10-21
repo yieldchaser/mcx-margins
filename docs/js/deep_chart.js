@@ -701,18 +701,25 @@
         const tag = `${prefix}_${m[2].slice(-2)}${m[1]}`;
         const targetRes = (currentResolution === '1m') ? '1m' : '15m';
         try {
-          const res = await fetch(`data/market/${tag}_${targetRes}.json?_v=${Date.now()}`);
+          const res = await fetch(`data/market/${tag}_${targetRes}.json?_v=${Date.now()}`, { cache: 'no-cache' });
           if (res.ok) {
             const jsonFresh = await res.json();
             const freshBars = parseColumnarBars(jsonFresh);
-            const prevLen = (contractCache[tag] && contractCache[tag][targetRes]) ? contractCache[tag][targetRes].length : 0;
-            if (freshBars.length !== prevLen) {
+            const prevBars = (contractCache[tag] && contractCache[tag][targetRes]) ? contractCache[tag][targetRes] : [];
+            const prevLen = prevBars.length;
+            const prevLast = prevLen > 0 ? prevBars[prevLen - 1] : null;
+            const freshLast = freshBars.length > 0 ? freshBars[freshBars.length - 1] : null;
+            const isDifferent = freshBars.length !== prevLen ||
+              (prevLast && freshLast && (prevLast.time !== freshLast.time || prevLast.close !== freshLast.close || prevLast.volume !== freshLast.volume));
+            if (isDifferent) {
               if (!contractCache[tag]) contractCache[tag] = {};
               contractCache[tag][targetRes] = freshBars;
               renderContractBars(freshBars, targetRes);
               if (curRange && curRange.from && curRange.to) {
                 chart.timeScale().setVisibleRange(curRange);
               }
+            } else if (freshLast) {
+              updateGlobalLiveTimestamp(freshLast);
             }
           }
         } catch (e) {}
@@ -729,39 +736,53 @@
     if (currentResolution === '1m') {
       const nowYm = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7).replace('-', '_');
       try {
-        const res = await fetch(`data/deep/${dir1m}/${nowYm}.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${dir1m}/${nowYm}.json?_v=${Date.now()}`, { cache: 'no-cache' });
         if (res.ok) {
           const freshBars = await res.json();
-          const prevLen = sCache.m1[nowYm] ? sCache.m1[nowYm].length : 0;
-          if (freshBars.length !== prevLen) {
+          const prevBars = sCache.m1[nowYm] || [];
+          const prevLen = prevBars.length;
+          const prevLast = prevLen > 0 ? prevBars[prevLen - 1] : null;
+          const freshLast = freshBars.length > 0 ? freshBars[freshBars.length - 1] : null;
+          const isDifferent = freshBars.length !== prevLen ||
+            (prevLast && freshLast && (prevLast.time !== freshLast.time || prevLast.close !== freshLast.close || prevLast.volume !== freshLast.volume));
+          if (isDifferent) {
             sCache.m1[nowYm] = freshBars;
             sTS.m1[nowYm] = Date.now();
             render1mRaw(freshBars);
             if (curRange && curRange.from && curRange.to) {
               chart.timeScale().setVisibleRange(curRange);
             }
+          } else if (freshLast) {
+            updateGlobalLiveTimestamp(freshLast);
           }
         }
       } catch (e) {}
     } else if (currentResolution === '15m') {
       try {
-        const res = await fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`, { cache: 'no-cache' });
         if (res.ok) {
           const freshBars = await res.json();
-          const prevLen = sCache.m15 ? sCache.m15.length : 0;
-          if (freshBars.length !== prevLen) {
+          const prevBars = sCache.m15 || [];
+          const prevLen = prevBars.length;
+          const prevLast = prevLen > 0 ? prevBars[prevLen - 1] : null;
+          const freshLast = freshBars.length > 0 ? freshBars[freshBars.length - 1] : null;
+          const isDifferent = freshBars.length !== prevLen ||
+            (prevLast && freshLast && (prevLast.time !== freshLast.time || prevLast.close !== freshLast.close || prevLast.volume !== freshLast.volume));
+          if (isDifferent) {
             sCache.m15 = freshBars;
             sTS.m15 = Date.now();
             load15mTier();
             if (curRange && curRange.from && curRange.to) {
               chart.timeScale().setVisibleRange(curRange);
             }
+          } else if (freshLast) {
+            updateGlobalLiveTimestamp(freshLast);
           }
         }
       } catch (e) {}
     } else if (currentResolution === 'daily') {
       try {
-        const res = await fetch(`data/deep/${symPrefix}_daily.json?_v=${Date.now()}`);
+        const res = await fetch(`data/deep/${symPrefix}_daily.json?_v=${Date.now()}`, { cache: 'no-cache' });
         if (res.ok) {
           const freshBars = await res.json();
           sCache.daily = freshBars;
@@ -781,7 +802,7 @@
       if (typeof document !== 'undefined' && !document.hidden) {
         pollLiveUpdate();
       }
-    }, 60000);
+    }, 30000);
   }
 
   if (typeof document !== 'undefined') {

@@ -1,0 +1,119 @@
+name: MCX Market Sentinel & Overnight Bridge
+
+# 1. Guards morning market open (Mon-Fri 08:55 AM IST).
+# 2. Bridges overnight weeknight gaps (23:35 to 08:55 IST) so morning ignition
+#    runs via instant workflow_dispatch instead of relying on delayed shared crons.
+# 3. Active watchdog: If the intraday loop ever drops out during market hours,
+#    sentinel detects the absence of active runners and immediately restarts it.
+
+on:
+  schedule:
+    # Watchdog heartbeats (Mon-Fri):
+    # 03:15 UTC = 08:45 AM IST (Pre-market ignition check)
+    # 03:45 UTC = 09:15 AM IST (Post-open verification)
+    # 04:30 UTC = 10:00 AM IST (Mid-morning verification)
+    # 06:30 UTC = 12:00 PM IST (Noon check)
+    # 11:30 UTC = 17:00 PM IST (Evening US session open check)
+    # 15:30 UTC = 21:00 PM IST (Peak US inventory/volatility window)
+    - cron: '15 3 * * 1-5'
+    - cron: '45 3 * * 1-5'
+    - cron: '30 4 * * 1-5'
+    - cron: '30 6 * * 1-5'
+    - cron: '30 11 * * 1-5'
+    - cron: '30 15 * * 1-5'
+    # Sunday evening bridge to Monday morning
+    - cron: '30 22 * * 0'
+  repository_dispatch:
+    types: [market_sentinel]
+  workflow_dispatch:
+
+concurrency:
+  group: market-sentinel-guard
+  cancel-in-progress: false
+
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Market Sentinel & Ignition Logic
+        run: |
+          python -c "
+          import sys
+          import json
+          import time
+          from datetime import datetime, timezone, timedelta
+          import subprocess
+
+          now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+          is_weekday = now_ist.weekday() < 5
+          total_mins = now_ist.hour * 60 + now_ist.minute
+
+          print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Sentinel audit started.')
+
+          # Market hours: Weekdays 08:50 AM to 23:30 PM IST (530 to 1410 mins)
+          if is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 30):
+              print('Market is OPEN (or within 10 min pre-open). Checking intraday runner status...')
+              in_prog = False
+              queued = False
+              try:
+                  res_p = subprocess.run(['gh', 'run', 'list', '--workflow=intraday_snapshot.yml', '--status', 'in_progress', '--json', 'databaseId'], capture_output=True, text=True)
+                  if res_p.returncode == 0 and len(json.loads(res_p.stdout or '[]')) > 0:
+                      in_prog = True
+                  res_q = subprocess.run(['gh', 'run', 'list', '--workflow=intraday_snapshot.yml', '--status', 'queued', '--json', 'databaseId'], capture_output=True, text=True)
+                  if res_q.returncode == 0 and len(json.loads(res_q.stdout or '[]')) > 0:
+                      queued = True
+              except Exception as e:
+                  print('Notice checking runner status:', e)
+
+              if in_prog:
+                  print('HEALTHY: Intraday market snapshot runner is actively running.')
+              elif queued:
+                  print('HEALTHY: Intraday market snapshot runner is already queued.')
+              else:
+                  print('ALERT: Market is open but NO intraday snapshot runner is active! Dispatching immediate wakeup...')
+                  res = subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+                  print(res.stdout)
+                  if res.returncode != 0:
+                      print('Dispatch error:', res.stderr)
+
+          # Overnight Weeknight Bridge (Mon-Thu night after 23:25 IST, or early morning before 08:50 IST)
+          elif now_ist.weekday() in (0, 1, 2, 3) and (total_mins >= 23 * 60 + 25 or total_mins < 8 * 60 + 50):
+              if total_mins >= 23 * 60 + 25:
+                  target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
+              else:
+                  target_open = now_ist.replace(hour=8, minute=55, second=0, microsecond=0)
+
+              remaining_secs = (target_open - now_ist).total_seconds()
+              print(f'Overnight Bridge active. Target morning open: {target_open.strftime(\"%Y-%m-%d %H:%M:%S IST\")} ({remaining_secs:.0f}s remaining).')
+
+              MAX_SAFE_SLEEP = 14400  # 4 hours
+              if remaining_secs > MAX_SAFE_SLEEP + 300:
+                  print(f'Sleeping {MAX_SAFE_SLEEP}s (4.0 hrs) for Phase 1 of overnight bridge...')
+                  time.sleep(MAX_SAFE_SLEEP)
+                  print('Waking up to chain Phase 2 of overnight bridge...')
+                  subprocess.run(['gh', 'workflow', 'run', 'market_sentinel.yml'], capture_output=True, text=True)
+              elif remaining_secs > 60:
+                  sleep_to_open = max(10, remaining_secs - 30)
+                  print(f'Sleeping {sleep_to_open:.0f}s until 08:54:30 AM IST...')
+                  time.sleep(sleep_to_open)
+                  print('Market opening window reached! Dispatched intraday snapshot runner.')
+                  subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+              else:
+                  print('Within 60s of market opening window! Dispatched intraday snapshot runner.')
+                  subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+          else:
+              print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Session closed. Sentinel standing by.')
+          "
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
