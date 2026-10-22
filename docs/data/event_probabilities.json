@@ -5,42 +5,78 @@
       "dte": 5,
       "p_hike": 0.186,
       "p_cut": 0.374,
-      "p_flat": 0.439
+      "p_flat": 0.439,
+      "days_since_change": 0,
+      "vol_cushion_pct": 26.7,
+      "hike_trigger_up_price": 280.35,
+      "hike_trigger_dn_price": 249.93,
+      "hike_trigger_pct": 5.74,
+      "hike_locked": false
     },
     {
       "expiry": "24NOV2026",
       "dte": 33,
       "p_hike": 0.334,
       "p_cut": 0.123,
-      "p_flat": 0.543
+      "p_flat": 0.543,
+      "days_since_change": 0,
+      "vol_cushion_pct": -6.9,
+      "hike_trigger_up_price": 322.23,
+      "hike_trigger_dn_price": 288.32,
+      "hike_trigger_pct": 5.56,
+      "hike_locked": false
     },
     {
       "expiry": "28DEC2026",
       "dte": 67,
-      "p_hike": 0.0,
-      "p_cut": 0.0,
-      "p_flat": 1.0
+      "p_hike": 0.01,
+      "p_cut": 0.01,
+      "p_flat": 0.98,
+      "days_since_change": 37,
+      "vol_cushion_pct": -19.5,
+      "hike_trigger_up_price": 369.61,
+      "hike_trigger_dn_price": 325.03,
+      "hike_trigger_pct": 6.43,
+      "hike_locked": false
     },
     {
       "expiry": "25JAN2027",
       "dte": 95,
-      "p_hike": 0.0,
-      "p_cut": 0.0,
-      "p_flat": 1.0
+      "p_hike": 0.01,
+      "p_cut": 0.01,
+      "p_flat": 0.98,
+      "days_since_change": 21,
+      "vol_cushion_pct": -19.5,
+      "hike_trigger_up_price": 336.87,
+      "hike_trigger_dn_price": 296.24,
+      "hike_trigger_pct": 6.43,
+      "hike_locked": false
     },
     {
       "expiry": "23FEB2027",
       "dte": 124,
-      "p_hike": 0.808,
-      "p_cut": 0.002,
-      "p_flat": 0.189
+      "p_hike": 0.802,
+      "p_cut": 0.01,
+      "p_flat": 0.188,
+      "days_since_change": 0,
+      "vol_cushion_pct": 21.7,
+      "hike_trigger_up_price": 271.73,
+      "hike_trigger_dn_price": 242.31,
+      "hike_trigger_pct": 5.73,
+      "hike_locked": false
     },
     {
       "expiry": "25MAR2027",
       "dte": 154,
-      "p_hike": 0.891,
-      "p_cut": 0.001,
-      "p_flat": 0.108
+      "p_hike": 0.883,
+      "p_cut": 0.01,
+      "p_flat": 0.107,
+      "days_since_change": 0,
+      "vol_cushion_pct": 41.6,
+      "hike_trigger_up_price": 267.52,
+      "hike_trigger_dn_price": 238.32,
+      "hike_trigger_pct": 5.78,
+      "hike_locked": false
     }
   ],
   "brier_hike": 0.1376,

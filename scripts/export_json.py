@@ -1566,6 +1566,26 @@ def _export_regime_model(cur, fm_series):
     return regime_params
 
 
+# ── Hurdle-Gated SPAN Model Helper ──────────────────────────────────────────
+def _calc_hurdle_span_im(m_t, dv, r_ret=0.0):
+    """
+    Hurdle-Gated SPAN forecaster:
+    - Anchors on the empirical MCXCCL Regime B SPAN map: M*(vol) = 7.589 * vol% - 4.845
+    - Updates volatility with SEBI EWMA decay lambda = 0.94
+    - Implements sticky hurdle gating: Holds m_t constant on calm days (|delta| <= 0.50%),
+      fires instantaneous SPAN jump on hikes, and models sticky step-down on cuts.
+    - Clamps strictly at the 13.00% statutory floor.
+    """
+    proj_v = math.sqrt(0.94 * (dv ** 2) + 0.06 * (r_ret ** 2))
+    target = max(13.0, 7.589 * (proj_v * 100) - 4.845)
+    if abs(target - m_t) <= 0.50:
+        return m_t
+    elif target > m_t + 0.50:
+        return max(m_t, target)
+    else:
+        return max(13.0, m_t - 0.30 * (m_t - target))
+
+
 # ── Item 1: Forecast Bands ───────────────────────────────────────────────────
 def _export_forecast_bands(fm_series, panic_entries, regime_params):
     """Compute ±1σ/±2σ prediction intervals from rolling residual std."""
@@ -1576,7 +1596,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = _calc_hurdle_span_im(today["initial_margin_pct"], today["daily_volatility"])
         actual = tomorrow["initial_margin_pct"]
         residuals.append(predicted - actual)
 
@@ -1593,7 +1613,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = _calc_hurdle_span_im(today["initial_margin_pct"], today["daily_volatility"])
         actual = tomorrow["initial_margin_pct"]
         residual = predicted - actual
         dte = today["dte"]
@@ -1656,7 +1676,7 @@ def _export_model_health(fm_series):
     for i in range(len(fm_series) - 1):
         today = fm_series[i]
         tomorrow = fm_series[i + 1]
-        predicted = 0.886 * today["initial_margin_pct"] + 43.0 * today["daily_volatility"]
+        predicted = _calc_hurdle_span_im(today["initial_margin_pct"], today["daily_volatility"])
         actual = tomorrow["initial_margin_pct"]
         pred_delta = predicted - today["initial_margin_pct"]
         actual_delta = actual - today["initial_margin_pct"]
@@ -2182,18 +2202,24 @@ def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
         else:
             days_since_change = 30  # Baseline calm state for unobserved contracts
 
+        # Gated dormancy: When implied SPAN is active (vol_pct > 2.45%), dormancy does not suppress hike odds
+        gated_days = 0 if vol_pct > 2.45 else days_since_change
+
         feat = np.array([[
             entry["initial_margin_pct"],   # use initial, matching training feature
             vol_pct,
             min(entry["dte"], 300),
             latest_margin_pct_rank,
-            days_since_change,
+            gated_days,
             policy_buf,
         ]])
         p_h = float(lr_hike.predict_proba(feat)[0, 1])
         p_c = float(lr_cut.predict_proba(feat)[0, 1])
         p_f = max(0, 1.0 - p_h - p_c)
-        # Normalize
+        # Bounded normalization: avoid uncalibrated 0% or 100% saturation
+        p_h = max(0.01, min(0.99, p_h))
+        p_c = max(0.01, min(0.99, p_c))
+        p_f = max(0.01, min(0.99, p_f))
         total = p_h + p_c + p_f
         if total > 0:
             p_h, p_c, p_f = p_h / total, p_c / total, p_f / total
@@ -2204,6 +2230,12 @@ def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
             "p_hike": round(p_h, 3),
             "p_cut": round(p_c, 3),
             "p_flat": round(p_f, 3),
+            "days_since_change": days_since_change,
+            "vol_cushion_pct": entry.get("vol_cushion_pct", 0.0),
+            "hike_trigger_up_price": entry.get("hike_trigger_up_price"),
+            "hike_trigger_dn_price": entry.get("hike_trigger_dn_price"),
+            "hike_trigger_pct": entry.get("hike_trigger_pct"),
+            "hike_locked": entry.get("hike_locked", False),
         })
 
     # Serialize model coefficients
@@ -2860,28 +2892,118 @@ def main():
     mean_vol_20 = sum(recent_vols) / len(recent_vols) if recent_vols else 0.04
 
     REGULATORY_MARGIN_FLOOR = 13.0  # MCXCCL statutory minimum floor since Aug 2023
+
+    # Load latest futures settlement prices for capital & trigger calculations
+    price_lookup = {}
+    if PRICE_DB_PATH.exists():
+        with sqlite3.connect(PRICE_DB_PATH) as p_conn:
+            p_conn.row_factory = sqlite3.Row
+            p_rows = p_conn.execute("""
+                SELECT symbol, expiry, close, prev_close
+                FROM prices
+                WHERE symbol IN ('NATURALGAS', 'NATGASMINI')
+                  AND UPPER(COALESCE(instrument, 'FUTCOM')) = 'FUTCOM'
+                ORDER BY date DESC
+            """).fetchall()
+            for pr in p_rows:
+                key = (pr["symbol"], pr["expiry"])
+                if key not in price_lookup:
+                    price_lookup[key] = {"close": pr["close"], "prev_close": pr["prev_close"]}
+
     panic_entries = []
     for i, contract in enumerate(ng_fwd):
-        im = contract["initial_margin_pct"] or 0   # use initial consistently
-        tm = contract["total_margin_pct"] or 0      # kept for display and spread
+        exp = contract["expiry"]
+        im = contract["initial_margin_pct"] or 0   # base SPAN initial margin
+        tm = contract["total_margin_pct"] or 0      # total margin (initial + tender)
+        tender_margin = contract.get("tender_margin_pct")
+        if tender_margin is None:
+            tender_margin = max(0.0, round(tm - im, 2))
+        elm = contract.get("elm_pct", 1.25) or 1.25
         dv = contract["daily_volatility"] or mean_vol_20
-        raw_pred = im * 0.886 + dv * 43.0
-        predicted = max(REGULATORY_MARGIN_FLOOR, raw_pred)  # enforce statutory floor
+        dte = contract["dte"]
+
+        # 1. Price and log-return
+        p_info = price_lookup.get(("NATURALGAS", exp), {})
+        p_close = p_info.get("close")
+        p_prev = p_info.get("prev_close")
+        if p_close and p_prev and p_prev > 0:
+            r_log = math.log(p_close / p_prev)
+        else:
+            r_log = 0.0
+
+        # 2. Hurdle-Gated SPAN Initial Margin Forecast
+        predicted_initial = _calc_hurdle_span_im(im, dv, r_log)
+
+        # 3. Deterministic Forward Tender Lookahead Schedule
+        if tender_margin > 0:
+            # Currently climbing tender ladder: +5% tomorrow up to 25% cap
+            next_tender = min(25.0, tender_margin + 5.0)
+        elif 0 <= dte <= 5:
+            # Tomorrow enters tender window
+            next_tender = 5.0
+        else:
+            next_tender = 0.0
+
+        # Total predicted margin
+        predicted_total = round(predicted_initial + next_tender, 3)
+
+        # 4. Vol Cushion to statutory floor (2.35% daily vol)
+        vol_cushion_pct = round(((dv * 100 - 2.35) / 2.35) * 100, 1)
+
+        # 5. Intraday Panic Trigger Price Inversion
+        m_req = max(13.50, im + 0.50)
+        sig_req = (m_req + 4.845) / 758.9  # required daily vol in decimal
+        term = (sig_req ** 2 - 0.94 * (dv ** 2)) / 0.06
+        if term <= 0:
+            r_req = 0.0
+            hike_locked = True
+        else:
+            r_req = math.sqrt(term)
+            hike_locked = False
+
+        p_up = round(p_close * math.exp(r_req), 2) if p_close else None
+        p_dn = round(p_close * math.exp(-r_req), 2) if p_close else None
+        r_req_pct = round(r_req * 100, 2)
+
+        # 6. Rupee Margin per lot (1,250 mmBtu)
+        lot_size = 1250
+        if p_close:
+            lot_notional = p_close * lot_size
+            rupee_current = round(lot_notional * (tm / 100.0), 0)
+            rupee_predicted = round(lot_notional * (predicted_total / 100.0), 0)
+            rupee_delta = round(rupee_predicted - rupee_current, 0)
+        else:
+            rupee_current, rupee_predicted, rupee_delta = 0, 0, 0
+
         spread_vs_next = (
             tm - ng_fwd[i + 1]["total_margin_pct"]
             if i + 1 < len(ng_fwd)
             else 0.0
         )
-        action = "HIKE" if predicted > im else ("CUT" if predicted < im else "FLAT")
+        action = "HIKE" if predicted_total > tm + 0.2 else ("CUT" if predicted_total < tm - 0.2 else "FLAT")
         panic_entries.append(
             {
-                "expiry": contract["expiry"],
-                "dte": contract["dte"],
+                "expiry": exp,
+                "dte": dte,
                 "initial_margin_pct": round(im, 3),
                 "total_margin_pct": round(tm, 3),
+                "tender_margin_pct": round(tender_margin, 2),
+                "elm_pct": round(elm, 2),
                 "vol_daily": round(dv, 6),
-                "predicted_tomorrow": round(predicted, 3),
-                "spread_vs_next": round(spread_vs_next, 3),  # renamed from spread_vs_prev
+                "vol_pct": round(dv * 100, 3),
+                "vol_cushion_pct": vol_cushion_pct,
+                "predicted_initial": round(predicted_initial, 3),
+                "predicted_tender": round(next_tender, 2),
+                "predicted_tomorrow": predicted_total,
+                "hike_trigger_up_price": p_up,
+                "hike_trigger_dn_price": p_dn,
+                "hike_trigger_pct": r_req_pct,
+                "hike_locked": hike_locked,
+                "settle_price": round(p_close, 2) if p_close else None,
+                "rupee_margin_current": int(rupee_current),
+                "rupee_margin_predicted": int(rupee_predicted),
+                "rupee_delta": int(rupee_delta),
+                "spread_vs_next": round(spread_vs_next, 3),
                 "action": action,
             }
         )

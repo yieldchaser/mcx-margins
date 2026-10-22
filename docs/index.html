@@ -1302,26 +1302,46 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="chart-container" style="height:240px;"><canvas id="chartPriceMarginConfluence"></canvas></div>
     </div>
 
-    <!-- Mini forward curve + panic signals -->
+    <!-- Mini forward curve + Intraday Trigger Bands -->
     <div class="grid-2">
       <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Forward Curve">Forward Curve — Today</div>
         <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="miniForwardCurve"></canvas></div>
       </div>
       <div class="card" style="display:flex;flex-direction:column;">
-        <div class="card-title has-tooltip" data-tooltip-key="Panic Spread">Panic Spread Signals</div>
-        <div style="overflow-x:auto;flex:1;min-height:0;">
-          <table class="data-table" id="panicTable" style="width:100%;">
-            <thead><tr>
-              <th title="Contract expiry date being evaluated.">Expiry</th>
-              <th title="Today's total margin requirement (Initial + ELM + Tender). Shown for reference.">Total %</th>
-              <th title="Model's point estimate for tomorrow's total margin requirement (Initial forecast + Tender margin where active).">Pred. Total %</th>
-              <th title="Logistic model probabilities of three outcomes tomorrow: margin cut (&gt;0.5% decrease), flat (±0.5%), or hike (&gt;0.5% increase). Trained on historical data. Bar = green(cut) | grey(flat) | red(hike).">Probability</th>
-              <th title="Dominant outcome by probability. Amber row glow = P(hike) &gt;65%. Red row glow = P(hike) &gt;80%.">Signal</th>
-            </tr></thead>
-            <tbody id="panicBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
-          </table>
+        <div class="card-title has-tooltip" data-tooltip-key="Intraday Trigger Bands">Intraday Panic Trigger Bands — Settle vs Upper / Lower Bounds</div>
+        <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="chartPanicTriggers"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Expanded Full-Width Panic Spread Surveillance Command Center -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="card-title has-tooltip" data-tooltip-key="Panic Spread" style="margin-bottom:2px;">Panic Spread Signals & Capital Surveillance Command Center</div>
+          <div style="font-size:11px;color:var(--text-muted);">Hurdle-Gated SPAN Level Forecast · Intraday Hike Trigger Inversion · Capital Buffer Allocation (₹/Lot)</div>
         </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:4px 8px;border-radius:4px;border:1px solid var(--border);">
+            Statutory Floor: <strong>13.00%</strong> | MPOR: <strong>3 Days</strong> | 1 Lot: <strong>1,250 mmBtu</strong>
+          </span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="panicTable" style="width:100%;">
+          <thead><tr>
+            <th title="Contract delivery month, expiry date, and trading days remaining.">Expiry</th>
+            <th title="Today's total margin requirement (Initial Margin + Tender Margin). Shown with component chips.">Total %</th>
+            <th title="Hurdle-Gated SPAN model point forecast for tomorrow's total margin requirement (Initial forecast + Tender lookahead where active).">Pred. Total %</th>
+            <th title="Capital required per lot (1,250 mmBtu) at current settlement price.">₹ Margin / Lot</th>
+            <th title="Expected overnight capital change per lot based on model forecast.">Overnight Δ₹</th>
+            <th title="Intraday price move today that will force tomorrow's EWMA volatility across the hike threshold (+0.5%).">Intraday Hike Trigger</th>
+            <th title="Logistic model probabilities of three outcomes tomorrow: margin cut (>0.5% decrease), flat (±0.5%), or hike (>0.5% increase).">Probability</th>
+            <th title="Dominant outcome badge. Amber row glow = P(hike) >65%. Red row glow = P(hike) >80%.">Signal</th>
+            <th style="width:36px;text-align:center;" title="Expand contract risk drawer">Details</th>
+          </tr></thead>
+          <tbody id="panicBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -2183,7 +2203,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
       <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-        Predicted = 0.886 × Initial Margin + 43.0 × Daily Vol. Red zone = predicted hike. Green zone = predicted cut.
+        Predicted = Hurdle-Gated SPAN Level Forecast (clamped at 13.00% floor) + calendar tender lookahead (+5%/day). Red zone = predicted hike. Green zone = predicted cut.
       </p>
     </div>
     <!-- Item 4: Delta Distribution Histogram -->
@@ -3749,6 +3769,18 @@ const PANIC_COEFF_MARGIN = 0.886;
 const PANIC_COEFF_VOL    = 43.0;
 const REGULATORY_MARGIN_FLOOR = 13.0; // MCX statutory margin floor for Natural Gas
 
+function calcHurdleSpanIM(im, dv, r_ret = 0) {
+  const proj_v = Math.sqrt(0.94 * Math.pow(dv || 0, 2) + 0.06 * Math.pow(r_ret || 0, 2));
+  const target = Math.max(REGULATORY_MARGIN_FLOOR, 7.589 * (proj_v * 100) - 4.845);
+  if (Math.abs(target - im) <= 0.50) {
+    return im;
+  } else if (target > im + 0.50) {
+    return Math.max(im, target);
+  } else {
+    return Math.max(REGULATORY_MARGIN_FLOOR, im - 0.30 * (im - target));
+  }
+}
+
 function dteBadge(dte) {
   if (dte <= 30) return `<span class="badge-danger">${dte}d</span>`;
   if (dte <= 60) return `<span class="badge-warn">${dte}d</span>`;
@@ -3953,16 +3985,22 @@ async function renderOverview() {
       }
     });
 
-    // Panic signals table
+    // Panic signals table & precomputed data
     const seenPanic = new Set();
     const dedupedPanic = fwdNG.filter(c => {
       if (seenPanic.has(c.expiry)) return false;
       seenPanic.add(c.expiry);
       return true;
     });
-    // Item 9: Load event probabilities
+
+    // Load precomputed panic_spread.json & event_probabilities.json
+    let panicData = null;
     let eventProbs = null;
-    try { eventProbs = await loadJSON('event_probabilities'); } catch(e) {}
+    try { [panicData, eventProbs] = await Promise.all([loadJSON('panic_spread'), loadJSON('event_probabilities')]); } catch(e) {}
+    const panicNG = (panicData && panicData.NATURALGAS) ? panicData.NATURALGAS : [];
+    const panicLookup = {};
+    panicNG.forEach(p => { panicLookup[p.expiry] = p; });
+
     const epLookup = {};
     if (eventProbs && eventProbs.per_expiry) {
       const seenEp = new Set();
@@ -3971,18 +4009,103 @@ async function renderOverview() {
       });
     }
 
+    // Companion Chart: Intraday Panic Trigger Bands
+    const triggerCanvas = document.getElementById('chartPanicTriggers');
+    if (triggerCanvas && panicNG.length > 0) {
+      const triggerContracts = panicNG.filter(c => c.settle_price && c.hike_trigger_up_price);
+      if (triggerContracts.length > 0) {
+        new Chart(triggerCanvas, {
+          type: 'bar',
+          data: {
+            labels: triggerContracts.map(c => _expLabel(c.expiry)),
+            datasets: [
+              {
+                label: 'Upper Hike Trigger (₹)',
+                data: triggerContracts.map(c => c.hike_trigger_up_price),
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                type: 'line',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                order: 1
+              },
+              {
+                label: 'Settle Price (₹)',
+                data: triggerContracts.map(c => c.settle_price),
+                backgroundColor: 'rgba(56, 139, 253, 0.7)',
+                borderColor: '#388bfd',
+                borderWidth: 1,
+                borderRadius: 4,
+                order: 2
+              },
+              {
+                label: 'Lower Hike Trigger (₹)',
+                data: triggerContracts.map(c => c.hike_trigger_dn_price),
+                borderColor: '#3fb950',
+                backgroundColor: 'rgba(63, 185, 80, 0.15)',
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                type: 'line',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                order: 3
+              }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { font: { size: 10 } } },
+              tooltip: {
+                callbacks: {
+                  afterBody: (items) => {
+                    const item = triggerContracts[items[0].dataIndex];
+                    if (!item) return '';
+                    return [
+                      `Hike Move Required: ±${item.hike_trigger_pct}%`,
+                      item.hike_locked ? '⚠️ HIKE LOCKED IN (carryover vol)' : `Upper: ₹${item.hike_trigger_up_price} | Lower: ₹${item.hike_trigger_dn_price}`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { ticks: { font: { size: 9 } } },
+              y: { title: { display: true, text: '₹ / mmBtu' } }
+            }
+          }
+        });
+      }
+    }
+
+    // Render Expanded Surveillance Table
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
-      const im = c.initial_margin_pct ?? c.total_margin_pct;  // graceful fallback
-      const rawPredInit = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
-      const predictedInit = Math.max(REGULATORY_MARGIN_FLOOR, rawPredInit);
-      const tenderPct = c.tender_margin_pct != null ? c.tender_margin_pct : Math.max(0, Math.round(((c.total_margin_pct || 0) - im) * 100) / 100);
-      const predictedTotal = predictedInit + tenderPct;
-      const diff = predictedInit - im;
+      const pEntry = panicLookup[c.expiry];
+      const im = c.initial_margin_pct ?? c.total_margin_pct;
+      const tm = c.total_margin_pct ?? im;
+      const tenderPct = c.tender_margin_pct != null ? c.tender_margin_pct : (pEntry ? pEntry.tender_margin_pct : 0);
+      const elmPct = c.elm_pct ?? (pEntry?.elm_pct ?? 1.25);
+      
+      const predictedTotal = pEntry?.predicted_tomorrow ?? (calcHurdleSpanIM(im, c.daily_volatility) + (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0));
+      const diffTotal = predictedTotal - tm;
+      
+      const rupeeCurrent = pEntry?.rupee_margin_current ?? (c.settle_price ? Math.round(c.settle_price * 1250 * (tm / 100)) : 0);
+      const rupeePredicted = pEntry?.rupee_margin_predicted ?? (c.settle_price ? Math.round(c.settle_price * 1250 * (predictedTotal / 100)) : 0);
+      const rupeeDelta = pEntry?.rupee_delta ?? (rupeePredicted - rupeeCurrent);
+      
+      const triggerUp = pEntry?.hike_trigger_up_price;
+      const triggerDn = pEntry?.hike_trigger_dn_price;
+      const triggerPct = pEntry?.hike_trigger_pct ?? 0;
+      const hikeLocked = pEntry?.hike_locked ?? false;
+      const volCushion = pEntry?.vol_cushion_pct ?? 0;
+      const pSettle = pEntry?.settle_price;
+
       const ep = epLookup[c.expiry];
       let probCell = '—';
-      // Signal: logistic model dominant direction + its probability
-      const linearDir = diff > 0.05 ? 'HIKE' : (diff < -0.05 ? 'CUT' : 'FLAT');
-      let signalLabel;
+      let signalLabel = '<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">→ FLAT</span>';
+      
       if (ep) {
         const pH = Math.round(ep.p_hike * 100);
         const pF = Math.round(ep.p_flat * 100);
@@ -3992,46 +4115,82 @@ async function renderOverview() {
           <div style="width:${pF}%;background:var(--text-muted);opacity:0.4;"></div>
           <div style="width:${pH}%;background:var(--accent-red);"></div>
         </div>`;
-        // Logistic dominant class drives the signal label
         const dominant = Math.max(ep.p_hike, ep.p_cut, ep.p_flat);
         if (dominant === ep.p_hike)      signalLabel = `<span class="badge-hike">&#9650; HIKE ${pH}%</span>`;
         else if (dominant === ep.p_cut)  signalLabel = `<span class="badge-cut">&#9660; CUT ${pC}%</span>`;
         else                             signalLabel = `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">&#8594; FLAT ${pF}%</span>`;
-      } else {
-        signalLabel = linearDir === 'HIKE'
-          ? `<span class="badge-hike">&#9650; HIKE</span>`
-          : (linearDir === 'CUT' ? `<span class="badge-cut">&#9660; CUT</span>` : `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">&#8594; FLAT</span>`);
       }
-      // Row severity: escalating border-left based on logistic p_hike
-      const logisticDir = ep ? (ep.p_hike > 0.5 ? 'HIKE' : (ep.p_cut > 0.5 ? 'CUT' : 'FLAT')) : linearDir;
-      const conflict = ep && ((linearDir === 'CUT' && ep.p_hike > 0.5) || (linearDir === 'HIKE' && ep.p_cut > 0.5));
-      const predictedStyle = conflict ? 'color:var(--accent-yellow);' : '';
+
       let rowStyle = '';
-      let rowTitle = '';
       if (ep && ep.p_hike > 0.80) {
-        rowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,0.09);';
-        rowTitle = `High hike alert: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
+        rowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,0.06);';
       } else if (ep && ep.p_hike > 0.65) {
-        rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.07);';
-        rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
+        rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.05);';
       }
-      const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
-      const isFloorClamped = rawPredInit < REGULATORY_MARGIN_FLOOR && predictedInit === REGULATORY_MARGIN_FLOOR;
-      let floorNote = isFloorClamped ? `<br><br><span style='color:var(--accent-cyan);font-size:11px;'>* Note: Sitting at MCXCCL statutory minimum floor (13.00%). Point forecast clamped at 13.00% (raw linear model: ${rawPredInit.toFixed(2)}%). Under exchange rules, margins cannot fall below 13.00%.</span>` : '';
-      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Predicted Total Tomorrow:</b> ${predictedTotal.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${predictedInit.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${im.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}${floorNote}`;
-      if (tenderPct > 0) {
-        const nextTenderStep = Math.min(25, tenderPct + 5);
-        dynPBody += `<br><br><span style='color:var(--text-muted);font-size:11px;'>* Note: MCX Tender schedule steps up by +5% on the next trading day (to ${nextTenderStep.toFixed(2)}%), which will adjust required total margin to ${(predictedInit + nextTenderStep).toFixed(2)}%.</span>`;
-      }
-      if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>[Warning] Model conflict: linear formula predicts CUT (${predictedTotal.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
-      return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
-        <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)}</div></td>
-        <td>${c.total_margin_pct.toFixed(2)}%</td>
-        <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predictedTotal.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predictedTotal.toFixed(2)}%</td>
+
+      const diffColor = diffTotal > 0.2 ? 'var(--accent-red)' : (diffTotal < -0.2 ? 'var(--accent-green)' : 'var(--text-muted)');
+      const diffSign = diffTotal > 0 ? '+' : '';
+
+      const mainRow = `<tr style="${rowStyle}">
+        <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)} · ${c.dte}d DTE</div></td>
+        <td><span style="font-weight:600;">${tm.toFixed(2)}%</span><div style="font-size:10px;color:var(--text-muted);">IM ${im.toFixed(1)}%${tenderPct > 0 ? ` + T ${tenderPct.toFixed(1)}%` : ''}</div></td>
+        <td><span style="font-weight:600;color:${diffColor};">${predictedTotal.toFixed(2)}%</span><div style="font-size:10px;color:${diffColor};">${diffSign}${diffTotal.toFixed(2)}%</div></td>
+        <td><span style="font-weight:500;">₹${rupeeCurrent > 0 ? rupeeCurrent.toLocaleString('en-IN') : '—'}</span><div style="font-size:10px;color:var(--text-muted);">${pSettle ? `@ ₹${pSettle}` : '1,250 mmBtu'}</div></td>
+        <td>${rupeeDelta > 0 ? `<span style="color:var(--accent-red);font-weight:600;">+₹${rupeeDelta.toLocaleString('en-IN')} ▲</span>` : (rupeeDelta < 0 ? `<span style="color:var(--accent-green);font-weight:600;">-₹${Math.abs(rupeeDelta).toLocaleString('en-IN')} ▼</span>` : '<span style="color:var(--text-muted);">₹0 Flat</span>')}</td>
+        <td>${hikeLocked ? '<span style="color:var(--accent-red);font-weight:600;font-size:11px;">⚠️ LOCKED IN</span><div style="font-size:10px;color:var(--text-muted);">0% move hikes</div>' : (triggerUp && triggerDn ? `<div style="font-size:11px;">₹${triggerUp} <span style="color:var(--accent-red);font-size:10px;">(+${triggerPct}%)</span></div><div style="font-size:10px;color:var(--text-muted);">₹${triggerDn} (-${triggerPct}%)</div>` : `<span style="color:var(--text-muted);">±${triggerPct}%</span>`)}</td>
         <td>${probCell}</td>
         <td>${signalLabel}</td>
+        <td style="text-align:center;"><button class="btn-drawer-toggle" data-target="drawer-${c.expiry}" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;padding:3px 7px;font-size:10px;" title="Toggle contract risk drawer">▼</button></td>
       </tr>`;
+
+      const drawerRow = `<tr id="drawer-${c.expiry}" class="panic-drawer-row" style="display:none;background:rgba(22,27,34,0.7);border-left:3px solid var(--accent);">
+        <td colspan="9" style="padding:12px 16px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:11px;">
+            <div style="background:var(--surface2);padding:10px;border-radius:6px;border:1px solid var(--border);">
+              <div style="color:var(--text-muted);font-weight:600;margin-bottom:4px;">MARGIN COMPONENT BREAKDOWN</div>
+              <div>SPAN Initial Margin: <strong>${im.toFixed(2)}%</strong></div>
+              <div>Tender Period Margin: <strong>${tenderPct.toFixed(2)}%</strong></div>
+              <div>Extreme Loss Margin (ELM): <strong>${elmPct.toFixed(2)}%</strong> (separate line)</div>
+            </div>
+            <div style="background:var(--surface2);padding:10px;border-radius:6px;border:1px solid var(--border);">
+              <div style="color:var(--text-muted);font-weight:600;margin-bottom:4px;">VOL CUSHION TO STATUTORY FLOOR</div>
+              <div>Daily Volatility: <strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong> (Annual: ${((c.daily_volatility||0)*15.811*100).toFixed(1)}%)</div>
+              <div>Floor Threshold: <strong>2.35%</strong> daily (13.00% SPAN)</div>
+              <div>Cushion Status: <strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}% above floor</strong></div>
+            </div>
+            <div style="background:var(--surface2);padding:10px;border-radius:6px;border:1px solid var(--border);">
+              <div style="color:var(--text-muted);font-weight:600;margin-bottom:4px;">INTRADAY HIKE TRIGGER ANALYSIS</div>
+              <div>Break-even Hike Volatility: <strong>${((Math.max(13.5, im + 0.5) + 4.845) / 7.589).toFixed(2)}%</strong></div>
+              <div>Today's Required Move: <strong>±${triggerPct}%</strong> to force hike</div>
+              <div>Upper Breach: <strong>₹${triggerUp || '—'}</strong> | Lower: <strong>₹${triggerDn || '—'}</strong></div>
+            </div>
+            <div style="background:var(--surface2);padding:10px;border-radius:6px;border:1px solid var(--border);">
+              <div style="color:var(--text-muted);font-weight:600;margin-bottom:4px;">TENDER LADDER SCHEDULE</div>
+              <div>DTE Remaining: <strong>${c.dte} calendar days</strong></div>
+              <div>Tender Status: <strong>${tenderPct > 0 ? `In Ramp (${tenderPct}% → ${Math.min(25, tenderPct + 5)}% tomorrow)` : (c.dte <= 5 ? 'Entering Tender Tomorrow (+5%)' : 'Outside Tender Window')}</strong></div>
+              <div>Capital Impact per Lot: <strong>${tenderPct > 0 ? `+₹${Math.round(0.05 * (pSettle || 260) * 1250).toLocaleString('en-IN')}` : '₹0'}</strong></div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+
+      return mainRow + drawerRow;
     }).join('');
+
+    // Attach drawer toggles
+    document.querySelectorAll('.btn-drawer-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetId = btn.dataset.target;
+        const drawer = document.getElementById(targetId);
+        if (drawer) {
+          const isHidden = drawer.style.display === 'none';
+          drawer.style.display = isHidden ? 'table-row' : 'none';
+          btn.textContent = isHidden ? '▲' : '▼';
+        }
+      });
+    });
+
     renderMarketOverviewContext();
     attachTooltips();
   } catch(e) {
@@ -9019,12 +9178,20 @@ const TOOLTIPS = {
 <em>The steep kink you see</em> between front and second month is tender margin burning off. Beyond 60 DTE the curve flattens to MCX's "base rate" for the current vol regime.`
   },
   "Panic Spread": {
-    title: "Panic Spread Signal Model",
-    body: `Two complementary models — read them together, not as one.<br><br>
-<strong>Predicted %</strong> — Linear level forecast: <em>0.886 × Initial Margin + 43.0 × Daily Vol</em>. Shows the expected margin level tomorrow. In normal markets this is almost always slightly below current (the formula is a mean-reversion dampener).<br><br>
-<strong>Probability bar</strong> — Logistic model trained on 6 features (margin, vol, DTE, percentile rank, days since last change, policy buffer). More sensitive to structural positioning than the linear formula.<br><br>
-<strong>Signal badge</strong> — Driven by the logistic model's dominant class. <span style="color:#f85149;">▲ HIKE X%</span> = logistic assigns X% probability. <span style="color:#3fb950;">▼ CUT X%</span> likewise.<br><br>
-<strong style="color:#d29922;">Amber Predicted cell</strong> = the two models disagree on direction. The linear formula predicts a mild numeric cut while the logistic model's multi-feature analysis favours a hike — treat that contract with extra caution.`
+    title: "Panic Spread Surveillance & Capital Allocation Command Center",
+    body: `Unified institutional surveillance engine for MCX Natural Gas futures margins.<br><br>
+<strong>Hurdle-Gated SPAN Forecast</strong> — Above the statutory 13.00% floor, margin is a near-deterministic map of exchange EWMA daily volatility (<em>M* = 7.589σ − 4.845</em>, R² = 0.9992). On calm days, the model holds margin flat (no phantom decay); on active volatility spikes, it captures the full SPAN leap.<br><br>
+<strong>Tender Calendar Lookahead</strong> — Pre-expiry physical tender margin steps up by +5%/trading day over the final 5 days (up to 25%). The model adds tomorrow's exact scheduled tender step.<br><br>
+<strong>Intraday Hike Trigger Price</strong> — Closed-form inversion of the SEBI EWMA equation (λ = 0.94). Tells the desk the exact price level today that will force an MCXCCL margin hike tomorrow before market close.<br><br>
+<strong>₹ Margin & Δ₹ Capital Buffer</strong> — Real-time capital required per lot (1,250 mmBtu) and expected overnight cash delta, aiding RMS buffer management.`
+  },
+  "Intraday Trigger Bands": {
+    title: "Intraday Panic Trigger Bands",
+    body: `Visualizes the distance between today's settlement price and the upper / lower intraday trigger prices that force tomorrow's margin into a hike.<br><br>
+<strong>Red Dashed Line</strong> — Upper Hike Trigger Price. If price crosses above this level, EWMA volatility forces an upward margin revision.<br>
+<strong>Blue Bar</strong> — Current Settlement Price (₹/mmBtu).<br>
+<strong>Green Dashed Line</strong> — Lower Hike Trigger Price. If price crashes below this level, downside volatility forces an upward margin revision.<br><br>
+If the contract is marked <em>LOCKED IN</em>, carryover volatility alone has already breached the hike threshold even on a 0% price move.`
   },
   "Price Margin Confluence": {
     title: "Price × Margin Confluence — 60D Rolling",
