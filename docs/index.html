@@ -1355,7 +1355,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <div class="card mb-4" id="marketOverviewCard" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
-        <div class="card-title" style="margin-bottom:0;">Market Context</div>
+        <div class="card-title has-tooltip" data-tooltip-key="Market Context" style="margin-bottom:0;">Market Context</div>
         <div id="marketOverviewFreshness" style="font-size:11px;color:var(--text-muted);"></div>
       </div>
       <div class="grid-3" id="marketOverviewGrid"></div>
@@ -1423,7 +1423,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <th class="has-tooltip" data-dyn-title="Intraday Hike Trigger Price (Closed-Form Inversion)" data-dyn-body="The exact price boundary that will force tomorrow's MCXCCL EWMA volatility across the +0.50% hike hurdle.<br><br><strong>EWMA Inversion Formula:</strong><br>|r*| = √[ ((σ* )² − 0.94·σ_t²) / 0.06 ]<br>Trigger Price = Settle Price × e<sup>±|r*|</sup><br><br>• If today's price crosses above <strong>Upper Breach</strong> or crashes below <strong>Lower Breach</strong> before close, an overnight hike is mathematically locked.<br>• <strong>LOCKED IN</strong> indicates carryover volatility alone has already breached the threshold.">Intraday Hike Trigger</th>
             <th class="has-tooltip" data-dyn-title="Outcome Probability Distribution (Tomorrow)" data-dyn-body="Calibrated logistic model probabilities across three mutually exclusive outcomes tomorrow:<br><br>• <span style='color:var(--accent-green)'>Green Bar</span>: <strong>Cut</strong> (&gt;0.5% decrease)<br>• <span style='color:var(--text-muted)'>Grey Bar</span>: <strong>Flat</strong> (within ±0.5% corridor)<br>• <span style='color:var(--accent-red)'>Red Bar</span>: <strong>Hike</strong> (&gt;0.5% increase)<br><br>Features include initial margin level, daily volatility, DTE, gated dormancy, and policy buffer.">Probability</th>
             <th class="has-tooltip" data-dyn-title="Dominant Directional Signal & Surveillance Alert" data-dyn-body="Synthesized directional directive.<br><br>• <span style='color:#ef4444'>▲ HIKE X%</span>: High probability of margin expansion. Amber row glow at &gt;65% hike probability; Red row glow at &gt;80%.<br>• <span style='color:#3fb950'>▼ CUT X%</span>: Probability favours margin reduction.<br>• <span>→ FLAT X%</span>: Normal volatility equilibrium.">Signal</th>
-            <th style="width:40px;text-align:center;">Details</th>
+            <th class="has-tooltip" data-dyn-title="Inspection Details" data-dyn-body="Expandable econometric drawer revealing underlying SPAN parameters, multi-horizon econometric volatility estimates, tender lookahead schedules, and stress-scan loss scenarios." style="width:40px;text-align:center;">Details</th>
           </tr></thead>
           <tbody id="panicBody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">Loading...</td></tr></tbody>
         </table>
@@ -1530,7 +1530,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
     <div class="card mb-4 market-intel-control" id="marketFlowCard" style="display:none;">
-      <div class="card-title">MCX Market Flow: Volume & Open Interest</div>
+      <div class="card-title has-tooltip" data-tooltip-key="MCX Market Flow: Volume & Open Interest">MCX Market Flow: Volume & Open Interest</div>
       <div class="scope-row" style="margin-top:0;">
         <span class="scope-chip"><strong>Scope</strong> Front Month</span>
         <span class="scope-chip"><strong>Join</strong> Same-expiry only</span>
@@ -2280,7 +2280,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="card-title has-tooltip" data-tooltip-key="Model Health" style="margin-bottom:12px;">Model Health — Prediction Backtest Scorecard</div>
       <div style="overflow-x:auto;">
         <table class="data-table" id="modelHealthTable">
-          <thead><tr><th>Metric</th><th>30 Day</th><th>90 Day</th><th>365 Day</th></tr></thead>
+          <thead>
+            <tr>
+              <th class="has-tooltip" data-dyn-title="Diagnostic Metric" data-dyn-body="Quantitative model validation metric evaluating hurdle-gated predictive accuracy, calibration fidelity, and coverage across historical out-of-sample clearinghouse sessions.">Metric</th>
+              <th class="has-tooltip" data-dyn-title="30-Day Rolling Window" data-dyn-body="Trailing 30-day out-of-sample validation window capturing recent clearinghouse volatility regimes and localized SPAN parameter updates.">30 Day</th>
+              <th class="has-tooltip" data-dyn-title="90-Day Rolling Window" data-dyn-body="Trailing 90-day out-of-sample validation window benchmark measuring quarterly performance and seasonal regime transitions.">90 Day</th>
+              <th class="has-tooltip" data-dyn-title="365-Day Full Year Window" data-dyn-body="Trailing 365-day annual benchmark measuring structural econometric stability across complete annual commodity cycles and winter polar vortex events.">365 Day</th>
+            </tr>
+          </thead>
           <tbody id="modelHealthBody"></tbody>
         </table>
       </div>
@@ -2367,7 +2374,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
       <div class="market-table-shell">
         <table class="data-table" id="marketCurrentTable">
-          <thead id="marketCurrentHead"><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
+          <thead id="marketCurrentHead">
+            <tr>
+              <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Active MCX Natural Gas futures contract maturity code.">Contract</th>
+              <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Trading days remaining until cash settlement. Contracts with DTE &le; 5 enter pre-expiry cash ramp.">DTE</th>
+              <th class="has-tooltip" data-dyn-title="Settlement Price" data-dyn-body="Official MCX daily settlement price in INR per MMBtu.">Close</th>
+              <th class="has-tooltip" data-dyn-title="Single-Day Return" data-dyn-body="Percentage change vs previous session official settlement price.">Return</th>
+              <th class="has-tooltip" data-dyn-title="Traded Volume" data-dyn-body="Total number of contracts traded during the session across domestic and US market overlap hours.">Volume</th>
+              <th class="has-tooltip" data-dyn-title="Traded Turnover (Lakhs)" data-dyn-body="Gross traded turnover in Lakhs (INR 100,000s) = (Lots &times; 1,250 &times; Price) &divide; 100,000.">Value Lacs</th>
+              <th class="has-tooltip" data-dyn-title="Open Interest" data-dyn-body="Total active open contracts held by market participants at session close.">OI</th>
+              <th class="has-tooltip" data-dyn-title="Liquidity Score" data-dyn-body="Composite market liquidity metric (0&ndash;100) combining order book depth, turnover, and bid-ask spread stability.">Liquidity</th>
+            </tr>
+          </thead>
           <tbody id="marketCurrentBody"></tbody>
         </table>
       </div>
@@ -2526,7 +2544,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="card-title has-tooltip" data-tooltip-key="Explainable Market Signals">Explainable Market Signals</div>
         <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;">
           <table class="data-table" style="width:100%;">
-            <thead><tr><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="has-tooltip" data-dyn-title="Signal Category" data-dyn-body="The specific quantitative risk dimension detected: Price momentum shock, Margin-market divergence, Open interest shifts, Liquidity stress, or Volume baseline deviations.">Signal</th>
+                <th class="has-tooltip" data-dyn-title="Triage Severity" data-dyn-body="Risk triage priority: HIGH (immediate risk buffer violation or major flow inflection), MEDIUM (cautionary buildup), or LOW (normal baseline conditions).">Severity</th>
+                <th class="has-tooltip" data-dyn-title="Risk Score" data-dyn-body="Normalized algorithmic risk severity score ranging from 0 (completely calm) to 100 (acute divergence / maximum surveillance alert).">Score</th>
+                <th class="has-tooltip" data-dyn-title="Directional Vector" data-dyn-body="Observed market flow direction: Up, Down, Expanding, Contracting, or Diverging relative to clearinghouse margin baselines.">Direction</th>
+                <th class="has-tooltip" data-dyn-title="Diagnostic Rationale" data-dyn-body="Mathematical threshold analysis and empirical evidence triggering this specific surveillance signal.">Reason</th>
+              </tr>
+            </thead>
             <tbody id="marketSignalBody"></tbody>
           </table>
         </div>
@@ -2573,12 +2599,12 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <table class="data-table" style="width:100%;border-collapse:separate;border-spacing:0;">
             <thead>
               <tr>
-                <th style="width:90px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Date</th>
-                <th style="width:85px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Contract</th>
-                <th style="min-width:210px;position:sticky;top:0;background:var(--surface2);z-index:10;">Events</th>
-                <th style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Price</th>
-                <th style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Margin</th>
-                <th style="width:80px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Flow</th>
+                <th class="has-tooltip" data-dyn-title="Trading Session" data-dyn-body="Historical MCX clearing session date." style="width:90px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Date</th>
+                <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Expiry month evaluated during this historical window." style="width:85px;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Contract</th>
+                <th class="has-tooltip" data-dyn-title="Regime & Stress Events" data-dyn-body="Detected market dynamics including margin hikes, volume climaxes, volatility flips, and contract rolls." style="min-width:210px;position:sticky;top:0;background:var(--surface2);z-index:10;">Events</th>
+                <th class="has-tooltip" data-dyn-title="Price Return (1D)" data-dyn-body="1-day price return of the front-month contract." style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Price</th>
+                <th class="has-tooltip" data-dyn-title="Margin Change (1D)" data-dyn-body="1-day change in clearinghouse margin requirement (percentage points)." style="width:70px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Margin</th>
+                <th class="has-tooltip" data-dyn-title="Open Interest Flow" data-dyn-body="Percentage change in open interest across the session." style="width:80px;text-align:right;white-space:nowrap;position:sticky;top:0;background:var(--surface2);z-index:10;">Flow</th>
               </tr>
             </thead>
             <tbody id="marketEventBody"></tbody>
@@ -2611,7 +2637,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="card-title has-tooltip" data-tooltip-key="Active-Contract Leaderboard">Active-Contract Leaderboard</div>
         <div class="market-table-shell" style="flex:1;min-height:0;overflow-y:auto;">
           <table class="data-table" style="width:100%;">
-            <thead><tr><th>Contract</th><th>Liquidity</th><th>OI Flow</th><th>Realized Vol</th><th>Roll Yield</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Active MCX Natural Gas futures contract maturity.">Contract</th>
+                <th class="has-tooltip" data-dyn-title="Market Liquidity" data-dyn-body="Algorithmic liquidity composite (0&ndash;100) reflecting order book depth, turnover volume, and spread tightness.">Liquidity</th>
+                <th class="has-tooltip" data-dyn-title="Open Interest Trajectory" data-dyn-body="Velocity and direction of participant open interest buildup or unwinding.">OI Flow</th>
+                <th class="has-tooltip" data-dyn-title="Realized Volatility" data-dyn-body="Annualized historical volatility measured over active contract lifetime.">Realized Vol</th>
+                <th class="has-tooltip" data-dyn-title="Annualized Roll Yield" data-dyn-body="Term structure carry yield or contango drag incurred when rolling near-month into deferred contracts.">Roll Yield</th>
+              </tr>
+            </thead>
             <tbody id="marketLeaderboardBody"></tbody>
           </table>
         </div>
@@ -2643,7 +2677,17 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
       <div class="market-table-shell">
         <table class="data-table">
-          <thead><tr><th>Date</th><th>Aligned Expiry</th><th>Event</th><th>Margin Δ</th><th>Price</th><th>OI Δ</th><th>Friction</th></tr></thead>
+          <thead>
+            <tr>
+              <th class="has-tooltip" data-dyn-title="Session Date" data-dyn-body="MCX clearinghouse historical session date.">Date</th>
+              <th class="has-tooltip" data-dyn-title="Aligned Expiry" data-dyn-body="Matched contract expiry joined across clearinghouse margin files and trade settlement databases.">Aligned Expiry</th>
+              <th class="has-tooltip" data-dyn-title="Regime Shock Event" data-dyn-body="Clearinghouse surveillance trigger or liquidity inflection event.">Event</th>
+              <th class="has-tooltip" data-dyn-title="1-Day Margin Delta" data-dyn-body="Change in clearinghouse margin requirement in percentage points.">Margin Δ</th>
+              <th class="has-tooltip" data-dyn-title="Settlement Price" data-dyn-body="Front-month closing futures price in INR/MMBtu.">Price</th>
+              <th class="has-tooltip" data-dyn-title="1-Day OI Delta" data-dyn-body="Session change in open interest lots and percentage.">OI Δ</th>
+              <th class="has-tooltip" data-dyn-title="Microstructure Friction" data-dyn-body="Bid-ask impact cost and liquidity resistance during the session.">Friction</th>
+            </tr>
+          </thead>
           <tbody id="marketLinkageBody"></tbody>
         </table>
       </div>
@@ -2678,10 +2722,19 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="card">
         <div style="overflow-x:auto;">
           <table class="data-table" id="explorerTable">
-            <thead><tr>
-              <th>Date</th><th>Expiry</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
-              <th>Tender %</th><th>Total %</th><th>Daily Vol</th><th>Ann. Vol %</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th class="has-tooltip" data-dyn-title="Clearing Date" data-dyn-body="Historical date of the MCX margin circular publication.">Date</th>
+                <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Maturity date of the futures contract.">Expiry</th>
+                <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Calendar days remaining until contract settlement.">DTE</th>
+                <th class="has-tooltip" data-dyn-title="Initial Margin %" data-dyn-body="SPAN initial margin percentage (VaR 99% 3-day MPOR).">Initial %</th>
+                <th class="has-tooltip" data-dyn-title="Extreme Loss Margin (ELM)" data-dyn-body="Exchange-mandated ELM buffer percentage (statutory 1.25%).">ELM %</th>
+                <th class="has-tooltip" data-dyn-title="Tender Margin %" data-dyn-body="Mandatory physical delivery / tender risk ramp (+5%/day over final 5 DTE up to 25%).">Tender %</th>
+                <th class="has-tooltip" data-dyn-title="Total Gross Margin %" data-dyn-body="Sum of Initial Margin + ELM + Tender Margin.">Total %</th>
+                <th class="has-tooltip" data-dyn-title="Daily Volatility %" data-dyn-body="Clearinghouse 1-day standard deviation parameter used in SPAN scenarios.">Daily Vol</th>
+                <th class="has-tooltip" data-dyn-title="Annualized Volatility %" data-dyn-body="Annualized volatility = Daily Volatility &times; &radic;252.">Ann. Vol %</th>
+              </tr>
+            </thead>
             <tbody id="explorerBody"></tbody>
           </table>
         </div>
@@ -2707,7 +2760,20 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="card">
         <div class="market-table-shell" style="overflow-x:auto;">
           <table class="data-table">
-            <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="has-tooltip" data-dyn-title="Trading Date" data-dyn-body="Market session trade date.">Date</th>
+                <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Maturity date of the futures contract.">Expiry</th>
+                <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Trading days remaining to expiration.">DTE</th>
+                <th class="has-tooltip" data-dyn-title="Closing Settle Price" data-dyn-body="Official MCX settlement price in INR.">Close</th>
+                <th class="has-tooltip" data-dyn-title="Session Return %" data-dyn-body="Single-session percentage change in closing price.">Return</th>
+                <th class="has-tooltip" data-dyn-title="Realized Volatility" data-dyn-body="Rolling 20-day annualized realized volatility.">Realized Vol</th>
+                <th class="has-tooltip" data-dyn-title="Traded Volume" data-dyn-body="Total number of contracts traded during the session.">Volume</th>
+                <th class="has-tooltip" data-dyn-title="Volume Z-Score" data-dyn-body="Volume deviation relative to its trailing 20-day standard deviation.">Vol Z</th>
+                <th class="has-tooltip" data-dyn-title="Open Interest" data-dyn-body="Total active open contracts at session close.">OI</th>
+                <th class="has-tooltip" data-dyn-title="OI Change %" data-dyn-body="Session-over-session percentage change in open interest.">OI Chg</th>
+              </tr>
+            </thead>
             <tbody id="marketExplorerBody"></tbody>
           </table>
         </div>
@@ -4112,80 +4178,122 @@ async function renderOverview() {
       const proximityPct = Math.min(100, Math.max(0, ((curPrice - dnTrigger) / spanRange) * 100));
       const isUrgent = upDistPct <= 3.0 || rupeeDelta > 15000;
       const statusBadge = isUrgent 
-        ? '<span class="badge-hike" style="font-size:11px;padding:3px 8px;">HIKE RISK ELEVATED</span>'
-        : '<span class="badge-safe" style="font-size:11px;padding:3px 8px;">NORMAL CLEARING BUFFER</span>';
+        ? '<span class="badge-hike" style="font-size:11px;padding:3px 8px;font-weight:600;">HIKE RISK ELEVATED</span>'
+        : '<span class="badge-safe" style="font-size:11px;padding:3px 8px;font-weight:600;">NORMAL CLEARING BUFFER</span>';
+
+      const corridorZone = proximityPct >= 75 ? 'UPPER ZONE' : proximityPct >= 35 ? 'MID-BAND' : 'FLOOR ZONE';
+      const corridorBadge = proximityPct >= 75 ? 'badge-hike' : proximityPct >= 35 ? 'badge-warn' : 'badge-safe';
+
+      const dynBodyUpper = `<strong>Upper Margin Hike Trigger (P*<sub>up</sub>):</strong> ₹${upTrigger.toFixed(2)}<br><br>` +
+        `• <strong>Buffer to Hike:</strong> +₹${upDistRs.toFixed(2)} (<strong>+${upDistPct}%</strong>)<br>` +
+        `• <strong>Clearinghouse Horizon:</strong> If front-month intraday price reaches ₹${upTrigger.toFixed(2)}, clearinghouse SPAN volatility scenarios shift to an elevated margin tier.<br>` +
+        `• <strong>Capital Call Impact:</strong> Expected immediate cash requirement expands by +₹${rupeeDelta.toLocaleString('en-IN')}/lot.<br>` +
+        `• <strong>Surveillance Status:</strong> ${upDistPct <= 3.0 ? '<span style="color:#f87171;font-weight:700;">CRITICAL PROXIMITY</span> (within 3% buffer)' : '<span style="color:#34d399;font-weight:700;">STABLE BUFFER</span>'}`;
+
+      const dynBodyLower = `<strong>Lower Margin Cut / Floor Reset (P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br><br>` +
+        `• <strong>Floor Cushion:</strong> −₹${dnDistRs.toFixed(2)} (<strong>${dnDistPct}%</strong> downside cushion)<br>` +
+        `• <strong>Clearinghouse Horizon:</strong> If price retraces to ₹${dnTrigger.toFixed(2)}, exchange volatility parameters reset toward baseline, reducing margin requirements.<br>` +
+        `• <strong>Statutory Floor:</strong> Margin reductions remain clamped at SEBI's 13.00% statutory floor.<br>` +
+        `• <strong>Downside State:</strong> Sufficient headroom before floor reset scenario trips.`;
+
+      const dynBodyCorridor = `<strong>Clearinghouse Scan Corridor Position:</strong><br><br>` +
+        `• <strong>Floor Boundary (P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br>` +
+        `• <strong>Current Settle:</strong> ₹${curPrice.toFixed(2)} (<strong>${proximityPct.toFixed(0)}%</strong> of corridor)<br>` +
+        `• <strong>Upper Hike Boundary (P*<sub>up</sub>):</strong> ₹${upTrigger.toFixed(2)}<br><br>` +
+        `The stability corridor defines the price range where clearinghouse margin requirements remain flat. Currently tracking in the <strong>${corridorZone}</strong> with +${upDistPct}% price headroom to the upper hike boundary.`;
+
+      const dynBodyRupee = `<strong>Immediate Rupee Capital Call Risk:</strong><br><br>` +
+        `• <strong>Current Capital Required:</strong> ₹${rupeeCur.toLocaleString('en-IN')} (${fm.total_margin_pct.toFixed(2)}%)<br>` +
+        `• <strong>Tomorrow's Predicted Requirement:</strong> ₹${rupeePred.toLocaleString('en-IN')} (${fm.predicted_tomorrow.toFixed(2)}%)<br>` +
+        `• <strong>Net Capital Call Per Lot:</strong> <strong style="color:${rupeeDelta > 0 ? '#f87171' : '#34d399'};">${rupeeDelta >= 0 ? '+' : ''}₹${rupeeDelta.toLocaleString('en-IN')}</strong><br><br>` +
+        `Multiplier: 1,250 MMBtu per lot. Quantifies the immediate rupee cash call your account must fund before market open if the clearinghouse recalculates SPAN parameters.`;
 
       cockpitEl.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.01em;">${_expLabel(fm.expiry)}</span>
-            <span style="font-size:11px;color:var(--text-muted);font-family:monospace;font-variant-numeric:tabular-nums;">${fm.dte} DTE · Settle ₹${curPrice.toFixed(2)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.01em;">${_expLabel(fm.expiry)}</span>
+            <span class="scope-chip" style="font-size:11px;font-weight:600;">${fm.dte} DTE</span>
+            <span style="font-size:12px;color:var(--text-muted);">Settle: <strong style="color:var(--text);font-family:monospace;font-variant-numeric:tabular-nums;">₹${curPrice.toFixed(2)}</strong></span>
           </div>
           ${statusBadge}
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <!-- Upper Hike Boundary Card -->
-          <div style="background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+          <div class="mkt-card has-tooltip" data-dyn-title="Upper Margin Hike Trigger (P*up)" data-dyn-body="${escAttr(dynBodyUpper)}" style="padding:12px 14px;cursor:pointer;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="has-tooltip" data-dyn-title="Upper Margin Hike Trigger (P*up)" data-dyn-body="The exact price level (₹${upTrigger.toFixed(2)}) that trips the clearinghouse SPAN scan scenario into an elevated margin tier. Settle is currently ₹${upDistRs.toFixed(2)} (${upDistPct}%) below this threshold." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Upper Hike (P*<sub>up</sub>)</span>
-              <span style="font-family:monospace;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#f87171;font-variant-numeric:tabular-nums;">+${upDistPct}% buffer</span>
+              <div class="stat-label" style="font-size:11px;margin-bottom:0;">UPPER HIKE (P*<sub>up</sub>)</div>
+              <span style="font-family:monospace;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,0.14);color:#f87171;font-variant-numeric:tabular-nums;border:1px solid rgba(239,68,68,0.25);">+${upDistPct}% to hike</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-top:1px;">
-              <span style="font-size:17px;font-weight:700;font-family:monospace;color:var(--text);font-variant-numeric:tabular-nums;">₹${upTrigger.toFixed(2)}</span>
-              <span style="font-size:11px;font-family:monospace;color:var(--text-muted);font-variant-numeric:tabular-nums;">+₹${upDistRs.toFixed(2)}</span>
+            <div class="stat-value" style="font-size:22px;color:var(--text);display:flex;align-items:baseline;gap:8px;margin-top:4px;">
+              <span style="font-family:monospace;font-variant-numeric:tabular-nums;">₹${upTrigger.toFixed(2)}</span>
+              <span style="font-size:12px;color:var(--accent-red);font-weight:600;font-family:monospace;font-variant-numeric:tabular-nums;">+₹${upDistRs.toFixed(2)}</span>
             </div>
-            <div style="font-size:9.5px;color:var(--text-muted);">Clearinghouse scan ceiling</div>
+            <div class="stat-sub" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Clearinghouse scan ceiling</div>
           </div>
 
           <!-- Lower Cut Boundary Card -->
-          <div style="background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+          <div class="mkt-card has-tooltip" data-dyn-title="Lower Floor Relief / Reset Trigger (P*dn)" data-dyn-body="${escAttr(dynBodyLower)}" style="padding:12px 14px;cursor:pointer;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="has-tooltip" data-dyn-title="Lower Margin Cut / Relief Trigger (P*dn)" data-dyn-body="The price level (₹${dnTrigger.toFixed(2)}) below which clearinghouse margin relief or floor resets occur. Settle is currently ₹${dnDistRs.toFixed(2)} (${dnDistPct}%) above this boundary." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Lower Cut (P*<sub>dn</sub>)</span>
-              <span style="font-family:monospace;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#34d399;font-variant-numeric:tabular-nums;">-${dnDistPct}% buffer</span>
+              <div class="stat-label" style="font-size:11px;margin-bottom:0;">LOWER CUT (P*<sub>dn</sub>)</div>
+              <span style="font-family:monospace;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(16,185,129,0.14);color:#34d399;font-variant-numeric:tabular-nums;border:1px solid rgba(16,185,129,0.25);">${dnDistPct}% floor cushion</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-top:1px;">
-              <span style="font-size:17px;font-weight:700;font-family:monospace;color:var(--text);font-variant-numeric:tabular-nums;">₹${dnTrigger.toFixed(2)}</span>
-              <span style="font-size:11px;font-family:monospace;color:var(--text-muted);font-variant-numeric:tabular-nums;">-₹${dnDistRs.toFixed(2)}</span>
+            <div class="stat-value" style="font-size:22px;color:var(--text);display:flex;align-items:baseline;gap:8px;margin-top:4px;">
+              <span style="font-family:monospace;font-variant-numeric:tabular-nums;">₹${dnTrigger.toFixed(2)}</span>
+              <span style="font-size:12px;color:var(--accent-green);font-weight:600;font-family:monospace;font-variant-numeric:tabular-nums;">−₹${dnDistRs.toFixed(2)}</span>
             </div>
-            <div style="font-size:9.5px;color:var(--text-muted);">Floor relief & reset boundary</div>
+            <div class="stat-sub" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Floor relief & reset boundary</div>
           </div>
         </div>
 
         <!-- Scan Corridor Full-Width Track Card -->
-        <div style="background:var(--surface2);padding:12px 14px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+        <div class="mkt-card has-tooltip" data-dyn-title="Clearinghouse Scan Corridor" data-dyn-body="${escAttr(dynBodyCorridor)}" style="padding:12px 14px;cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span class="has-tooltip" data-dyn-title="Clearinghouse Scan Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the MCXCCL SPAN trigger corridor between floor relief trigger (₹${dnTrigger.toFixed(2)}) and upper hike trigger (₹${upTrigger.toFixed(2)}). Currently at ${proximityPct.toFixed(0)}% of the buffer corridor, leaving a +₹${upDistRs.toFixed(2)} (+${upDistPct}%) price buffer before the upper hike scan trips." style="color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;font-size:10.5px;cursor:pointer;">Scan Corridor Position</span>
-            <span style="font-family:monospace;font-size:10.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">
-              Mid-Band <span style="color:var(--accent-orange);">(${proximityPct.toFixed(0)}% corridor · +${upDistPct}% to hike)</span>
+            <div class="stat-label" style="font-size:11px;margin-bottom:0;">SCAN CORRIDOR POSITION</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="${corridorBadge}" style="font-size:10px;padding:2px 7px;font-weight:600;letter-spacing:0.02em;">${corridorZone}</span>
+              <span style="font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;">
+                <strong style="color:var(--text);font-family:monospace;">${proximityPct.toFixed(0)}%</strong> corridor &middot; <span style="color:${proximityPct >= 75 ? 'var(--accent-red)' : 'var(--accent-orange)'};font-family:monospace;font-weight:600;">+${upDistPct}%</span> to hike
+              </span>
+            </div>
+          </div>
+
+          <div style="position:relative;width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin:10px 0;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);">
+            <div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg, rgba(16,185,129,0.25) 0%, rgba(210,153,34,0.3) 50%, rgba(239,68,68,0.35) 100%);border-radius:3px;"></div>
+            <div style="position:absolute;left:calc(${proximityPct}% - 6px);top:-2px;width:12px;height:12px;border-radius:50%;background:#ffffff;border:2.5px solid #388bfd;box-shadow:0 0 10px rgba(56,139,253,0.9);z-index:2;transition:left 0.3s ease;"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-variant-numeric:tabular-nums;padding-top:2px;">
+            <span style="color:#34d399;display:flex;align-items:center;gap:5px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block;"></span>
+              Floor P*<sub>dn</sub> <strong style="font-family:monospace;">₹${dnTrigger.toFixed(2)}</strong>
             </span>
-          </div>
-
-          <div style="width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative;">
-            <div style="height:100%;width:${proximityPct}%;background:linear-gradient(90deg, #10b981 0%, #d29922 60%, #ef4444 100%);border-radius:4px;transition:width 0.4s ease;"></div>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;font-family:monospace;font-variant-numeric:tabular-nums;">
-            <span style="color:#34d399;">Floor P*<sub>dn</sub>: ₹${dnTrigger.toFixed(2)}</span>
-            <span style="color:var(--text-muted);">Settle: <strong style="color:var(--text);">₹${curPrice.toFixed(2)}</strong></span>
-            <span style="color:#f87171;">Hike P*<sub>up</sub>: ₹${upTrigger.toFixed(2)}</span>
+            <span style="color:var(--text);font-weight:600;display:flex;align-items:center;gap:5px;">
+              <span style="color:#388bfd;">●</span> Settle <strong style="font-family:monospace;">₹${curPrice.toFixed(2)}</strong>
+            </span>
+            <span style="color:#f87171;display:flex;align-items:center;gap:5px;">
+              Upper Hike P*<sub>up</sub> <strong style="font-family:monospace;">₹${upTrigger.toFixed(2)}</strong>
+              <span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block;"></span>
+            </span>
           </div>
         </div>
 
         <!-- Immediate Rupee Capital Call Risk Box -->
-        <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.18);border-radius:6px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div class="has-tooltip" data-dyn-title="Immediate Rupee Capital Impact Per Lot" data-dyn-body="Clearinghouse margin required per 1,250 MMBtu lot expands from ₹${rupeeCur.toLocaleString('en-IN')} (${fm.total_margin_pct.toFixed(2)}%) to predicted ₹${rupeePred.toLocaleString('en-IN')} (${fm.predicted_tomorrow.toFixed(2)}%), resulting in an immediate capital call of +₹${rupeeDelta.toLocaleString('en-IN')} per lot." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Immediate Rupee Capital Call Risk</div>
-            <div style="font-size:12px;color:var(--text);font-family:monospace;margin-top:4px;font-variant-numeric:tabular-nums;">
-              ₹${rupeeCur.toLocaleString('en-IN')} <span style="color:var(--text-muted);">(${fm.total_margin_pct.toFixed(2)}%)</span>
-              <span style="color:var(--text-muted);margin:0 4px;">→</span>
-              <strong style="color:var(--accent-orange);">₹${rupeePred.toLocaleString('en-IN')}</strong> <span style="color:var(--text-muted);">(${fm.predicted_tomorrow.toFixed(2)}%)</span>
+        <div class="mkt-card has-tooltip" data-dyn-title="Immediate Rupee Capital Impact Per Lot" data-dyn-body="${escAttr(dynBodyRupee)}" style="padding:12px 14px;border-color:${rupeeDelta > 15000 ? 'rgba(239,68,68,0.35)' : 'var(--border)'};cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div class="stat-label" style="font-size:11px;">IMMEDIATE RUPEE CAPITAL CALL RISK</div>
+              <div style="font-size:13px;color:var(--text);margin-top:4px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;">
+                <span style="font-family:monospace;">₹${rupeeCur.toLocaleString('en-IN')}</span> <span style="color:var(--text-muted);font-size:11px;">(${fm.total_margin_pct.toFixed(2)}%)</span>
+                <span style="color:var(--text-muted);font-weight:600;">→</span>
+                <strong style="color:var(--accent-orange);font-family:monospace;">₹${rupeePred.toLocaleString('en-IN')}</strong> <span style="color:var(--text-muted);font-size:11px;">(${fm.predicted_tomorrow.toFixed(2)}%)</span>
+              </div>
             </div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Net Call Per Lot</div>
-            <div style="font-size:15px;font-weight:700;font-family:monospace;color:${rupeeDelta > 0 ? '#f87171' : '#34d399'};margin-top:2px;font-variant-numeric:tabular-nums;">
-              ${rupeeDelta >= 0 ? '+' : ''}₹${rupeeDelta.toLocaleString('en-IN')}
+            <div style="text-align:right;">
+              <div class="stat-label" style="font-size:11px;">NET CALL PER LOT</div>
+              <div class="stat-value" style="font-size:20px;font-family:monospace;color:${rupeeDelta > 0 ? '#f87171' : '#34d399'};margin-top:2px;">
+                ${rupeeDelta >= 0 ? '+' : ''}₹${rupeeDelta.toLocaleString('en-IN')}
+              </div>
             </div>
           </div>
         </div>
@@ -6343,11 +6451,11 @@ function renderContractHeatmap(heatmapContract, metricKey, filterKey) {
 
   let cHtml = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
   cHtml += `<thead><tr>
-    <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
+    <th class="has-tooltip" data-dyn-title="Trading Calendar Year" data-dyn-body="Historical observation year (2010 to 2026)." style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
   cMonths.forEach(m => {
-    cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
+    cHtml += `<th class="has-tooltip" data-dyn-title="Contract Expiry Month: ${m}" data-dyn-body="Historical seasonality distribution for ${m} contract expirations." style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
   });
-  cHtml += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:700;border-left:2px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;width:50px;">AVG</th>`;
+  cHtml += `<th class="has-tooltip" data-dyn-title="Annual Average Margin" data-dyn-body="Unweighted arithmetic mean of monthly margin rates across that observation year." style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:700;border-left:2px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;width:50px;">AVG</th>`;
   cHtml += `</tr></thead><tbody>`;
 
   const mName = metricKey === 'initial' ? 'Initial Margin' : 'Total Margin';
@@ -6595,9 +6703,9 @@ async function renderSeasonality() {
 
     // Sticky header row
     html += `<thead><tr>
-      <th style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
+      <th class="has-tooltip" data-dyn-title="Trading Calendar Year" data-dyn-body="Historical observation year (2010 to 2026)." style="position:sticky;top:0;left:0;z-index:3;background:var(--surface2);padding:6px 8px;font-size:10px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);width:44px;min-width:44px;">YEAR</th>`;
     months.forEach(m => {
-      html += `<th style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
+      html += `<th class="has-tooltip" data-dyn-title="Contract Expiry Month: ${m}" data-dyn-body="Historical annualized volatility distribution for ${m} contract expirations." style="position:sticky;top:0;z-index:2;background:var(--surface2);padding:6px 4px;text-align:center;font-size:10px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;">${m}</th>`;
     });
     html += `</tr></thead><tbody>`;
 
@@ -6778,13 +6886,13 @@ async function renderAnalytics() {
         }).join('');
         const benchmarkRow = `
           <tr style="border-top:1px solid var(--border);">
-            <td style="color:var(--text);font-weight:600;font-size:11px;">Naive Persistence Benchmark</td>
+            <td class="has-tooltip" data-dyn-title="Naive Persistence Benchmark" data-dyn-body="Baseline statistical error incurred if forecasting tomorrow's margin as today's current margin (zero intelligence). Shows mean absolute prediction error." style="color:var(--text);font-weight:600;font-size:11px;">Naive Persistence Benchmark</td>
             <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.250 pp</td>
             <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">0.985 pp</td>
             <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.642 pp</td>
           </tr>
           <tr>
-            <td style="color:var(--accent-green);font-weight:600;font-size:11px;">Hurdle Model Advantage</td>
+            <td class="has-tooltip" data-dyn-title="Hurdle Model Advantage" data-dyn-body="Percentage reduction in forecasting error achieved by our econometric hurdle-gated engine over the naive persistence baseline." style="color:var(--accent-green);font-weight:600;font-size:11px;">Hurdle Model Advantage</td>
             <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-60.5% (0.494 pp)</td>
             <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-58.2%</td>
             <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-62.1%</td>
@@ -8442,27 +8550,27 @@ async function renderMarketIntel(force = false) {
 
       if (showPred) {
         headEl.innerHTML = `<tr>
-          <th>Contract</th>
-          <th>DTE</th>
-          <th>Close</th>
-          <th>Return</th>
-          <th style="color:var(--accent-orange);">Current Margin</th>
-          <th style="color:var(--accent-orange);">T+1 Pred Margin</th>
-          <th style="color:var(--accent-orange);">Rupee Call / Lot</th>
-          <th style="color:var(--accent-orange);">Action</th>
-          <th>OI</th>
-          <th>Liquidity</th>
+          <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Active MCX Natural Gas futures contract maturity code.">Contract</th>
+          <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Trading days remaining until cash settlement. Contracts with DTE &le; 5 enter pre-expiry cash ramp.">DTE</th>
+          <th class="has-tooltip" data-dyn-title="Settlement Price" data-dyn-body="Official MCX daily settlement price in INR per MMBtu.">Close</th>
+          <th class="has-tooltip" data-dyn-title="Single-Day Return" data-dyn-body="Percentage change vs previous session official settlement price.">Return</th>
+          <th class="has-tooltip" data-dyn-title="Current Total Margin %" data-dyn-body="Current clearinghouse margin percentage required today." style="color:var(--accent-orange);">Current Margin</th>
+          <th class="has-tooltip" data-dyn-title="T+1 Predicted Margin %" data-dyn-body="Econometric Hurdle-Gated forecast of tomorrow's total margin requirement." style="color:var(--accent-orange);">T+1 Pred Margin</th>
+          <th class="has-tooltip" data-dyn-title="Net Rupee Call / Lot" data-dyn-body="Net rupee cash call (+) or capital release (&minus;) per 1,250 MMBtu lot expected at next clearing snapshot." style="color:var(--accent-orange);">Rupee Call / Lot</th>
+          <th class="has-tooltip" data-dyn-title="RMS Action Directive" data-dyn-body="Portfolio action recommendation: Capital Call (deposit funds), Capital Release, or Stable equilibrium." style="color:var(--accent-orange);">Action</th>
+          <th class="has-tooltip" data-dyn-title="Open Interest" data-dyn-body="Total active open contracts held by market participants at session close.">OI</th>
+          <th class="has-tooltip" data-dyn-title="Liquidity Score" data-dyn-body="Composite market liquidity metric (0&ndash;100) combining order book depth, turnover, and bid-ask spread stability.">Liquidity</th>
         </tr>`;
       } else {
         headEl.innerHTML = `<tr>
-          <th>Contract</th>
-          <th>DTE</th>
-          <th>Close</th>
-          <th>Return</th>
-          <th>Volume</th>
-          <th>Value Lacs</th>
-          <th>OI</th>
-          <th>Liquidity</th>
+          <th class="has-tooltip" data-dyn-title="Contract Expiry" data-dyn-body="Active MCX Natural Gas futures contract maturity code.">Contract</th>
+          <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Trading days remaining until cash settlement. Contracts with DTE &le; 5 enter pre-expiry cash ramp.">DTE</th>
+          <th class="has-tooltip" data-dyn-title="Settlement Price" data-dyn-body="Official MCX daily settlement price in INR per MMBtu.">Close</th>
+          <th class="has-tooltip" data-dyn-title="Single-Day Return" data-dyn-body="Percentage change vs previous session official settlement price.">Return</th>
+          <th class="has-tooltip" data-dyn-title="Traded Volume" data-dyn-body="Total number of contracts traded during the session across domestic and US market overlap hours.">Volume</th>
+          <th class="has-tooltip" data-dyn-title="Traded Turnover (Lakhs)" data-dyn-body="Gross traded turnover in Lakhs (INR 100,000s) = (Lots &times; 1,250 &times; Price) &divide; 100,000.">Value Lacs</th>
+          <th class="has-tooltip" data-dyn-title="Open Interest" data-dyn-body="Total active open contracts held by market participants at session close.">OI</th>
+          <th class="has-tooltip" data-dyn-title="Liquidity Score" data-dyn-body="Composite market liquidity metric (0&ndash;100) combining order book depth, turnover, and bid-ask spread stability.">Liquidity</th>
         </tr>`;
       }
 
@@ -8853,8 +8961,8 @@ async function renderMarketIntel(force = false) {
     const tCellColor = p => p >= 70 ? 'rgba(56,139,253,0.60)' : p >= 40 ? 'rgba(88,166,255,0.28)' : p >= 15 ? 'rgba(210,153,34,0.45)' : p >= 5 ? 'rgba(248,81,73,0.30)' : 'rgba(139,148,158,0.08)';
     const REGIME_LABELS = { CALM: 'Calm', ELEVATED: 'Elevated', STRESS: 'Stress', CRISIS: 'Crisis' };
     let matHtml = `<table class="data-table" style="width:100%;font-size:11px;">`
-      + `<thead><tr><th style="font-size:10px;">From \ To</th>`
-      + REGIME_STATES.map(s => `<th style="text-align:center;font-size:10px;">${REGIME_LABELS[s]}</th>`).join('')
+      + `<thead><tr><th class="has-tooltip" data-dyn-title="Regime Transition" data-dyn-body="Current volatility regime state (row) transitioning to tomorrow's regime state (column)." style="font-size:10px;">From \ To</th>`
+      + REGIME_STATES.map(s => `<th class="has-tooltip" data-dyn-title="To ${REGIME_LABELS[s]} Regime" data-dyn-body="Empirical probability of transitioning into the ${REGIME_LABELS[s]} volatility regime state tomorrow." style="text-align:center;font-size:10px;">${REGIME_LABELS[s]}</th>`).join('')
       + `</tr></thead><tbody>`;
     REGIME_STATES.forEach(from => {
       const total = rowTotals[from] || 1;
@@ -8912,9 +9020,9 @@ async function renderMarketIntel(force = false) {
           <table class="data-table" style="width:100%;font-size:11px;border-collapse:separate;border-spacing:0;margin-bottom:6px;">
             <thead>
               <tr>
-                <th style="font-size:10px;padding:6px 8px;">Contract</th>
-                <th style="font-size:10px;padding:6px 8px;">Expiry Date</th>
-                <th style="font-size:10px;padding:6px 8px;text-align:right;">DTE</th>
+                <th class="has-tooltip" data-dyn-title="Futures Contract" data-dyn-body="Active MCX Natural Gas futures contract maturity." style="font-size:10px;padding:6px 8px;">Contract</th>
+                <th class="has-tooltip" data-dyn-title="Expiration Date" data-dyn-body="Official clearinghouse final trade and cash settlement date." style="font-size:10px;padding:6px 8px;">Expiry Date</th>
+                <th class="has-tooltip" data-dyn-title="Days to Expiry (DTE)" data-dyn-body="Trading days remaining to contract settlement. Amber/red indicates proximity to pre-expiry settlement ramp." style="font-size:10px;padding:6px 8px;text-align:right;">DTE</th>
               </tr>
             </thead>
             <tbody>
@@ -9457,6 +9565,14 @@ const TOOLTIPS = {
 • <strong>Carry Drag (₹ / Lot):</strong> The cash drag incurred by a long position rolling from the expiring front month to next month: (P<sub>M2</sub> − P<sub>M1</sub>) × 1,250. Amber bars indicate Contango drag (roll loss); emerald bars indicate Backwardation roll yield.<br>
 • <strong>Spread %:</strong> Percentage price premium or discount of the deferred contract over the near contract.<br>
 • <strong>Optimal Roll Window (8–12 DTE):</strong> Positions should be rolled prior to the 5-day pre-expiry settlement ramp (+5%/day) to avoid liquidity traps and steep cash requirements.`
+  },
+  "Market Context": {
+    title: "Market Context & Microstructure Surveillance",
+    body: `Front-month futures contract context integrating live settlement pricing, day-over-day returns, volume distribution (Z-scores), open interest flow, and algorithmic liquidity scoring across active MCX Natural Gas expiries.`
+  },
+  "MCX Market Flow: Volume & Open Interest": {
+    title: "MCX Market Flow: Volume & Open Interest Overlay",
+    body: `Tracks historical trading volume (lots traded) and total open interest alongside margin regimes. Identifies liquidity regime shifts, institutional accumulation, and roll-cycle dynamics across historical MCX clearing sessions.`
   },
   "Market-Confirmed Risk Signals": {
     title: "Market-Confirmed Risk Signals",
