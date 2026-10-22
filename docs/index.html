@@ -4107,61 +4107,75 @@ async function renderOverview() {
         : '<span class="badge-safe" style="font-size:11px;padding:3px 8px;">NORMAL CLEARING BUFFER</span>';
 
       cockpitEl.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--border);">
           <div style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-size:14px;font-weight:700;color:var(--text);">${_expLabel(fm.expiry)}</span>
-            <span style="font-size:11px;color:var(--text-muted);font-family:monospace;">${fm.dte} DTE · Settle ₹${curPrice.toFixed(2)}</span>
+            <span style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.01em;">${_expLabel(fm.expiry)}</span>
+            <span style="font-size:11px;color:var(--text-muted);font-family:monospace;font-variant-numeric:tabular-nums;">${fm.dte} DTE · Settle ₹${curPrice.toFixed(2)}</span>
           </div>
           ${statusBadge}
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="has-tooltip" data-dyn-title="Upper Margin Hike Trigger (P*up)" data-dyn-body="The exact price level (₹${upTrigger.toFixed(2)}) that trips the clearinghouse SPAN scan scenario into an elevated margin tier. Settle is currently ₹${upDistRs.toFixed(2)} (${upDistPct}%) below this threshold." style="background:var(--surface2);padding:8px 10px;border-radius:6px;border-left:3px solid var(--accent-red);cursor:pointer;">
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Upper Hike Trigger (P*<sub>up</sub>)</div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
-              <span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--accent-red);">₹${upTrigger.toFixed(2)}</span>
-              <span style="font-size:11px;color:var(--accent-red);font-family:monospace;">+₹${upDistRs.toFixed(2)} (+${upDistPct}%)</span>
+          <!-- Upper Hike Boundary Card -->
+          <div style="background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="has-tooltip" data-dyn-title="Upper Margin Hike Trigger (P*up)" data-dyn-body="The exact price level (₹${upTrigger.toFixed(2)}) that trips the clearinghouse SPAN scan scenario into an elevated margin tier. Settle is currently ₹${upDistRs.toFixed(2)} (${upDistPct}%) below this threshold." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Upper Hike (P*<sub>up</sub>)</span>
+              <span style="font-family:monospace;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#f87171;font-variant-numeric:tabular-nums;">+${upDistPct}% buffer</span>
             </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Clearinghouse scan boundary</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:1px;">
+              <span style="font-size:17px;font-weight:700;font-family:monospace;color:var(--text);font-variant-numeric:tabular-nums;">₹${upTrigger.toFixed(2)}</span>
+              <span style="font-size:11px;font-family:monospace;color:var(--text-muted);font-variant-numeric:tabular-nums;">+₹${upDistRs.toFixed(2)}</span>
+            </div>
+            <div style="font-size:9.5px;color:var(--text-muted);">Clearinghouse scan ceiling</div>
           </div>
-          <div class="has-tooltip" data-dyn-title="Lower Margin Cut / Relief Trigger (P*dn)" data-dyn-body="The price level (₹${dnTrigger.toFixed(2)}) below which clearinghouse margin relief or floor resets occur. Settle is currently ₹${dnDistRs.toFixed(2)} (${dnDistPct}%) above this boundary." style="background:var(--surface2);padding:8px 10px;border-radius:6px;border-left:3px solid var(--accent-green);cursor:pointer;">
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Lower Cut Trigger (P*<sub>dn</sub>)</div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
-              <span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--accent-green);">₹${dnTrigger.toFixed(2)}</span>
-              <span style="font-size:11px;color:var(--accent-green);font-family:monospace;">-₹${dnDistRs.toFixed(2)} (-${dnDistPct}%)</span>
+
+          <!-- Lower Cut Boundary Card -->
+          <div style="background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="has-tooltip" data-dyn-title="Lower Margin Cut / Relief Trigger (P*dn)" data-dyn-body="The price level (₹${dnTrigger.toFixed(2)}) below which clearinghouse margin relief or floor resets occur. Settle is currently ₹${dnDistRs.toFixed(2)} (${dnDistPct}%) above this boundary." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Lower Cut (P*<sub>dn</sub>)</span>
+              <span style="font-family:monospace;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#34d399;font-variant-numeric:tabular-nums;">-${dnDistPct}% buffer</span>
             </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Floor relief threshold</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:1px;">
+              <span style="font-size:17px;font-weight:700;font-family:monospace;color:var(--text);font-variant-numeric:tabular-nums;">₹${dnTrigger.toFixed(2)}</span>
+              <span style="font-size:11px;font-family:monospace;color:var(--text-muted);font-variant-numeric:tabular-nums;">-₹${dnDistRs.toFixed(2)}</span>
+            </div>
+            <div style="font-size:9.5px;color:var(--text-muted);">Floor relief & reset boundary</div>
           </div>
         </div>
 
-        <div class="has-tooltip" data-dyn-title="Clearinghouse Scan Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the MCXCCL SPAN trigger corridor between floor relief trigger (₹${dnTrigger.toFixed(2)}) and upper hike trigger (₹${upTrigger.toFixed(2)}). Currently at ${proximityPct.toFixed(0)}% of the buffer corridor, leaving a +₹${upDistRs.toFixed(2)} (+${upDistPct}%) price buffer before the upper hike scan trips." style="cursor:pointer;background:var(--surface2);padding:8px 10px;border-radius:6px;border:1px solid var(--border);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:10.5px;">
-            <span style="color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Scan Corridor Position</span>
-            <span style="font-family:monospace;color:var(--text);font-weight:700;">
+        <!-- Scan Corridor Full-Width Track Card -->
+        <div style="background:var(--surface2);padding:12px 14px;border-radius:6px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="has-tooltip" data-dyn-title="Clearinghouse Scan Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the MCXCCL SPAN trigger corridor between floor relief trigger (₹${dnTrigger.toFixed(2)}) and upper hike trigger (₹${upTrigger.toFixed(2)}). Currently at ${proximityPct.toFixed(0)}% of the buffer corridor, leaving a +₹${upDistRs.toFixed(2)} (+${upDistPct}%) price buffer before the upper hike scan trips." style="color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;font-size:10.5px;cursor:pointer;">Scan Corridor Position</span>
+            <span style="font-family:monospace;font-size:10.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">
               Mid-Band <span style="color:var(--accent-orange);">(${proximityPct.toFixed(0)}% corridor · +${upDistPct}% to hike)</span>
             </span>
           </div>
+
           <div style="width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative;">
             <div style="height:100%;width:${proximityPct}%;background:linear-gradient(90deg, #10b981 0%, #d29922 60%, #ef4444 100%);border-radius:4px;transition:width 0.4s ease;"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:10px;font-family:monospace;">
-            <span style="color:var(--accent-green);">P*<sub>dn</sub> Floor: ₹${dnTrigger.toFixed(2)}</span>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;font-family:monospace;font-variant-numeric:tabular-nums;">
+            <span style="color:#34d399;">Floor P*<sub>dn</sub>: ₹${dnTrigger.toFixed(2)}</span>
             <span style="color:var(--text-muted);">Settle: <strong style="color:var(--text);">₹${curPrice.toFixed(2)}</strong></span>
-            <span style="color:var(--accent-red);">P*<sub>up</sub> Hike: ₹${upTrigger.toFixed(2)}</span>
+            <span style="color:#f87171;">Hike P*<sub>up</sub>: ₹${upTrigger.toFixed(2)}</span>
           </div>
         </div>
 
-        <div class="has-tooltip" data-dyn-title="Immediate Rupee Capital Impact Per Lot" data-dyn-body="Clearinghouse margin required per 1,250 MMBtu lot expands from ₹${rupeeCur.toLocaleString('en-IN')} (${fm.total_margin_pct.toFixed(2)}%) to predicted ₹${rupeePred.toLocaleString('en-IN')} (${fm.predicted_tomorrow.toFixed(2)}%), resulting in an immediate capital call of +₹${rupeeDelta.toLocaleString('en-IN')} per lot." style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+        <!-- Immediate Rupee Capital Call Risk Box -->
+        <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.18);border-radius:6px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Immediate Rupee Capital Call Risk</div>
-            <div style="font-size:12px;color:var(--text);font-family:monospace;margin-top:2px;">
-              ₹${rupeeCur.toLocaleString('en-IN')} <span style="color:var(--text-muted);">(${fm.total_margin_pct.toFixed(2)}%)</span> → 
+            <div class="has-tooltip" data-dyn-title="Immediate Rupee Capital Impact Per Lot" data-dyn-body="Clearinghouse margin required per 1,250 MMBtu lot expands from ₹${rupeeCur.toLocaleString('en-IN')} (${fm.total_margin_pct.toFixed(2)}%) to predicted ₹${rupeePred.toLocaleString('en-IN')} (${fm.predicted_tomorrow.toFixed(2)}%), resulting in an immediate capital call of +₹${rupeeDelta.toLocaleString('en-IN')} per lot." style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;cursor:pointer;">Immediate Rupee Capital Call Risk</div>
+            <div style="font-size:12px;color:var(--text);font-family:monospace;margin-top:4px;font-variant-numeric:tabular-nums;">
+              ₹${rupeeCur.toLocaleString('en-IN')} <span style="color:var(--text-muted);">(${fm.total_margin_pct.toFixed(2)}%)</span>
+              <span style="color:var(--text-muted);margin:0 4px;">→</span>
               <strong style="color:var(--accent-orange);">₹${rupeePred.toLocaleString('en-IN')}</strong> <span style="color:var(--text-muted);">(${fm.predicted_tomorrow.toFixed(2)}%)</span>
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:10px;color:var(--text-muted);">Net Call Per Lot</div>
-            <div style="font-size:14px;font-weight:700;font-family:monospace;color:${rupeeDelta > 0 ? 'var(--accent-red)' : 'var(--accent-green)'};">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Net Call Per Lot</div>
+            <div style="font-size:15px;font-weight:700;font-family:monospace;color:${rupeeDelta > 0 ? '#f87171' : '#34d399'};margin-top:2px;font-variant-numeric:tabular-nums;">
               ${rupeeDelta >= 0 ? '+' : ''}₹${rupeeDelta.toLocaleString('en-IN')}
             </div>
           </div>
