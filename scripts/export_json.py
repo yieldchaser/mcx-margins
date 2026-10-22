@@ -2137,17 +2137,57 @@ def _export_event_probabilities(cur, fm_series, panic_entries, regime_params):
     latest = fm_series[-1]
     latest_margin_pct_rank = margin_percentile(latest["initial_margin_pct"])
 
+    # Precompute actual days_since_last_change per expiry from database
+    last_change_lookup = {}
+    try:
+        cur.execute("""
+            WITH ranked AS (
+                SELECT date, expiry, initial_margin_pct,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY date, expiry 
+                           ORDER BY COALESCE(file_id, -1) DESC, COALESCE(created_at, '') DESC
+                       ) as rn
+                FROM margins
+                WHERE symbol = 'NATURALGAS' AND date >= date(?, '-180 days')
+            ),
+            deduped AS (
+                SELECT date, expiry, initial_margin_pct,
+                       LAG(initial_margin_pct) OVER (PARTITION BY expiry ORDER BY date ASC) as prev_im
+                FROM ranked
+                WHERE rn = 1
+            )
+            SELECT expiry, max(date) as last_change_date
+            FROM deduped
+            WHERE abs(initial_margin_pct - prev_im) > 0.05
+            GROUP BY expiry
+        """, (latest["date"],))
+        last_change_lookup = {r[0]: r[1] for r in cur.fetchall()}
+    except Exception as e:
+        print(f"  [Item 9] Note: Could not precompute per-expiry change dates: {e}")
+
     per_expiry = []
     for entry in panic_entries:
         vol_pct = (entry["vol_daily"] if entry["vol_daily"] else latest["daily_volatility"]) * 100
         fair = slope_b * vol_pct + intercept_b
         policy_buf = entry["initial_margin_pct"] - fair   # use initial, matching training
+        exp = entry["expiry"]
+        last_chg_date = last_change_lookup.get(exp)
+        if last_chg_date:
+            try:
+                d_latest = datetime.strptime(latest["date"], "%Y-%m-%d")
+                d_chg = datetime.strptime(last_chg_date, "%Y-%m-%d")
+                days_since_change = min(60, max(0, (d_latest - d_chg).days))
+            except Exception:
+                days_since_change = 0
+        else:
+            days_since_change = 30  # Baseline calm state for unobserved contracts
+
         feat = np.array([[
             entry["initial_margin_pct"],   # use initial, matching training feature
             vol_pct,
             min(entry["dte"], 300),
             latest_margin_pct_rank,
-            0,  # days_since_last_change unknown per-expiry; use 0
+            days_since_change,
             policy_buf,
         ]])
         p_h = float(lr_hike.predict_proba(feat)[0, 1])
