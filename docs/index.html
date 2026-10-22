@@ -2425,7 +2425,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <button class="deep-tf-btn has-tooltip" data-tf="1W" data-dyn-title="1-Week Horizon" data-dyn-body="Trailing 7-day price action at 1-minute resolution.">1W</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1D" data-dyn-title="1-Day Horizon" data-dyn-body="Session price action at 1-minute resolution.">1D</button>
           <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
-          <button class="deep-tf-btn active has-tooltip" id="deepHikeTriggersBtn" data-dyn-title="Clearinghouse Hike Trigger Lines" data-dyn-body="Toggles dynamic Upper and Lower clearinghouse margin hike price triggers directly onto the candlestick chart." style="color:var(--accent-red);border-color:rgba(248,81,73,0.4);">Triggers ON</button>
+          <button class="deep-tf-btn active has-tooltip" id="deepHikeTriggersBtn" data-dyn-title="Clearinghouse Hike Trigger Lines" data-dyn-body="Toggles dynamic Upper and Lower clearinghouse margin hike price triggers directly onto the candlestick chart." style="color:#ffffff;border-color:var(--accent);background:var(--accent);">Triggers ON</button>
           <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
           <button class="deep-tf-btn has-tooltip" id="btnToggleChartType" data-dyn-title="Chart Type" data-dyn-body="Toggle between Candlestick and Area Line chart." title="Toggle Candlestick / Area Line">Line</button>
           <button class="deep-tf-btn has-tooltip" id="btnResetDeepZoom" data-dyn-title="Reset View" data-dyn-body="Resets zoom and pans to the full view." title="Reset Zoom to Full View">Reset</button>
@@ -6896,14 +6896,66 @@ async function renderAnalytics() {
         datasets: [{
           label: 'Correlation Coefficient',
           data: corrVals,
-          backgroundColor: corrVals.map(v => v >= 0.8 ? 'rgba(63,185,80,0.75)' : v >= 0.5 ? 'rgba(210,153,34,0.75)' : 'rgba(251,143,68,0.75)'),
-          borderRadius: 4
+          backgroundColor: corrVals.map(v => v >= 0.8 ? 'rgba(63, 185, 80, 0.28)' : v >= 0.5 ? 'rgba(210, 153, 34, 0.28)' : 'rgba(251, 143, 68, 0.28)'),
+          borderColor: corrVals.map(v => v >= 0.8 ? '#3fb950' : v >= 0.5 ? '#d29922' : '#fb8f44'),
+          hoverBackgroundColor: corrVals.map(v => v >= 0.8 ? 'rgba(63, 185, 80, 0.45)' : v >= 0.5 ? 'rgba(210, 153, 34, 0.45)' : 'rgba(251, 143, 68, 0.45)'),
+          borderWidth: 1.5,
+          borderRadius: 6,
+          maxBarThickness: 34,
+          barPercentage: 0.52,
+          categoryPercentage: 0.7
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => `Volatility Transmission: ${items[0].label}`,
+              label: ctx => `Correlation (r): +${ctx.raw.toFixed(3)}`,
+              afterBody: items => {
+                const lagStr = lags[items[0].dataIndex];
+                const lagNum = parseInt(lagStr, 10);
+                const r = corrVals[items[0].dataIndex];
+                const regime = r >= 0.85 ? 'Strong Contemporaneous Coupling' : r >= 0.75 ? 'Active Transmission' : 'Decayed Response';
+                const detail = lagNum === 0
+                  ? 'Simultaneous reaction: Clearinghouse models calibrate margins on same-day realized volatility shocks.'
+                  : lagNum <= 10
+                  ? 'Short memory: EWMA decay λ=0.94 preserves 70%+ of volatility impact within the 5–10 day cycle.'
+                  : 'Decayed horizon: Historical shocks older than 15–30 days fade as exchange parameters adapt.';
+                return [
+                  '',
+                  `Coupling Regime: ${regime}`,
+                  detail
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10, family: 'Inter, -apple-system, sans-serif' }, color: '#8b949e' }
+          },
+          y: {
+            min: 0,
+            max: 1,
+            grid: { color: 'rgba(48, 54, 61, 0.45)' },
+            ticks: {
+              font: { size: 10, family: 'Inter, -apple-system, sans-serif' },
+              color: '#8b949e',
+              callback: v => v.toFixed(1)
+            },
+            title: {
+              display: true,
+              text: 'Correlation (r)',
+              color: '#8b949e',
+              font: { size: 10, family: 'Inter, -apple-system, sans-serif', weight: '600' }
+            }
+          }
+        }
       }
     });
 

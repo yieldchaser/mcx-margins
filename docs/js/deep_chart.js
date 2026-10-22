@@ -1419,12 +1419,14 @@
         if (hikeTriggersVisible) {
           btnHike.classList.add('active');
           btnHike.textContent = 'Triggers ON';
-          btnHike.style.color = 'var(--accent-red)';
-          btnHike.style.borderColor = 'rgba(248,81,73,0.4)';
+          btnHike.style.color = '#ffffff';
+          btnHike.style.background = 'var(--accent)';
+          btnHike.style.borderColor = 'var(--accent)';
         } else {
           btnHike.classList.remove('active');
           btnHike.textContent = 'Triggers OFF';
           btnHike.style.color = 'var(--text-muted)';
+          btnHike.style.background = 'var(--surface2)';
           btnHike.style.borderColor = 'var(--border)';
         }
         updateHikeTriggerLines();

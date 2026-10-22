@@ -1742,39 +1742,79 @@ def _export_model_health(fm_series):
 
 
 # ── Item 4: Delta Distribution ───────────────────────────────────────────────
-def _export_delta_distribution(fm_series):
-    """Compute daily margin change histogram by DTE bucket."""
+def _export_delta_distribution(fm_series, cur=None):
+    """Compute daily margin change histogram by DTE bucket across contract lifecycles."""
     print("  [Item 4] Delta distribution...")
 
-    # Compute deltas
     deltas_by_bucket = {"0-30": [], "31-90": [], "91+": []}
     deltas_by_quartile = {"Q1": [], "Q2": [], "Q3": [], "Q4": []}
 
-    for i in range(len(fm_series) - 1):
-        today = fm_series[i]
-        tomorrow = fm_series[i + 1]
-        # Skip roll transitions across distinct contract expiries
-        if today.get("expiry") != tomorrow.get("expiry"):
-            continue
-        delta = tomorrow["initial_margin_pct"] - today["initial_margin_pct"]
-        dte = today["dte"]
-        margin = today["initial_margin_pct"]
+    if cur is not None:
+        cur.execute("""
+            SELECT date, expiry, initial_margin_pct
+            FROM margins
+            WHERE symbol = 'NATURALGAS' AND initial_margin_pct IS NOT NULL
+            ORDER BY expiry, date ASC
+        """)
+        rows = cur.fetchall()
+        from collections import defaultdict
+        from datetime import datetime as dt_cls
+        by_exp = defaultdict(list)
+        for d_str, exp_str, m in rows:
+            try:
+                d = dt_cls.strptime(d_str, "%Y-%m-%d").date()
+                exp = dt_cls.strptime(exp_str, "%d%b%Y").date()
+                dte = (exp - d).days
+                by_exp[exp_str].append((d, dte, m))
+            except Exception:
+                pass
 
-        if dte <= 30:
-            deltas_by_bucket["0-30"].append(delta)
-        elif dte <= 90:
-            deltas_by_bucket["31-90"].append(delta)
-        else:
-            deltas_by_bucket["91+"].append(delta)
+        for exp, series in by_exp.items():
+            for i in range(len(series) - 1):
+                d1, dte1, m1 = series[i]
+                d2, dte2, m2 = series[i + 1]
+                if 1 <= (d2 - d1).days <= 5:  # consecutive trading days
+                    delta = round(m2 - m1, 3)
+                    if dte1 <= 30:
+                        deltas_by_bucket["0-30"].append(delta)
+                    elif dte1 <= 90:
+                        deltas_by_bucket["31-90"].append(delta)
+                    else:
+                        deltas_by_bucket["91+"].append(delta)
 
-        if margin < 17:
-            deltas_by_quartile["Q1"].append(delta)
-        elif margin < 22:
-            deltas_by_quartile["Q2"].append(delta)
-        elif margin < 28:
-            deltas_by_quartile["Q3"].append(delta)
-        else:
-            deltas_by_quartile["Q4"].append(delta)
+                    if m1 < 17:
+                        deltas_by_quartile["Q1"].append(delta)
+                    elif m1 < 22:
+                        deltas_by_quartile["Q2"].append(delta)
+                    elif m1 < 28:
+                        deltas_by_quartile["Q3"].append(delta)
+                    else:
+                        deltas_by_quartile["Q4"].append(delta)
+    else:
+        for i in range(len(fm_series) - 1):
+            today = fm_series[i]
+            tomorrow = fm_series[i + 1]
+            if today.get("expiry") != tomorrow.get("expiry"):
+                continue
+            delta = tomorrow["initial_margin_pct"] - today["initial_margin_pct"]
+            dte = today["dte"]
+            margin = today["initial_margin_pct"]
+
+            if dte <= 30:
+                deltas_by_bucket["0-30"].append(delta)
+            elif dte <= 90:
+                deltas_by_bucket["31-90"].append(delta)
+            else:
+                deltas_by_bucket["91+"].append(delta)
+
+            if margin < 17:
+                deltas_by_quartile["Q1"].append(delta)
+            elif margin < 22:
+                deltas_by_quartile["Q2"].append(delta)
+            elif margin < 28:
+                deltas_by_quartile["Q3"].append(delta)
+            else:
+                deltas_by_quartile["Q4"].append(delta)
 
     def build_histogram(vals):
         if not vals:
@@ -3035,7 +3075,7 @@ def main():
         regime_params = _export_regime_model(cur, fm_series)          # Item 3 first (others depend on it)
         _export_forecast_bands(fm_series, panic_entries, regime_params) # Item 1
         _export_model_health(fm_series)                                  # Item 2
-        _export_delta_distribution(fm_series)                            # Item 4
+        _export_delta_distribution(fm_series, cur=cur)                   # Item 4
         _export_curve_cone(cur, fwd, latest_date)                        # Item 5
         _export_decomposition(fm_series, regime_params)                  # Item 6
         _export_seasonality_boxplot(cur)                                  # Item 7
