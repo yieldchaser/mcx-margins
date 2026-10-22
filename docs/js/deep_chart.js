@@ -1339,8 +1339,96 @@
           btnToggle.style.color = '';
           btnToggle.style.borderColor = '';
         }
+        updateHikeTriggerLines();
       });
     }
+
+    // ── Clearinghouse Hike Trigger Lines Overlay ──
+    let hikeTriggerLines = [];
+    let hikeTriggersVisible = true;
+
+    async function updateHikeTriggerLines() {
+      hikeTriggerLines.forEach(l => {
+        try { candleSeries.removePriceLine(l); } catch(e){}
+        try { areaSeries.removePriceLine(l); } catch(e){}
+      });
+      hikeTriggerLines = [];
+
+      if (!hikeTriggersVisible) return;
+
+      let ps = window._cachedPanicSpread;
+      if (!ps) {
+        try {
+          const res = await fetch('data/panic_spread.json');
+          if (res.ok) {
+            ps = await res.json();
+            window._cachedPanicSpread = ps;
+          }
+        } catch(e) {}
+      }
+
+      if (!ps || !ps.NATURALGAS || !ps.NATURALGAS.length) return;
+
+      let c = ps.NATURALGAS[0];
+      if (activeContractMode !== 'continuous') {
+        const match = ps.NATURALGAS.find(x => x.expiry === activeContractMode);
+        if (match) c = match;
+      }
+
+      const targetSeries = isCandleMode ? candleSeries : areaSeries;
+      if (!targetSeries) return;
+
+      const dashedStyle = window.LightweightCharts?.LineStyle?.Dashed ?? 2;
+
+      if (c.hike_trigger_up_price) {
+        try {
+          const upLine = targetSeries.createPriceLine({
+            price: c.hike_trigger_up_price,
+            color: '#ef4444',
+            lineWidth: 2,
+            lineStyle: dashedStyle,
+            axisLabelVisible: true,
+            title: `P* UP: ₹${c.hike_trigger_up_price.toFixed(2)} (+${c.hike_trigger_pct}%)`,
+          });
+          hikeTriggerLines.push(upLine);
+        } catch(e) {}
+      }
+
+      if (c.hike_trigger_dn_price) {
+        try {
+          const dnLine = targetSeries.createPriceLine({
+            price: c.hike_trigger_dn_price,
+            color: '#10b981',
+            lineWidth: 2,
+            lineStyle: dashedStyle,
+            axisLabelVisible: true,
+            title: `P* DN: ₹${c.hike_trigger_dn_price.toFixed(2)}`,
+          });
+          hikeTriggerLines.push(dnLine);
+        } catch(e) {}
+      }
+    }
+
+    const btnHike = document.getElementById('deepHikeTriggersBtn');
+    if (btnHike) {
+      btnHike.addEventListener('click', () => {
+        hikeTriggersVisible = !hikeTriggersVisible;
+        if (hikeTriggersVisible) {
+          btnHike.classList.add('active');
+          btnHike.textContent = 'Triggers ON';
+          btnHike.style.color = 'var(--accent-red)';
+          btnHike.style.borderColor = 'rgba(248,81,73,0.4)';
+        } else {
+          btnHike.classList.remove('active');
+          btnHike.textContent = 'Triggers OFF';
+          btnHike.style.color = 'var(--text-muted)';
+          btnHike.style.borderColor = 'var(--border)';
+        }
+        updateHikeTriggerLines();
+      });
+    }
+
+    setTimeout(updateHikeTriggerLines, 300);
 
     // ── Dynamic Contract Selector Controls ──
     const btnCont = document.getElementById('deepBtnContinuous');

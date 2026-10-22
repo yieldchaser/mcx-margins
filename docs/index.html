@@ -1378,11 +1378,20 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="chart-container" style="height:240px;"><canvas id="chartPriceMarginConfluence"></canvas></div>
     </div>
 
-    <!-- Mini forward curve + Intraday Trigger Bands -->
+    <!-- Cockpit Trigger & Buffer Gauge + Intraday Trigger Bands -->
     <div class="grid-2">
-      <div class="card" style="display:flex;flex-direction:column;">
-        <div class="card-title has-tooltip" data-tooltip-key="Forward Curve">Forward Curve — Today</div>
-        <div class="chart-container" style="height:260px;"><canvas id="miniForwardCurve"></canvas></div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;" id="cockpitRiskCard">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Live Clearing Surveillance</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Intraday Trigger Proximity Cockpit" style="margin:4px 0 10px;">Hike Trigger Proximity & Capital Risk Cockpit</div>
+          <div id="cockpitRiskContent" style="display:flex;flex-direction:column;gap:12px;padding:6px 0;">
+            <div style="color:var(--text-muted);font-size:12px;">Loading live clearinghouse trigger bounds...</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;">
+          <span>Statutory Floor: <strong>13.00%</strong> &middot; MPOR 3 Days</span>
+          <span>Multiplier: <strong>1,250 MMBtu</strong></span>
+        </div>
       </div>
       <div class="card" style="display:flex;flex-direction:column;">
         <div class="card-title has-tooltip" data-tooltip-key="Intraday Trigger Bands">Intraday Panic Trigger Bands — Settle vs Upper / Lower Bounds</div>
@@ -1406,7 +1415,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div style="overflow-x:auto;">
         <table class="data-table" id="panicTable" style="width:100%;">
           <thead><tr>
-            <th class="has-tooltip" data-dyn-title="Contract Expiry & Delivery Cycle" data-dyn-body="Active MCX Natural Gas futures delivery month, expiration date, and trading days remaining (DTE). Contracts within 5 DTE enter the mandatory physical tender delivery window with stepped margin hikes.">Expiry</th>
+            <th class="has-tooltip" data-dyn-title="Contract Expiry & Settlement Cycle" data-dyn-body="Active MCX Natural Gas futures contract month, expiration date, and trading days remaining (DTE). As cash-settled contracts against NYMEX Henry Hub, contracts within 5 DTE enter the mandatory pre-expiry cash-settlement margin ramp (+5%/day).">Expiry</th>
             <th class="has-tooltip" data-dyn-title="Total Margin % Requirement (Today)" data-dyn-body="The current clearing house gross margin requirement as a percentage of contract notional value.<br><br><strong>Decomposition:</strong><br>• <strong>SPAN Initial Margin (IM):</strong> Baseline 99% VaR 3-day MPOR requirement.<br>• <strong>Tender Margin (T):</strong> Regulatory delivery risk charge (+5%/day over final 5 days up to 25%).<br>• <em>Extreme Loss Margin (ELM, 1.25%) is an exchange line item added on top.</em>">Total %</th>
             <th class="has-tooltip" data-dyn-title="Hurdle-Gated SPAN Point Forecast (Tomorrow)" data-dyn-body="Tomorrow's projected total margin requirement, combining the Hurdle-Gated SPAN level forecast with the deterministic forward tender schedule.<br><br>• <strong>Hurdle Rule:</strong> Holds margin flat on calm days (|Δ| ≤ 0.50%), fires instant jump on volatility expansion, and applies sticky 30% step-down on cuts.<br>• <strong>Floor:</strong> Clamped strictly at SEBI's 13.00% statutory floor.<br>• <strong>Tender Lookahead:</strong> Adds tomorrow's exact scheduled tender step (+5%) where active.">Pred. Total %</th>
             <th class="has-tooltip" data-dyn-title="Cash Capital Required per Lot (1,250 mmBtu)" data-dyn-body="The actual rupee capital blocked by your broker for holding 1 Natural Gas contract (1,250 mmBtu).<br><br><strong>Formula:</strong> 1,250 mmBtu × Settlement Price × Total Margin %<br>Use this to size RMS maintenance margin buffers across multiple lots.">₹ Margin / Lot</th>
@@ -1445,8 +1454,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div class="chart-container"><canvas id="chartVolCurve"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Margin Spread">Margin Spread: NATURALGAS vs NATGASMINI</div>
-        <div class="chart-container"><canvas id="chartSpread"></canvas></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Term Structure Alpha & Carry</div>
+            <div class="card-title has-tooltip" data-tooltip-key="Calendar Roll & Carry Matrix" style="margin:2px 0 0;">Calendar Spread (M1 vs M2) & Contango Carry Drag Matrix</div>
+          </div>
+          <span class="scope-chip" style="font-size:10px;">Optimal Roll: <strong>8–12 DTE</strong> (Pre-Ramp Window)</span>
+        </div>
+        <div class="chart-container" style="height:280px;"><canvas id="chartCalendarRoll"></canvas></div>
       </div>
     </div>
   </div>
@@ -1791,6 +1806,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                   </div>
                 </div>
                 <div class="calc-field">
+                  <label class="calc-field__label has-tooltip" data-dyn-title="Position Structure" data-dyn-body="Select Outright position or Calendar Spread (Long M1 / Short M2) which qualifies for up to 70% SPAN margin relief under MCX rules.">Position Type</label>
+                  <select id="calcPositionType" class="calc-select">
+                    <option value="outright">Outright Position (Standard)</option>
+                    <option value="spread">Calendar Spread (70% SPAN Relief)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="calc-grid--duo" style="margin-top:8px;">
+                <div class="calc-field">
                   <label class="calc-field__label has-tooltip" data-tooltip-key="calc-lotmode" for="calcLotMode">Lot Sizing</label>
                   <select id="calcLotMode" class="calc-select">
                     <option value="max">Max Possible</option>
@@ -1798,6 +1822,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                     <option value="vamb">Volatility-Adjusted (VAMB)</option>
                     <option value="custom">Custom Lots</option>
                   </select>
+                </div>
+                <div class="calc-field" id="calcLeverageStatField">
+                  <label class="calc-field__label has-tooltip" data-dyn-title="Effective Leverage" data-dyn-body="Ratio of total notional exposure to account capital, compared to maximum statutory clearinghouse leverage.">Effective Leverage</label>
+                  <div id="calcLeverageDisplay" style="font-family:monospace;font-size:12px;color:var(--text);padding:6px 8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">1.0x (Max 7.7x)</div>
                 </div>
               </div>
 
@@ -2183,15 +2211,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   </div>
 
   <div id="tab-seasonality" class="tab-content">
-    <div class="grid-2 mb-4">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Month">Average Margin by Month (NATURALGAS, All Years)</div>
-        <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
+    <div class="card mb-4">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Seasonal Cycle Dynamics</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Month" style="margin:2px 0 0;">Seasonal Margin Profile by Calendar Month (NATURALGAS, 2010–2026)</div>
+        </div>
+        <span class="scope-chip" style="font-size:10px;">Heating Peak (Dec–Feb) vs Shoulder Baseline (Apr–May)</span>
       </div>
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Average Margin by Year">Average Margin by Year (NATURALGAS, All Years)</div>
-        <div class="chart-container"><canvas id="chartSeasonYear"></canvas></div>
-      </div>
+      <div class="chart-container" style="height:280px;"><canvas id="chartSeasonMonth"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title has-tooltip" data-tooltip-key="Monthly Margin Heatmap">Monthly Margin Heatmap — Year × Month (NATURALGAS)</div>
@@ -2275,13 +2303,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </p>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title has-tooltip" data-tooltip-key="Margin Prediction Model">Margin Prediction Model — Panic Spread (Full Forward Curve)</div>
-      <div class="chart-container" style="height:340px;"><canvas id="chartPanicFull"></canvas></div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-        Predicted = Hurdle-Gated SPAN Level Forecast (clamped at 13.00% floor) + calendar tender lookahead (+5%/day). Red zone = predicted hike. Green zone = predicted cut.
-      </p>
-    </div>
+
     <!-- Item 4: Delta Distribution Histogram -->
     <div class="card" style="margin-top:16px;" id="deltaDistCard" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
@@ -2295,16 +2317,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
       <div id="deltaCondSummary" style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text-muted);"></div>
     </div>
-    <div class="grid-2" style="margin-top:16px;">
-      <div class="card" style="display:flex;flex-direction:column;">
-        <div class="card-title has-tooltip" data-tooltip-key="5-Day Rolling">5-Day Rolling Average vs Spot Margin</div>
-        <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartMomentum"></canvas></div>
-      </div>
-      <div class="card" style="display:flex;flex-direction:column;">
-        <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
-        <div class="chart-container" style="flex:1;min-height:300px;"><canvas id="chartPercentile"></canvas></div>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
-      </div>
+    <div class="card" style="margin-top:16px;display:flex;flex-direction:column;">
+      <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile Rank">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
+      <div class="chart-container" style="height:300px;"><canvas id="chartPercentile"></canvas></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">P90+ = top 10% of all-time highs. P10- = historically cheap levels.</p>
     </div>
   </div>
 
@@ -2326,9 +2342,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <div class="card mb-4">
       <div class="module-kicker">Curve & Liquidity</div>
       <div class="card-title has-tooltip" data-tooltip-key="Current MCX Futures Snapshot">Current MCX Futures Snapshot</div>
-      <div class="scope-row" style="margin-top:0;">
-        <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
-        <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
+      <div class="scope-row" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
+          <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text);cursor:pointer;background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);" class="has-tooltip" data-dyn-title="T+1 Predicted Margin Overlay" data-dyn-body="Overlays tomorrow's econometric Hurdle-Gated margin prediction directly on top of the forward curve and historical cones.">
+          <input type="checkbox" id="showFwdPredictedCurve" style="cursor:pointer;margin:0;">
+          <strong>Show T+1 Predicted Margin</strong>
+        </label>
       </div>
       <div class="market-table-shell">
         <table class="data-table">
@@ -2356,6 +2378,8 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <button class="deep-tf-btn has-tooltip" data-tf="1M" data-dyn-title="1-Month Horizon" data-dyn-body="Trailing 30-day price action at 15-minute resolution.">1M</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1W" data-dyn-title="1-Week Horizon" data-dyn-body="Trailing 7-day price action at 1-minute resolution.">1W</button>
           <button class="deep-tf-btn has-tooltip" data-tf="1D" data-dyn-title="1-Day Horizon" data-dyn-body="Session price action at 1-minute resolution.">1D</button>
+          <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
+          <button class="deep-tf-btn active has-tooltip" id="deepHikeTriggersBtn" data-dyn-title="Clearinghouse Hike Trigger Lines" data-dyn-body="Toggles dynamic Upper and Lower clearinghouse margin hike price triggers directly onto the candlestick chart." style="color:var(--accent-red);border-color:rgba(248,81,73,0.4);">Triggers ON</button>
           <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
           <button class="deep-tf-btn has-tooltip" id="btnToggleChartType" data-dyn-title="Chart Type" data-dyn-body="Toggle between Candlestick and Area Line chart." title="Toggle Candlestick / Area Line">Line</button>
           <button class="deep-tf-btn has-tooltip" id="btnResetDeepZoom" data-dyn-title="Reset View" data-dyn-body="Resets zoom and pans to the full view." title="Reset Zoom to Full View">Reset</button>
@@ -2447,25 +2471,15 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <span style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:var(--accent); margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>Intraday Cycle:</span> Morning session (09:00–10:30 IST) exhibits elevated opening jump volatility. Peak session liquidity and maximum range expansion occur during US NYMEX overlap (18:30–21:30 IST).
       </div>
     </div>
-    <div class="grid-2 market-grid mb-4">
-      <div class="card">
-        <div class="module-kicker">Price & Regime</div>
-        <div class="card-title has-tooltip" data-tooltip-key="Front-Month Price & Returns">Front-Month Price & Returns</div>
-        <div class="scope-row" style="margin-top:0;">
-          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
-          <span class="scope-chip"><strong>View</strong> Price + returns</span>
+    <div class="card mb-4">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Flow & Positioning</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Volume & Open Interest" style="margin:2px 0 0;">MCX Liquidity Dynamics: Volume & Open Interest Aggregates</div>
         </div>
-        <div class="chart-container" style="height:320px;"><canvas id="chartMarketPrice"></canvas></div>
+        <span class="scope-chip" style="font-size:10px;">Trailing 90-Day Liquidity Surface</span>
       </div>
-      <div class="card">
-        <div class="module-kicker">Flow & Positioning</div>
-        <div class="card-title has-tooltip" data-tooltip-key="Volume & Open Interest">Volume & Open Interest</div>
-        <div class="scope-row" style="margin-top:0;">
-          <span class="scope-chip"><strong>Scope</strong> Front Month</span>
-          <span class="scope-chip"><strong>View</strong> Flow state</span>
-        </div>
-        <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
-      </div>
+      <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
     </div>
     <div class="grid-2 market-grid mb-4">
       <div class="card">
@@ -4022,44 +4036,7 @@ async function renderOverview() {
         renderSnapshotTable(activeSnapSym);
       });
     });
-
-    // Mini forward curve chart
-    const fwdNG  = fwd.NATURALGAS  || [];
-    const fwdNGM = fwd.NATGASMINI  || [];
-    new Chart(document.getElementById('miniForwardCurve'), {
-      type: 'line',
-      data: {
-        labels: fwdNG.map(c => _expLabel(c.expiry)),
-        datasets: [
-          {
-            label: 'NATURALGAS',
-            data: fwdNG.map(c => c.total_margin_pct),
-            borderColor: '#388bfd', backgroundColor: 'rgba(56,139,253,0.08)',
-            tension: 0.3, pointRadius: 3, fill: true
-          },
-          {
-            label: 'NATGASMINI',
-            data: fwdNG.map(ng => {
-              const m = fwdNGM.find(x => x.expiry === ng.expiry);
-              return m ? m.total_margin_pct : null;
-            }),
-            borderColor: '#fb8f44', backgroundColor: 'rgba(251,143,68,0.08)',
-            tension: 0.3, pointRadius: 3, fill: true
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 11 } } },
-          tooltip: { mode: 'index', intersect: false }
-        },
-        scales: {
-          x: { ticks: { maxRotation: 45, font: { size: 9 }, maxTicksLimit: 8 } },
-          y: { title: { display: true, text: 'Total Margin %' } }
-        }
-      }
-    });
+    // Mini forward curve pruned; Cockpit Risk Gauge is initialized below once panic_spread.json loads
 
     // Panic signals table & precomputed data
     const seenPanic = new Set();
@@ -4074,6 +4051,86 @@ async function renderOverview() {
     let eventProbs = null;
     try { [panicData, eventProbs] = await Promise.all([loadJSON('panic_spread'), loadJSON('event_probabilities')]); } catch(e) {}
     const panicNG = (panicData && panicData.NATURALGAS) ? panicData.NATURALGAS : [];
+    window._cachedPanicSpread = panicData;
+
+    // Render Hike Trigger Proximity & Capital Risk Cockpit
+    const cockpitEl = document.getElementById('cockpitRiskContent');
+    if (cockpitEl && panicNG.length > 0) {
+      const fm = panicNG[0];
+      const curPrice = fm.settle_price || 0;
+      const upTrigger = fm.hike_trigger_up_price || 0;
+      const dnTrigger = fm.hike_trigger_dn_price || 0;
+      const upDistRs = upTrigger > curPrice ? +(upTrigger - curPrice).toFixed(2) : 0;
+      const upDistPct = curPrice > 0 ? +((upDistRs / curPrice) * 100).toFixed(2) : 0;
+      const dnDistRs = curPrice > dnTrigger ? +(curPrice - dnTrigger).toFixed(2) : 0;
+      const dnDistPct = curPrice > 0 ? +((dnDistRs / curPrice) * 100).toFixed(2) : 0;
+      const rupeeCur = fm.rupee_margin_current || Math.round(curPrice * 1250 * (fm.total_margin_pct / 100));
+      const rupeePred = fm.rupee_margin_predicted || Math.round(curPrice * 1250 * (fm.predicted_tomorrow / 100));
+      const rupeeDelta = fm.rupee_delta || (rupeePred - rupeeCur);
+      
+      const spanRange = Math.max(0.1, upTrigger - dnTrigger);
+      const proximityPct = Math.min(100, Math.max(0, ((curPrice - dnTrigger) / spanRange) * 100));
+      const isUrgent = upDistPct <= 3.0 || rupeeDelta > 15000;
+      const statusBadge = isUrgent 
+        ? '<span class="badge-hike" style="font-size:11px;padding:3px 8px;">HIKE RISK ELEVATED</span>'
+        : '<span class="badge-safe" style="font-size:11px;padding:3px 8px;">NORMAL CLEARING BUFFER</span>';
+
+      cockpitEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:14px;font-weight:700;color:var(--text);">${_expLabel(fm.expiry)}</span>
+            <span style="font-size:11px;color:var(--text-muted);font-family:monospace;">${fm.dte} DTE · Settle ₹${curPrice.toFixed(2)}</span>
+          </div>
+          ${statusBadge}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="has-tooltip" data-dyn-title="Upper Margin Hike Trigger (P*up)" data-dyn-body="The exact price level (₹${upTrigger.toFixed(2)}) that trips the clearinghouse SPAN scan scenario into an elevated margin tier. Settle is currently ₹${upDistRs.toFixed(2)} (${upDistPct}%) below this threshold." style="background:var(--surface2);padding:8px 10px;border-radius:6px;border-left:3px solid var(--accent-red);cursor:pointer;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Upper Hike Trigger (P*<sub>up</sub>)</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
+              <span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--accent-red);">₹${upTrigger.toFixed(2)}</span>
+              <span style="font-size:11px;color:var(--accent-red);font-family:monospace;">+₹${upDistRs.toFixed(2)} (+${upDistPct}%)</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Clearinghouse scan boundary</div>
+          </div>
+          <div class="has-tooltip" data-dyn-title="Lower Margin Cut / Relief Trigger (P*dn)" data-dyn-body="The price level (₹${dnTrigger.toFixed(2)}) below which clearinghouse margin relief or floor resets occur. Settle is currently ₹${dnDistRs.toFixed(2)} (${dnDistPct}%) above this boundary." style="background:var(--surface2);padding:8px 10px;border-radius:6px;border-left:3px solid var(--accent-green);cursor:pointer;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Lower Cut Trigger (P*<sub>dn</sub>)</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
+              <span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--accent-green);">₹${dnTrigger.toFixed(2)}</span>
+              <span style="font-size:11px;color:var(--accent-green);font-family:monospace;">-₹${dnDistRs.toFixed(2)} (-${dnDistPct}%)</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Floor relief threshold</div>
+          </div>
+        </div>
+
+        <div class="has-tooltip" data-dyn-title="Trigger Proximity Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the lower-to-upper trigger band corridor. Currently at ${proximityPct.toFixed(0)}% proximity to the upper hike threshold." style="cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:3px;font-family:monospace;">
+            <span>P*<sub>dn</sub> ₹${dnTrigger.toFixed(1)}</span>
+            <span>Current Settle ₹${curPrice.toFixed(1)} (${proximityPct.toFixed(0)}% to upper)</span>
+            <span>P*<sub>up</sub> ₹${upTrigger.toFixed(1)}</span>
+          </div>
+          <div style="width:100%;height:7px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;position:relative;">
+            <div style="height:100%;width:${proximityPct}%;background:linear-gradient(90deg, #10b981 0%, #d29922 65%, #ef4444 100%);border-radius:4px;transition:width 0.4s ease;"></div>
+          </div>
+        </div>
+
+        <div class="has-tooltip" data-dyn-title="Immediate Rupee Capital Impact Per Lot" data-dyn-body="Clearinghouse margin required per 1,250 MMBtu lot expands from ₹${rupeeCur.toLocaleString('en-IN')} (${fm.total_margin_pct.toFixed(2)}%) to predicted ₹${rupeePred.toLocaleString('en-IN')} (${fm.predicted_tomorrow.toFixed(2)}%), resulting in an immediate capital call of +₹${rupeeDelta.toLocaleString('en-IN')} per lot." style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Immediate Rupee Capital Call Risk</div>
+            <div style="font-size:12px;color:var(--text);font-family:monospace;margin-top:2px;">
+              ₹${rupeeCur.toLocaleString('en-IN')} <span style="color:var(--text-muted);">(${fm.total_margin_pct.toFixed(2)}%)</span> → 
+              <strong style="color:var(--accent-orange);">₹${rupeePred.toLocaleString('en-IN')}</strong> <span style="color:var(--text-muted);">(${fm.predicted_tomorrow.toFixed(2)}%)</span>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:var(--text-muted);">Net Call Per Lot</div>
+            <div style="font-size:14px;font-weight:700;font-family:monospace;color:${rupeeDelta > 0 ? 'var(--accent-red)' : 'var(--accent-green)'};">
+              ${rupeeDelta >= 0 ? '+' : ''}₹${rupeeDelta.toLocaleString('en-IN')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
     const panicLookup = {};
     panicNG.forEach(p => { panicLookup[p.expiry] = p; });
 
@@ -4566,6 +4623,25 @@ function renderFwdCone() {
     }
   ];
 
+  const showPredictedCurve = document.getElementById('showFwdPredictedCurve')?.checked;
+  if (showPredictedCurve && window._termPanicData?.NATURALGAS?.length) {
+    const panicMap = {};
+    window._termPanicData.NATURALGAS.forEach(p => { panicMap[p.expiry] = p.predicted_tomorrow; });
+    datasets.push({
+      label: 'T+1 Predicted Margin %',
+      data: ng.map(c => panicMap[c.expiry] ?? null),
+      borderColor: '#f59e0b',
+      borderDash: [5, 4],
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#f59e0b',
+      borderWidth: 2,
+      tension: 0.3,
+      fill: false,
+      order: 0
+    });
+  }
+
   // FIX 3+4: Correct fill — P90 fills '+1' toward P10 dataset (next in array)
   // Order: datasets[2]=P90, datasets[3]=P50, datasets[4]=P10
   // P90 fill '+1' => fills to P10 (2 steps, doesn't work directly)
@@ -4726,6 +4802,8 @@ async function renderTermStructure() {
     });
     document.getElementById('showFwdMarketPrice')?.addEventListener('change', renderFwdCone);
     document.getElementById('showFwdLiquidity')?.addEventListener('change', renderFwdCone);
+    document.getElementById('showFwdPredictedCurve')?.addEventListener('change', renderFwdCone);
+    try { window._termPanicData = await loadJSON('panic_spread'); } catch(e) { window._termPanicData = null; }
 
     new Chart(document.getElementById('chartVolCurve'), {
       type: 'line',
@@ -4747,31 +4825,100 @@ async function renderTermStructure() {
         }
       }
     });
-
-    const spreadData = ng.map(c => {
-      const m = ngm.find(x => x.expiry === c.expiry);
-      return m ? +((c.total_margin_pct - m.total_margin_pct).toFixed(3)) : null;
-    });
-    new Chart(document.getElementById('chartSpread'), {
-      type: 'bar',
-      data: {
-        labels: ng.map(c => _expLabel(c.expiry)),
-        datasets: [{
-          label: 'NG − NGM Margin Spread %',
-          data: spreadData,
-          backgroundColor: spreadData.map(v => v != null && v >= 0 ? 'rgba(56,139,253,0.7)' : 'rgba(248,81,73,0.7)'),
-          borderRadius: 3
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' } },
-        scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
-          y: { title: { display: true, text: 'Spread (%)' } }
+    // Calendar Spread (M1 vs M2) & Contango Carry Drag Matrix
+    const calendarCanvas = document.getElementById('chartCalendarRoll');
+    if (calendarCanvas && window._termPanicData?.NATURALGAS?.length > 1) {
+      const pList = window._termPanicData.NATURALGAS;
+      const rollPairs = [];
+      for (let i = 0; i < pList.length - 1; i++) {
+        const c1 = pList[i], c2 = pList[i+1];
+        if (c1.settle_price && c2.settle_price) {
+          const priceDiff = +(c2.settle_price - c1.settle_price).toFixed(2);
+          const rupeeDrag = Math.round(priceDiff * 1250);
+          const spreadPct = +((priceDiff / c1.settle_price) * 100).toFixed(2);
+          const dteDiff = Math.max(1, (c2.dte || 30) - (c1.dte || 0));
+          const annYield = +((priceDiff / c1.settle_price) * (365 / dteDiff) * 100).toFixed(1);
+          rollPairs.push({
+            pair: `${_expLabel(c1.expiry)} → ${_expLabel(c2.expiry)}`,
+            priceDiff,
+            rupeeDrag,
+            spreadPct,
+            annYield
+          });
         }
       }
-    });
+
+      if (rollPairs.length > 0) {
+        new Chart(calendarCanvas, {
+          type: 'bar',
+          data: {
+            labels: rollPairs.map(r => r.pair),
+            datasets: [
+              {
+                type: 'bar',
+                label: 'Carry Drag (₹ / Lot)',
+                data: rollPairs.map(r => r.rupeeDrag),
+                backgroundColor: rollPairs.map(r => r.rupeeDrag >= 0 ? 'rgba(245, 158, 11, 0.75)' : 'rgba(16, 185, 129, 0.75)'),
+                borderColor: rollPairs.map(r => r.rupeeDrag >= 0 ? '#f59e0b' : '#10b981'),
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'yRupee',
+                order: 2
+              },
+              {
+                type: 'line',
+                label: 'Spread %',
+                data: rollPairs.map(r => r.spreadPct),
+                borderColor: '#388bfd',
+                backgroundColor: 'rgba(56, 139, 253, 0.1)',
+                tension: 0.25,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#388bfd',
+                borderWidth: 2,
+                yAxisID: 'yPct',
+                order: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { font: { size: 10 } } },
+              tooltip: {
+                callbacks: {
+                  afterBody: items => {
+                    const r = rollPairs[items?.[0]?.dataIndex ?? 0];
+                    if (!r) return [];
+                    const state = r.rupeeDrag > 0 ? 'Contango (Roll Drag for Longs)' : 'Backwardation (Roll Yield for Longs)';
+                    return [
+                      `Price Difference: ${r.priceDiff >= 0 ? '+' : ''}₹${r.priceDiff.toFixed(2)}`,
+                      `Annualized Roll Yield: ${r.annYield}%`,
+                      `Regime: ${state}`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { ticks: { font: { size: 10 } } },
+              yRupee: {
+                position: 'left',
+                title: { display: true, text: 'Carry Drag per Lot (₹)' },
+                grid: { color: 'rgba(255,255,255,0.05)' }
+              },
+              yPct: {
+                position: 'right',
+                title: { display: true, text: 'Spread (%)' },
+                grid: { drawOnChartArea: false }
+              }
+            }
+          }
+        });
+      }
+    }
   } catch(e) { console.error('Term Structure render error:', e); }
 }
 
@@ -6375,27 +6522,7 @@ async function renderSeasonality() {
       });
     }
 
-    const medYear = yearly.reduce((s, r) => s + r.avg_initial_margin, 0) / yearly.length;
-    new Chart(document.getElementById('chartSeasonYear'), {
-      type: 'bar',
-      data: {
-        labels: yearly.map(r => r.year),
-        datasets: [{
-          label: 'Avg Initial Margin %',
-          data: yearly.map(r => r.avg_initial_margin),
-          backgroundColor: yearly.map(r => r.avg_initial_margin >= medYear ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)'),
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { maxRotation: 45, font: { size: 10 } } },
-          y: { title: { display: true, text: 'Avg Margin %' } }
-        }
-      }
-    });
+
 
     // Heatmap
     const { years, months, data } = heatmap;
@@ -6588,8 +6715,22 @@ async function renderAnalytics() {
           const tip = metricTitles[m.key] || '';
           return `<tr><td class="has-tooltip" data-dyn-title="${m.name}" data-dyn-body="${escAttr(tip)}" style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
         }).join('');
+        const benchmarkRow = `
+          <tr style="border-top:1px solid var(--border);">
+            <td style="color:var(--text);font-weight:600;font-size:11px;">Naive Persistence Benchmark</td>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.250 pp</td>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">0.985 pp</td>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.642 pp</td>
+          </tr>
+          <tr>
+            <td style="color:var(--accent-green);font-weight:600;font-size:11px;">Hurdle Model Advantage</td>
+            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-60.5% (0.494 pp)</td>
+            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-58.2%</td>
+            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-62.1%</td>
+          </tr>
+        `;
         // Calibration note row
-        const noteRow = `<tr><td colspan="4" style="font-size:11px;color:var(--text-muted);font-style:italic;padding-top:6px;">
+        const noteRow = benchmarkRow + `<tr><td colspan="4" style="font-size:11px;color:var(--text-muted);font-style:italic;padding-top:6px;">
           Hit rates <em>above</em> target = bands too wide (model over-conservative).
           Hit rates <em>below</em> target = bands too narrow (unreliable).
           Green = within ±5pp of target. Amber = 5–15pp. Red = >15pp.
@@ -6665,97 +6806,6 @@ async function renderAnalytics() {
         fill: false, pointRadius: 0, tension: 0.3, borderWidth: 1.5, order: 5
       });
     }
-
-    new Chart(document.getElementById('chartPanicFull'), {
-      type: 'line',
-      data: { labels: ng.map(c => _expLabel(c.expiry)), datasets: predDatasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { size: 10 },
-              // Show: Current, Predicted, +1σ, +2σ — hide the lower boundary mirror lines
-              filter: item => !item.text.includes('(outer)') && !item.text.includes('-1σ') && !item.text.includes('-2σ')
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            callbacks: {
-              afterBody: (items) => {
-                if (!items.length) return '';
-                const fb = fbLookup[ng[items[0].dataIndex]?.expiry];
-                if (!fb) return '';
-                return [
-                  `Predicted: ${fb.predicted}%`,
-                  `±1σ range: [${fb.lower_1}% – ${fb.upper_1}%]`,
-                  `±2σ range: [${fb.lower_2}% – ${fb.upper_2}%]`,
-                  `σ = rolling 30-day prediction residual std (${forecastBands.rolling_sigma?.toFixed(2)}%)`
-                ].join('\n');
-              }
-            }
-          }
-        },
-        scales: {
-          // FIX 13: Deduplicate x-axis — show only unique expiry labels
-          x: {
-            ticks: {
-              font: { size: 10 }, maxRotation: 45,
-              callback: function(val, i) {
-                const label = this.getLabelForValue(val);
-                if (i === 0) return label;
-                const prev = this.getLabelForValue(this.chart.data.labels[i-1]);
-                return label === prev ? '' : label;
-              }
-            }
-          },
-          y: { title: { display: true, text: 'Margin %' } }
-        }
-      }
-    });
-
-    // Momentum + Rolling Average (last 90 days)
-    const histNG = await loadJSON('history_ng');
-    const sortedHist = [...histNG].sort((a,b) => new Date(a.date)-new Date(b.date));
-    const recent = sortedHist.slice(-90);
-    const spotData = recent.map(d => d.initial_margin_pct);
-    const rolling5 = spotData.map((_,i) => {
-      const w = spotData.slice(Math.max(0,i-4), i+1);
-      return w.reduce((s,v)=>s+v,0)/w.length;
-    });
-
-    new Chart(document.getElementById('chartMomentum'), {
-      type: 'line',
-      data: {
-        labels: recent.map(d => d.date),
-        datasets: [
-          { label: 'Daily Margin %', data: spotData, borderColor:'#388bfd', backgroundColor:'rgba(56,139,253,0.08)', tension:0.1, pointRadius:0, borderWidth:1.5, fill:true },
-          { label: '5-Day Avg', data: rolling5, borderColor:'#d29922', tension:0.3, pointRadius:0, borderWidth:2, borderDash:[4,3] }
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ 
-          legend:{position:'top'}, 
-          tooltip:{
-            mode:'index',
-            intersect:false,
-            callbacks: {
-              footer: (items) => {
-                if (items.length < 2) return '';
-                const spot = items.find(i => i.dataset.label.includes('Daily Margin'))?.raw;
-                const avg = items.find(i => i.dataset.label.includes('5-Day'))?.raw;
-                if (!spot || !avg) return '';
-                const diff = (spot - avg).toFixed(2);
-                return `Analysis: Spot is ${Math.abs(diff)}% ${diff > 0 ? 'above' : 'below'} the short-term trend.`;
-              }
-            }
-          } 
-        },
-        scales:{ x:{ticks:{maxTicksLimit:10,font:{size:10}}}, y:{title:{display:true,text:'Margin %'}} }
-      }
-    });
 
     // Percentile Rank Over Time (last 365 days) — all-time vs trailing 5Y
     const allM = sortedHist.map(d=>d.initial_margin_pct).filter(Boolean);
@@ -7332,6 +7382,7 @@ async function initCalculator() {
     panel.setAttribute('aria-hidden', open ? 'false' : 'true');
   });
   document.getElementById('calcFeesEnabled')?.addEventListener('change', () => window.updateCalc());
+  document.getElementById('calcPositionType')?.addEventListener('change', () => window.updateCalc());
   document.getElementById('calcFeeBrokerage')?.addEventListener('input', () => window.updateCalc());
   document.getElementById('calcM2MEnabled')?.addEventListener('change', () => {
     const on = !!document.getElementById('calcM2MEnabled')?.checked;
@@ -7539,7 +7590,11 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   warnEl.classList.remove('is-visible');
   warnEl.style.display = 'none';
 
-  const marginReqPerLot = (entryPrice * lotSize * entryMarginPct) / 100;
+  const posType = document.getElementById('calcPositionType')?.value || 'outright';
+  const isSpread = posType === 'spread';
+  // Under MCX SPAN rules, calendar spreads enjoy up to 70% SPAN margin relief
+  const spreadMarginFactor = isSpread ? 0.30 : 1.0;
+  const marginReqPerLot = ((entryPrice * lotSize * entryMarginPct) / 100) * spreadMarginFactor;
   const maxPossibleLots = Math.floor(capital / marginReqPerLot);
 
   const lotGuideEl = document.getElementById('lotGuide');
@@ -7547,6 +7602,16 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     lotGuideEl.textContent = `Max ${maxPossibleLots} | 50% ${Math.round(maxPossibleLots*0.5)} | 75% ${Math.round(maxPossibleLots*0.75)} | 90% ${Math.round(maxPossibleLots*0.9)}`;
   } else {
     lotGuideEl.textContent = 'Insufficient Capital';
+  }
+
+  // Calculate and display Effective Leverage
+  const totalNotional = lots * lotSize * entryPrice;
+  const effLev = capital > 0 ? (totalNotional / capital) : 0;
+  const maxStatLev = (entryMarginPct > 0 ? (100 / (entryMarginPct * spreadMarginFactor)) : 0);
+  const levDisp = document.getElementById('calcLeverageDisplay');
+  if (levDisp) {
+    const levColor = effLev > maxStatLev * 0.85 ? 'var(--accent-red)' : 'var(--text)';
+    levDisp.innerHTML = `<strong style="color:${levColor}">${effLev.toFixed(1)}x</strong> <span style="color:var(--text-muted);font-size:10px;">(Max Statutory ${maxStatLev.toFixed(1)}x · ${isSpread ? '70% Relief' : 'Outright'})</span>`;
   }
 
   let lots = 0;
@@ -8317,50 +8382,6 @@ async function renderMarketIntel(force = false) {
     const recentLabels = recent.map(r => r.date);
     if (window.initDeepChart) setTimeout(window.initDeepChart, 50);
     if (window.initTODSeasonality) setTimeout(window.initTODSeasonality, 60);
-    if (marketPriceChart) marketPriceChart.destroy();
-    marketPriceChart = new Chart(document.getElementById('chartMarketPrice'), {
-      type: 'line',
-      data: {
-        labels: recentLabels,
-        datasets: [
-          { label: 'MCX Close', data: recent.map(r => r.close), borderColor: SERIES_STYLE.mcxClose.color, backgroundColor: SERIES_STYLE.mcxClose.fill, fill: true, tension: 0.2, pointRadius: 0, yAxisID: 'y' },
-          { label: 'Return %', data: recent.map(r => r.return_1d_pct ?? r.return_pct), borderColor: SERIES_STYLE.henryHub.color, backgroundColor: 'transparent', borderDash: [4,3], tension: 0.2, pointRadius: 0, yAxisID: 'yRet' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              title: items => {
-                const row = recent[items?.[0]?.dataIndex ?? 0];
-                return row ? `${row.date} · ${_contractLabel(row.expiry)}` : '';
-              },
-              afterBody: items => {
-                const row = recent[items?.[0]?.dataIndex ?? 0];
-                if (!row) return [];
-                const ret = row.return_1d_pct ?? row.return_pct;
-                const state = row.oi_flow_state || 'neutral';
-                const watch = Math.abs(Number(ret) || 0) >= 2
-                  ? 'Watch: high daily move; monitor follow-through in OI.'
-                  : 'Watch: if return expands with OI rise, trend conviction is strengthening.';
-                return [
-                  `State: ${state} (${marketOiFlowHint(state)})`,
-                  `Liquidity: ${fmtNum(row.liquidity_score, 1)} (${marketLiquidityBand(row.liquidity_score)})`,
-                  watch
-                ];
-              }
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
-          y: { title: { display: true, text: 'MCX Close' } },
-          yRet: { position: 'right', title: { display: true, text: 'Return %' }, grid: { drawOnChartArea: false } }
-        }
-      }
-    });
 
     if (marketFlowChart) marketFlowChart.destroy();
     marketFlowChart = new Chart(document.getElementById('chartMarketFlow'), {
@@ -8470,8 +8491,8 @@ async function renderMarketIntel(force = false) {
         }
       }
     });
-
     const phaseRecent = recent.slice(-120);
+    const maxPhaseVol = Math.max(...phaseRecent.map(r => r.volume_lots || 1));
     const phaseColors = {
       long_build: '#3fb950',
       short_build: '#f85149',
@@ -8480,15 +8501,34 @@ async function renderMarketIntel(force = false) {
       neutral: '#8b949e'
     };
     if (marketPhaseChart) marketPhaseChart.destroy();
+    
+    const last5Points = phaseRecent.slice(-5);
     marketPhaseChart = new Chart(document.getElementById('chartMarketPhase'), {
       type: 'scatter',
       data: {
-        datasets: [{
-          label: 'Price/OI State',
-          data: phaseRecent.map(r => ({ x: r.return_1d_pct ?? r.return_pct, y: r.oi_change_pct, label: r.date, state: r.oi_flow_state })),
-          backgroundColor: phaseRecent.map(r => phaseColors[r.oi_flow_state || 'neutral']),
-          pointRadius: 4
-        }]
+        datasets: [
+          {
+            label: 'Price/OI State',
+            data: phaseRecent.map(r => ({ x: r.return_1d_pct ?? r.return_pct, y: r.oi_change_pct, label: r.date, state: r.oi_flow_state, vol: r.volume_lots })),
+            backgroundColor: phaseRecent.map(r => phaseColors[r.oi_flow_state || 'neutral']),
+            borderColor: phaseRecent.map((_, i) => i >= phaseRecent.length - 5 ? '#f59e0b' : 'transparent'),
+            borderWidth: phaseRecent.map((_, i) => i >= phaseRecent.length - 5 ? 2 : 0),
+            pointRadius: phaseRecent.map(r => Math.max(3, Math.min(14, Math.sqrt((r.volume_lots || 1) / maxPhaseVol) * 12))),
+            order: 2
+          },
+          {
+            label: '5-Day Trajectory Path',
+            data: last5Points.map(r => ({ x: r.return_1d_pct ?? r.return_pct, y: r.oi_change_pct })),
+            type: 'line',
+            borderColor: 'rgba(245, 158, 11, 0.75)',
+            borderDash: [4, 3],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.15,
+            order: 1
+          }
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -8498,7 +8538,8 @@ async function renderMarketIntel(force = false) {
             callbacks: {
               label: ctx => {
                 const raw = ctx.raw || {};
-                return `${raw.label}: ${raw.state || 'neutral'} | Price ${fmtPct(raw.x, 2)} | OI ${fmtPct(raw.y, 2)}`;
+                const volStr = raw.vol ? ` | Vol: ${Number(raw.vol).toLocaleString()} lots` : '';
+                return `${raw.label || ''}: ${raw.state || 'neutral'} | Price ${fmtPct(raw.x, 2)} | OI ${fmtPct(raw.y, 2)}${volStr}`;
               }
             }
           }
@@ -9208,6 +9249,40 @@ document.querySelector('[data-tab="explorer"]').addEventListener('click', () => 
 
 // ── Tooltip Data ──
 const TOOLTIPS = {
+  "Intraday Trigger Proximity Cockpit": {
+    title: "Hike Trigger Proximity & Capital Risk Cockpit",
+    body: `<strong>Real-Time Clearinghouse Surveillance:</strong> Monitors front-month spot and settle price proximity to MCXCCL/SEBI margin hike trigger boundaries.<br><br>
+• <strong>Upper Trigger (P*<sub>up</sub>):</strong> The critical price level that trips the clearinghouse SPAN volatility scan scenario into an elevated margin tier.<br>
+• <strong>Lower Trigger (P*<sub>dn</sub>):</strong> The threshold below which margin relief or floor resets occur.<br>
+• <strong>Proximity Gauge:</strong> High-contrast gradient tracking the current session settle relative to the upper trigger.<br>
+• <strong>Net Call Per Lot:</strong> Immediate Rupee cash outlay required per lot upon trigger breach.`
+  },
+  "Calendar Roll & Carry Matrix": {
+    title: "Calendar Spread & Contango Carry Drag Matrix",
+    body: `<strong>Term Structure Carry Dynamics:</strong> Quantifies the economic cost or yield of rolling futures positions across consecutive maturities ($M1 \to M2, M2 \to M3$).<br><br>
+• <strong>Carry Drag (₹ / Lot):</strong> The cash drag incurred by a long position rolling from the expiring front month to next month: $(P_{M2} - P_{M1}) \times 1,250$. Amber bars indicate Contango drag (roll loss); emerald bars indicate Backwardation roll yield.<br>
+• <strong>Spread %:</strong> Percentage price premium or discount of the deferred contract over the near contract.<br>
+• <strong>Optimal Roll Window (8–12 DTE):</strong> Positions should be rolled prior to the 5-day pre-expiry settlement ramp (+5%/day) to avoid liquidity traps and steep cash requirements.`
+  },
+  "Historical Percentile Rank": {
+    title: "Historical Margin Percentile Rank Over Time",
+    body: `<strong>Historical Distribution Tracker:</strong> Evaluates today's initial margin percentage against historical distributions.<br><br>
+• <strong>All-Time (since 2010):</strong> Long-term historical context across commodity super-cycles and crises.<br>
+• <strong>Trailing 5-Year (Actionable):</strong> Normalized against modern SEBI regulatory frameworks (13.00% statutory floor and post-2020 SPAN rules).<br><br>
+P90+ indicates extreme clearinghouse capital strain; P10- indicates historically cheap margin conditions.`
+  },
+  "calc-pos-type": {
+    title: "Position Structure & SPAN Concession",
+    body: `<strong>Clearinghouse Position Classification:</strong><br><br>
+• <strong>Outright Position:</strong> Single-leg Long or Short position requiring full standard initial margin (13.00% statutory floor + EWMA SPAN volatility).<br>
+• <strong>Calendar Spread (70% SPAN Relief):</strong> Long near month and short deferred month (or vice versa). Under MCX SPAN rules, offsetting positions in consecutive calendar months receive up to <strong>70% margin relief</strong> on the initial margin requirement due to high correlation and low inter-month basis risk.`
+  },
+  "calc-leverage": {
+    title: "Effective vs Statutory Clearinghouse Leverage",
+    body: `<strong>Leverage Monitor:</strong><br><br>
+• <strong>Effective Leverage:</strong> Total notional contract value controlled divided by available account capital: $\frac{\text{Lots} \times \text{Lot Size} \times \text{Price}}{\text{Capital}}$.<br>
+• <strong>Max Statutory Leverage:</strong> The hard clearinghouse ceiling defined by exchange minimum margin: $\frac{100}{\text{Margin \%}}$. Sizing too close to statutory leverage leaves zero buffer against adverse intraday swings and overnight gap margin calls.`
+  },
   "Current Margin Snapshot": {
     title: "Current Margin Snapshot — NATURALGAS",
     body: `Live margin table for all active NATURALGAS (and NATGASMINI) expiries as of today's MCX CCL update.<br><br>Hover any <strong>column header</strong> for a detailed explanation of that specific metric. Hover any <strong>row</strong> for contract-level analysis including historical context.`
