@@ -1393,9 +1393,16 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <span>Multiplier: <strong>1,250 MMBtu</strong></span>
         </div>
       </div>
-      <div class="card" style="display:flex;flex-direction:column;">
-        <div class="card-title has-tooltip" data-tooltip-key="Intraday Trigger Bands">Intraday Panic Trigger Bands — Settle vs Upper / Lower Bounds</div>
-        <div class="chart-container" style="height:260px;"><canvas id="chartPanicTriggers"></canvas></div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-blue);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Hurdle Inversion Horizon</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Intraday Trigger Bands" style="margin:4px 0 10px;">Intraday Panic Trigger Bands — Settle vs Upper / Lower Bounds</div>
+        </div>
+        <div class="chart-container" style="flex:1;min-height:300px;width:100%;"><canvas id="chartPanicTriggers"></canvas></div>
+        <div style="font-size:10px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;">
+          <span>Corridor: <strong>±0.50% Hurdle Stability Band</strong></span>
+          <span>Inversion: <strong>EWMA &lambda;=0.94 Closed-Form</strong></span>
+        </div>
       </div>
     </div>
 
@@ -1453,11 +1460,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
     <div class="grid-2">
-      <div class="card">
-        <div class="card-title has-tooltip" data-tooltip-key="Volatility Term Structure">Volatility Term Structure</div>
-        <div class="chart-container"><canvas id="chartVolCurve"></canvas></div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-purple);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Contract Volatility Decay</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Volatility Term Structure" style="margin:2px 0 8px;">Volatility Term Structure</div>
+        </div>
+        <div class="chart-container" style="flex:1;min-height:290px;height:100%;"><canvas id="chartVolCurve"></canvas></div>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
           <div>
             <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Term Structure Alpha & Carry</div>
@@ -1465,7 +1475,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           </div>
           <span class="scope-chip" style="font-size:10px;">Optimal Roll: <strong>8–12 DTE</strong> (Pre-Ramp Window)</span>
         </div>
-        <div class="chart-container" style="height:280px;"><canvas id="chartCalendarRoll"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:290px;height:100%;"><canvas id="chartCalendarRoll"></canvas></div>
       </div>
     </div>
   </div>
@@ -2311,13 +2321,16 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
     <div class="grid-2 mb-4">
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
         <div class="card-title has-tooltip" data-tooltip-key="DTE vs Margin">DTE vs Margin — How Margin Changes as Expiry Approaches</div>
-        <div class="chart-container"><canvas id="chartDTE"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="chartDTE"></canvas></div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+          Contracts with DTE &le; 5 enter the mandatory pre-expiry cash settlement ramp (+5%/day), creating a steep non-linear slope into expiry.
+        </p>
       </div>
-      <div class="card">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
         <div class="card-title has-tooltip" data-tooltip-key="Lag Correlation">Lag Correlation: Margin % vs Daily Volatility</div>
-        <div class="chart-container"><canvas id="chartLagCorr"></canvas></div>
+        <div class="chart-container" style="flex:1;min-height:280px;"><canvas id="chartLagCorr"></canvas></div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
           Correlation is strongest at lag=0 (simultaneous). Relationship weakens beyond 10 days — MCX responds to current vol, not future conditions.
         </p>
@@ -4377,6 +4390,7 @@ async function renderOverview() {
                 borderColor: 'rgba(56, 139, 253, 0.25)',
                 borderWidth: 1,
                 borderRadius: 4,
+                maxBarThickness: 42,
                 barPercentage: 0.5,
                 categoryPercentage: 0.7,
                 order: 4
@@ -5027,10 +5041,14 @@ async function renderTermStructure() {
                 type: 'bar',
                 label: 'Carry Drag (₹ / Lot)',
                 data: rollPairs.map(r => r.rupeeDrag),
-                backgroundColor: rollPairs.map(r => r.rupeeDrag >= 0 ? 'rgba(245, 158, 11, 0.75)' : 'rgba(16, 185, 129, 0.75)'),
+                backgroundColor: rollPairs.map(r => r.rupeeDrag >= 0 ? 'rgba(245, 158, 11, 0.28)' : 'rgba(16, 185, 129, 0.28)'),
                 borderColor: rollPairs.map(r => r.rupeeDrag >= 0 ? '#f59e0b' : '#10b981'),
-                borderWidth: 1,
-                borderRadius: 4,
+                hoverBackgroundColor: rollPairs.map(r => r.rupeeDrag >= 0 ? 'rgba(245, 158, 11, 0.45)' : 'rgba(16, 185, 129, 0.45)'),
+                borderWidth: 1.5,
+                borderRadius: 6,
+                maxBarThickness: 34,
+                barPercentage: 0.52,
+                categoryPercentage: 0.7,
                 yAxisID: 'yRupee',
                 order: 2
               },
@@ -5041,9 +5059,11 @@ async function renderTermStructure() {
                 borderColor: '#388bfd',
                 backgroundColor: 'rgba(56, 139, 253, 0.1)',
                 tension: 0.25,
-                pointRadius: 5,
-                pointHoverRadius: 8,
-                pointBackgroundColor: '#388bfd',
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#388bfd',
+                pointBorderWidth: 2,
                 borderWidth: 2,
                 yAxisID: 'yPct',
                 order: 1
