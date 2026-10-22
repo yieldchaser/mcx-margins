@@ -1408,9 +1408,9 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <th class="has-tooltip" data-dyn-title="Contract Expiry & Delivery Cycle" data-dyn-body="Active MCX Natural Gas futures delivery month, expiration date, and trading days remaining (DTE). Contracts within 5 DTE enter the mandatory physical tender delivery window with stepped margin hikes.">Expiry <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th class="has-tooltip" data-dyn-title="Total Margin % Requirement (Today)" data-dyn-body="The current clearing house gross margin requirement as a percentage of contract notional value.<br><br><strong>Decomposition:</strong><br>• <strong>SPAN Initial Margin (IM):</strong> Baseline 99% VaR 3-day MPOR requirement.<br>• <strong>Tender Margin (T):</strong> Regulatory delivery risk charge (+5%/day over final 5 days up to 25%).<br>• <em>Extreme Loss Margin (ELM, 1.25%) is an exchange line item added on top.</em>">Total % <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th class="has-tooltip" data-dyn-title="Hurdle-Gated SPAN Point Forecast (Tomorrow)" data-dyn-body="Tomorrow's projected total margin requirement, combining the Hurdle-Gated SPAN level forecast with the deterministic forward tender schedule.<br><br>• <strong>Hurdle Rule:</strong> Holds margin flat on calm days (|Δ| ≤ 0.50%), fires instant jump on volatility expansion, and applies sticky 30% step-down on cuts.<br>• <strong>Floor:</strong> Clamped strictly at SEBI's 13.00% statutory floor.<br>• <strong>Tender Lookahead:</strong> Adds tomorrow's exact scheduled tender step (+5%) where active.">Pred. Total % <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
-            <th class="has-tooltip" data-dyn-title="Cash Capital Required per Lot (1,250 mmBtu)" data-dyn-body="The actual rupee capital blocked by your broker for holding 1 Natural Gas contract (1,250 mmBtu).<br><br>$$\text{Rupee Margin} = 1,250 \times \text{Settlement Price} \times \text{Total Margin } \%$$<br>Use this to size RMS maintenance margin buffers across multiple lots.">₹ Margin / Lot <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
+            <th class="has-tooltip" data-dyn-title="Cash Capital Required per Lot (1,250 mmBtu)" data-dyn-body="The actual rupee capital blocked by your broker for holding 1 Natural Gas contract (1,250 mmBtu).<br><br><strong>Formula:</strong> 1,250 mmBtu × Settlement Price × Total Margin %<br>Use this to size RMS maintenance margin buffers across multiple lots.">₹ Margin / Lot <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th class="has-tooltip" data-dyn-title="Expected Overnight Capital Call Delta (₹ / Lot)" data-dyn-body="Projected change in required rupee capital per lot from today to tomorrow.<br><br>• <span style='color:var(--accent-red)'>+₹Δ (Red)</span>: Expected overnight margin hike — ensure excess account cash before 11:30 PM IST close to prevent RMS liquidation.<br>• <span style='color:var(--accent-green)'>-₹Δ (Green)</span>: Expected capital release upon volatility decay.<br>• <strong>₹0 Flat</strong>: Margin remains locked in place.">Overnight Δ₹ <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
-            <th class="has-tooltip" data-dyn-title="Intraday Hike Trigger Price (Closed-Form Inversion)" data-dyn-body="The exact price boundary that will force tomorrow's MCXCCL EWMA volatility across the +0.50% hike hurdle.<br><br>Derived by inverting SEBI's EWMA recursion (λ = 0.94):<br>$$|r^*| = \sqrt{\frac{(\sigma^*)^2 - 0.94\,\sigma_t^2}{0.06}}, \quad P_{\text{trigger}} = P_{\text{settle}} \times e^{\pm r^*}$$<br>• If today's price crosses above <strong>Upper Breach</strong> or crashes below <strong>Lower Breach</strong> before close, an overnight hike is mathematically locked.<br>• <strong>⚠️ LOCKED IN</strong> indicates carryover volatility alone has already breached the threshold.">Intraday Hike Trigger <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
+            <th class="has-tooltip" data-dyn-title="Intraday Hike Trigger Price (Closed-Form Inversion)" data-dyn-body="The exact price boundary that will force tomorrow's MCXCCL EWMA volatility across the +0.50% hike hurdle.<br><br><strong>EWMA Inversion Formula:</strong><br>|r*| = √[ ((σ* )² − 0.94·σ_t²) / 0.06 ]<br>Trigger Price = Settle Price × e<sup>±|r*|</sup><br><br>• If today's price crosses above <strong>Upper Breach</strong> or crashes below <strong>Lower Breach</strong> before close, an overnight hike is mathematically locked.<br>• <strong>⚠️ LOCKED IN</strong> indicates carryover volatility alone has already breached the threshold.">Intraday Hike Trigger <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th class="has-tooltip" data-dyn-title="Outcome Probability Distribution (Tomorrow)" data-dyn-body="Calibrated logistic model probabilities across three mutually exclusive outcomes tomorrow:<br><br>• <span style='color:var(--accent-green)'>Green Bar</span>: <strong>Cut</strong> (&gt;0.5% decrease)<br>• <span style='color:var(--text-muted)'>Grey Bar</span>: <strong>Flat</strong> (within ±0.5% corridor)<br>• <span style='color:var(--accent-red)'>Red Bar</span>: <strong>Hike</strong> (&gt;0.5% increase)<br><br>Features include initial margin level, daily volatility, DTE, gated dormancy, and policy buffer.">Probability <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th class="has-tooltip" data-dyn-title="Dominant Directional Signal & Surveillance Alert" data-dyn-body="Synthesized directional directive.<br><br>• <span style='color:#ef4444'>▲ HIKE X%</span>: High probability of margin expansion. Amber row glow at &gt;65% hike probability; Red row glow at &gt;80%.<br>• <span style='color:#3fb950'>▼ CUT X%</span>: Probability favours margin reduction.<br>• <span>→ FLAT X%</span>: Normal volatility equilibrium.">Signal <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
             <th style="width:40px;text-align:center;" class="has-tooltip" data-dyn-title="Contract Risk Dossier Drawer" data-dyn-body="Click to toggle deep analytical inspection drawer for this contract, including component decomposition, volatility cushion to statutory floor, intraday trigger analysis, and tender ladder countdown.">Details <span style="font-size:10px;opacity:0.6;">ⓘ</span></th>
@@ -4252,7 +4252,6 @@ async function renderOverview() {
       const pSettle = pEntry?.settle_price;
 
       const ep = epLookup[c.expiry];
-      let probCell = '—';
       let signalLabel = '<span style="background:var(--surface2);color:var(--text-muted);padding:3px 8px;border-radius:4px;font-size:11px;border:1px solid var(--border);">→ FLAT</span>';
       let signalText = 'FLAT';
       let pH = 0, pF = 100, pC = 0;
@@ -4261,11 +4260,7 @@ async function renderOverview() {
         pH = Math.round(ep.p_hike * 100);
         pF = Math.round(ep.p_flat * 100);
         pC = Math.round(ep.p_cut * 100);
-        probCell = `<div class="has-tooltip" data-dyn-title="Probability Distribution: ${_contractLabel(c.expiry)}" data-dyn-body="Cut: <strong>${pC}%</strong> | Flat: <strong>${pF}%</strong> | Hike: <strong>${pH}%</strong><br><br>Features: Initial Margin (${im.toFixed(1)}%), Daily Vol (${((c.daily_volatility||0)*100).toFixed(2)}%), DTE (${c.dte}d), Gated Dormancy, Policy Buffer.<br>Brier Score: Hike 0.138, Cut 0.156." style="display:flex;height:16px;border-radius:4px;overflow:hidden;min-width:85px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);">
-          <div style="width:${pC}%;background:var(--accent-green);" title="Cut ${pC}%"></div>
-          <div style="width:${pF}%;background:var(--text-muted);opacity:0.35;" title="Flat ${pF}%"></div>
-          <div style="width:${pH}%;background:var(--accent-red);" title="Hike ${pH}%"></div>
-        </div>`;
+        
         const dominant = Math.max(ep.p_hike, ep.p_cut, ep.p_flat);
         if (tenderPct > 0) {
           signalLabel = `<span class="badge-hike" style="background:rgba(239,68,68,0.2);border:1px solid #ef4444;color:#ef4444;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">▲ TENDER +5%</span>`;
@@ -4281,6 +4276,25 @@ async function renderOverview() {
           signalText = `FLAT ${pF}%`;
         }
       }
+
+      // Visual Probability Bar (No nested attributes, crisp rendering)
+      const probBarHtml = `<div style="display:flex;height:12px;border-radius:3px;overflow:hidden;width:100%;min-width:75px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);">
+        <div style="width:${pC}%;background:var(--accent-green);transition:width 0.3s ease;"></div>
+        <div style="width:${pF}%;background:rgba(139,148,158,0.35);transition:width 0.3s ease;"></div>
+        <div style="width:${pH}%;background:var(--accent-red);transition:width 0.3s ease;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:2px;font-variant-numeric:tabular-nums;">
+        <span style="color:${pC > 20 ? 'var(--accent-green)' : 'var(--text-muted)'};">${pC}%</span>
+        <span style="color:${pF > 50 ? 'var(--text)' : 'var(--text-muted)'};">${pF}%</span>
+        <span style="color:${pH > 20 ? 'var(--accent-red)' : 'var(--text-muted)'};">${pH}%</span>
+      </div>`;
+
+      const tipProb = `<strong>Outcome Probability Distribution:</strong><br><br>` +
+        `• <span style="color:var(--accent-green);font-weight:600;">Margin Cut (>0.5% decrease):</span> <strong>${pC}%</strong><br>` +
+        `• <span style="color:var(--text-muted);font-weight:600;">Margin Flat (±0.5% corridor):</span> <strong>${pF}%</strong><br>` +
+        `• <span style="color:var(--accent-red);font-weight:600;">Margin Hike (>0.5% increase):</span> <strong>${pH}%</strong><br><br>` +
+        `<em>Features:</em> Initial Margin (${im.toFixed(1)}%), Daily Vol (${((c.daily_volatility||0)*100).toFixed(2)}%), DTE (${c.dte}d), Gated Dormancy, Policy Buffer.<br>` +
+        `<em>Calibration:</em> Brier Hike = 0.138, Brier Cut = 0.156.`;
 
       // Indicator bar color and glow with intentional gap between rows
       let indicatorColor = 'rgba(139, 148, 158, 0.25)';
@@ -4325,11 +4339,11 @@ async function renderOverview() {
         `• Floor Cushion: ${cushionText}<br>` +
         tenderWarning;
 
-      // Cell-specific dynamic tooltips
+      // Cell-specific dynamic tooltips (Clean HTML formatting, no raw LaTeX)
       const tipExpiry = `Contract Lifecycle: ${_contractLabel(c.expiry)}<br>Expiry: ${_formatExpiryShort(c.expiry)}<br>DTE: <strong>${c.dte} calendar days</strong>.<br><br>${c.dte <= 7 ? '<span style=\'color:var(--accent-red);font-weight:600;\'>⚠️ High Tender Risk Zone</span>' : '<span style=\'color:var(--accent-green);\'>Normal Trading Window</span>'}`;
       const tipTotal = `<strong>Current Gross Margin: ${tm.toFixed(2)}%</strong><br><br>• SPAN Initial Margin: <strong>${im.toFixed(2)}%</strong><br>• Tender Margin: <strong>${tenderPct.toFixed(2)}%</strong><br>• Extreme Loss Margin (ELM): <strong>${elmPct.toFixed(2)}%</strong> (exchange line item)<br>• Effective Leverage: <strong>${(100/tm).toFixed(1)}x</strong>`;
-      const tipPred = `<strong>Tomorrow's Forecast: ${predictedTotal.toFixed(2)}% (${diffSign}${diffTotal.toFixed(2)}%)</strong><br><br>• Predicted SPAN IM: <strong>${(predictedTotal - (pEntry?.predicted_tender ?? (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0))).toFixed(2)}%</strong><br>• Predicted Tender Step: <strong>${(pEntry?.predicted_tender ?? (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0)).toFixed(2)}%</strong><br><br>Hurdle-Gated SPAN model anchors on MCXCCL's empirical curve ($M^* = 7.589σ - 4.845$) with SEBI EWMA decay (λ = 0.94).`;
-      const tipCapital = `<strong>Capital Required: ₹${rupeeCurrent.toLocaleString('en-IN')} / Lot</strong><br><br>Notional Size: 1,250 mmBtu @ ₹${pSettle || '—'}<br>$$\\text{Rupee Margin} = 1,250 \\times ₹${pSettle || 0} \\times ${tm.toFixed(2)}\\%$$<br>Sensitivity: A 1.00% margin hike requires <strong>₹${Math.round(12.5 * (pSettle || 260)).toLocaleString('en-IN')}</strong> additional cash per lot.`;
+      const tipPred = `<strong>Tomorrow's Forecast: ${predictedTotal.toFixed(2)}% (${diffSign}${diffTotal.toFixed(2)}%)</strong><br><br>• Predicted SPAN IM: <strong>${(predictedTotal - (pEntry?.predicted_tender ?? (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0))).toFixed(2)}%</strong><br>• Predicted Tender Step: <strong>${(pEntry?.predicted_tender ?? (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0)).toFixed(2)}%</strong><br><br>Hurdle-Gated SPAN model anchors on MCXCCL's empirical curve (M* = 7.589·σ − 4.845) with SEBI EWMA decay (λ = 0.94).`;
+      const tipCapital = `<strong>Capital Required: ₹${rupeeCurrent.toLocaleString('en-IN')} / Lot</strong><br><br>Notional Size: 1,250 mmBtu @ ₹${pSettle || '—'}<br><strong>Calculation:</strong> 1,250 × ₹${pSettle || 0} × ${tm.toFixed(2)}% = <strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong><br><br>Sensitivity: A 1.00% margin hike requires <strong>₹${Math.round(12.5 * (pSettle || 260)).toLocaleString('en-IN')}</strong> additional cash per lot.`;
       const tipDelta = `<strong>Overnight Capital Shift: ${diffSign}₹${Math.abs(rupeeDelta).toLocaleString('en-IN')} / Lot</strong><br><br>${rupeeDelta > 0 ? `<strong style=\'color:var(--accent-red);\'>⚠️ CAPITAL CALL RISK:</strong> Expect to deposit +₹${rupeeDelta.toLocaleString('en-IN')} per lot before market open to avoid RMS liquidation.` : rupeeDelta < 0 ? `<strong style=\'color:var(--accent-green);\'>✅ CAPITAL RELEASE:</strong> Expect ~₹${Math.abs(rupeeDelta).toLocaleString('en-IN')} per lot to be freed as margin decays.` : '<strong>STABLE:</strong> Margin requirement is expected to remain unchanged.'}`;
       const tipTrigger = hikeLocked ? `<strong>⚠️ HIKE LOCKED IN:</strong> Carryover EWMA volatility alone guarantees an overnight margin hike even on a 0.0% price move.` : `<strong>Intraday Hike Breach Price:</strong><br>• Upper Breach: <strong>₹${triggerUp}</strong> (+${triggerPct}%)<br>• Lower Breach: <strong>₹${triggerDn}</strong> (-${triggerPct}%)<br><br>If price breaches either boundary today before 11:30 PM IST close, EWMA volatility forces an overnight margin hike.`;
       const tipSignal = `<strong>Surveillance Directive: ${signalText}</strong><br><br>${tenderPct > 0 ? '<strong style=\'color:var(--accent-red);\'>▲ MANDATORY TENDER HIKE:</strong> Regulatory physical delivery ramp forces +5% margin step regardless of market volatility.' : (ep && ep.p_hike > 0.65 ? '<strong style=\'color:var(--accent-red);\'>▲ ELEVATED HIKE RISK:</strong> Contract volatility is significantly above floor threshold. High probability of clearing house margin hike.' : '<strong style=\'color:var(--text-muted);\'>→ STABLE / FLAT:</strong> Volatility is at or near the 13.00% statutory floor equilibrium.')}`;
@@ -4369,8 +4383,8 @@ async function renderOverview() {
         <td class="has-tooltip" data-dyn-title="Intraday Hike Trigger: ±${triggerPct}%" data-dyn-body="${escAttr(tipTrigger)}">
           ${hikeLocked ? '<span style="color:var(--accent-red);font-weight:700;font-size:11px;background:rgba(239,68,68,0.12);padding:2px 6px;border-radius:3px;border:1px solid rgba(239,68,68,0.3);">⚠️ LOCKED IN</span><div style="font-size:10px;color:var(--text-muted);margin-top:2px;">0.0% move hikes</div>' : (triggerUp && triggerDn ? `<div style="font-size:11px;font-weight:600;"><span style="color:var(--accent-red);">₹${triggerUp}</span> <span style="color:var(--accent-red);font-size:10px;">(+${triggerPct}%)</span></div><div style="font-size:10px;color:var(--text-muted);margin-top:1px;"><span style="color:var(--accent-green);">₹${triggerDn}</span> (-${triggerPct}%)</div>` : `<span style="color:var(--text-muted);">±${triggerPct}%</span>`)}
         </td>
-        <td class="has-tooltip" data-dyn-title="Outcome Probabilities: ${_contractLabel(c.expiry)}" data-dyn-body="${escAttr(probCell)}">
-          ${probCell}
+        <td class="has-tooltip" data-dyn-title="Outcome Distribution: ${_contractLabel(c.expiry)}" data-dyn-body="${escAttr(tipProb)}" style="cursor:help;">
+          ${probBarHtml}
         </td>
         <td class="has-tooltip" data-dyn-title="Surveillance Directive: ${signalText}" data-dyn-body="${escAttr(tipSignal)}">
           ${signalLabel}
@@ -4381,49 +4395,49 @@ async function renderOverview() {
       const drawerRow = `<tr id="drawer-${c.expiry}" class="panic-drawer-row" style="display:none;">
         <td colspan="9">
           <div class="panic-drawer-shell" style="border-left:3px solid ${indicatorColor};">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;font-size:11px;">
-              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #388bfd;">
-                <div style="color:#388bfd;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:11px;">
+              <div style="background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #388bfd;">
+                <div style="color:#388bfd;font-weight:700;letter-spacing:0.04em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
                   <span>MARGIN COMPOSITION</span>
                   <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${(100/tm).toFixed(1)}x Lev</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>SPAN Initial Margin</span><strong>${im.toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Period Margin</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct.toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Extreme Loss Margin (ELM)</span><strong>${elmPct.toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Total Gross Margin</span><strong style="color:var(--accent);">${tm.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>SPAN Initial Margin</span><strong>${im.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Period Margin</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Extreme Loss Margin (ELM)</span><strong>${elmPct.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-weight:700;"><span>Total Gross Margin</span><strong style="color:var(--accent);">${tm.toFixed(2)}%</strong></div>
               </div>
               
-              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #3fb950;">
-                <div style="color:#3fb950;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #3fb950;">
+                <div style="color:#3fb950;font-weight:700;letter-spacing:0.04em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
                   <span>VOLATILITY & FLOOR CUSHION</span>
                   <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${volCushion >= 0 ? 'Active SPAN' : 'Floor-Bound'}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Daily Volatility</span><strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Annualized Volatility</span><strong>${((c.daily_volatility||0)*15.811*100).toFixed(1)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Floor Threshold Trigger</span><strong>2.35% daily</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Distance to Floor</span><strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Daily Volatility</span><strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Annualized Volatility</span><strong>${((c.daily_volatility||0)*15.811*100).toFixed(1)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Floor Threshold Trigger</span><strong>2.35% daily</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-weight:700;"><span>Distance to Floor</span><strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}%</strong></div>
               </div>
 
-              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #ef4444;">
-                <div style="color:#ef4444;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #ef4444;">
+                <div style="color:#ef4444;font-weight:700;letter-spacing:0.04em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
                   <span>INTRADAY HIKE TRIGGER</span>
                   <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${hikeLocked ? 'LOCKED IN' : '±' + triggerPct + '% Move'}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Break-even Volatility</span><strong>${((Math.max(13.5, im + 0.5) + 4.845) / 7.589).toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Upper Breach Price</span><strong style="color:var(--accent-red);">₹${triggerUp || '—'} (+${triggerPct}%)</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Lower Breach Price</span><strong style="color:var(--accent-green);">₹${triggerDn || '—'} (-${triggerPct}%)</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Breach Status</span><strong style="${hikeLocked ? 'color:var(--accent-red);' : 'color:var(--accent-green);'}">${hikeLocked ? '⚠️ Hike Guaranteed' : 'Inside Safe Band'}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Break-even Volatility</span><strong>${((Math.max(13.5, im + 0.5) + 4.845) / 7.589).toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Upper Breach Price</span><strong style="color:var(--accent-red);white-space:nowrap;">₹${triggerUp || '—'} (+${triggerPct}%)</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Lower Breach Price</span><strong style="color:var(--accent-green);white-space:nowrap;">₹${triggerDn || '—'} (-${triggerPct}%)</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-weight:700;"><span>Breach Status</span><strong style="${hikeLocked ? 'color:var(--accent-red);' : 'color:var(--accent-green);'}">${hikeLocked ? '⚠️ Hike Guaranteed' : 'Inside Safe Band'}</strong></div>
               </div>
 
-              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #fb923c;">
-                <div style="color:#fb923c;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #fb923c;">
+                <div style="color:#fb923c;font-weight:700;letter-spacing:0.04em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
                   <span>TENDER & CAPITAL SURVEILLANCE</span>
                   <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${c.dte}d DTE</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Schedule</span><strong>${tenderPct > 0 ? `In Ramp (${tenderPct}% → ${Math.min(25, tenderPct + 5)}%)` : (c.dte <= 5 ? 'Enters Tomorrow (+5%)' : 'Outside Tender')}</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Overnight Tender Call</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct > 0 ? `+₹${Math.round(0.05 * (pSettle || 260) * 1250).toLocaleString('en-IN')}` : '₹0'}</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Capital Blocked / Lot</span><strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>RMS 15% Buffer Guideline</span><strong style="color:var(--accent-yellow);">₹${Math.round(rupeeCurrent * 0.15).toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Schedule</span><strong>${tenderPct > 0 ? `In Ramp (${tenderPct}% → ${Math.min(25, tenderPct + 5)}%)` : (c.dte <= 5 ? 'Enters Tomorrow (+5%)' : 'Outside Tender')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Overnight Tender Call</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct > 0 ? `+₹${Math.round(0.05 * (pSettle || 260) * 1250).toLocaleString('en-IN')}` : '₹0'}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Capital Blocked / Lot</span><strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-weight:700;"><span>RMS 15% Buffer Guideline</span><strong style="color:var(--accent-yellow);white-space:nowrap;">₹${Math.round(rupeeCurrent * 0.15).toLocaleString('en-IN')}</strong></div>
               </div>
             </div>
           </div>
