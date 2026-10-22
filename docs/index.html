@@ -1766,6 +1766,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
               <input type="checkbox" id="calcM2MEnabled" checked style="margin:0; cursor:pointer;">
               <span class="calc-mode-badge" id="calcM2MBadge" style="margin-left:0;">ON</span>
             </label>
+            <span id="calcM2MHint" style="display:inline-block; font-size:11px; color:var(--text-muted); margin-left:6px;">(Daily M2M settlement active against ledger)</span>
           </div>
 
           <div class="calc-grid">
@@ -3183,8 +3184,13 @@ class RangeController {
     this.inStart.addEventListener('blur', clearFocus);
     this.inEnd.addEventListener('blur', clearFocus);
 
-    window.addEventListener('pointerup', clearFocus);
-    window.addEventListener('pointercancel', clearFocus);
+    this._clearFocus = clearFocus;
+    window.addEventListener('pointerup', this._clearFocus);
+    window.addEventListener('pointercancel', this._clearFocus);
+    if (this.container._rangeCtrl && typeof this.container._rangeCtrl.destroy === 'function') {
+      this.container._rangeCtrl.destroy();
+    }
+    this.container._rangeCtrl = this;
 
     // Intelligently route pointerdown to the closer thumb when thumbs overlap in tight ranges
     this.container.addEventListener('pointerdown', (evt) => {
@@ -3215,6 +3221,13 @@ class RangeController {
     }, true);
 
     this.updateUI();
+  }
+
+  destroy() {
+    if (this._clearFocus) {
+      window.removeEventListener('pointerup', this._clearFocus);
+      window.removeEventListener('pointercancel', this._clearFocus);
+    }
   }
 
   updateZIndex() {
@@ -3919,7 +3932,7 @@ async function renderPriceMarginConfluence() {
       const notchPct = Math.min(100, Math.max(0, sc));
       if (stressNotch) stressNotch.style.left = notchPct + '%';
       // Update Stress Score tooltip with live values
-      if (TOOLTIPS['Stress Score']) {
+      if (typeof TOOLTIPS !== 'undefined' && TOOLTIPS['Stress Score']) {
         TOOLTIPS['Stress Score'].body = `Combines margin percentile rank and volatility percentile weighted equally against a trailing 5-year distribution.<br><br>
 <strong>0–40: CALM</strong> — Low cost environment.<br>
 <strong>40–60: NORMAL</strong> — Standard conditions.<br>
@@ -3946,7 +3959,7 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
       const pEl2 = document.getElementById('kpiPercentile');
       pEl2.textContent = `P${regimeModel.current_pct_alltime} all-time`;
       // Update percentile tooltip with live regime context
-      if (TOOLTIPS['Margin Percentile Rank']) {
+      if (typeof TOOLTIPS !== 'undefined' && TOOLTIPS['Margin Percentile Rank']) {
         const ra = regimeModel.regime_a, rb = regimeModel.regime_b;
         const curRegime = regimeModel.current_regime;
         const otherRegime = curRegime === 'A' ? 'B' : 'A';
@@ -3998,7 +4011,6 @@ function dteBadge(dte) {
 let overviewRendered = false;
 async function renderOverview() {
   if (overviewRendered) return;
-  overviewRendered = true;
   try {
     const [current, fwd] = await Promise.all([loadJSON('current'), loadJSON('forward_curve')]);
 
@@ -4184,8 +4196,9 @@ async function renderOverview() {
       const upDistPct = curPrice > 0 ? +((upDistRs / curPrice) * 100).toFixed(2) : 0;
       const dnDistRs = curPrice > dnTrigger ? +(curPrice - dnTrigger).toFixed(2) : 0;
       const dnDistPct = curPrice > 0 ? +((dnDistRs / curPrice) * 100).toFixed(2) : 0;
-      const rupeeCur = fm.rupee_margin_current || Math.round(curPrice * 1250 * (fm.total_margin_pct / 100));
-      const rupeePred = fm.rupee_margin_predicted || Math.round(curPrice * 1250 * (fm.predicted_tomorrow / 100));
+      const contractLotSize = fm.lot_size || (fm.symbol === 'NATGASMINI' ? 250 : 1250);
+      const rupeeCur = fm.rupee_margin_current || Math.round(curPrice * contractLotSize * (fm.total_margin_pct / 100));
+      const rupeePred = fm.rupee_margin_predicted || Math.round(curPrice * contractLotSize * (fm.predicted_tomorrow / 100));
       const rupeeDelta = fm.rupee_delta || (rupeePred - rupeeCur);
       
       const spanRange = Math.max(0.1, upTrigger - dnTrigger);
@@ -4204,7 +4217,7 @@ async function renderOverview() {
         `• <strong>Capital Call Impact:</strong> Expected immediate cash requirement expands by +₹${rupeeDelta.toLocaleString('en-IN')}/lot.<br>` +
         `• <strong>Surveillance Status:</strong> ${upDistPct <= 3.0 ? '<span style="color:#f87171;font-weight:700;">CRITICAL PROXIMITY</span> (within 3% buffer)' : '<span style="color:#3fb950;font-weight:700;">STABLE BUFFER</span>'}`;
 
-      const dynBodyLower = `<strong>Lower Margin Cut / Floor Reset (P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br><br>` +
+      const dynBodyLower = `<strong>Lower Margin Hike Trigger (Crash Breach P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br><br>` +
         `• <strong>Floor Cushion:</strong> −₹${dnDistRs.toFixed(2)} (<strong>${dnDistPct}%</strong> downside cushion)<br>` +
         `• <strong>Clearinghouse Horizon:</strong> If price retraces to ₹${dnTrigger.toFixed(2)}, exchange volatility parameters reset toward baseline, reducing margin requirements.<br>` +
         `• <strong>Statutory Floor:</strong> Margin reductions remain clamped at SEBI's 13.00% statutory floor.<br>` +
@@ -4247,16 +4260,16 @@ async function renderOverview() {
           </div>
 
           <!-- Lower Cut Boundary Card -->
-          <div class="mkt-card has-tooltip" data-dyn-title="Lower Floor Relief / Reset Trigger (P*dn)" data-dyn-body="${escAttr(dynBodyLower)}" style="padding:12px 14px;cursor:pointer;">
+          <div class="mkt-card has-tooltip" data-dyn-title="Lower Margin Hike Trigger (Crash Breach P*dn)" data-dyn-body="${escAttr(dynBodyLower)}" style="padding:12px 14px;cursor:pointer;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div class="stat-label" style="font-size:11px;margin-bottom:0;">LOWER CUT (P*<sub>dn</sub>)</div>
+              <div class="stat-label" style="font-size:11px;margin-bottom:0;">LOWER CRASH HIKE (P*<sub>dn</sub>)</div>
               <span style="font-family:monospace;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(63,185,80,0.14);color:#3fb950;font-variant-numeric:tabular-nums;border:1px solid rgba(63,185,80,0.25);">${dnDistPct}% floor cushion</span>
             </div>
             <div class="stat-value" style="font-size:22px;color:var(--text);display:flex;align-items:baseline;gap:8px;margin-top:4px;">
               <span style="font-family:monospace;font-variant-numeric:tabular-nums;">₹${dnTrigger.toFixed(2)}</span>
               <span style="font-size:12px;color:var(--accent-green);font-weight:600;font-family:monospace;font-variant-numeric:tabular-nums;">−₹${dnDistRs.toFixed(2)}</span>
             </div>
-            <div class="stat-sub" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Floor relief & reset boundary</div>
+            <div class="stat-sub" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Downside volatility hike trigger</div>
           </div>
         </div>
 
@@ -4457,7 +4470,7 @@ async function renderOverview() {
                       '',
                       `• Today's Settle: ₹${item.settle_price.toFixed(2)}`,
                       `• Upper Hike Breach: ₹${item.hike_trigger_up_price.toFixed(2)} (+₹${upDiff.toFixed(2)} · +${item.hike_trigger_pct}%)`,
-                      `• Lower Floor Reset: ₹${item.hike_trigger_dn_price.toFixed(2)} (−₹${dnDiff.toFixed(2)} · −${item.hike_trigger_pct}%)`,
+                      `• Lower Hike Breach (Crash): ₹${item.hike_trigger_dn_price.toFixed(2)} (−₹${dnDiff.toFixed(2)} · −${item.hike_trigger_pct}%)`,
                       `• Status: ${item.hike_locked ? 'HIKE LOCKED IN (carryover vol)' : 'Safe (Inside Stability Corridor)'}`
                     ];
                   }
@@ -4705,7 +4718,9 @@ async function renderOverview() {
 
     renderMarketOverviewContext();
     attachTooltips();
+    overviewRendered = true;
   } catch(e) {
+    overviewRendered = false;
     console.error('Overview render error:', e);
   }
 }
@@ -4790,10 +4805,16 @@ document.head.appendChild(chartScript);
 // PART 3 — Term Structure Tab
 // ═══════════════════════════════════════════════════════════════════
 
-document.querySelector('[data-tab="termstructure"]').addEventListener('click', () => {
-  if (document.getElementById('chartFwdFull')._rendered) return;
-  document.getElementById('chartFwdFull')._rendered = true;
-  renderTermStructure();
+document.querySelector('[data-tab="termstructure"]').addEventListener('click', async () => {
+  const chartEl = document.getElementById('chartFwdFull');
+  if (chartEl && chartEl._rendered) return;
+  try {
+    await renderTermStructure();
+    if (chartEl) chartEl._rendered = true;
+  } catch(e) {
+    if (chartEl) chartEl._rendered = false;
+    console.error('Term structure render failed:', e);
+  }
 });
 
 let fwdChart = null;
@@ -5042,14 +5063,16 @@ async function renderTermStructure() {
           const priceDiff = +(c2.settle_price - c1.settle_price).toFixed(2);
           const rupeeDrag = Math.round(priceDiff * 1250);
           const spreadPct = +((priceDiff / c1.settle_price) * 100).toFixed(2);
-          const dteDiff = Math.max(1, (c2.dte || 30) - (c1.dte || 0));
-          const annYield = +((priceDiff / c1.settle_price) * (365 / dteDiff) * 100).toFixed(1);
+          const dteDiff = Math.max(1, (c2.dte ?? 30) - (c1.dte ?? 0));
+          // Long futures roll yield: (c1 - c2) / c1 (negative in contango, positive in backwardation)
+          const rollYieldPct = +(((c1.settle_price - c2.settle_price) / c1.settle_price) * 100).toFixed(2);
+          const annRollYield = +(rollYieldPct * (365 / dteDiff)).toFixed(1);
           rollPairs.push({
             pair: `${_expLabel(c1.expiry)} → ${_expLabel(c2.expiry)}`,
             priceDiff,
             rupeeDrag,
             spreadPct,
-            annYield
+            annRollYield
           });
         }
       }
@@ -5107,7 +5130,7 @@ async function renderTermStructure() {
                     const state = r.rupeeDrag > 0 ? 'Contango (Roll Drag for Longs)' : 'Backwardation (Roll Yield for Longs)';
                     return [
                       `Price Difference: ${r.priceDiff >= 0 ? '+' : ''}₹${r.priceDiff.toFixed(2)}`,
-                      `Annualized Roll Yield: ${r.annYield}%`,
+                      `Annualized Roll Yield: ${r.annRollYield >= 0 ? '+' : ''}${r.annRollYield}%`,
                       `Regime: ${state}`
                     ];
                   }
@@ -6433,7 +6456,7 @@ function renderContractHeatmap(heatmapContract, metricKey, filterKey) {
   
   let cAllVals = [];
   cYears.forEach(y => cMonths.forEach(m => { const v = cData[y]?.[m]; if (v != null) cAllVals.push(v); }));
-  const cMinV = Math.min(...cAllVals), cMaxV = Math.max(...cAllVals);
+  const cMinV = cAllVals.length ? Math.min(...cAllVals) : 0, cMaxV = cAllVals.length ? Math.max(...cAllVals) : 1;
 
   // 1. Compute yearly averages (row averages)
   const yearlyAverages = {};
@@ -6582,7 +6605,6 @@ style="padding:6px 2px;background:${gBg};text-align:center;color:${gTextColor};f
 let seasonRendered = false;
 async function renderSeasonality() {
   if (seasonRendered) return;
-  seasonRendered = true;
   try {
     const [monthly, yearly, heatmap, heatmapContract] = await Promise.all([
       loadJSON('seasonal_month'), loadJSON('seasonal_year'), loadJSON('seasonal_heatmap'),
@@ -6740,7 +6762,7 @@ async function renderSeasonality() {
     const { years, months, data } = heatmap;
     let allVals = [];
     years.forEach(y => months.forEach(m => { const v = data[y]?.[m]; if (v != null) allVals.push(v); }));
-    const minV = Math.min(...allVals), maxV = Math.max(...allVals);
+    const minV = allVals.length ? Math.min(...allVals) : 0, maxV = allVals.length ? Math.max(...allVals) : 1;
 
     let html = `<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:700px;table-layout:fixed;">`;
 
@@ -6816,7 +6838,11 @@ style="padding:5px 2px;background:${bg};text-align:center;color:${textColor};fon
     }
 
     attachTooltips();
-  } catch(e) { console.error('Seasonality render error:', e); }
+    seasonRendered = true;
+  } catch(e) {
+    seasonRendered = false;
+    console.error('Seasonality render error:', e);
+  }
 }
 
 document.querySelector('[data-tab="seasonality"]').addEventListener('click', () => renderSeasonality());
@@ -6828,7 +6854,6 @@ document.querySelector('[data-tab="seasonality"]').addEventListener('click', () 
 let analyticsRendered = false;
 async function renderAnalytics() {
   if (analyticsRendered) return;
-  analyticsRendered = true;
   try {
     const [dte, volCorr, fwd] = await Promise.all([
       loadJSON('dte_curve'), loadJSON('volatility_correlation'), loadJSON('forward_curve')
@@ -7314,7 +7339,11 @@ async function renderAnalytics() {
       }
     } catch(e) { console.warn('Delta distribution skipped:', e); }
 
-  } catch(e) { console.error('Analytics render error:', e); }
+    analyticsRendered = true;
+  } catch(e) {
+    analyticsRendered = false;
+    console.error('Analytics render error:', e);
+  }
 }
 
 document.querySelector('[data-tab="analytics"]').addEventListener('click', () => renderAnalytics());
@@ -7828,16 +7857,6 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     lotGuideEl.textContent = 'Insufficient Capital';
   }
 
-  // Calculate and display Effective Leverage
-  const totalNotional = lots * lotSize * entryPrice;
-  const effLev = capital > 0 ? (totalNotional / capital) : 0;
-  const maxStatLev = (entryMarginPct > 0 ? (100 / (entryMarginPct * spreadMarginFactor)) : 0);
-  const levDisp = document.getElementById('calcLeverageDisplay');
-  if (levDisp) {
-    const levColor = effLev > maxStatLev * 0.85 ? 'var(--accent-red)' : 'var(--text)';
-    levDisp.innerHTML = `<strong style="color:${levColor}">${effLev.toFixed(1)}x</strong> <span style="color:var(--text-muted);font-size:10px;">(Max Statutory ${maxStatLev.toFixed(1)}x · ${isSpread ? '70% Relief' : 'Outright'})</span>`;
-  }
-
   let lots = 0;
   if (lotMode === 'max') {
     lots = maxPossibleLots;
@@ -7962,6 +7981,16 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       document.getElementById('rsaeActiveShieldDisplay').textContent = (rsae.shield * 100).toFixed(2) + '%';
       document.getElementById('rsaeBindingConstraintDisplay').textContent = (rsae.lotsCeil <= rsae.lotsRaw) ? 'Leverage Ceiling (Firewall)' : 'Margin Coverage';
     }
+  }
+
+  // Calculate and display Effective Leverage
+  const totalNotional = lots * lotSize * entryPrice;
+  const effLev = capital > 0 ? (totalNotional / capital) : 0;
+  const maxStatLev = (entryMarginPct > 0 ? (100 / (entryMarginPct * spreadMarginFactor)) : 0);
+  const levDisp = document.getElementById('calcLeverageDisplay');
+  if (levDisp) {
+    const levColor = effLev > maxStatLev * 0.85 ? 'var(--accent-red)' : 'var(--text)';
+    levDisp.innerHTML = `<strong style="color:${levColor}">${effLev.toFixed(1)}x</strong> <span style="color:var(--text-muted);font-size:10px;">(Max Statutory ${maxStatLev.toFixed(1)}x · ${isSpread ? '70% Relief' : 'Outright'})</span>`;
   }
 
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
@@ -8493,7 +8522,6 @@ function renderHeatmapGrid(targetId, cells, mode = 'liquidity') {
 async function renderMarketIntel(force = false) {
   if (!ENABLE_MARKET_INTEL) return;
   if (marketRendered && !force) return;
-  marketRendered = true;
   const symKey = document.getElementById('marketSymbol').value;
   const symbol = marketSymbolName(symKey);
   try {
@@ -9455,7 +9483,9 @@ async function renderMarketIntel(force = false) {
       } catch(_) {}
     }, 150);
     attachTooltips();
+    marketRendered = true;
   } catch(e) {
+    marketRendered = false;
     console.error('Market render error:', e);
     resetMarketIntelView('Market intelligence unavailable; margin dashboard remains active.');
   }

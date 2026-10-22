@@ -1579,9 +1579,9 @@ def _calc_hurdle_span_im(m_t, dv, r_ret=0.0):
     proj_v = math.sqrt(0.94 * (dv ** 2) + 0.06 * (r_ret ** 2))
     target = max(13.0, 7.589 * (proj_v * 100) - 4.845)
     if abs(target - m_t) <= 0.50:
-        return m_t
+        return max(13.0, m_t)
     elif target > m_t + 0.50:
-        return max(m_t, target)
+        return max(13.0, max(m_t, target))
     else:
         return max(13.0, m_t - 0.30 * (m_t - target))
 
@@ -2423,7 +2423,10 @@ def _export_vamb_analytics(cur, fm_series):
                 cur_m_pct = (m_day.get("initial_margin_pct") or 20.0) / 100.0
                 
                 # M2M returns
-                p_change = day["close"] - day["prev_close"]
+                prev_c = day.get("prev_close")
+                if prev_c is None:
+                    prev_c = day.get("open") or day["close"]
+                p_change = day["close"] - prev_c
                 
                 # Update ledger
                 cap_vamb += vamb_lots * p_change * lot_size
@@ -2929,14 +2932,14 @@ def main():
         if tender_margin is None:
             tender_margin = max(0.0, round(tm - im, 2))
         elm = contract.get("elm_pct", 1.25) or 1.25
-        dv = contract["daily_volatility"] or mean_vol_20
+        dv = contract["daily_volatility"] if contract.get("daily_volatility") is not None else mean_vol_20
         dte = contract["dte"]
 
         # 1. Price and log-return
         p_info = price_lookup.get(("NATURALGAS", exp), {})
         p_close = p_info.get("close")
         p_prev = p_info.get("prev_close")
-        if p_close and p_prev and p_prev > 0:
+        if p_close and p_prev and p_close > 0 and p_prev > 0:
             r_log = math.log(p_close / p_prev)
         else:
             r_log = 0.0
@@ -2945,11 +2948,14 @@ def main():
         predicted_initial = _calc_hurdle_span_im(im, dv, r_log)
 
         # 3. Deterministic Forward Tender Lookahead Schedule
-        if tender_margin > 0:
+        if dte is not None and dte <= 0:
+            # Contract expires and ceases trading today; no forward tender margin tomorrow
+            next_tender = 0.0
+        elif tender_margin > 0:
             # Currently climbing tender ladder: +5% tomorrow up to 25% cap
             next_tender = min(25.0, tender_margin + 5.0)
-        elif 0 <= dte <= 5:
-            # Tomorrow enters tender window
+        elif dte is not None and 1 <= dte <= 5:
+            # Tomorrow enters or remains in tender window
             next_tender = 5.0
         else:
             next_tender = 0.0

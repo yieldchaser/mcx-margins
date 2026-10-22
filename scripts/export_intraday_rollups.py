@@ -122,6 +122,9 @@ for sym, pfile, tag, base in contracts:
     # Calculate Volume-at-Price (VAP) Profile for active contract
     price_min = float(df["low"].min())
     price_max = float(df["high"].max())
+    if price_min == price_max:
+        price_min -= 0.50
+        price_max += 0.50
     bins = np.linspace(price_min, price_max, 50)
     bin_labels = (bins[:-1] + bins[1:]) / 2.0
     df["price_bin"] = pd.cut(df["close"], bins=bins, labels=bin_labels, include_lowest=True)

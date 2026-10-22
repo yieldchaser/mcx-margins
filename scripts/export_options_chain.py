@@ -91,8 +91,12 @@ df_fut = con.execute(f"""
 """).df()
 
 fut_dict = dict(zip(df_fut["epoch"], df_fut["fut_close"]))
-latest_fut_epoch = df_fut["epoch"].iloc[-1]
-latest_fut_price = float(df_fut["fut_close"].iloc[-1])
+if len(df_fut) > 0:
+    latest_fut_epoch = int(df_fut["epoch"].iloc[-1])
+    latest_fut_price = float(df_fut["fut_close"].iloc[-1])
+else:
+    latest_fut_epoch = 0
+    latest_fut_price = 0.0
 print(f"Loaded {len(df_fut):,} futures bars. Latest Futures Price: ₹{latest_fut_price:.2f} (Epoch {latest_fut_epoch})")
 
 # 2. Black-76 Pricing Formula & Greeks
@@ -208,8 +212,12 @@ total_call_vol = sum(c.get("call", {}).get("volume", 0) for c in all_chain_list)
 total_put_vol = sum(c.get("put", {}).get("volume", 0) for c in all_chain_list)
 
 # Call Wall & Put Wall
-call_wall_strike = max(all_chain_list, key=lambda x: x.get("call", {}).get("oi", 0))["strike"]
-put_wall_strike = max(all_chain_list, key=lambda x: x.get("put", {}).get("oi", 0))["strike"]
+if all_chain_list:
+    call_wall_strike = max(all_chain_list, key=lambda x: x.get("call", {}).get("oi", 0))["strike"]
+    put_wall_strike = max(all_chain_list, key=lambda x: x.get("put", {}).get("oi", 0))["strike"]
+else:
+    call_wall_strike = 0
+    put_wall_strike = 0
 
 # Max Pain Calculation across all strike levels
 min_loss = float("inf")
@@ -281,28 +289,47 @@ output_data = {
     "all_chain": all_chain_list
 }
 
+def sanitize_floats(obj):
+    if isinstance(obj, (float, np.floating)):
+        return float(obj) if np.isfinite(obj) else None
+    if isinstance(obj, (bool, np.bool_)):
+        return bool(obj)
+    if isinstance(obj, (int, np.integer)):
+        return int(obj)
+    if isinstance(obj, np.ndarray):
+        return [sanitize_floats(v) for v in obj.tolist()]
+    if isinstance(obj, dict):
+        return {k: sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_floats(v) for v in obj]
+    return obj
+
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
+        if isinstance(obj, (np.bool_, bool)):
+            return bool(obj)
         if isinstance(obj, np.integer):
             return int(obj)
         if isinstance(obj, np.floating):
-            return float(obj)
+            return float(obj) if np.isfinite(obj) else None
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super().default(obj)
 
+clean_output = sanitize_floats(output_data)
+
 output_file_generic = os.path.join(OUTPUT_DIR, "options_chain.json")
 with open(output_file_generic, "w", encoding="utf-8") as f:
-    json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
+    json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
 
 if exp_code:
     specific_file = os.path.join(OUTPUT_DIR, f"options_chain_{exp_code.lower()}.json")
     with open(specific_file, "w", encoding="utf-8") as f:
-        json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
+        json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
 
 legacy_file = os.path.join(OUTPUT_DIR, "options_chain_oct26.json")
 with open(legacy_file, "w", encoding="utf-8") as f:
-    json.dump(output_data, f, cls=NpEncoder, separators=(",", ":"))
+    json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
 
 kb = os.path.getsize(output_file_generic) / 1024
 print(f"SUCCESS! Saved Black-76 options chain to {output_file_generic} & aliases ({kb:.1f} KB)")

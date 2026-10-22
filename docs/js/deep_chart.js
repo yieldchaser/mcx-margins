@@ -268,17 +268,20 @@
   // Helper: Enforces strictly ascending order and eliminates duplicate timestamps
   function sanitizeBars(bars) {
     if (!bars || !Array.isArray(bars) || bars.length === 0) return [];
-    const sorted = [...bars].sort((a, b) => a.time - b.time);
+    const getTime = (b) => (b && typeof b === 'object') ? (b.time !== undefined ? b.time : b[0]) : 0;
+    const sorted = [...bars].sort((a, b) => getTime(a) - getTime(b));
     const deduped = [];
     for (let i = 0; i < sorted.length; i++) {
       const b = sorted[i];
+      const t = getTime(b);
       if (deduped.length === 0) {
         deduped.push(b);
       } else {
         const last = deduped[deduped.length - 1];
-        if (b.time > last.time) {
+        const lastT = getTime(last);
+        if (t > lastT) {
           deduped.push(b);
-        } else if (b.time === last.time) {
+        } else if (t === lastT) {
           deduped[deduped.length - 1] = b; // Keep newest bar (overwrite)
         }
       }
@@ -1872,12 +1875,12 @@
               label: (ctx) => {
                 if (ctx.datasetIndex === 0) {
                   const vol = ctx.raw || 0;
-                  const med = profile.median_volume ? profile.median_volume[ctx.dataIndex] : 0;
+                  const med = (profile.median_volume && profile.median_volume[ctx.dataIndex] != null) ? profile.median_volume[ctx.dataIndex] : 0;
                   const ratio = med > 0 ? (vol / med).toFixed(1) : '1.0';
                   return `Average Traded Volume: ${Math.round(vol).toLocaleString()} lots · Median: ${Math.round(med).toLocaleString()} (${ratio}x skew)`;
                 }
                 const gk = ctx.raw || 0;
-                const rng = profile.avg_range_pct ? profile.avg_range_pct[ctx.dataIndex].toFixed(2) : '—';
+                const rng = (profile.avg_range_pct && profile.avg_range_pct[ctx.dataIndex] != null) ? profile.avg_range_pct[ctx.dataIndex].toFixed(2) : '—';
                 const regime = gk >= 20 ? 'ELEVATED VOL' : gk >= 15 ? 'ACTIVE' : 'CALM';
                 return `GK Realized Volatility: ${gk.toFixed(2)}% [${regime}] · Avg 15m Range: ${rng}%`;
               },
