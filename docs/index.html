@@ -870,6 +870,81 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .data-table tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .data-table tr:nth-child(even) td { background: rgba(33,38,45,0.5); }
 
+/* ── Panic Spread Command Center Table (Institutional Precision) ── */
+#panicTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+#panicTable th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+#panicTable tr.panic-row td {
+  padding: 11px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+}
+#panicTable tr.panic-row td:first-child {
+  position: relative;
+  padding-left: 18px;
+  box-shadow: none !important;
+}
+#panicTable tr.panic-row:hover td {
+  background: rgba(56, 139, 253, 0.04);
+}
+#panicTable tr.panic-row.is-open td {
+  background: rgba(56, 139, 253, 0.05);
+  border-bottom: 1px dashed rgba(56, 139, 253, 0.25);
+}
+#panicTable tr.panic-row .row-indicator-bar {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3.5px;
+  border-radius: 0 3px 3px 0;
+  transition: all 0.2s ease;
+}
+#panicTable tr.panic-row:hover .row-indicator-bar {
+  filter: brightness(1.25);
+}
+#panicTable tr.panic-row.is-open .row-indicator-bar {
+  background: var(--accent) !important;
+  box-shadow: 0 0 8px rgba(56, 139, 253, 0.55) !important;
+}
+
+/* Drawer Row & Floating Inset Shell */
+#panicTable tr.panic-drawer-row {
+  border: none !important;
+}
+#panicTable tr.panic-drawer-row td {
+  padding: 0 12px 14px 12px;
+  background: rgba(56, 139, 253, 0.02);
+  border-bottom: 1px solid rgba(48, 54, 61, 0.7);
+  box-shadow: none !important;
+}
+.panic-drawer-shell {
+  background: rgba(18, 22, 28, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 /* ── Universal Native Dark Theme Scrollbars & Sliders ── */
 * {
   scrollbar-width: thin;
@@ -4207,13 +4282,15 @@ async function renderOverview() {
         }
       }
 
-      let rowStyle = '';
-      if (tenderPct > 0) {
-        rowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,0.06);';
-      } else if (ep && ep.p_hike > 0.80) {
-        rowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,0.06);';
+      // Indicator bar color and glow with intentional gap between rows
+      let indicatorColor = 'rgba(139, 148, 158, 0.25)';
+      let indicatorGlow = '';
+      if (tenderPct > 0 || (ep && ep.p_hike > 0.80)) {
+        indicatorColor = '#ef4444';
+        indicatorGlow = 'box-shadow:0 0 6px rgba(239,68,68,0.4);';
       } else if (ep && ep.p_hike > 0.65) {
-        rowStyle = 'border-left:3px solid #f59e0b;background:rgba(245,158,11,0.05);';
+        indicatorColor = '#f59e0b';
+        indicatorGlow = 'box-shadow:0 0 6px rgba(245,158,11,0.35);';
       }
 
       const diffColor = diffTotal > 0.2 ? 'var(--accent-red)' : (diffTotal < -0.2 ? 'var(--accent-green)' : 'var(--text-muted)');
@@ -4261,8 +4338,9 @@ async function renderOverview() {
         ? `<span class="badge-danger" style="font-size:9px;padding:1px 5px;">${c.dte}d</span>` 
         : (c.dte <= 30 ? `<span class="badge-warn" style="font-size:9px;padding:1px 5px;">${c.dte}d</span>` : `<span class="badge-safe" style="font-size:9px;padding:1px 5px;">${c.dte}d</span>`);
 
-      const mainRow = `<tr style="${rowStyle}" class="has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
+      const mainRow = `<tr class="panic-row has-tooltip" data-dyn-title="${dynTitle}" data-dyn-body="${escAttr(dynBody)}">
         <td class="has-tooltip" data-dyn-title="Contract Expiry: ${_contractLabel(c.expiry)}" data-dyn-body="${escAttr(tipExpiry)}">
+          <div class="row-indicator-bar" style="background:${indicatorColor};${indicatorGlow}"></div>
           <div style="display:flex;align-items:center;gap:6px;">
             <strong>${_contractLabel(c.expiry)}</strong>
             ${dteChip}
@@ -4300,51 +4378,53 @@ async function renderOverview() {
         <td style="text-align:center;"><button class="btn-drawer-toggle" data-target="drawer-${c.expiry}" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;padding:4px 8px;font-size:10px;transition:all 0.15s ease;" title="Toggle contract risk drawer">▼</button></td>
       </tr>`;
 
-      const drawerRow = `<tr id="drawer-${c.expiry}" class="panic-drawer-row" style="display:none;background:rgba(22,27,34,0.85);border-left:3px solid var(--accent);">
-        <td colspan="9" style="padding:14px 18px;">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;font-size:11px;">
-            <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #388bfd;">
-              <div style="color:#388bfd;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                <span>MARGIN COMPOSITION</span>
-                <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${(100/tm).toFixed(1)}x Lev</span>
+      const drawerRow = `<tr id="drawer-${c.expiry}" class="panic-drawer-row" style="display:none;">
+        <td colspan="9">
+          <div class="panic-drawer-shell" style="border-left:3px solid ${indicatorColor};">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;font-size:11px;">
+              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #388bfd;">
+                <div style="color:#388bfd;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>MARGIN COMPOSITION</span>
+                  <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${(100/tm).toFixed(1)}x Lev</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>SPAN Initial Margin</span><strong>${im.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Period Margin</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Extreme Loss Margin (ELM)</span><strong>${elmPct.toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Total Gross Margin</span><strong style="color:var(--accent);">${tm.toFixed(2)}%</strong></div>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>SPAN Initial Margin</span><strong>${im.toFixed(2)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Period Margin</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct.toFixed(2)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Extreme Loss Margin (ELM)</span><strong>${elmPct.toFixed(2)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Total Gross Margin</span><strong style="color:var(--accent);">${tm.toFixed(2)}%</strong></div>
-            </div>
-            
-            <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #3fb950;">
-              <div style="color:#3fb950;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                <span>VOLATILITY & FLOOR CUSHION</span>
-                <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${volCushion >= 0 ? 'Active SPAN' : 'Floor-Bound'}</span>
+              
+              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #3fb950;">
+                <div style="color:#3fb950;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>VOLATILITY & FLOOR CUSHION</span>
+                  <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${volCushion >= 0 ? 'Active SPAN' : 'Floor-Bound'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Daily Volatility</span><strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Annualized Volatility</span><strong>${((c.daily_volatility||0)*15.811*100).toFixed(1)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Floor Threshold Trigger</span><strong>2.35% daily</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Distance to Floor</span><strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}%</strong></div>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Daily Volatility</span><strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Annualized Volatility</span><strong>${((c.daily_volatility||0)*15.811*100).toFixed(1)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Floor Threshold Trigger</span><strong>2.35% daily</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Distance to Floor</span><strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}%</strong></div>
-            </div>
 
-            <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #ef4444;">
-              <div style="color:#ef4444;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                <span>INTRADAY HIKE TRIGGER</span>
-                <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${hikeLocked ? 'LOCKED IN' : '±' + triggerPct + '% Move'}</span>
+              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #ef4444;">
+                <div style="color:#ef4444;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>INTRADAY HIKE TRIGGER</span>
+                  <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${hikeLocked ? 'LOCKED IN' : '±' + triggerPct + '% Move'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Break-even Volatility</span><strong>${((Math.max(13.5, im + 0.5) + 4.845) / 7.589).toFixed(2)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Upper Breach Price</span><strong style="color:var(--accent-red);">₹${triggerUp || '—'} (+${triggerPct}%)</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Lower Breach Price</span><strong style="color:var(--accent-green);">₹${triggerDn || '—'} (-${triggerPct}%)</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Breach Status</span><strong style="${hikeLocked ? 'color:var(--accent-red);' : 'color:var(--accent-green);'}">${hikeLocked ? '⚠️ Hike Guaranteed' : 'Inside Safe Band'}</strong></div>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Break-even Volatility</span><strong>${((Math.max(13.5, im + 0.5) + 4.845) / 7.589).toFixed(2)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Upper Breach Price</span><strong style="color:var(--accent-red);">₹${triggerUp || '—'} (+${triggerPct}%)</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Lower Breach Price</span><strong style="color:var(--accent-green);">₹${triggerDn || '—'} (-${triggerPct}%)</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>Breach Status</span><strong style="${hikeLocked ? 'color:var(--accent-red);' : 'color:var(--accent-green);'}">${hikeLocked ? '⚠️ Hike Guaranteed' : 'Inside Safe Band'}</strong></div>
-            </div>
 
-            <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #fb923c;">
-              <div style="color:#fb923c;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                <span>TENDER & CAPITAL SURVEILLANCE</span>
-                <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${c.dte}d DTE</span>
+              <div style="background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--border);border-left:3px solid #fb923c;">
+                <div style="color:#fb923c;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>TENDER & CAPITAL SURVEILLANCE</span>
+                  <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);">${c.dte}d DTE</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Schedule</span><strong>${tenderPct > 0 ? `In Ramp (${tenderPct}% → ${Math.min(25, tenderPct + 5)}%)` : (c.dte <= 5 ? 'Enters Tomorrow (+5%)' : 'Outside Tender')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Overnight Tender Call</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct > 0 ? `+₹${Math.round(0.05 * (pSettle || 260) * 1250).toLocaleString('en-IN')}` : '₹0'}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Capital Blocked / Lot</span><strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>RMS 15% Buffer Guideline</span><strong style="color:var(--accent-yellow);">₹${Math.round(rupeeCurrent * 0.15).toLocaleString('en-IN')}</strong></div>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Tender Schedule</span><strong>${tenderPct > 0 ? `In Ramp (${tenderPct}% → ${Math.min(25, tenderPct + 5)}%)` : (c.dte <= 5 ? 'Enters Tomorrow (+5%)' : 'Outside Tender')}</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Overnight Tender Call</span><strong style="${tenderPct > 0 ? 'color:var(--accent-red);' : ''}">${tenderPct > 0 ? `+₹${Math.round(0.05 * (pSettle || 260) * 1250).toLocaleString('en-IN')}` : '₹0'}</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span>Capital Blocked / Lot</span><strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span>RMS 15% Buffer Guideline</span><strong style="color:var(--accent-yellow);">₹${Math.round(rupeeCurrent * 0.15).toLocaleString('en-IN')}</strong></div>
             </div>
           </div>
         </td>
@@ -4353,17 +4433,28 @@ async function renderOverview() {
       return mainRow + drawerRow;
     }).join('');
 
-    // Attach drawer toggles
+    // Attach drawer toggles with master row active state
     document.querySelectorAll('.btn-drawer-toggle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const targetId = btn.dataset.target;
         const drawer = document.getElementById(targetId);
+        const masterRow = btn.closest('tr.panic-row');
         if (drawer) {
           const isHidden = drawer.style.display === 'none';
           drawer.style.display = isHidden ? 'table-row' : 'none';
           btn.textContent = isHidden ? '▲' : '▼';
-          btn.style.color = isHidden ? 'var(--accent)' : 'var(--text-muted)';
+          if (isHidden) {
+            btn.style.background = 'rgba(56, 139, 253, 0.2)';
+            btn.style.color = '#58a6ff';
+            btn.style.borderColor = '#388bfd';
+            if (masterRow) masterRow.classList.add('is-open');
+          } else {
+            btn.style.background = 'var(--surface2)';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderColor = 'var(--border)';
+            if (masterRow) masterRow.classList.remove('is-open');
+          }
         }
       });
     });
