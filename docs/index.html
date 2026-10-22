@@ -1257,7 +1257,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <table class="data-table" id="snapshotTable">
           <thead><tr>
             <th class="has-tooltip" data-tooltip-key="snap-contract" style="cursor:help;">Contract</th>
-            <th class="has-tooltip" data-tooltip-key="snap-price"    style="cursor:help;">Price ₹</th>
+            <th class="has-tooltip" data-tooltip-key="snap-price"    style="cursor:help;">Settlement Price ₹ (EOD)</th>
             <th class="has-tooltip" data-tooltip-key="snap-chg"      style="cursor:help;">Chg %</th>
             <th class="has-tooltip" data-tooltip-key="snap-flow"     style="cursor:help;">Flow</th>
             <th class="has-tooltip" data-tooltip-key="snap-dte"      style="cursor:help;">DTE</th>
@@ -8801,8 +8801,8 @@ const TOOLTIPS = {
     body: `The MCX NATURALGAS expiry contract.<br><br><strong>Label</strong> (e.g. "Jun 25") = month/year of delivery.<br><strong>Code</strong> (e.g. "25JUNFUT") = the MCX instrument code used in CCL margin circulars.<br><br>Contracts are listed from front (nearest expiry) to far. Front-month always carries the highest margin due to tender pressure and near-term vol.`
   },
   "snap-price": {
-    title: "Price ₹",
-    body: `MCX <strong>closing price</strong> for this contract, in Rupees per MMBtu.<br><br>Source: MCX bhavcopy (daily settlement). Updated each trading day via the automated scraper.<br><br>When price data is unavailable for a specific expiry (e.g. low-liquidity far contracts), this cell shows <em>—</em>. All derived metrics (₹/Lot, ₹/1%, leverage cost) depend on this value.`
+    title: "Settlement Price ₹ (EOD)",
+    body: `MCX official <strong>daily settlement price (DSP / Bhavcopy)</strong> for this contract from the prior completed trading session, in Rupees per MMBtu.<br><br>Source: MCX Bhavcopy (daily settlement). Updated each trading day after market close.<br><br>When price data is unavailable for a specific expiry (e.g. low-liquidity far contracts), this cell shows <em>—</em>. All derived metrics (₹/Lot, ₹/1%, leverage cost) depend on this baseline settlement value.`
   },
   "Trade Intelligence Calculator": {
     title: "Trade Intelligence & Capital Calculator",
