@@ -3747,6 +3747,7 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
 
 const PANIC_COEFF_MARGIN = 0.886;
 const PANIC_COEFF_VOL    = 43.0;
+const REGULATORY_MARGIN_FLOOR = 13.0; // MCX statutory margin floor for Natural Gas
 
 function dteBadge(dte) {
   if (dte <= 30) return `<span class="badge-danger">${dte}d</span>`;
@@ -3972,15 +3973,15 @@ async function renderOverview() {
 
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
       const im = c.initial_margin_pct ?? c.total_margin_pct;  // graceful fallback
-      const predictedInit = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
+      const rawPredInit = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
+      const predictedInit = Math.max(REGULATORY_MARGIN_FLOOR, rawPredInit);
       const tenderPct = c.tender_margin_pct != null ? c.tender_margin_pct : Math.max(0, Math.round(((c.total_margin_pct || 0) - im) * 100) / 100);
       const predictedTotal = predictedInit + tenderPct;
       const diff = predictedInit - im;
       const ep = epLookup[c.expiry];
       let probCell = '—';
       // Signal: logistic model dominant direction + its probability
-      // Predicted: linear level forecast (these two can legitimately disagree)
-      const linearDir = diff > 0 ? 'HIKE' : 'CUT';
+      const linearDir = diff > 0.05 ? 'HIKE' : (diff < -0.05 ? 'CUT' : 'FLAT');
       let signalLabel;
       if (ep) {
         const pH = Math.round(ep.p_hike * 100);
@@ -3997,13 +3998,13 @@ async function renderOverview() {
         else if (dominant === ep.p_cut)  signalLabel = `<span class="badge-cut">&#9660; CUT ${pC}%</span>`;
         else                             signalLabel = `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">&#8594; FLAT ${pF}%</span>`;
       } else {
-        signalLabel = diff > 0
+        signalLabel = linearDir === 'HIKE'
           ? `<span class="badge-hike">&#9650; HIKE</span>`
-          : `<span class="badge-cut">&#9660; CUT</span>`;
+          : (linearDir === 'CUT' ? `<span class="badge-cut">&#9660; CUT</span>` : `<span style="background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:11px;">&#8594; FLAT</span>`);
       }
       // Row severity: escalating border-left based on logistic p_hike
-      const logisticDir = ep ? (ep.p_hike > ep.p_cut ? 'HIKE' : 'CUT') : linearDir;
-      const conflict = ep && linearDir !== logisticDir;
+      const logisticDir = ep ? (ep.p_hike > 0.5 ? 'HIKE' : (ep.p_cut > 0.5 ? 'CUT' : 'FLAT')) : linearDir;
+      const conflict = ep && ((linearDir === 'CUT' && ep.p_hike > 0.5) || (linearDir === 'HIKE' && ep.p_cut > 0.5));
       const predictedStyle = conflict ? 'color:var(--accent-yellow);' : '';
       let rowStyle = '';
       let rowTitle = '';
@@ -4015,7 +4016,9 @@ async function renderOverview() {
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
       const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
-      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Predicted Total Tomorrow:</b> ${predictedTotal.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${predictedInit.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${im.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}`;
+      const isFloorClamped = rawPredInit < REGULATORY_MARGIN_FLOOR && predictedInit === REGULATORY_MARGIN_FLOOR;
+      let floorNote = isFloorClamped ? `<br><br><span style='color:var(--accent-cyan);font-size:11px;'>* Note: Sitting at MCXCCL statutory minimum floor (13.00%). Point forecast clamped at 13.00% (raw linear model: ${rawPredInit.toFixed(2)}%). Under exchange rules, margins cannot fall below 13.00%.</span>` : '';
+      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Predicted Total Tomorrow:</b> ${predictedTotal.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${predictedInit.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${im.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}${floorNote}`;
       if (tenderPct > 0) {
         const nextTenderStep = Math.min(25, tenderPct + 5);
         dynPBody += `<br><br><span style='color:var(--text-muted);font-size:11px;'>* Note: MCX Tender schedule steps up by +5% on the next trading day (to ${nextTenderStep.toFixed(2)}%), which will adjust required total margin to ${(predictedInit + nextTenderStep).toFixed(2)}%.</span>`;
@@ -6210,7 +6213,7 @@ async function renderAnalytics() {
     // Item 1: Prediction chart with forecast bands
     const ng = fwd.NATURALGAS || [];
     const curM  = ng.map(c => c.initial_margin_pct);  // use initial — consistent with prediction
-    const predM = ng.map(c => +((0.886 * (c.initial_margin_pct || c.total_margin_pct) + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
+    const predM = ng.map(c => +(Math.max(REGULATORY_MARGIN_FLOOR, 0.886 * (c.initial_margin_pct || c.total_margin_pct) + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
 
     let forecastBands = null;
     try { forecastBands = await loadJSON('forecast_bands'); } catch(e) {}

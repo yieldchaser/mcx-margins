@@ -1632,9 +1632,9 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
             "sigma_1": round(sigma, 4),
             "sigma_2": round(2 * sigma, 4),
             "upper_1": round(pred + sigma, 3),
-            "lower_1": round(pred - sigma, 3),
+            "lower_1": max(13.0, round(pred - sigma, 3)),
             "upper_2": round(pred + 2 * sigma, 3),
-            "lower_2": round(pred - 2 * sigma, 3),
+            "lower_2": max(13.0, round(pred - 2 * sigma, 3)),
         })
 
     save("forecast_bands.json", {
@@ -2819,18 +2819,20 @@ def main():
     recent_vols = [r["vol_daily"] for r in ts[-20:] if r["vol_daily"] is not None]
     mean_vol_20 = sum(recent_vols) / len(recent_vols) if recent_vols else 0.04
 
+    REGULATORY_MARGIN_FLOOR = 13.0  # MCXCCL statutory minimum floor since Aug 2023
     panic_entries = []
     for i, contract in enumerate(ng_fwd):
         im = contract["initial_margin_pct"] or 0   # use initial consistently
         tm = contract["total_margin_pct"] or 0      # kept for display and spread
         dv = contract["daily_volatility"] or mean_vol_20
-        predicted = im * 0.886 + dv * 43.0          # formula now uses initial, not total
+        raw_pred = im * 0.886 + dv * 43.0
+        predicted = max(REGULATORY_MARGIN_FLOOR, raw_pred)  # enforce statutory floor
         spread_vs_next = (
             tm - ng_fwd[i + 1]["total_margin_pct"]
             if i + 1 < len(ng_fwd)
             else 0.0
         )
-        action = "HIKE" if predicted > im else "CUT"   # compare vs initial
+        action = "HIKE" if predicted > im else ("CUT" if predicted < im else "FLAT")
         panic_entries.append(
             {
                 "expiry": contract["expiry"],
