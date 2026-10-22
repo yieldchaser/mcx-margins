@@ -3994,7 +3994,7 @@ function calcHurdleSpanIM(im, dv, r_ret = 0) {
   const proj_v = Math.sqrt(0.94 * Math.pow(dv || 0, 2) + 0.06 * Math.pow(r_ret || 0, 2));
   const target = Math.max(REGULATORY_MARGIN_FLOOR, 7.589 * (proj_v * 100) - 4.845);
   if (Math.abs(target - im) <= 0.50) {
-    return im;
+    return Math.max(REGULATORY_MARGIN_FLOOR, im);
   } else if (target > im + 0.50) {
     return Math.max(im, target);
   } else {
@@ -6432,7 +6432,8 @@ document.getElementById('btnLcResetZoom')?.addEventListener('click', () => {
 
 function marginToColor(val, minV, maxV) {
   if (val == null) return 'var(--surface2)';
-  const t = Math.max(0, Math.min(1, (val - minV) / (maxV - minV)));
+  const denom = (maxV - minV);
+  const t = denom > 0 ? Math.max(0, Math.min(1, (val - minV) / denom)) : 0.5;
   if (t < 0.5) {
     const s = t * 2;
     const r = Math.round(13  + s * (210 - 13));
@@ -7194,7 +7195,7 @@ async function renderAnalytics() {
             varSum += c * Math.pow(binMidVals[i] - mean, 2);
           });
           const variance = totalCount > 1 ? varSum / (totalCount - 1) : 1;
-          const stdDev = Math.sqrt(variance);
+          const stdDev = Math.max(1e-6, Math.sqrt(variance));
 
           // Cumulative counts for percentiles
           const cumCounts = [];
@@ -7517,9 +7518,10 @@ async function initCalculator() {
       else if (range === '10d') s = Math.max(0, maxIdx - 10);
       else if (range === '5d') s = Math.max(0, maxIdx - 5);
       else if (range === 'dte30') {
-        const expDate = document.getElementById('calcExpiry').value;
-        if (expDate) {
-          const expMs = new Date(expDate).getTime();
+        const expVal = document.getElementById('calcExpiry').value;
+        const expDateObj = _expiryDate(expVal);
+        if (expDateObj && !isNaN(expDateObj.getTime())) {
+          const expMs = expDateObj.getTime();
           for (let i = maxIdx; i >= 0; i--) {
             const dateMs = new Date(allDates[i]).getTime();
             const daysToExp = Math.ceil((expMs - dateMs) / (1000 * 60 * 60 * 24));
@@ -7919,7 +7921,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const row = {
       price: entryPrice || 0,
       spanmarginpct: (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? (entryMarginRow.initial_margin_pct / 100) : (entryMarginPct / 100), 
-      ann_volatility: (entryMarginRow && entryMarginRow.annualized_volatility != null) ? (entryMarginRow.annualized_volatility / 100) : ((entryMarketRow && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarketRow.rolling_realized_vol_20d / 100) : 0),
+      ann_volatility: (entryMarginRow && entryMarginRow.annualized_volatility != null) ? (entryMarginRow.annualized_volatility > 2.0 ? entryMarginRow.annualized_volatility / 100 : entryMarginRow.annualized_volatility) : ((entryMarketRow && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarketRow.rolling_realized_vol_20d / 100) : 0),
       marginvsrealizedvolgap: (entryMarketRow && entryMarketRow.margin_vs_realized_vol_gap != null) ? entryMarketRow.margin_vs_realized_vol_gap : (
         (entryMarginRow && entryMarginRow.margin_vs_realized_vol_gap != null) ? entryMarginRow.margin_vs_realized_vol_gap : (
           (entryMarginRow && entryMarketRow && entryMarginRow.initial_margin_pct != null && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarginRow.initial_margin_pct - entryMarketRow.rolling_realized_vol_20d) : 0
@@ -8128,8 +8130,9 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const exitPrice = exitRow?.close ?? entryPrice;
   let costs = 0, costDetail = 'Costs disabled';
   if (feesEnabled && lots > 0) {
-    const buyTurn = entryPrice * lotSize * lots;
-    const sellTurn = exitPrice * lotSize * lots;
+    const isShort = (tradeDir === 'short');
+    const sellTurn = isShort ? (entryPrice * lotSize * lots) : (exitPrice * lotSize * lots);
+    const buyTurn = isShort ? (exitPrice * lotSize * lots) : (entryPrice * lotSize * lots);
     const totalTurn = buyTurn + sellTurn;
     const stt = sellTurn * 0.000125;
     const exch = totalTurn * 0.000026;
@@ -8137,7 +8140,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const broker = (parseFloat(document.getElementById('calcFeeBrokerage')?.value) || 0) * lots * 2;
     const gst = (broker + exch) * 0.18;
     costs = stt + exch + sebi + broker + gst;
-    costDetail = `STT ₹${fmtNum(stt,0)} · Exch ₹${fmtNum(exch,0)} · Brokerage ₹${fmtNum(broker,0)} · GST ₹${fmtNum(gst,0)}`;
+    costDetail = `CTT ₹${fmtNum(stt,0)} · Exch ₹${fmtNum(exch,0)} · Brokerage ₹${fmtNum(broker,0)} · GST ₹${fmtNum(gst,0)}`;
   }
   const netPL = totalPL - costs;
 
@@ -8881,7 +8884,7 @@ async function renderMarketIntel(force = false) {
       }
     });
     const phaseRecent = recent.slice(-120);
-    const maxPhaseVol = Math.max(...phaseRecent.map(r => r.volume_lots || 1));
+    const maxPhaseVol = Math.max(...phaseRecent.map(r => r.volume_lots || 1), 1);
     const phaseColors = {
       long_build: '#3fb950',
       short_build: '#f85149',
@@ -9059,7 +9062,7 @@ async function renderMarketIntel(force = false) {
             <div>
               <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">ROLL YIELD (1M)</div>
               <div style="font-size:15px;font-weight:700;color:${(latestTrail.roll_yield_pct || 0) >= 0 ? '#3fb950' : '#f85149'};">${rollYield}</div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Annualized carry</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">1-Month Roll Spread</div>
             </div>
             <div>
               <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">CONCENTRATION</div>

@@ -39,9 +39,13 @@ if not options_candidates:
 
 OPTIONS_PARQUET = sorted(options_candidates, key=lambda p: os.path.getmtime(p))[-1]
 
-# Infer contract code (e.g. 26OCT, 26NOV, 27JAN)
-m_exp = re.search(r"(\d{2}[A-Z]{3})", os.path.basename(OPTIONS_PARQUET).upper())
-exp_code = m_exp.group(1) if m_exp else ""
+# Infer contract code (e.g. 26OCT, 26NOV, 27JAN, or OCT26, NOV26)
+m_exp = re.search(r"([A-Z]{3}\d{2}|\d{2}[A-Z]{3})", os.path.basename(OPTIONS_PARQUET).upper())
+raw_code = m_exp.group(1) if m_exp else ""
+if raw_code and raw_code[:3].isalpha():  # e.g. OCT26 -> 26OCT
+    exp_code = f"{raw_code[3:]}{raw_code[:3]}"
+else:
+    exp_code = raw_code
 
 # 2. Dynamically locate matching futures parquet
 FUTURES_PARQUET = None
@@ -67,11 +71,32 @@ underlying_sym = f"MCX:NATURALGAS{m_sym.group(1)}FUT" if m_sym else "MCX:NATURAL
 RISK_FREE_RATE = 0.066
 
 MONTH_CODES = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+exp_dt_exact = None
 if exp_code and len(exp_code) == 5:
     exp_yr = 2000 + int(exp_code[:2])
     exp_mo = MONTH_CODES.get(exp_code[2:].upper(), 10)
-    exp_day = 23
-    expiry_dt = datetime(exp_yr, exp_mo, exp_day, 18, 0, 0, tzinfo=timezone.utc)
+    try:
+        import sqlite3
+        if os.path.exists("data/prices.db"):
+            with sqlite3.connect("data/prices.db") as pcon:
+                prows = pcon.execute(
+                    "SELECT DISTINCT expiry FROM prices WHERE symbol='NATURALGAS' AND expiry LIKE ? ORDER BY date DESC LIMIT 1",
+                    (f"%{exp_code[2:]}20{exp_code[:2]}",)
+                ).fetchall()
+                if prows:
+                    f_exp_str = prows[0][0]  # e.g. '27OCT2026'
+                    f_day = int(f_exp_str[:2])
+                    f_mo = MONTH_CODES.get(f_exp_str[2:5].upper(), exp_mo)
+                    f_yr = int(f_exp_str[5:])
+                    exp_dt_exact = datetime(f_yr, f_mo, max(1, f_day - 2), 18, 0, 0, tzinfo=timezone.utc)
+    except Exception:
+        pass
+
+    if exp_dt_exact:
+        expiry_dt = exp_dt_exact
+    else:
+        exp_day = 23
+        expiry_dt = datetime(exp_yr, exp_mo, exp_day, 18, 0, 0, tzinfo=timezone.utc)
     EXPIRY_EPOCH = int(expiry_dt.timestamp())
     EXPIRY_DATE_STR = expiry_dt.strftime("%Y-%m-%d")
 else:
@@ -122,15 +147,18 @@ def solve_black76_iv(F, K, T, r, target_price, is_call):
         
     f = lambda s: black76_price(F, K, T, r, s, is_call) - target_price
     try:
-        # Strictly bounded Brent root-finder
-        return float(brentq(f, 0.01, 5.0, xtol=1e-5))
+        f_low = f(0.005)
+        f_high = f(5.0)
+        if f_low * f_high > 0:
+            return 0.05 if f_low > 0 else 5.0
+        return float(brentq(f, 0.005, 5.0, xtol=1e-5))
     except Exception:
-        # Fallback approximation if boundary not bracketed
         return 0.45
 
 def calculate_greeks(F, K, T, r, sigma, is_call):
     if T <= 0 or sigma <= 0:
-        return {"delta": 0.0, "gamma": 0.0, "theta": 0.0, "vega": 0.0}
+        delta = (1.0 if F > K else 0.0) if is_call else (-1.0 if F < K else 0.0)
+        return {"delta": float(delta), "gamma": 0.0, "theta": 0.0, "vega": 0.0}
     d1 = (np.log(F / K) + 0.5 * (sigma ** 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     disc = np.exp(-r * T)
@@ -327,9 +355,10 @@ if exp_code:
     with open(specific_file, "w", encoding="utf-8") as f:
         json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
 
-legacy_file = os.path.join(OUTPUT_DIR, "options_chain_oct26.json")
-with open(legacy_file, "w", encoding="utf-8") as f:
-    json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
+if exp_code and exp_code.lower() == "26oct":
+    legacy_file = os.path.join(OUTPUT_DIR, "options_chain_oct26.json")
+    with open(legacy_file, "w", encoding="utf-8") as f:
+        json.dump(clean_output, f, cls=NpEncoder, separators=(",", ":"))
 
 kb = os.path.getsize(output_file_generic) / 1024
 print(f"SUCCESS! Saved Black-76 options chain to {output_file_generic} & aliases ({kb:.1f} KB)")

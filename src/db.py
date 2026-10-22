@@ -7,13 +7,19 @@ import sqlite3
 import json
 from pathlib import Path
 
-DB_PATH = Path("data/margins.db")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DB_PATH = REPO_ROOT / "data" / "margins.db" if (REPO_ROOT / "data").exists() else Path("data/margins.db")
 
 
 def get_connection() -> sqlite3.Connection:
     """Get a database connection, creating the DB if needed."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+    except Exception:
+        pass
     conn.row_factory = sqlite3.Row
     return conn
 

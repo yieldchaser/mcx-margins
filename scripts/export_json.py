@@ -5,6 +5,7 @@ Run: python export_json.py
 Output: docs/data/*.json
 """
 
+import sys
 import sqlite3
 import json
 import math
@@ -22,9 +23,13 @@ except ImportError:
     HAS_SKLEARN = False
     print("  [WARN] numpy/scikit-learn not available — Items 1–9 advanced stats will be skipped")
 
-DB_PATH = Path("data/margins.db")
-PRICE_DB_PATH = Path("data/prices.db")
-OUT_DIR = Path("docs/data")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+REPO_ROOT = Path(__file__).resolve().parent.parent if Path(__file__).parent.name == "scripts" else Path(__file__).resolve().parent
+DB_PATH = REPO_ROOT / "data" / "margins.db" if (REPO_ROOT / "data" / "margins.db").exists() else Path("data/margins.db")
+PRICE_DB_PATH = REPO_ROOT / "data" / "prices.db" if (REPO_ROOT / "data" / "prices.db").exists() else Path("data/prices.db")
+OUT_DIR = REPO_ROOT / "docs" / "data" if (REPO_ROOT / "docs" / "data").parent.exists() else Path("docs/data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 MARKET_SCHEMA_VERSION = "1.0.0"
 MARKET_SYMBOLS = ("NATURALGAS", "NATGASMINI")
@@ -1576,6 +1581,15 @@ def _calc_hurdle_span_im(m_t, dv, r_ret=0.0):
       fires instantaneous SPAN jump on hikes, and models sticky step-down on cuts.
     - Clamps strictly at the 13.00% statutory floor.
     """
+    if dv is None:
+        dv = 0.04
+    else:
+        dv = float(dv)
+    if m_t is None:
+        m_t = 13.0
+    else:
+        m_t = float(m_t)
+    r_ret = float(r_ret or 0.0)
     proj_v = math.sqrt(0.94 * (dv ** 2) + 0.06 * (r_ret ** 2))
     target = max(13.0, 7.589 * (proj_v * 100) - 4.845)
     if abs(target - m_t) <= 0.50:
@@ -3131,7 +3145,7 @@ def export_hh_price():
         prices = []
         for ts, close in zip(timestamps, closes):
             if close is not None:
-                date_str = date.fromtimestamp(ts).isoformat()
+                date_str = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
                 prices.append({"date": date_str, "price": round(close, 4)})
         save("hh_price.json", {"symbol": "NG=F", "currency": "USD/MMBtu", "prices": prices})
     except Exception as e:

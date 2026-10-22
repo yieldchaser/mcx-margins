@@ -51,7 +51,11 @@ jobs:
         run: |
           python scripts/lookback.py --days 5
           exit_code=$?
-          if [ $exit_code -eq 0 ] || [ $exit_code -eq 2 ]; then
+          if [ $exit_code -eq 0 ]; then
+            echo "fresh_data=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          elif [ $exit_code -eq 2 ]; then
+            echo "fresh_data=false" >> "$GITHUB_OUTPUT"
             exit 0
           else
             exit $exit_code
@@ -84,9 +88,9 @@ jobs:
         run: python scripts/export_json.py
 
       # ── Step 4: alert ───────────────────────────────────────────────────
-      # Only alert if genuinely fresh today's data was found.
+      # Only alert if genuinely fresh today's data or backfill was found.
       - name: Check margin change and send alert
-        if: steps.fetch_today.outputs.fresh_data == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.fetch_today.outputs.fresh_data == 'true' || steps.lookback.outputs.fresh_data == 'true' || github.event_name == 'workflow_dispatch'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python scripts/alert.py

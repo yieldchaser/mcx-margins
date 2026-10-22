@@ -17,14 +17,17 @@ import os
 import smtplib
 import sqlite3
 import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from datetime import date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
 THRESHOLD = 2.0  # percentage points for unscheduled SPAN IM shock
-DB_PATH = Path("data/margins.db")
-PRICE_DB_PATH = Path("data/prices.db")
+REPO_ROOT = Path(__file__).resolve().parent.parent if Path(__file__).parent.name == "scripts" else Path(__file__).resolve().parent
+DB_PATH = REPO_ROOT / "data" / "margins.db" if (REPO_ROOT / "data" / "margins.db").exists() else Path("data/margins.db")
+PRICE_DB_PATH = REPO_ROOT / "data" / "prices.db" if (REPO_ROOT / "data" / "prices.db").exists() else Path("data/prices.db")
 ALERT_TO = "upadhyayprateek574@gmail.com"
 ALERT_FROM = "upadhyayprateek574@gmail.com"
 SYMBOL = "NATURALGAS"
@@ -63,7 +66,16 @@ def get_latest_price(symbol: str, expiry: str) -> float | None:
                 ORDER BY date DESC LIMIT 1
             """, (symbol, expiry))
             row = cur.fetchone()
-            return float(row[0]) if row and row[0] is not None else None
+            if row and row[0] is not None:
+                return float(row[0])
+            # Dynamic fallback: latest settlement price for this symbol across ANY expiry
+            cur.execute("""
+                SELECT close FROM prices
+                WHERE symbol=? AND close > 0
+                ORDER BY date DESC LIMIT 1
+            """, (symbol,))
+            fallback_row = cur.fetchone()
+            return float(fallback_row[0]) if fallback_row and fallback_row[0] is not None else None
     except Exception:
         return None
 
@@ -166,8 +178,9 @@ def get_margin_transitions(symbol: str = SYMBOL):
         is_vol_shock = abs(delta_im) >= THRESHOLD
         is_tender_entry = (p_tender == 0.0 and t_tender > 0.0)
 
-        rupee_margin_today = round(LOT_SIZE * price * (t_total / 100))
-        rupee_margin_prev = round(LOT_SIZE * price * (p_total / 100))
+        lot_size = 250 if "MINI" in symbol.upper() else 1250
+        rupee_margin_today = round(lot_size * price * (t_total / 100))
+        rupee_margin_prev = round(lot_size * price * (p_total / 100))
         rupee_delta = rupee_margin_today - rupee_margin_prev
 
         all_active.append({

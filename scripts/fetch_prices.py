@@ -44,8 +44,14 @@ import re
 import sqlite3
 from pathlib import Path
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def ist_today() -> datetime:
+    now = datetime.now(IST)
+    return datetime(now.year, now.month, now.day)
 
 # Ensure UTF-8 output on Windows (cp1252 console chokes on ✓, →, … etc.)
 if hasattr(sys.stdout, "reconfigure"):
@@ -169,7 +175,12 @@ CREATE INDEX IF NOT EXISTS ix_prices_sym    ON prices(symbol, expiry);
 def db_connect(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     """Open (or create) the prices SQLite DB and return a connection."""
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+    except Exception:
+        pass
     conn.executescript(CREATE_SQL)
     conn.commit()
     return conn
@@ -459,38 +470,41 @@ async def run_daily(start_date: str | None = None, db_path: str = DEFAULT_DB_PAT
     Stops at first date that returns NATURALGAS/NATGASMINI data.
     """
     conn = db_connect(db_path)
-    current = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.today()
+    try:
+        current = datetime.strptime(start_date, "%Y-%m-%d") if start_date else ist_today()
 
-    async with async_playwright() as p:
-        session = BhavSession(p)
-        try:
-            await session.start()
-        except RuntimeError as e:
-            print(f"[daily] Session failed: {e}")
-        
-            return []
-
-        for attempt in range(MAX_LOOKBACK + 1):
-            date_str = current.strftime("%Y-%m-%d")
-            print(f"\n[daily] Attempt {attempt+1}/{MAX_LOOKBACK+1}  date={date_str}")
-
-            raw_rows   = await session.fetch_date(date_str)
-            normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
-
-            if normalized:
-                saved = save_records(conn, normalized)
-                print(f"[daily] ✓ {saved} rows saved for {date_str}")
-                await session.close()
+        async with async_playwright() as p:
+            session = BhavSession(p)
+            try:
+                await session.start()
+            except RuntimeError as e:
+                print(f"[daily] Session failed: {e}")
             
-                return normalized
+                return []
 
-            print(f"[daily] No target data for {date_str} — stepping back")
-            current = prev_weekday(current)
+            for attempt in range(MAX_LOOKBACK + 1):
+                date_str = current.strftime("%Y-%m-%d")
+                print(f"\n[daily] Attempt {attempt+1}/{MAX_LOOKBACK+1}  date={date_str}")
 
-        await session.close()
-    
-        print("[daily] All look-back attempts exhausted")
-        return []
+                raw_rows   = await session.fetch_date(date_str)
+                normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
+
+                if normalized:
+                    saved = save_records(conn, normalized)
+                    print(f"[daily] ✓ {saved} rows saved for {date_str}")
+                    await session.close()
+                
+                    return normalized
+
+                print(f"[daily] No target data for {date_str} — stepping back")
+                current = prev_weekday(current)
+
+            await session.close()
+        
+            print("[daily] All look-back attempts exhausted")
+            return []
+    finally:
+        conn.close()
 
 
 async def run_backfill(
@@ -504,78 +518,81 @@ async def run_backfill(
     Prints a running summary as it goes.
     """
     start = datetime.strptime(start_date, "%Y-%m-%d")
-    end   = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.today()
+    end   = datetime.strptime(end_date, "%Y-%m-%d") if end_date else ist_today()
 
     conn = db_connect(db_path)
-    already_done = dates_already_in_db(conn)
-    all_days     = trading_days_between(start, end)
-    pending      = [d for d in all_days if d.strftime("%Y-%m-%d") not in already_done]
-
-    total = len(all_days)
-    skip  = total - len(pending)
-    print(f"\n[backfill] {total} trading days in range")
-    print(f"[backfill] {skip} already in DB → skipping")
-    print(f"[backfill] {len(pending)} to fetch\n")
-
-    if not pending:
-        print("[backfill] Nothing to do.")
+    try:
+        already_done = dates_already_in_db(conn)
+        all_days     = trading_days_between(start, end)
+        pending      = [d for d in all_days if d.strftime("%Y-%m-%d") not in already_done]
     
-        return
-
-    fetched_days  = 0
-    fetched_rows  = 0
-    holiday_count = 0
-
-    async with async_playwright() as p:
-        session = BhavSession(p)
-        try:
-            await session.start()
-        except RuntimeError as e:
-            print(f"[backfill] Session failed: {e}")
+        total = len(all_days)
+        skip  = total - len(pending)
+        print(f"\n[backfill] {total} trading days in range")
+        print(f"[backfill] {skip} already in DB → skipping")
+        print(f"[backfill] {len(pending)} to fetch\n")
+    
+        if not pending:
+            print("[backfill] Nothing to do.")
         
             return
-
-        for i, dt in enumerate(pending, 1):
-            date_str = dt.strftime("%Y-%m-%d")
-            print(f"[backfill] {i}/{len(pending)}  {date_str}", end="  ")
-
+    
+        fetched_days  = 0
+        fetched_rows  = 0
+        holiday_count = 0
+    
+        async with async_playwright() as p:
+            session = BhavSession(p)
             try:
-                raw_rows   = await session.fetch_date(date_str)
-                normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
-            except Exception as e:
-                print(f"✗ error: {e}")
-                continue
-
-            if normalized:
-                saved = save_records(conn, normalized)
-                fetched_rows += saved
-                fetched_days += 1
-                syms = {r["symbol"] for r in normalized}
-                expiries = {r["expiry"] for r in normalized}
-                print(f"✓ {saved} rows  symbols={syms}  expiries={sorted(expiries)}")
-            else:
-                holiday_count += 1
-                print("— no data (holiday / no trading)")
-
-            # Polite delay between requests
-            if i < len(pending):
-                await asyncio.sleep(BACKFILL_DELAY)
-
-        await session.close()
-
-
-    print(f"\n[backfill] Done.")
-    print(f"  Trading days with data : {fetched_days}")
-    print(f"  Holidays / no data     : {holiday_count}")
-    print(f"  Total rows saved       : {fetched_rows}")
-    total = db_connect(db_path).execute("SELECT COUNT(*) FROM prices").fetchone()[0]
-    print(f"  DB total rows          : {total}")
-    print(f"  DB path                : {db_path}")
+                await session.start()
+            except RuntimeError as e:
+                print(f"[backfill] Session failed: {e}")
+            
+                return
+    
+            for i, dt in enumerate(pending, 1):
+                date_str = dt.strftime("%Y-%m-%d")
+                print(f"[backfill] {i}/{len(pending)}  {date_str}", end="  ")
+    
+                try:
+                    raw_rows   = await session.fetch_date(date_str)
+                    normalized = [r for raw in raw_rows if (r := normalize(raw, date_str))]
+                except Exception as e:
+                    print(f"✗ error: {e}")
+                    continue
+    
+                if normalized:
+                    saved = save_records(conn, normalized)
+                    fetched_rows += saved
+                    fetched_days += 1
+                    syms = {r["symbol"] for r in normalized}
+                    expiries = {r["expiry"] for r in normalized}
+                    print(f"✓ {saved} rows  symbols={syms}  expiries={sorted(expiries)}")
+                else:
+                    holiday_count += 1
+                    print("— no data (holiday / no trading)")
+    
+                # Polite delay between requests
+                if i < len(pending):
+                    await asyncio.sleep(BACKFILL_DELAY)
+    
+            await session.close()
+    
+    
+        print(f"\n[backfill] Done.")
+        print(f"  Trading days with data : {fetched_days}")
+        print(f"  Holidays / no data     : {holiday_count}")
+        print(f"  Total rows saved       : {fetched_rows}")
+        total = conn.execute("SELECT COUNT(*) FROM prices").fetchone()[0]
+        print(f"  DB total rows          : {total}")
+        print(f"  DB path                : {db_path}")
+    finally:
+        conn.close()
 
 
 async def run_diagnose(date_str: str | None = None):
     """Print raw JSON for one date — no DB writes. Use to verify field names."""
-    ds = date_str or datetime.today().strftime("%Y-%m-%d")
+    ds = date_str or ist_today().strftime("%Y-%m-%d")
     async with async_playwright() as p:
         session = BhavSession(p)
         await session.start()

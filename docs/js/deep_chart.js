@@ -62,7 +62,6 @@
     if (chart) {
       if (container.clientWidth > 0) {
         chart.applyOptions({ width: container.clientWidth });
-        chart.timeScale().fitContent();
       }
       return;
     }
@@ -1656,6 +1655,11 @@
   async function initTODSeasonality() {
     const canvas = document.getElementById('chartTODSeasonality');
     if (!canvas) return;
+
+    if (typeof Chart === 'undefined') {
+      setTimeout(initTODSeasonality, 100);
+      return;
+    }
 
     try {
       if (!todData) {
