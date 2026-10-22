@@ -1910,19 +1910,28 @@ def _export_curve_cone(cur, fwd, latest_date):
 
 # ── Item 6: Structural vs Policy Buffer Decomposition ────────────────────────
 def _export_decomposition(fm_series, regime_params):
-    """Decompose margin into vol-implied (fair) and policy buffer."""
+    """Decompose margin into vol-implied (fair) and policy buffer across all history."""
     print("  [Item 6] Margin decomposition...")
 
-    rp = regime_params["regime_b"]
-    slope, intercept = rp["slope"], rp["intercept"]
+    rp_b = regime_params["regime_b"]
+    rp_a = regime_params.get("regime_a", rp_b)
 
-    # Last 365 days
-    recent = fm_series[-365:] if len(fm_series) >= 365 else fm_series
     ts = []
     buffers = []
-    for row in recent:
-        vol_pct = row["daily_volatility"] * 100
-        fair = slope * vol_pct + intercept
+    for row in fm_series:
+        vol = row.get("daily_volatility")
+        if vol is None or vol <= 0:
+            ann_vol = row.get("annualized_volatility")
+            if ann_vol and ann_vol > 0:
+                vol = ann_vol / (252 ** 0.5)
+            else:
+                vol = 0.02
+        vol_pct = vol * 100
+
+        yr = row.get("year") or int(row["date"][:4])
+        curr_rp = rp_a if yr < 2019 else rp_b
+
+        fair = max(0.0, curr_rp["slope"] * vol_pct + curr_rp["intercept"])
         actual = row["initial_margin_pct"]
         buf = actual - fair
         buffers.append(buf)
@@ -1933,13 +1942,14 @@ def _export_decomposition(fm_series, regime_params):
             "policy_buffer": round(buf, 3),
         })
 
-    # Buffer percentile for today
-    sorted_bufs = sorted(buffers)
+    # Buffer percentile for today based on trailing 365 observations
+    recent_bufs = buffers[-365:] if len(buffers) >= 365 else buffers
+    sorted_bufs = sorted(recent_bufs)
     latest_buf = buffers[-1] if buffers else 0
     buf_pct = round(sum(1 for v in sorted_bufs if v <= latest_buf) / len(sorted_bufs) * 100) if sorted_bufs else 50
 
     save("decomposition.json", {
-        "slope": slope, "intercept": intercept,
+        "slope": rp_b["slope"], "intercept": rp_b["intercept"],
         "today": {
             "actual": ts[-1]["actual"] if ts else 0,
             "fair_margin": ts[-1]["fair_margin"] if ts else 0,

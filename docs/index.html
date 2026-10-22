@@ -2286,10 +2286,19 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
     <div class="card mb-4 market-intel-control" id="marketSignalsCard" style="display:none;">
-      <div class="card-title" style="margin-bottom:12px;">Market-Confirmed Risk Signals</div>
+      <div class="card-title has-tooltip" data-tooltip-key="Market-Confirmed Risk Signals" style="margin-bottom:12px;">Market-Confirmed Risk Signals</div>
       <div style="overflow-x:auto;">
         <table class="data-table">
-          <thead><tr><th>Symbol</th><th>Signal</th><th>Severity</th><th>Score</th><th>Direction</th><th>Reason</th></tr></thead>
+          <thead>
+            <tr>
+              <th class="has-tooltip" data-dyn-title="Symbol" data-dyn-body="The active underlying MCX commodity contract instrument (NATURALGAS 1,250 MMBtu big lot vs NATGASMINI 250 MMBtu mini lot).">Symbol</th>
+              <th class="has-tooltip" data-dyn-title="Signal Category" data-dyn-body="The specific quantitative risk dimension detected: Price momentum shock, Margin-market divergence, Open interest shifts, Liquidity stress, or Volume baseline deviations.">Signal</th>
+              <th class="has-tooltip" data-dyn-title="Triage Severity" data-dyn-body="Risk triage priority: HIGH (immediate risk buffer violation or major flow inflection), MEDIUM (cautionary buildup), or LOW (normal baseline conditions).">Severity</th>
+              <th class="has-tooltip" data-dyn-title="Risk Score" data-dyn-body="Normalized algorithmic risk severity score ranging from 0 (completely calm) to 100 (acute divergence / maximum surveillance alert).">Score</th>
+              <th class="has-tooltip" data-dyn-title="Directional Vector" data-dyn-body="Observed market flow direction: Up, Down, Expanding, Contracting, or Diverging relative to clearinghouse margin baselines.">Direction</th>
+              <th class="has-tooltip" data-dyn-title="Diagnostic Rationale" data-dyn-body="Mathematical threshold analysis and empirical evidence triggering this specific surveillance signal.">Reason</th>
+            </tr>
+          </thead>
           <tbody id="marketSignalsBody"></tbody>
         </table>
       </div>
@@ -6797,17 +6806,27 @@ async function renderAnalytics() {
         const ms = await loadMarketJSON('signals');
         const rows = (ms.signals || []).sort((a,b) => b.score - a.score).slice(0, 12);
         if (rows.length) {
-          document.getElementById('marketSignalsBody').innerHTML = rows.map(s => `
-            <tr>
-              <td>${s.symbol}</td>
-              <td>${formatLabel(s.label)}</td>
-              <td><span class="${s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe'}">${formatLabel(s.severity)}</span></td>
-              <td>${s.score}</td>
-              <td>${formatLabel(s.direction)}</td>
-              <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
-            </tr>
-          `).join('');
+          document.getElementById('marketSignalsBody').innerHTML = rows.map(s => {
+            const sevBadge = s.severity === 'HIGH' ? 'badge-hike' : s.severity === 'MEDIUM' ? 'badge-warn' : 'badge-safe';
+            const dynBody = `Signal: <strong>${formatLabel(s.label)}</strong> (${s.symbol})<br>` +
+              `• Severity: <strong>${formatLabel(s.severity)}</strong> (Score: <strong>${s.score}/100</strong>)<br>` +
+              `• Directional Flow: <strong>${formatLabel(s.direction)}</strong><br>` +
+              `• Diagnostic Rationale: ${s.reason}<br><br>` +
+              `<em>Clearing Context:</em> ${s.severity === 'HIGH' ? 'Indicates aggressive directional flow or capital divergence that frequently precedes clearinghouse SPAN scan adjustments.' : 'Flow and participation metrics remain within historical operating tolerances.'}`;
+
+            return `
+              <tr class="has-tooltip" data-dyn-title="Market Signal: ${formatLabel(s.label)}" data-dyn-body="${escAttr(dynBody)}">
+                <td><strong>${s.symbol}</strong></td>
+                <td><span style="font-weight:600;">${formatLabel(s.label)}</span></td>
+                <td><span class="${sevBadge}" style="font-size:10px;padding:2px 6px;">${formatLabel(s.severity)}</span></td>
+                <td><span style="font-family:monospace;font-weight:700;font-variant-numeric:tabular-nums;">${s.score}</span></td>
+                <td>${formatLabel(s.direction)}</td>
+                <td style="font-size:12px;color:var(--text-muted);">${s.reason}</td>
+              </tr>
+            `;
+          }).join('');
           document.getElementById('marketSignalsCard').style.display = 'block';
+          attachTooltips();
         }
       } catch(e) { console.warn('Market signals skipped:', e); }
     }
@@ -9434,10 +9453,19 @@ const TOOLTIPS = {
   },
   "Calendar Roll & Carry Matrix": {
     title: "Calendar Spread & Contango Carry Drag Matrix",
-    body: `<strong>Term Structure Carry Dynamics:</strong> Quantifies the economic cost or yield of rolling futures positions across consecutive maturities ($M1 \to M2, M2 \to M3$).<br><br>
-• <strong>Carry Drag (₹ / Lot):</strong> The cash drag incurred by a long position rolling from the expiring front month to next month: $(P_{M2} - P_{M1}) \times 1,250$. Amber bars indicate Contango drag (roll loss); emerald bars indicate Backwardation roll yield.<br>
+    body: `<strong>Term Structure Carry Dynamics:</strong> Quantifies the economic cost or yield of rolling futures positions across consecutive maturities (M1 → M2, M2 → M3).<br><br>
+• <strong>Carry Drag (₹ / Lot):</strong> The cash drag incurred by a long position rolling from the expiring front month to next month: (P<sub>M2</sub> − P<sub>M1</sub>) × 1,250. Amber bars indicate Contango drag (roll loss); emerald bars indicate Backwardation roll yield.<br>
 • <strong>Spread %:</strong> Percentage price premium or discount of the deferred contract over the near contract.<br>
 • <strong>Optimal Roll Window (8–12 DTE):</strong> Positions should be rolled prior to the 5-day pre-expiry settlement ramp (+5%/day) to avoid liquidity traps and steep cash requirements.`
+  },
+  "Market-Confirmed Risk Signals": {
+    title: "Market-Confirmed Risk Signals",
+    body: `Algorithmic cross-verification of clearinghouse margin dynamics against live trading flow, microstructure velocity, and liquidity structure.<br><br>
+• <strong>Price Momentum:</strong> Alerts when rapid 5-session directional price velocity creates margin deficit risk.<br>
+• <strong>Margin-Market Divergence:</strong> Highlights dislocations where price return materially exceeds the current initial margin buffer.<br>
+• <strong>Open Interest Shift:</strong> Detects aggressive position unwinding (contracting OI) or sudden speculative buildup.<br>
+• <strong>Liquidity Stress:</strong> Monitors trading volume depth relative to active open interest.<br><br>
+<em>Hover any individual row</em> for specific diagnostic rationale and clearinghouse implications.`
   },
   "Historical Percentile Rank": {
     title: "Historical Margin Percentile Rank Over Time",
@@ -9455,8 +9483,8 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
   "calc-leverage": {
     title: "Effective vs Statutory Clearinghouse Leverage",
     body: `<strong>Leverage Monitor:</strong><br><br>
-• <strong>Effective Leverage:</strong> Total notional contract value controlled divided by available account capital: $\frac{\text{Lots} \times \text{Lot Size} \times \text{Price}}{\text{Capital}}$.<br>
-• <strong>Max Statutory Leverage:</strong> The hard clearinghouse ceiling defined by exchange minimum margin: $\frac{100}{\text{Margin \%}}$. Sizing too close to statutory leverage leaves zero buffer against adverse intraday swings and overnight gap margin calls.`
+• <strong>Effective Leverage:</strong> Total notional contract value controlled divided by available account capital: (Lots × Lot Size × Price) ÷ Capital.<br>
+• <strong>Max Statutory Leverage:</strong> The hard clearinghouse ceiling defined by exchange minimum margin: 100 ÷ Margin %. Sizing too close to statutory leverage leaves zero buffer against adverse intraday swings and overnight gap margin calls.`
   },
   "Current Margin Snapshot": {
     title: "Current Margin Snapshot — NATURALGAS",
@@ -9854,7 +9882,7 @@ When blue is <em>below</em> yellow: Margins are easing. Capital efficiency impro
   "Henry Hub": {
     title: "Henry Hub Price Overlay (NG=F)",
     body: `Overlays the <strong>Henry Hub natural gas front-month futures price</strong> (NG=F — CME continuous contract via Yahoo Finance) on the margin history chart.<br><br>
-The green dashed line uses the <em>right Y-axis</em> ($/MMBtu). The blue margin line uses the left Y-axis (%).<br><br>
+The green dashed line uses the <em>right Y-axis</em> (USD/MMBtu). The blue margin line uses the left Y-axis (%).<br><br>
 <strong>Why this matters:</strong> MCX NATURALGAS margin is heavily driven by Henry Hub price movements — when HH price spikes or crashes, MCX vol spikes and margins follow within 1–2 days.<br><br>
 <em>Data coverage:</em> Full history from 2010 to present. Updated with every daily export run.`
   },
