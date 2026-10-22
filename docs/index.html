@@ -3973,7 +3973,7 @@ async function renderOverview() {
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
       const im = c.initial_margin_pct ?? c.total_margin_pct;  // graceful fallback
       const predictedInit = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
-      const tenderPct = c.tender_margin_pct || 0;
+      const tenderPct = c.tender_margin_pct != null ? c.tender_margin_pct : Math.max(0, Math.round(((c.total_margin_pct || 0) - im) * 100) / 100);
       const predictedTotal = predictedInit + tenderPct;
       const diff = predictedInit - im;
       const ep = epLookup[c.expiry];

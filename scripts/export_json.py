@@ -2771,6 +2771,7 @@ def main():
                 "expiry": exp,
                 "dte": compute_dte(exp, latest_date),
                 "initial_margin_pct": row["initial_margin_pct"],
+                "tender_margin_pct": row["tender_margin_pct"],
                 "total_margin_pct": row["total_margin_pct"],
                 "daily_volatility": row["daily_volatility"],
                 "annualized_volatility": row["annualized_volatility"],
