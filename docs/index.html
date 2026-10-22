@@ -1315,7 +1315,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <thead><tr>
               <th title="Contract expiry date being evaluated.">Expiry</th>
               <th title="Today's total margin requirement (Initial + ELM + Tender). Shown for reference.">Total %</th>
-              <th title="Model's point estimate for tomorrow's INITIAL margin. Formula: 0.886 × initial_margin + 43.0 × daily_vol. Consistent with training label (initial, not total).">Predicted Init.</th>
+              <th title="Model's point estimate for tomorrow's total margin requirement (Initial forecast + Tender margin where active).">Pred. Total %</th>
               <th title="Logistic model probabilities of three outcomes tomorrow: margin cut (&gt;0.5% decrease), flat (±0.5%), or hike (&gt;0.5% increase). Trained on historical data. Bar = green(cut) | grey(flat) | red(hike).">Probability</th>
               <th title="Dominant outcome by probability. Amber row glow = P(hike) &gt;65%. Red row glow = P(hike) &gt;80%.">Signal</th>
             </tr></thead>
@@ -3972,8 +3972,10 @@ async function renderOverview() {
 
     document.getElementById('panicBody').innerHTML = dedupedPanic.slice(0, 8).map(c => {
       const im = c.initial_margin_pct ?? c.total_margin_pct;  // graceful fallback
-      const predicted = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
-      const diff = predicted - im;
+      const predictedInit = PANIC_COEFF_MARGIN * im + PANIC_COEFF_VOL * (c.daily_volatility || 0);
+      const tenderPct = c.tender_margin_pct || 0;
+      const predictedTotal = predictedInit + tenderPct;
+      const diff = predictedInit - im;
       const ep = epLookup[c.expiry];
       let probCell = '—';
       // Signal: logistic model dominant direction + its probability
@@ -4013,12 +4015,16 @@ async function renderOverview() {
         rowTitle = `Elevated hike probability: model assigns ${Math.round(ep.p_hike*100)}% probability of a margin increase >0.5% tomorrow. Brier score: ${(eventProbs?.brier_hike ?? 0).toFixed(3)} (lower is better, 0.25 = no skill).`;
       }
       const dynPTitle = `Panic Signal: ${_contractLabel(c.expiry)} (${_formatExpiryShort(c.expiry)})`;
-      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Point Estimate (Initial tomorrow):</b> ${predicted.toFixed(2)}%<br><b>Current Initial Margin:</b> ${im.toFixed(2)}%<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%`;
-      if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>[Warning] Model conflict: linear formula predicts CUT (${predicted.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
+      let dynPBody = rowTitle || `Normal probability range. The prediction model tracks initial margin vs volatility deviation.<br><br><b>Predicted Total Tomorrow:</b> ${predictedTotal.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${predictedInit.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}<br><b>Current Total Margin:</b> ${c.total_margin_pct.toFixed(2)}%${tenderPct > 0 ? ` (Initial ${im.toFixed(2)}% + Tender ${tenderPct.toFixed(2)}%)` : ''}`;
+      if (tenderPct > 0) {
+        const nextTenderStep = Math.min(25, tenderPct + 5);
+        dynPBody += `<br><br><span style='color:var(--text-muted);font-size:11px;'>* Note: MCX Tender schedule steps up by +5% on the next trading day (to ${nextTenderStep.toFixed(2)}%), which will adjust required total margin to ${(predictedInit + nextTenderStep).toFixed(2)}%.</span>`;
+      }
+      if (conflict) dynPBody += `<br><br><span style='color:#d29922;'>[Warning] Model conflict: linear formula predicts CUT (${predictedTotal.toFixed(2)}%) but logistic assigns ${Math.round(ep.p_hike*100)}% P(hike).</span>`;
       return `<tr class="has-tooltip" data-dyn-title="${dynPTitle}" data-dyn-body="${escAttr(dynPBody)}" style="${rowStyle}">
         <td><strong>${_contractLabel(c.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);letter-spacing:0.02em;margin-top:1px;">${_formatExpiryShort(c.expiry)}</div></td>
         <td>${c.total_margin_pct.toFixed(2)}%</td>
-        <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predicted.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predicted.toFixed(2)}%</td>
+        <td style="${predictedStyle}" title="${conflict ? 'Linear model predicts ' + predictedTotal.toFixed(2) + '% — disagrees with logistic signal' : ''}">${predictedTotal.toFixed(2)}%</td>
         <td>${probCell}</td>
         <td>${signalLabel}</td>
       </tr>`;
