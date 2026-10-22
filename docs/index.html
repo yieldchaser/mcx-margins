@@ -2635,52 +2635,74 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </table>
       </div>
     </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
-        <div class="card-title has-tooltip" data-tooltip-key="Market Data Explorer" style="margin-bottom:0;">Market Data Explorer</div>
-        <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Download CSV</button>
-      </div>
-      <div class="market-table-shell">
-        <table class="data-table">
-          <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
-          <tbody id="marketExplorerBody"></tbody>
-        </table>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
-        <button id="marketPrevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
-        <span id="marketPageInfo" style="color:var(--text-muted);"></span>
-        <button id="marketNextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
-      </div>
-    </div>
-  </div>
+  </div> <!-- Closes #tab-market cleanly without overflowing data table -->
 
 
 
   <div id="tab-explorer" class="tab-content">
     <div class="card mb-4" style="padding:14px 20px;">
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <select id="expSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
-          <option value="ng">NATURALGAS</option>
-          <option value="ngm">NATGASMINI</option>
-        </select>
-        <button id="exportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">&#11015; Download CSV</button>
-        <span style="font-size:12px;color:var(--text-muted);" id="explorerCount"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="range-btn active-range" id="expToggleMargins" style="font-weight:600;">Clearing Margins (2010–2026)</button>
+          <button class="range-btn" id="expToggleMarket" style="font-weight:600;">Market Price & Flow (2019–2026)</button>
+        </div>
+        <span class="scope-chip" id="explorerActiveDatasetLabel">Active View: <strong>Historical Margin Database</strong></span>
       </div>
     </div>
-    <div class="card">
-      <div style="overflow-x:auto;">
-        <table class="data-table" id="explorerTable">
-          <thead><tr>
-            <th>Date</th><th>Expiry</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
-            <th>Tender %</th><th>Total %</th><th>Daily Vol</th><th>Ann. Vol %</th>
-          </tr></thead>
-          <tbody id="explorerBody"></tbody>
-        </table>
+
+    <!-- Section A: Margin Historical Database -->
+    <div id="explorerMarginSection">
+      <div class="card mb-4" style="padding:14px 20px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <select id="expSymbol" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:13px;">
+            <option value="ng">NATURALGAS (Big 1,250 MMBtu)</option>
+            <option value="ngm">NATGASMINI (Mini 250 MMBtu)</option>
+          </select>
+          <button id="exportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">&#11015; Download Margin CSV</button>
+          <span style="font-size:12px;color:var(--text-muted);" id="explorerCount"></span>
+        </div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
-        <button id="prevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
-        <span id="pageInfo" style="color:var(--text-muted);"></span>
-        <button id="nextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
+      <div class="card">
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="explorerTable">
+            <thead><tr>
+              <th>Date</th><th>Expiry</th><th>DTE</th><th>Initial %</th><th>ELM %</th>
+              <th>Tender %</th><th>Total %</th><th>Daily Vol</th><th>Ann. Vol %</th>
+            </tr></thead>
+            <tbody id="explorerBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
+          <button id="prevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
+          <span id="pageInfo" style="color:var(--text-muted);"></span>
+          <button id="nextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section B: Market Price & Flow Explorer -->
+    <div id="explorerMarketSection" style="display:none;">
+      <div class="card mb-4" style="padding:14px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:13px;color:var(--text);font-weight:600;">MCX Liquidity & Position Flow Records</span>
+            <span class="scope-chip" style="font-size:10px;">Contract Level</span>
+          </div>
+          <button id="marketExportCSV" style="background:var(--accent);color:white;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">&#11015; Download Market CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="market-table-shell" style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Expiry</th><th>DTE</th><th>Close</th><th>Return</th><th>Realized Vol</th><th>Volume</th><th>Vol Z</th><th>OI</th><th>OI Chg</th></tr></thead>
+            <tbody id="marketExplorerBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;">
+          <button id="marketPrevPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">&#8592; Prev</button>
+          <span id="marketPageInfo" style="color:var(--text-muted);"></span>
+          <button id="marketNextPage" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;">Next &#8594;</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4108,14 +4130,20 @@ async function renderOverview() {
           </div>
         </div>
 
-        <div class="has-tooltip" data-dyn-title="Trigger Proximity Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the lower-to-upper trigger band corridor. Currently at ${proximityPct.toFixed(0)}% proximity to the upper hike threshold." style="cursor:pointer;">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:3px;font-family:monospace;">
-            <span>P*<sub>dn</sub> ₹${dnTrigger.toFixed(1)}</span>
-            <span>Current Settle ₹${curPrice.toFixed(1)} (${proximityPct.toFixed(0)}% to upper)</span>
-            <span>P*<sub>up</sub> ₹${upTrigger.toFixed(1)}</span>
+        <div class="has-tooltip" data-dyn-title="Clearinghouse Scan Corridor" data-dyn-body="Position of current settle (₹${curPrice.toFixed(2)}) within the MCXCCL SPAN trigger corridor between floor relief trigger (₹${dnTrigger.toFixed(2)}) and upper hike trigger (₹${upTrigger.toFixed(2)}). Currently at ${proximityPct.toFixed(0)}% of the buffer corridor, leaving a +₹${upDistRs.toFixed(2)} (+${upDistPct}%) price buffer before the upper hike scan trips." style="cursor:pointer;background:var(--surface2);padding:8px 10px;border-radius:6px;border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:10.5px;">
+            <span style="color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;">Scan Corridor Position</span>
+            <span style="font-family:monospace;color:var(--text);font-weight:700;">
+              Mid-Band <span style="color:var(--accent-orange);">(${proximityPct.toFixed(0)}% corridor · +${upDistPct}% to hike)</span>
+            </span>
           </div>
-          <div style="width:100%;height:7px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;position:relative;">
-            <div style="height:100%;width:${proximityPct}%;background:linear-gradient(90deg, #10b981 0%, #d29922 65%, #ef4444 100%);border-radius:4px;transition:width 0.4s ease;"></div>
+          <div style="width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative;">
+            <div style="height:100%;width:${proximityPct}%;background:linear-gradient(90deg, #10b981 0%, #d29922 60%, #ef4444 100%);border-radius:4px;transition:width 0.4s ease;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:10px;font-family:monospace;">
+            <span style="color:var(--accent-green);">P*<sub>dn</sub> Floor: ₹${dnTrigger.toFixed(2)}</span>
+            <span style="color:var(--text-muted);">Settle: <strong style="color:var(--text);">₹${curPrice.toFixed(2)}</strong></span>
+            <span style="color:var(--accent-red);">P*<sub>up</sub> Hike: ₹${upTrigger.toFixed(2)}</span>
           </div>
         </div>
 
@@ -9247,8 +9275,44 @@ document.getElementById('exportCSV').addEventListener('click', () => {
   a.click();
 });
 
+function setupExplorerToggle() {
+  document.getElementById('expToggleMargins')?.addEventListener('click', function() {
+    this.classList.add('active-range');
+    document.getElementById('expToggleMarket')?.classList.remove('active-range');
+    const mSec = document.getElementById('explorerMarginSection');
+    const mkSec = document.getElementById('explorerMarketSection');
+    if (mSec) mSec.style.display = 'block';
+    if (mkSec) mkSec.style.display = 'none';
+    const lbl = document.getElementById('explorerActiveDatasetLabel');
+    if (lbl) lbl.innerHTML = 'Active View: <strong>Historical Margin Database</strong>';
+    if (!explorerData.length) renderExplorer();
+  });
+
+  document.getElementById('expToggleMarket')?.addEventListener('click', async function() {
+    this.classList.add('active-range');
+    document.getElementById('expToggleMargins')?.classList.remove('active-range');
+    const mSec = document.getElementById('explorerMarginSection');
+    const mkSec = document.getElementById('explorerMarketSection');
+    if (mSec) mSec.style.display = 'none';
+    if (mkSec) mkSec.style.display = 'block';
+    const lbl = document.getElementById('explorerActiveDatasetLabel');
+    if (lbl) lbl.innerHTML = 'Active View: <strong>Market Price, Volume & OI Surface</strong>';
+    if (!marketExplorerData.length) {
+      if (typeof renderMarketIntel === 'function') await renderMarketIntel();
+    } else {
+      renderMarketExplorerPage();
+    }
+  });
+}
+setupExplorerToggle();
+
 document.querySelector('[data-tab="explorer"]').addEventListener('click', () => {
-  if (!explorerData.length) renderExplorer();
+  const isMarket = document.getElementById('explorerMarketSection')?.style.display === 'block';
+  if (isMarket) {
+    if (!marketExplorerData.length && typeof renderMarketIntel === 'function') renderMarketIntel();
+  } else {
+    if (!explorerData.length) renderExplorer();
+  }
 });
 
 // ── Tooltip Data ──
