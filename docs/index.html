@@ -2305,7 +2305,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     </div>
 
     <!-- Item 4: Delta Distribution Histogram -->
-    <div class="card" style="margin-top:16px;" id="deltaDistCard" style="display:none;">
+    <div class="card" style="margin-top:16px;" id="deltaDistCard">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution (Gaussian & Empirical)</div>
         <div style="display:flex;gap:6px;" id="deltaBucketBtns">
@@ -3393,6 +3393,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 const ENABLE_MARKET_INTEL = true;
 const DATA = {};
 const DATA_TS = {};
+let snapMarketLookup = {};  // { sym: { expiry: marketRow } }
+let priceMarginChart = null;
+let _reRenderSnapshot = null;
 const TTL_LIVE = new Set([
   'current', 'meta', 'stress_score', 'manifest',
   'market/meta', 'market/current', 'market/signals', 'market/calendar_spread'
@@ -4036,7 +4039,9 @@ async function renderOverview() {
         renderSnapshotTable(activeSnapSym);
       });
     });
-    // Mini forward curve pruned; Cockpit Risk Gauge is initialized below once panic_spread.json loads
+    // Forward curve contract arrays
+    const fwdNG  = fwd.NATURALGAS  || [];
+    const fwdNGM = fwd.NATGASMINI  || [];
 
     // Panic signals table & precomputed data
     const seenPanic = new Set();
@@ -6808,6 +6813,8 @@ async function renderAnalytics() {
     }
 
     // Percentile Rank Over Time (last 365 days) — all-time vs trailing 5Y
+    const histNG = await loadJSON('history_ng');
+    const sortedHist = [...histNG].sort((a,b) => new Date(a.date) - new Date(b.date));
     const allM = sortedHist.map(d=>d.initial_margin_pct).filter(Boolean);
     const fiveYrCutoff = sortedHist.length > 1825 ? sortedHist.length - 1825 : 0;
     const allM5Y = sortedHist.slice(fiveYrCutoff).map(d=>d.initial_margin_pct).filter(Boolean);
@@ -8213,10 +8220,7 @@ let marketPriceChart = null, marketFlowChart = null, marketCurveChart = null;
 let marketRegimeChart = null, marketPhaseChart = null, marketCurveHistoryChart = null, marketLinkageChart = null;
 const MARKET_PAGE_SIZE = 50;
 
-// Overview tab — price enrichment lookup populated by renderMarketOverviewContext()
-let snapMarketLookup = {};  // { sym: { expiry: marketRow } }
-let priceMarginChart = null;
-let _reRenderSnapshot = null; // set inside renderOverview so renderMarketOverviewContext can call back
+// Overview tab — price enrichment lookup declared at module top
 
 
 function resetMarketIntelView(message) {
