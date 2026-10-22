@@ -467,19 +467,55 @@
     ngm: { daily: 0, m15: 0, m1: {} }
   };
 
+  function getBarTime(b) {
+    if (!b) return null;
+    return Array.isArray(b) ? b[0] : (b.time !== undefined ? b.time : (b.dt !== undefined ? b.dt : b.epoch));
+  }
+  function getBarClose(b) {
+    if (!b) return null;
+    return Array.isArray(b) ? b[4] : (b.close !== undefined ? b.close : (b.c !== undefined ? b.c : b.value));
+  }
+  function getBarVolume(b) {
+    if (!b) return 0;
+    return Array.isArray(b) ? b[5] : (b.volume !== undefined ? b.volume : (b.v !== undefined ? b.v : 0));
+  }
+
   function updateGlobalLiveTimestamp(lastBar) {
     if (!lastBar) return;
     const priceLabel = document.getElementById('lastPriceUpdated');
-    if (priceLabel) {
-      const ts = lastBar.time;
-      const d = new Date(ts * 1000);
-      const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
-      const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
-      const closePrice = (lastBar.close !== undefined) ? lastBar.close : lastBar.value;
-      const formattedPrice = (closePrice && closePrice > 0) ? ` · ₹${closePrice.toFixed(2)}` : '';
-      priceLabel.textContent = `MCX Live: ${dateStr} ${timeStr} IST${formattedPrice}`;
+    if (!priceLabel) return;
+
+    let epoch = null;
+    let closePrice = null;
+
+    if (Array.isArray(lastBar)) {
+      epoch = lastBar[0];
+      closePrice = lastBar[4];
+    } else if (typeof lastBar === 'object') {
+      epoch = lastBar.time !== undefined ? lastBar.time : (lastBar.dt !== undefined ? lastBar.dt : (lastBar.epoch !== undefined ? lastBar.epoch : (lastBar.timestamp !== undefined ? lastBar.timestamp : null)));
+      closePrice = lastBar.close !== undefined ? lastBar.close : (lastBar.c !== undefined ? lastBar.c : (lastBar.value !== undefined ? lastBar.value : (lastBar.price !== undefined ? lastBar.price : null)));
     }
+
+    if (epoch == null) return;
+
+    let d = null;
+    if (typeof epoch === 'number') {
+      d = new Date(epoch > 1e11 ? epoch : epoch * 1000);
+    } else if (typeof epoch === 'string') {
+      d = new Date(epoch);
+    }
+
+    // STRICT FIREWALL: If date is invalid or NaN, NEVER display 'Invalid Date'!
+    if (!d || isNaN(d.getTime())) return;
+
+    const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
+    const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+    const numericClose = Number(closePrice);
+    const formattedPrice = (numericClose && numericClose > 0) ? ` · ₹${numericClose.toFixed(2)}` : '';
+
+    priceLabel.textContent = `MCX Live: ${dateStr} ${timeStr} IST${formattedPrice}`;
   }
+  window.updateGlobalLiveTimestamp = updateGlobalLiveTimestamp;
 
   async function loadDailyTier(fit) {
     updateBadges('Loading Daily...', '--');
@@ -744,7 +780,7 @@
           const prevLast = prevLen > 0 ? prevBars[prevLen - 1] : null;
           const freshLast = freshBars.length > 0 ? freshBars[freshBars.length - 1] : null;
           const isDifferent = freshBars.length !== prevLen ||
-            (prevLast && freshLast && (prevLast.time !== freshLast.time || prevLast.close !== freshLast.close || prevLast.volume !== freshLast.volume));
+            (prevLast && freshLast && (getBarTime(prevLast) !== getBarTime(freshLast) || getBarClose(prevLast) !== getBarClose(freshLast) || getBarVolume(prevLast) !== getBarVolume(freshLast)));
           if (isDifferent) {
             sCache.m1[nowYm] = freshBars;
             sTS.m1[nowYm] = Date.now();
@@ -767,7 +803,7 @@
           const prevLast = prevLen > 0 ? prevBars[prevLen - 1] : null;
           const freshLast = freshBars.length > 0 ? freshBars[freshBars.length - 1] : null;
           const isDifferent = freshBars.length !== prevLen ||
-            (prevLast && freshLast && (prevLast.time !== freshLast.time || prevLast.close !== freshLast.close || prevLast.volume !== freshLast.volume));
+            (prevLast && freshLast && (getBarTime(prevLast) !== getBarTime(freshLast) || getBarClose(prevLast) !== getBarClose(freshLast) || getBarVolume(prevLast) !== getBarVolume(freshLast)));
           if (isDifferent) {
             sCache.m15 = freshBars;
             sTS.m15 = Date.now();

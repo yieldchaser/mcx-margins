@@ -3437,6 +3437,14 @@ async function renderMarketOverviewContext() {
     const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
     if (!ng) return;
 
+    // Immediately reflect active market timestamp on header
+    if (typeof window.updateGlobalLiveTimestamp === 'function') {
+      window.updateGlobalLiveTimestamp({
+        time: meta.generated_at || meta.latest_date,
+        close: ng.close
+      });
+    }
+
     // ── Build global price lookup for snapshot table price columns ────────
     snapMarketLookup = {};
     ['NATURALGAS', 'NATGASMINI'].forEach(sym => {
