@@ -69,5 +69,60 @@ class MarginIntegrityTests(unittest.TestCase):
         self.assertEqual(best[0], 15.0)
 
 
+    def test_alert_multi_expiry_detection(self):
+        # Verify that get_margin_transitions detects non-front month shocks and tender entry
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_db:
+            db_path = Path(tmp_db.name)
+
+        conn = sqlite3.connect(db_path)
+        conn.executescript('''
+            CREATE TABLE margins (
+                date TEXT, symbol TEXT, expiry TEXT, file_id INTEGER,
+                initial_margin_pct REAL, elm_pct REAL, tender_margin_pct REAL, total_margin_pct REAL,
+                additional_long_margin_pct REAL, additional_short_margin_pct REAL,
+                special_long_margin_pct REAL, special_short_margin_pct REAL, delivery_margin_pct REAL,
+                daily_volatility REAL, annualized_volatility REAL
+            );
+        ''')
+        # Insert prev date (2026-10-21)
+        conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-21', 'NATURALGAS', '27OCT2026', 1, 15.77, 1.25, 5.0, 20.77, 0.025, 0.40)")
+        conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-21', 'NATURALGAS', '25MAR2027', 1, 18.00, 1.25, 0.0, 18.00, 0.028, 0.44)")
+
+        # Insert today date (2026-10-22)
+        conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-22', 'NATURALGAS', '27OCT2026', 1, 19.02, 1.25, 10.0, 29.02, 0.030, 0.47)")
+        conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-22', 'NATURALGAS', '25MAR2027', 1, 20.50, 1.25, 0.0, 20.50, 0.032, 0.50)")
+        conn.commit()
+        conn.close()
+
+        orig_db = alert.DB_PATH
+        alert.DB_PATH = db_path
+        try:
+            res = alert.get_margin_transitions("NATURALGAS")
+            self.assertIsNotNone(res)
+            today_d, prev_d, triggered, all_active = res
+            self.assertEqual(today_d, "2026-10-22")
+            self.assertEqual(prev_d, "2026-10-21")
+            trig_expiries = [t["expiry"] for t in triggered]
+            self.assertIn("27OCT2026", trig_expiries)
+            self.assertIn("25MAR2027", trig_expiries)
+
+            front = next(t for t in triggered if t["expiry"] == "27OCT2026")
+            self.assertEqual(front["today_total"], 29.02)
+            self.assertEqual(front["delta_im"], 3.25)
+            self.assertEqual(front["delta_total"], 8.25)
+            self.assertTrue(front["is_vol_shock"])
+
+            far = next(t for t in triggered if t["expiry"] == "25MAR2027")
+            self.assertEqual(far["today_total"], 20.50)
+            self.assertEqual(far["delta_im"], 2.50)
+            self.assertTrue(far["is_vol_shock"])
+        finally:
+            alert.DB_PATH = orig_db
+            try:
+                db_path.unlink()
+            except Exception:
+                pass
+
 if __name__ == "__main__":
     unittest.main()
