@@ -3437,12 +3437,31 @@ async function renderMarketOverviewContext() {
     const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
     if (!ng) return;
 
-    // Immediately reflect active market timestamp on header
+    // Immediately reflect active market timestamp on header with live intraday candle
     if (typeof window.updateGlobalLiveTimestamp === 'function') {
+      // Immediate baseline fallback from metadata
       window.updateGlobalLiveTimestamp({
         time: meta.generated_at || meta.latest_date,
         close: ng.close
       });
+      // Fetch latest intraday candle so header reflects real market hours (e.g. 10:15 IST)
+      function pollHeaderLivePrice() {
+        fetch('data/deep/ng_15m.json?_v=' + Date.now())
+          .then(r => r.ok ? r.json() : null)
+          .then(bars => {
+            if (bars && bars.length > 0) {
+              const lastBar = bars[bars.length - 1];
+              if (typeof window.updateGlobalLiveTimestamp === 'function') {
+                window.updateGlobalLiveTimestamp(lastBar);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+      pollHeaderLivePrice();
+      if (!window._headerPollTimer) {
+        window._headerPollTimer = setInterval(pollHeaderLivePrice, 30000);
+      }
     }
 
     // ── Build global price lookup for snapshot table price columns ────────

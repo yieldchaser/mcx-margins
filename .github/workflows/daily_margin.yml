@@ -2,16 +2,15 @@ name: Daily Margin Fetch
 
 on:
   schedule:
-    # Run 1: MORNING (Mon–Fri 03:20 UTC = 08:50 AM IST)
-    # Primary run to catch margins 10 minutes before market open.
+    # Run 1: MORNING (Mon–Fri 03:20 UTC = 08:50 AM IST) - 10 min before market open
     - cron: '20 3 * * 1-5'
-    
-    # Run 2: LATE MORNING (Mon–Fri 06:00 UTC = 11:30 AM IST)
-    # Secondary safety net in case MCX publishes late.
+    # Run 2: POST-OPEN (Mon–Fri 03:45 UTC = 09:15 AM IST) - in case MCX publishes at bell
+    - cron: '45 3 * * 1-5'
+    # Run 3: MID-MORNING (Mon–Fri 04:15 UTC = 09:45 AM IST) - backup for delayed publication
+    - cron: '15 4 * * 1-5'
+    # Run 4: LATE MORNING (Mon–Fri 06:00 UTC = 11:30 AM IST) - secondary safety net
     - cron: '0 6 * * 1-5'
-
-    # Run 3: WEEKEND SWEEP (Sat 05:00 UTC = 10:30 AM IST)
-    # Final check to ensure any late-Friday margins are captured.
+    # Run 5: WEEKEND SWEEP (Sat 05:00 UTC = 10:30 AM IST) - late Friday sweep
     - cron: '0 5 * * 6'
     
   workflow_dispatch:
