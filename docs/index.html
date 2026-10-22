@@ -1445,6 +1445,10 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <input type="checkbox" id="showFwdLiquidity" style="accent-color:var(--accent-yellow);width:14px;height:14px;">
           Liquidity
         </label>
+        <label class="market-intel-control has-tooltip" data-dyn-title="T+1 Predicted Margin Overlay" data-dyn-body="Overlays tomorrow's econometric Hurdle-Gated margin prediction directly on top of the forward curve and historical cones." style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="showFwdPredictedCurve" style="accent-color:var(--accent-orange);width:14px;height:14px;">
+          T+1 Predicted
+        </label>
       </div>
       <div class="chart-container" style="height:380px;"><canvas id="chartFwdFull"></canvas></div>
     </div>
@@ -2347,14 +2351,14 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <span class="scope-chip"><strong>Scope</strong> Active Curve</span>
           <span class="scope-chip"><strong>View</strong> Contract-aware surface</span>
         </div>
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text);cursor:pointer;background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);" class="has-tooltip" data-dyn-title="T+1 Predicted Margin Overlay" data-dyn-body="Overlays tomorrow's econometric Hurdle-Gated margin prediction directly on top of the forward curve and historical cones.">
-          <input type="checkbox" id="showFwdPredictedCurve" style="cursor:pointer;margin:0;">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text);cursor:pointer;background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);" class="has-tooltip" data-dyn-title="T+1 Clearinghouse Margin Overlay" data-dyn-body="Toggles clearinghouse margin predictions, SPAN trigger boundaries, and Rupee capital calls per lot for each active contract.">
+          <input type="checkbox" id="showMarketPredictedMargin" style="cursor:pointer;margin:0;">
           <strong>Show T+1 Predicted Margin</strong>
         </label>
       </div>
       <div class="market-table-shell">
-        <table class="data-table">
-          <thead><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
+        <table class="data-table" id="marketCurrentTable">
+          <thead id="marketCurrentHead"><tr><th>Contract</th><th>DTE</th><th>Close</th><th>Return</th><th>Volume</th><th>Value Lacs</th><th>OI</th><th>Liquidity</th></tr></thead>
           <tbody id="marketCurrentBody"></tbody>
         </table>
       </div>
@@ -4816,6 +4820,7 @@ async function renderTermStructure() {
       try { termMarketForward = await loadMarketJSON('forward_curve'); }
       catch(e) { termMarketForward = null; console.warn('Term market overlay unavailable:', e); }
     }
+    try { window._termPanicData = await loadJSON('panic_spread'); } catch(e) { window._termPanicData = null; }
 
     // FIX 3+4: Render cone with current mode; toggles re-render
     renderFwdCone();
@@ -8392,23 +8397,111 @@ async function renderMarketIntel(force = false) {
       </div>
     `).join('');
 
+    let marketPanicData = null;
+    try { marketPanicData = await loadJSON('panic_spread'); } catch(e) {}
+
     const curRows = current[symbol] || [];
-    document.getElementById('marketCurrentBody').innerHTML = curRows.map(r => {
-      const liqBand = marketLiquidityBand(r.liquidity_score);
-      const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
-      return `
-        <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
-          <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
-          <td>${r.dte}</td>
-          <td>${fmtNum(r.close, 2)}</td>
-          <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
-          <td>${fmtNum(r.volume_lots, 0)}</td>
-          <td>${fmtNum(r.value_lacs, 2)}</td>
-          <td>${fmtNum(r.open_interest, 0)}</td>
-          <td>${fmtNum(r.liquidity_score, 1)}</td>
-        </tr>
-      `;
-    }).join('');
+    function renderMarketCurrentSnapshot() {
+      const showPred = document.getElementById('showMarketPredictedMargin')?.checked;
+      const headEl = document.getElementById('marketCurrentHead');
+      const bodyEl = document.getElementById('marketCurrentBody');
+      if (!headEl || !bodyEl) return;
+
+      if (showPred) {
+        headEl.innerHTML = `<tr>
+          <th>Contract</th>
+          <th>DTE</th>
+          <th>Close</th>
+          <th>Return</th>
+          <th style="color:var(--accent-orange);">Current Margin</th>
+          <th style="color:var(--accent-orange);">T+1 Pred Margin</th>
+          <th style="color:var(--accent-orange);">Rupee Call / Lot</th>
+          <th style="color:var(--accent-orange);">Action</th>
+          <th>OI</th>
+          <th>Liquidity</th>
+        </tr>`;
+      } else {
+        headEl.innerHTML = `<tr>
+          <th>Contract</th>
+          <th>DTE</th>
+          <th>Close</th>
+          <th>Return</th>
+          <th>Volume</th>
+          <th>Value Lacs</th>
+          <th>OI</th>
+          <th>Liquidity</th>
+        </tr>`;
+      }
+
+      const panicList = marketPanicData?.[symbol] || [];
+      const panicMap = {};
+      panicList.forEach(p => { panicMap[p.expiry] = p; });
+
+      bodyEl.innerHTML = curRows.map(r => {
+        const liqBand = marketLiquidityBand(r.liquidity_score);
+        const p = panicMap[r.expiry];
+
+        let dynBody = '';
+        if (showPred && p) {
+          const callColor = (p.rupee_delta || 0) > 0 ? 'var(--accent-red)' : (p.rupee_delta || 0) < 0 ? 'var(--accent-green)' : 'var(--text-muted)';
+          const callSign = (p.rupee_delta || 0) > 0 ? '+' : '';
+          dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Current Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)${(p.tender_margin_pct ?? 0) > 0 ? ` [includes ${p.tender_margin_pct.toFixed(1)}% tender ramp]` : ''}<br>• Predicted T+1 Margin: <strong>${(p.predicted_tomorrow ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_predicted ?? 0).toLocaleString('en-IN')}/lot)<br>• Immediate Capital Shift: <strong style="color:${callColor};">${callSign}₹${(p.rupee_delta ?? 0).toLocaleString('en-IN')} / lot</strong><br>• Upper Hike Trigger (P*up): <strong>₹${(p.hike_trigger_up_price ?? 0).toFixed(2)}</strong> (+${(p.hike_trigger_pct ?? 0).toFixed(2)}%)<br>• Lower Cut Trigger (P*dn): <strong>₹${(p.hike_trigger_dn_price ?? 0).toFixed(2)}</strong><br>• Surveillance Action: <strong>${p.action || 'HOLD'}</strong>`;
+        } else {
+          dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
+        }
+
+        if (showPred) {
+          const curMargin = p?.total_margin_pct != null ? `${p.total_margin_pct.toFixed(2)}%` : '—';
+          const predMargin = p?.predicted_tomorrow != null ? `${p.predicted_tomorrow.toFixed(2)}%` : '—';
+          const rDelta = p?.rupee_delta ?? 0;
+          const callColor = rDelta > 0 ? 'var(--accent-red)' : rDelta < 0 ? 'var(--accent-green)' : 'var(--text-muted)';
+          const callSign = rDelta > 0 ? '+' : '';
+          const callText = p ? `${callSign}₹${rDelta.toLocaleString('en-IN')}` : '—';
+          const act = p?.action || 'HOLD';
+          const badgeHtml = act === 'HIKE' 
+            ? '<span class="badge-hike" style="font-size:10px;padding:2px 6px;">HIKE RISK</span>' 
+            : act === 'CUT' 
+            ? '<span class="badge-safe" style="font-size:10px;padding:2px 6px;">RELIEF</span>' 
+            : '<span class="badge-safe" style="font-size:10px;padding:2px 6px;">HOLD</span>';
+
+          return `
+            <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+              <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
+              <td>${r.dte}</td>
+              <td>${fmtNum(r.close, 2)}</td>
+              <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
+              <td>${curMargin}${(p?.tender_margin_pct || 0) > 0 ? `<div style="font-size:9.5px;color:var(--accent-red);">+${p.tender_margin_pct.toFixed(0)}% tender</div>` : ''}</td>
+              <td style="font-weight:700;color:${act === 'HIKE' ? 'var(--accent-red)' : 'var(--text)'};">${predMargin}</td>
+              <td style="font-family:monospace;font-weight:700;color:${callColor};">${callText}</td>
+              <td>${badgeHtml}</td>
+              <td>${fmtNum(r.open_interest, 0)}</td>
+              <td>${fmtNum(r.liquidity_score, 1)}</td>
+            </tr>
+          `;
+        } else {
+          return `
+            <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
+              <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
+              <td>${r.dte}</td>
+              <td>${fmtNum(r.close, 2)}</td>
+              <td style="color:${(r.return_pct || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${fmtPct(r.return_pct, 2)}</td>
+              <td>${fmtNum(r.volume_lots, 0)}</td>
+              <td>${fmtNum(r.value_lacs, 2)}</td>
+              <td>${fmtNum(r.open_interest, 0)}</td>
+              <td>${fmtNum(r.liquidity_score, 1)}</td>
+            </tr>
+          `;
+        }
+      }).join('');
+      attachTooltips();
+    }
+    renderMarketCurrentSnapshot();
+
+    const mktPredChk = document.getElementById('showMarketPredictedMargin');
+    if (mktPredChk && !mktPredChk._bound) {
+      mktPredChk._bound = true;
+      mktPredChk.addEventListener('change', renderMarketCurrentSnapshot);
+    }
 
     const recent = rows.slice(-365);
     const recentLabels = recent.map(r => r.date);
