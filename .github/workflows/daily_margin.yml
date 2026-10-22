@@ -86,7 +86,7 @@ jobs:
       # ── Step 4: alert ───────────────────────────────────────────────────
       # Only alert if genuinely fresh today's data was found.
       - name: Check margin change and send alert
-        if: steps.fetch_today.outputs.fresh_data == 'true'
+        if: steps.fetch_today.outputs.fresh_data == 'true' || github.event_name == 'workflow_dispatch'
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python scripts/alert.py
