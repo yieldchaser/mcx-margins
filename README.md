@@ -140,13 +140,14 @@ Based on a systematic day-by-day simulation of the extreme February 2026 contrac
 
 The project is split into a robust Python data pipeline and a stateless frontend:
 
-### 1. Data ingestion
+### 1. Data ingestion & surveillance
 - [`src/scraper.py`](src/scraper.py): Playwright scraper for MCX CCL daily margin data
 - [`scripts/main.py`](scripts/main.py): Fetch a specific trading date
 - [`scripts/fetch_today.py`](scripts/fetch_today.py): Retry-oriented daily fetch
 - [`scripts/lookback.py`](scripts/lookback.py): Recent-gap backfill
 - [`scripts/backfill.py`](scripts/backfill.py): Historical backfill
 - [`scripts/fetch_prices.py`](scripts/fetch_prices.py): MCX futures bhavcopy scraper into `data/prices.db`
+- [`scripts/alert.py`](scripts/alert.py): Real-time multi-expiry clearing risk surveillance & institutional alert engine
 
 ### 2. Storage
 - `data/margins.db`: Source of truth for margin observations
@@ -189,9 +190,15 @@ The Python pipeline exports heavily structured payloads:
 |   `-- prices.db
 |-- docs/
 |   |-- index.html
+|   |-- js/
+|   |   `-- deep_chart.js
 |   `-- data/
 |-- scripts/
+|   |-- alert.py
+|   |-- auto_market_snapshot.py
+|   |-- build_lod_pyramid.py
 |   |-- export_json.py
+|   |-- export_tod_seasonality.py
 |   |-- fetch_prices.py
 |   |-- fetch_today.py
 |   |-- backfill.py
@@ -202,24 +209,41 @@ The Python pipeline exports heavily structured payloads:
 |   |-- db.py
 |   `-- scraper.py
 `-- tests/
+    |-- test_audit_fixes.py
+    |-- test_commodity_harvester.py
+    |-- test_deep_lod.py
+    |-- test_fetch_prices.py
+    |-- test_margin_integrity.py
     `-- test_market_export.py
 ```
 
-## Automation
+## Automation & Clearing Surveillance
 
-### Margin workflow
+### Margin & Clearing Risk Surveillance Workflow
 Defined in [`daily_margin.yml`](.github/workflows/daily_margin.yml):
-- Fetches new margin data
-- Bridges recent gaps if any
-- Regenerates dashboard JSON
-- Commits refreshed `data/` and `docs/data/` straight to GitHub Pages
+- **Multi-Tier Cron Schedule (Mon–Fri):**
+  - `08:50 AM IST` (10 min before market open)
+  - `09:15 AM IST` (opening bell catch)
+  - `09:45 AM IST` (mid-morning backup)
+  - `11:30 AM IST` (late morning safety net)
+  - `10:30 AM IST (Sat)` (weekend reconciliation sweep)
+- **Scrapes New Margin Files:** Queries MCX CCL for daily SPAN margin parameters.
+- **Lookback Gap-Fill:** Self-heals any missing trading dates from the prior 5 weekdays.
+- **Automated Clearing Surveillance & Alerting ([`scripts/alert.py`](scripts/alert.py)):**
+  - **Full Term Structure Surveillance:** Scans all active contracts ($DTE \ge 0$) simultaneously, rather than monitoring only the front month.
+  - **Total Gross Margin %:** Always reports Total Margin % (Initial Margin + Tender Period Margin + ELM) as the primary headline KPI.
+  - **Overnight Capital Quantification:** Merges with `data/prices.db` settlement prices to compute exact ₹ Capital Required per Lot (1,250 mmBtu) and overnight capital calls or releases.
+  - **Tender Delivery vs. Volatility Attribution:** Distinguishes routine scheduled tender steps (+5%/day over the 5-day delivery window) from genuine SPAN volatility shocks ($\ge 2.0\text{ pp}$), suppressing false alarms while flagging initial tender window entrance and compound volatility shocks.
+  - **Institutional Email Advisory:** Dispatches a structured, mobile-responsive HTML notice to risk managers when actionable margin shocks occur.
+- **Static Export & Git Push:** Regenerates dashboard JSON and pushes updated databases to GitHub Pages.
+- **Relays Intraday Loop:** Triggers the live market snapshot runner during MCX session hours.
 
-### Price workflow
+### Price & LOD Pyramid Workflow
 Defined in [`daily_prices.yml`](.github/workflows/daily_prices.yml):
-- Refreshes futures price/volume/OI data from MCX bhavcopy
-- Re-runs JSON export so linked market outputs stay perfectly synchronized
-- Runs incremental LOD pyramid builder (`python scripts/build_lod_pyramid.py --incremental`) to append new daily trading bars to the Deep Zoom chart
-- Commits updated DB and static files directly to GitHub Pages
+- Refreshes futures price/volume/OI data from MCX bhavcopy (runs post-close at `00:15 AM`, `01:00 AM`, `05:00 AM`, and `09:05 AM IST`).
+- Re-runs JSON export so linked market outputs stay synchronized.
+- Runs incremental LOD pyramid builder (`python scripts/build_lod_pyramid.py --incremental`) to append new daily trading bars to the Deep Zoom chart.
+- Commits updated DB and static files directly to GitHub Pages.
 
 ## MCX Quant Vault (6.18M Records)
 
@@ -270,14 +294,13 @@ Then open `http://localhost:8080`.
 
 Run the test suite:
 ```bash
-python -m unittest
+pytest -v
 ```
-Current test coverage includes market-export helpers for:
-- Front-month contract selection
-- Rolling PVOI metric enrichment
-- Explainable signal generation
-- Freshness logic & margin-row dedupe priority
-- Joined-summary filtering and curve-history generation
+Current test coverage spans 36 automated unit & regression tests across:
+- **Margin Surveillance & Alert Integrity:** Multi-expiry surveillance, DTE sorting, post-expiry rejection, tender attribution, and tie-breaking by `file_id`.
+- **Market Export & Signal Analytics:** Front-month selection, rolling PVOI enrichment, explainable regime classification, freshness status, and causal percentile rank isolation.
+- **Deep LOD & Microstructure Parity:** 1-minute monthly partitions, 15-minute streaming tiers, LOD pyramid integrity, dynamic options chains, and continuous contract crosswalks.
+- **Quant Vault Integrity:** Parquet schema validation, DuckDB views, and zero-shrink invariants.
 
 ## Notes
 - The dashboard is fully static at runtime; expensive analytics are computed entirely in Python during export.
