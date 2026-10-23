@@ -1377,6 +1377,77 @@ def _export_market_intelligence(margin_cur):
         outputs.append("market/margin_joined_front.json")
         save("market/cross_regimes.json", cross_regimes); outputs.append("market/cross_regimes.json")
 
+        overview_analytics = {
+            "schema_version": MARKET_SCHEMA_VERSION,
+            "generated_at": _utc_now(),
+            "symbols": {}
+        }
+        _REGIME_STATES = ["CALM", "ELEVATED", "STRESS", "CRISIS"]
+        for symbol in MARKET_SYMBOLS:
+            h_rows = histories.get(symbol, [])
+            c_trail = curve_history.get("symbols", {}).get(symbol, [])
+            j_rows = joined_symbols.get(symbol, [])
+            j_sum = joined_summaries.get(symbol, {})
+            r_pack = cross_regimes.get("symbols", {}).get(symbol, {})
+            r_rows = r_pack.get("rows", [])
+            events = r_pack.get("event_windows", [])
+
+            trans = {r: {c: 0 for c in _REGIME_STATES} for r in _REGIME_STATES}
+            for i in range(1, len(r_rows)):
+                f = (r_rows[i-1].get("vol_regime") or "").upper()
+                t = (r_rows[i].get("vol_regime") or "").upper()
+                if f in trans and t in trans[f]:
+                    trans[f][t] += 1
+
+            overview_analytics["symbols"][symbol] = {
+                "flow_recent": [{
+                    "date": r["date"], "expiry": r.get("expiry"), "close": r.get("close"),
+                    "dte": r.get("dte"),
+                    "volume_lots": r.get("volume_lots"), "open_interest": r.get("open_interest"),
+                    "volume_z_20d": round(r.get("volume_z_20d", 0) or 0, 2),
+                    "oi_flow_state": r.get("oi_flow_state"),
+                    "return_pct": round(r.get("return_1d_pct", r.get("return_pct", 0)) or 0, 2),
+                    "return_1d_pct": round(r.get("return_1d_pct", 0) or 0, 2),
+                    "return_5d_pct": round(r.get("return_5d_pct", 0) or 0, 2),
+                    "rolling_realized_vol_20d": round(r.get("rolling_realized_vol_20d", 0) or 0, 2),
+                    "oi_change_pct": round(r.get("oi_change_pct", 0) or 0, 2)
+                } for r in h_rows[-365:]],
+                "curve_recent": [{
+                    "date": r["date"],
+                    "front_second_spread": round(r.get("front_second_spread", 0) or 0, 2),
+                    "roll_yield_pct": round(r.get("roll_yield_pct", 0) or 0, 2),
+                    "liquidity_concentration": round(r.get("liquidity_concentration", 0) or 0, 1)
+                } for r in c_trail[-180:]],
+                "joined_recent": [{
+                    "date": r["date"], "matched_expiry": r.get("matched_expiry"),
+                    "initial_margin_pct": round(r.get("initial_margin_pct", 0) or 0, 2),
+                    "rolling_realized_vol_20d": round(r.get("rolling_realized_vol_20d", 0) or 0, 2),
+                    "funding_friction_score": round(r.get("funding_friction_score", 0) or 0, 1),
+                    "margin_change_1d": round(r.get("margin_change_1d", 0) or 0, 2),
+                    "return_1d_pct": round(r.get("return_1d_pct", 0) or 0, 2),
+                    "oi_change_pct": round(r.get("oi_change_pct", 0) or 0, 2)
+                } for r in j_rows if r.get("alignment_status") == "aligned"][-180:],
+                "regime_recent": [{
+                    "date": r["date"], "expiry": r.get("matched_expiry") or r.get("expiry"),
+                    "rolling_realized_vol_20d": round(r.get("rolling_realized_vol_20d", 0) or 0, 2),
+                    "funding_friction_score": round(r.get("funding_friction_score", 0) or 0, 1),
+                    "vol_regime": r.get("vol_regime")
+                } for r in r_rows[-365:]],
+                "event_windows": [{
+                    "date": r["date"], "matched_expiry": r.get("matched_expiry"),
+                    "events": r.get("events", []),
+                    "return_1d_pct": round(r.get("return_1d_pct", 0) or 0, 2),
+                    "margin_change_1d": round(r.get("margin_change_1d", 0) or 0, 2),
+                    "oi_change_pct": round(r.get("oi_change_pct", 0) or 0, 2),
+                    "funding_friction_score": round(r.get("funding_friction_score", 0) or 0, 1)
+                } for r in events[-40:]],
+                "transition_matrix": trans,
+                "regime_total_obs": len(r_rows),
+                "summary": j_sum
+            }
+        save("market/overview_analytics.json", overview_analytics)
+        outputs.append("market/overview_analytics.json")
+
         short_latency_risk = "NORMAL"
         ng_history = histories.get("NATURALGAS", [])
         if len(ng_history) >= 2:

@@ -589,17 +589,6 @@
 
         if (sCache.m15 && sCache.m15.length) {
           trySyncLatestIntraday(sCache.m15);
-        } else {
-          fetch(`data/deep/${symPrefix}_15m.json?_v=${Date.now()}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(m15 => {
-              if (m15) {
-                sCache.m15 = m15;
-                sTS.m15 = Date.now();
-                trySyncLatestIntraday(m15);
-              }
-            })
-            .catch(() => {});
         }
       }
 

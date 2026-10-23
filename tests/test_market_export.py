@@ -363,6 +363,21 @@ class MarketExportTests(unittest.TestCase):
             self.assertEqual(curve[1]["roll_yield_pct"], -9.091)
             self.assertIsNone(curve[2]["roll_yield_pct"])
 
+            # Verify overview_analytics.json export
+            overview_path = out_dir / "market" / "overview_analytics.json"
+            self.assertTrue(overview_path.exists())
+            overview = json.loads(overview_path.read_text(encoding="utf-8"))
+            self.assertIn("symbols", overview)
+            self.assertIn("NATURALGAS", overview["symbols"])
+            ng_data = overview["symbols"]["NATURALGAS"]
+            self.assertIn("flow_recent", ng_data)
+            self.assertIn("curve_recent", ng_data)
+            self.assertIn("joined_recent", ng_data)
+            self.assertIn("regime_recent", ng_data)
+            self.assertIn("event_windows", ng_data)
+            self.assertIn("transition_matrix", ng_data)
+            self.assertIn("summary", ng_data)
+
 
 if __name__ == "__main__":
     unittest.main()

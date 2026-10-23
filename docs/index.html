@@ -8664,12 +8664,13 @@ async function renderMarketIntel(force = false) {
     // PHASE 1: INSTANT CRITICAL SURFACE RENDER (~55 KB total payload)
     // Renders Snapshot Table, KPIs, Curve, Expiries & Signals in < 30ms
     // ═══════════════════════════════════════════════════════════════════
-    const [meta, current, forward, signals, marketPanicData] = await Promise.all([
+    const [meta, current, forward, signals, marketPanicData, overviewAnalytics] = await Promise.all([
       loadMarketJSON('meta'),
       loadMarketJSON('current'),
       loadMarketJSON('forward_curve'),
       loadMarketJSON('signals'),
-      loadJSON('panic_spread').catch(() => null)
+      loadJSON('panic_spread').catch(() => null),
+      loadMarketJSON('overview_analytics').catch(() => null)
     ]);
 
     if (meta.status === 'missing') {
@@ -8682,16 +8683,26 @@ async function renderMarketIntel(force = false) {
     const curRows = current[symbol] || [];
     const frontRow = curRows[0] || curve[0] || {};
 
+    const analytics = overviewAnalytics?.symbols?.[symbol] || {};
+    const recent = analytics.flow_recent || [];
+    const latestHist = recent[recent.length - 1] || frontRow;
+    const curveTrail = analytics.curve_recent || [];
+    const linkageRecent = analytics.joined_recent || [];
+    const joinedSummary = analytics.summary || {};
+    const regimeRecent = analytics.regime_recent || [];
+    const latestAligned = linkageRecent[linkageRecent.length - 1] || null;
+
     const marketStatusEl = document.getElementById('marketStatus');
-    marketStatusEl.textContent = `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows`;
+    const alignedJoinsText = joinedSummary.aligned_obs ? ` | ${joinedSummary.aligned_obs} aligned front joins` : '';
+    marketStatusEl.textContent = `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows${alignedJoinsText}`;
     marketStatusEl.setAttribute('data-dyn-title', `${symbol} data readiness`);
     marketStatusEl.setAttribute(
       'data-dyn-body',
-      escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong>`)
+      escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong>${joinedSummary.aligned_obs ? `<br>Aligned joins: <strong>${joinedSummary.aligned_obs}</strong>` : ''}`)
     );
 
-    // Render fast initial KPI strip
-    renderMarketKpiStrip(frontRow, null, forward);
+    // Render fast hydrated KPI strip
+    renderMarketKpiStrip(latestHist, latestAligned, forward);
 
     // ── Current MCX Futures Snapshot Table ──
     function renderMarketCurrentSnapshot() {
@@ -9059,42 +9070,15 @@ async function renderMarketIntel(force = false) {
     marketRendered = true;
 
     // ═══════════════════════════════════════════════════════════════════
-    // PHASE 2: BACKGROUND DEFERRED STREAM OF HISTORICAL ANALYTICS (17.6 MB)
-    // Non-blocking streaming for below-the-fold charts & explorer
+    // FAST HYDRATION OF HISTORICAL ANALYTICS (< 370 KB via overview_analytics)
+    // Renders all analytics charts, matrices, playbooks & explorer in < 40ms
     // ═══════════════════════════════════════════════════════════════════
-    (async () => {
+    (() => {
       try {
-        const [hist, curveHistory, marginJoined, crossRegimes] = await Promise.all([
-          loadMarketJSON(marketHistName(symKey)),
-          loadMarketJSON('curve_history'),
-          loadMarketJSON('margin_joined_front'),
-          loadMarketJSON('cross_regimes')
-        ]);
-
-        // Guard against race conditions if user toggled symbol while streaming
+        // Guard against race conditions if user toggled symbol while rendering
         if (document.getElementById('marketSymbol')?.value !== symKey) return;
 
-        const rows = hist.rows || [];
-        const latestHist = rows[rows.length - 1] || frontRow;
-        const curveTrail = curveHistory?.symbols?.[symbol] || [];
-        const joinedRows = marginJoined?.symbols?.[symbol] || [];
-        const joinedSummary = marginJoined?.summaries?.[symbol] || {};
-        const regimePack = crossRegimes?.symbols?.[symbol] || {};
-        const regimeRows = regimePack.rows || [];
-        const latestAligned = [...joinedRows].reverse().find(r => r.alignment_status === 'aligned') || {};
-
-        // Update status bar with aligned joins
-        marketStatusEl.textContent = `As of ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'} | ${fmtNum(meta.row_count, 0)} futures rows | ${joinedSummary.aligned_obs ?? 0} aligned front joins`;
-        marketStatusEl.setAttribute(
-          'data-dyn-body',
-          escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong><br>Aligned joins: <strong>${joinedSummary.aligned_obs ?? 0}</strong>`)
-        );
-
-        // Hydrate KPI cards with 5D drift and funding friction
-        renderMarketKpiStrip(latestHist, latestAligned, forward);
-
         // ── Volume & Open Interest Flow Chart ──
-        const recent = rows.slice(-365);
         const recentLabels = recent.map(r => r.date);
         if (marketFlowChart) marketFlowChart.destroy();
         marketFlowChart = new Chart(document.getElementById('chartMarketFlow'), {
@@ -9142,7 +9126,6 @@ async function renderMarketIntel(force = false) {
         });
 
         // ── Realized Vol vs Funding Friction Chart ──
-        const regimeRecent = regimeRows.slice(-365);
         if (marketRegimeChart) marketRegimeChart.destroy();
         marketRegimeChart = new Chart(document.getElementById('chartMarketRegime'), {
           type: 'line',
@@ -9268,7 +9251,7 @@ async function renderMarketIntel(force = false) {
         });
 
         // ── Historical Term Structure Dynamics ──
-        const curveRecent = curveTrail.slice(-180);
+        const curveRecent = curveTrail;
         if (marketCurveHistoryChart) marketCurveHistoryChart.destroy();
         marketCurveHistoryChart = new Chart(document.getElementById('chartMarketCurveHistory'), {
           type: 'line',
@@ -9350,15 +9333,9 @@ async function renderMarketIntel(force = false) {
 
         // ── Vol Regime Transition Matrix ──
         const REGIME_STATES = ['CALM', 'ELEVATED', 'STRESS', 'CRISIS'];
-        const transMatrix = {};
-        REGIME_STATES.forEach(r => { transMatrix[r] = {}; REGIME_STATES.forEach(c => transMatrix[r][c] = 0); });
-        for (let i = 1; i < regimeRows.length; i++) {
-          const from = (regimeRows[i-1].vol_regime || '').toUpperCase();
-          const to   = (regimeRows[i].vol_regime   || '').toUpperCase();
-          if (transMatrix[from] && transMatrix[from][to] !== undefined) transMatrix[from][to]++;
-        }
+        const transMatrix = analytics.transition_matrix || {};
         const rowTotals = {};
-        REGIME_STATES.forEach(r => { rowTotals[r] = REGIME_STATES.reduce((s,c) => s + transMatrix[r][c], 0); });
+        REGIME_STATES.forEach(r => { rowTotals[r] = REGIME_STATES.reduce((s,c) => s + (transMatrix[r]?.[c] || 0), 0); });
         const tCellColor = p => p >= 70 ? 'rgba(56,139,253,0.60)' : p >= 40 ? 'rgba(88,166,255,0.28)' : p >= 15 ? 'rgba(210,153,34,0.45)' : p >= 5 ? 'rgba(248,81,73,0.30)' : 'rgba(139,148,158,0.08)';
         const REGIME_LABELS = { CALM: 'Calm', ELEVATED: 'Elevated', STRESS: 'Stress', CRISIS: 'Crisis' };
         let matHtml = `<table class="data-table" style="width:100%;font-size:11px;">`
@@ -9369,18 +9346,18 @@ async function renderMarketIntel(force = false) {
           const total = rowTotals[from] || 1;
           matHtml += `<tr><td style="font-weight:600;font-size:10px;color:var(--text-muted);white-space:nowrap;">${REGIME_LABELS[from]}</td>`;
           REGIME_STATES.forEach(to => {
-            const pct = Math.round((transMatrix[from][to] / total) * 100);
+            const pct = Math.round(((transMatrix[from]?.[to] || 0) / total) * 100);
             const isDiag = from === to;
             matHtml += `<td style="text-align:center;padding:9px 6px;background:${tCellColor(pct)};font-weight:${isDiag ? '700' : '400'};font-size:${isDiag ? '13' : '11'}px;">${pct}%</td>`;
           });
           matHtml += `</tr>`;
         });
-        matHtml += `</tbody></table><div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Based on <strong>${regimeRows.length}</strong> daily observations. <strong>Diagonal</strong> = regime persistence. High off-diagonal = transition risk.</div>`;
+        matHtml += `</tbody></table><div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Based on <strong>${analytics.regime_total_obs || 0}</strong> daily observations. <strong>Diagonal</strong> = regime persistence. High off-diagonal = transition risk.</div>`;
         document.getElementById('regimeTransitionMatrix').innerHTML = matHtml;
 
         // ── Regime Playbook Panel ──
         {
-          const lastRow = regimeRows.length ? regimeRows[regimeRows.length - 1] : {};
+          const lastRow = regimeRecent.length ? regimeRecent[regimeRecent.length - 1] : {};
           const curReg  = ({ NORMAL:'CALM', CALM:'CALM', ELEVATED:'ELEVATED', STRESS:'STRESS', CRISIS:'CRISIS' })[(lastRow.vol_regime || '').toUpperCase()] || '';
           const validReg = REGIME_STATES.includes(curReg);
           const persistPct = validReg && rowTotals[curReg] > 0
@@ -9435,7 +9412,8 @@ async function renderMarketIntel(force = false) {
         }
 
         // ── Historical Event Windows ──
-        document.getElementById('marketEventBody').innerHTML = (regimePack.event_windows || []).slice(-38).reverse().map(r => {
+        const eventWindows = analytics.event_windows || [];
+        document.getElementById('marketEventBody').innerHTML = eventWindows.slice(-38).reverse().map(r => {
           const dynBody = `Date: <strong>${r.date}</strong><br>Expiry: <strong>${r.matched_expiry || '-'}</strong><br>Events: <strong>${(r.events || []).join(', ')}</strong><br><br>Return: <strong>${fmtPct(r.return_1d_pct, 2)}</strong><br>Margin Δ: <strong>${fmtPct(r.margin_change_1d, 2)}</strong><br>OI Δ: <strong>${fmtPct(r.oi_change_pct, 2)}</strong>`;
           const retVal = Number(r.return_1d_pct) || 0;
           const mrgVal = Number(r.margin_change_1d) || 0;
@@ -9469,7 +9447,6 @@ async function renderMarketIntel(force = false) {
         }).join('');
 
         // ── Margin vs PVOI Regimes Chart ──
-        const linkageRecent = joinedRows.filter(r => r.alignment_status === 'aligned').slice(-180);
         if (marketLinkageChart) marketLinkageChart.destroy();
         marketLinkageChart = new Chart(document.getElementById('chartMarketLinkage'), {
           type: 'line',
@@ -9556,7 +9533,7 @@ async function renderMarketIntel(force = false) {
         }
 
         // ── Linkage Event Windows ──
-        document.getElementById('marketLinkageBody').innerHTML = (regimePack.event_windows || [])
+        document.getElementById('marketLinkageBody').innerHTML = eventWindows
           .filter(r => (r.events || []).some(ev => ev.includes('margin') || ev.includes('oi')))
           .slice(-20)
           .reverse()
@@ -9577,7 +9554,7 @@ async function renderMarketIntel(force = false) {
           }).join('');
 
         // ── Populate Explorer ──
-        marketExplorerData = [...rows].reverse();
+        marketExplorerData = [...recent].reverse();
         marketExplorerPage = 0;
         renderMarketExplorerPage();
 
@@ -9613,7 +9590,7 @@ async function renderMarketIntel(force = false) {
 
         attachTooltips();
       } catch (streamErr) {
-        console.warn('Market historical analytics deferred load warning:', streamErr);
+        console.warn('Market analytics hydration warning:', streamErr);
       }
     })();
 
@@ -9653,7 +9630,9 @@ function prefetchMarketIntel() {
   loadMarketJSON('current').catch(() => {});
   loadMarketJSON('forward_curve').catch(() => {});
   loadMarketJSON('signals').catch(() => {});
+  loadMarketJSON('overview_analytics').catch(() => {});
   loadJSON('panic_spread').catch(() => {});
+  fetch('data/deep/ng_daily.json').catch(() => {});
 }
 
 // Idle and hover prefetch so Market tab is 100% warmed in RAM before user even clicks
@@ -9672,12 +9651,32 @@ document.getElementById('marketSymbol')?.addEventListener('change', () => { mark
 document.getElementById('marketPrevPage')?.addEventListener('click', () => {
   if (marketExplorerPage > 0) { marketExplorerPage--; renderMarketExplorerPage(); }
 });
-document.getElementById('marketNextPage')?.addEventListener('click', () => {
-  if ((marketExplorerPage + 1) * MARKET_PAGE_SIZE < marketExplorerData.length) { marketExplorerPage++; renderMarketExplorerPage(); }
+document.getElementById('marketNextPage')?.addEventListener('click', async () => {
+  if ((marketExplorerPage + 1) * MARKET_PAGE_SIZE >= marketExplorerData.length) {
+    try {
+      const symKey = document.getElementById('marketSymbol').value;
+      const hist = await loadMarketJSON(marketHistName(symKey));
+      if (hist && hist.rows && hist.rows.length > marketExplorerData.length) {
+        marketExplorerData = [...hist.rows].reverse();
+      }
+    } catch (_) {}
+  }
+  if ((marketExplorerPage + 1) * MARKET_PAGE_SIZE < marketExplorerData.length) {
+    marketExplorerPage++;
+    renderMarketExplorerPage();
+  }
 });
-document.getElementById('marketExportCSV')?.addEventListener('click', () => {
+document.getElementById('marketExportCSV')?.addEventListener('click', async () => {
+  let fullData = marketExplorerData;
+  if (fullData.length <= 365) {
+    try {
+      const symKey = document.getElementById('marketSymbol').value;
+      const hist = await loadMarketJSON(marketHistName(symKey));
+      if (hist && hist.rows) fullData = [...hist.rows].reverse();
+    } catch (_) {}
+  }
   const headers = ['date','expiry','dte','open','high','low','close','prev_close','return_1d_pct','return_5d_pct','return_20d_pct','rolling_realized_vol_5d','rolling_realized_vol_20d','range_pct','volume_lots','volume_z_20d','volume_pct_252d','open_interest','oi_change_pct','oi_pct_252d','turnover_ratio','liquidity_score','oi_flow_state'];
-  const csv = [headers.join(','), ...marketExplorerData.map(r => headers.map(h => r[h] ?? '').join(','))].join('\n');
+  const csv = [headers.join(','), ...fullData.map(r => headers.map(h => r[h] ?? '').join(','))].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv,' + encodeURIComponent(csv);
   a.download = `mcx_market_${document.getElementById('marketSymbol').value}.csv`;
