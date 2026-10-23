@@ -84,8 +84,8 @@ jobs:
           now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
           is_weekday = now_ist.weekday() < 5
           total_mins = now_ist.hour * 60 + now_ist.minute
-          # Market trading hours: Mon-Fri 09:00 to 23:30 IST
-          is_market_open = is_weekday and (9 * 60 <= total_mins < 23 * 60 + 30)
+          # Market trading hours: Mon-Fri 08:50 to 23:55 IST (covers 08:50 pre-market standby + Summer 23:30 and Winter 23:55)
+          is_market_open = is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 55)
           
           if is_market_open:
               has_pending = False
@@ -113,8 +113,8 @@ jobs:
               # 2. Mon-Thu night after market close (>= 23:25 IST) bridging to next morning
               # 3. Sunday evening/night (>= 12:00 IST) bridging to Monday morning
               needs_sentinel = (
-                  (is_weekday and total_mins < 8 * 60 + 55) or
-                  (now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25) or
+                  (is_weekday and total_mins < 8 * 60 + 50) or
+                  (now_ist.weekday() in (0, 1, 2, 3) and total_mins > 23 * 60 + 55) or
                   (now_ist.weekday() == 6 and total_mins >= 12 * 60)
               )
               if needs_sentinel:

@@ -97,7 +97,7 @@ jobs:
           is_weekday = now_ist.weekday() < 5
           total_mins = now_ist.hour * 60 + now_ist.minute
           # If it is a weekday between 08:50 AM and 23:30 IST
-          if is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 30):
+          if is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 55):
               check_res = subprocess.run(['gh', 'run', 'list', '--workflow=intraday_snapshot.yml', '--status', 'in_progress', '--json', 'databaseId'], capture_output=True, text=True)
               active = False
               if check_res.returncode == 0:

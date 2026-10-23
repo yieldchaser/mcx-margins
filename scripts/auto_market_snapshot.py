@@ -470,9 +470,9 @@ if __name__ == "__main__":
                     log("Market closed (Weekend). Skipping poll.")
                     continue
                 cur_min = now_ist.hour * 60 + now_ist.minute
-                # MCX trading hours: 09:00 to 23:35 IST
-                if cur_min < 9 * 60 or cur_min > 23 * 60 + 35:
-                    log(f"Market closed (Outside 09:00 - 23:35 IST, current: {now_ist.strftime('%H:%M')} IST). Waiting...")
+                # MCX trading hours: 08:50 to 23:58 IST (covers 08:50 pre-market standby + Summer 23:30 and Winter 23:55)
+                if cur_min < 8 * 60 + 50 or cur_min > 23 * 60 + 58:
+                    log(f"Market closed (Outside 08:50 - 23:58 IST, current: {now_ist.strftime('%H:%M')} IST). Waiting...")
                     continue
                 run_snapshot_cycle()
             except KeyboardInterrupt:
