@@ -108,8 +108,16 @@ jobs:
                       print('Notice dispatching next chain:', res.stderr)
           else:
               print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is CLOSED.')
-              # Mon-Thu night or Sunday: dispatch Overnight Sentinel to bridge to tomorrow morning 08:55 AM IST!
-              if now_ist.weekday() in (0, 1, 2, 3, 6):
+              # Determine if an upcoming trading session needs the Overnight Sentinel bridge:
+              # 1. Mon-Fri early morning before market open (00:00 to 08:55 IST)
+              # 2. Mon-Thu night after market close (>= 23:25 IST) bridging to next morning
+              # 3. Sunday evening/night (>= 12:00 IST) bridging to Monday morning
+              needs_sentinel = (
+                  (is_weekday and total_mins < 8 * 60 + 55) or
+                  (now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25) or
+                  (now_ist.weekday() == 6 and total_mins >= 12 * 60)
+              )
+              if needs_sentinel:
                   print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Igniting Overnight Bridge Sentinel for next morning 08:55 AM IST...')
                   subprocess.run(['gh', 'workflow', 'run', 'market_sentinel.yml'], capture_output=True, text=True)
               else:

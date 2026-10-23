@@ -87,13 +87,19 @@ jobs:
                   if res.returncode != 0:
                       print('Dispatch error:', res.stderr)
 
-          # Overnight Weeknight Bridge (Mon-Thu night after 23:25 IST, or early morning before 08:50 IST)
-          elif now_ist.weekday() in (0, 1, 2, 3) and (total_mins >= 23 * 60 + 25 or total_mins < 8 * 60 + 50):
-              if total_mins >= 23 * 60 + 25:
-                  target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
-              else:
-                  target_open = now_ist.replace(hour=8, minute=55, second=0, microsecond=0)
+          # When is the next market open window (08:55 AM IST)?
+          # 1. Mon-Fri morning before 08:50 IST: opens today at 08:55 IST.
+          # 2. Mon-Thu night after 23:25 IST: opens tomorrow at 08:55 IST.
+          # 3. Sunday evening/night: opens tomorrow (Monday) at 08:55 IST.
+          target_open = None
+          if is_weekday and total_mins < 8 * 60 + 50:
+              target_open = now_ist.replace(hour=8, minute=55, second=0, microsecond=0)
+          elif now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25:
+              target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
+          elif now_ist.weekday() == 6 and total_mins >= 12 * 60:
+              target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
 
+          if target_open is not None:
               remaining_secs = (target_open - now_ist).total_seconds()
               print(f'Overnight Bridge active. Target morning open: {target_open.strftime(\"%Y-%m-%d %H:%M:%S IST\")} ({remaining_secs:.0f}s remaining).')
 
