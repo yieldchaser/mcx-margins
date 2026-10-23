@@ -10,7 +10,15 @@ on:
     - cron: '15 4 * * 1-5'
     # Run 4: LATE MORNING (Mon–Fri 06:00 UTC = 11:30 AM IST) - secondary safety net
     - cron: '0 6 * * 1-5'
-    # Run 5: WEEKEND SWEEP (Sat 05:00 UTC = 10:30 AM IST) - late Friday sweep
+    # Run 5: NOON (Mon–Fri 07:00 UTC = 12:30 PM IST)
+    - cron: '0 7 * * 1-5'
+    # Run 6: EARLY AFTERNOON (Mon–Fri 08:00 UTC = 13:30 PM IST)
+    - cron: '0 8 * * 1-5'
+    # Run 7: MID-AFTERNOON (Mon–Fri 09:30 UTC = 15:00 PM IST)
+    - cron: '30 9 * * 1-5'
+    # Run 8: EVENING (Mon–Fri 12:00 UTC = 17:30 PM IST)
+    - cron: '0 12 * * 1-5'
+    # Run 9: WEEKEND SWEEP (Sat 05:00 UTC = 10:30 AM IST) - late Friday sweep
     - cron: '0 5 * * 6'
     
   workflow_dispatch:

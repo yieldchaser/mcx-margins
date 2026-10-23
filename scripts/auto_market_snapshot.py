@@ -358,9 +358,22 @@ def run_snapshot_cycle():
                 fetch_today_script = os.path.join(REPO_DIR, "scripts", "fetch_today.py")
                 res = subprocess.run([PYTHON_EXE, fetch_today_script, "--retries", "1", "--wait", "0"], cwd=REPO_DIR, capture_output=True, text=True)
                 if res.returncode == 0:
-                    log("Successfully captured today's clearing margins!")
+                    log("Successfully captured today's clearing margins via local scraper!")
                     export_script = os.path.join(REPO_DIR, "scripts", "export_json.py")
                     subprocess.run([PYTHON_EXE, export_script], cwd=REPO_DIR, capture_output=True, text=True)
+                else:
+                    # In CI/cloud where playwright browser might not be installed in the snapshot runner,
+                    # dispatch the dedicated daily_margin.yml workflow
+                    try:
+                        check_res = subprocess.run(["gh", "run", "list", "--workflow=daily_margin.yml", "--status", "in_progress", "--json", "databaseId"], cwd=REPO_DIR, capture_output=True, text=True)
+                        dm_running = False
+                        if check_res.returncode == 0 and len(json.loads(check_res.stdout or "[]")) > 0:
+                            dm_running = True
+                        if not dm_running:
+                            subprocess.run(["gh", "workflow", "run", "daily_margin.yml"], cwd=REPO_DIR, capture_output=True, text=True)
+                            log("Dispatched dedicated daily_margin.yml workflow to scrape clearing margins.")
+                    except Exception as e_dm:
+                        log(f"Notice checking/dispatching daily_margin workflow: {e_dm}")
     except Exception as e_margin:
         log(f"Notice on opportunistic margin check: {e_margin}")
 
