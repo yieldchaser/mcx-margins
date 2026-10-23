@@ -306,6 +306,8 @@ def run_snapshot_cycle():
                                         "close": round(float(r["close"]), 2),
                                         "volume": int(r["volume"])
                                     })
+                                if m15_new_bars and len(df_resample) > 0:
+                                    m15_new_bars[-1]["latest_time"] = int(df_resample["epoch"].iloc[-1])
                                 with open(m15_file, "r", encoding="utf-8") as f:
                                     existing_m15 = json.load(f)
                                 existing_map = {b["time"]: b for b in existing_m15}
@@ -326,6 +328,7 @@ def run_snapshot_cycle():
                                 latest_bar_epoch = int(today_bars["epoch"].iloc[-1])
                                 today_daily = {
                                     "time": today_epoch,
+                                    "latest_time": latest_bar_epoch,
                                     "open": round(float(today_bars["open"].iloc[0]), 2),
                                     "high": round(float(today_bars["high"].max()), 2),
                                     "low": round(float(today_bars["low"].min()), 2),

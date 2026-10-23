@@ -3749,15 +3749,26 @@ async function renderMarketOverviewContext() {
       });
       // Fetch latest intraday candle so header reflects real market hours (e.g. 10:15 IST)
       function pollHeaderLivePrice() {
-        fetch('data/deep/ng_15m.json?_v=' + Date.now())
+        fetch('data/deep/manifest.json?_v=' + Date.now())
           .then(r => r.ok ? r.json() : null)
-          .then(bars => {
-            if (bars && bars.length > 0) {
-              const lastBar = bars[bars.length - 1];
-              if (typeof window.updateGlobalLiveTimestamp === 'function') {
-                window.updateGlobalLiveTimestamp(lastBar);
+          .then(man => {
+            if (man && man.ng && man.ng.m1_months && man.ng.m1_months.length > 0) {
+              const latestM1 = man.ng.m1_months[man.ng.m1_months.length - 1];
+              if (latestM1 && latestM1.end && typeof window.updateGlobalLiveTimestamp === 'function') {
+                window.updateGlobalLiveTimestamp({
+                  time: latestM1.end,
+                  close: (window._lastObservedLivePrice || (ng && ng.close))
+                });
+                return;
               }
             }
+            return fetch('data/deep/ng_15m.json?_v=' + Date.now())
+              .then(r => r.ok ? r.json() : null)
+              .then(bars => {
+                if (bars && bars.length > 0 && typeof window.updateGlobalLiveTimestamp === 'function') {
+                  window.updateGlobalLiveTimestamp(bars[bars.length - 1]);
+                }
+              });
           })
           .catch(() => {});
       }

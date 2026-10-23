@@ -494,7 +494,7 @@
       epoch = lastBar[0];
       closePrice = lastBar[4];
     } else if (typeof lastBar === 'object') {
-      epoch = lastBar.time !== undefined ? lastBar.time : (lastBar.dt !== undefined ? lastBar.dt : (lastBar.epoch !== undefined ? lastBar.epoch : (lastBar.timestamp !== undefined ? lastBar.timestamp : null)));
+      epoch = lastBar.latest_time !== undefined ? lastBar.latest_time : (lastBar.time !== undefined ? lastBar.time : (lastBar.dt !== undefined ? lastBar.dt : (lastBar.epoch !== undefined ? lastBar.epoch : (lastBar.timestamp !== undefined ? lastBar.timestamp : null))));
       closePrice = lastBar.close !== undefined ? lastBar.close : (lastBar.c !== undefined ? lastBar.c : (lastBar.value !== undefined ? lastBar.value : (lastBar.price !== undefined ? lastBar.price : null)));
     }
 
@@ -510,10 +510,32 @@
     // STRICT FIREWALL: If date is invalid or NaN, NEVER display 'Invalid Date'!
     if (!d || isNaN(d.getTime())) return;
 
+    const barSec = Math.floor(d.getTime() / 1000);
+
+    // MONOTONIC WATERMARK GUARD:
+    // Never allow a lower-resolution or older bar (e.g. 09:00 Daily or 23:15 15m)
+    // to downgrade an already observed higher/fresher timestamp on the active session.
+    if (window._maxObservedLiveEpoch) {
+      const prevDate = new Date(window._maxObservedLiveEpoch * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const curDate = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      // If the incoming bar is for an older trading day, ignore it.
+      if (curDate < prevDate) return;
+      // If the incoming bar is for the same trading day, but has an older timestamp, ignore it.
+      if (curDate === prevDate && barSec < window._maxObservedLiveEpoch) {
+        return;
+      }
+    }
+    window._maxObservedLiveEpoch = barSec;
+
+    const numericClose = Number(closePrice);
+    if (numericClose && numericClose > 0) {
+      window._lastObservedLivePrice = numericClose;
+    }
+    const effPrice = (numericClose && numericClose > 0) ? numericClose : window._lastObservedLivePrice;
+    const formattedPrice = (effPrice && effPrice > 0) ? ` · ₹${effPrice.toFixed(2)}` : '';
+
     const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
     const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
-    const numericClose = Number(closePrice);
-    const formattedPrice = (numericClose && numericClose > 0) ? ` · ₹${numericClose.toFixed(2)}` : '';
 
     priceLabel.textContent = `MCX Live: ${dateStr} ${timeStr} IST${formattedPrice}`;
   }
@@ -589,6 +611,22 @@
 
         if (sCache.m15 && sCache.m15.length) {
           trySyncLatestIntraday(sCache.m15);
+        } else if (!lastBar.latest_time && (!window._maxObservedLiveEpoch || window._maxObservedLiveEpoch <= (lastBar.time || 0))) {
+          fetch(`data/deep/manifest.json?_v=${Date.now()}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(man => {
+              if (man && man[symPrefix] && man[symPrefix].m1_months && man[symPrefix].m1_months.length) {
+                const m1List = man[symPrefix].m1_months;
+                const latestM1 = m1List[m1List.length - 1];
+                if (latestM1 && latestM1.end) {
+                  updateGlobalLiveTimestamp({
+                    time: latestM1.end,
+                    close: lastBar.close
+                  });
+                }
+              }
+            })
+            .catch(() => {});
         }
       }
 
