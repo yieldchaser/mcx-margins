@@ -138,11 +138,21 @@ def resolve_active_contracts(fyers_client, now_dt):
     try:
         q = fyers_client.quotes({"symbols": f"{candidates[0][3]},{candidates[1][3]}"})
         if q.get("s") == "ok":
+            v0 = {}
+            v1 = {}
             for item in q.get("d", []):
                 if item.get("n") == candidates[0][3]:
-                    v = item.get("v", {})
-                    if now_dt.day >= 23 and (v.get("volume", 0) == 0 or v.get("lp", 0) <= 0):
-                        is_roll = True
+                    v0 = item.get("v", {})
+                elif item.get("n") == candidates[1][3]:
+                    v1 = item.get("v", {})
+            vol0 = v0.get("volume", 0) or 0
+            vol1 = v1.get("volume", 0) or 0
+            lp0 = v0.get("lp", 0) or 0
+            # If front candidate has zero volume/quote past the 18th (e.g. early expiry), or next contract has overtaken volume
+            if now_dt.day >= 18 and (vol0 == 0 or lp0 <= 0):
+                is_roll = True
+            elif vol1 > 0 and vol1 > vol0 and now_dt.day >= 18:
+                is_roll = True
         elif q.get("code") in (-300, 400, 404):
             is_roll = True
     except Exception:

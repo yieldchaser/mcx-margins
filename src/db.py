@@ -74,6 +74,8 @@ def compute_dte(expiry_str: str, ref_date_str: str) -> int | None:
         day = int(expiry_str[:2])
         mon = MONTH_MAP.get(expiry_str[2:5].upper())
         yr = int(expiry_str[5:])
+        if yr < 100:
+            yr += 2000
         if not mon:
             return None
         expiry_date = date(yr, mon, day)

@@ -114,7 +114,7 @@ jobs:
               # 3. Sunday evening/night (>= 12:00 IST) bridging to Monday morning
               needs_sentinel = (
                   (is_weekday and total_mins < 8 * 60 + 50) or
-                  (now_ist.weekday() in (0, 1, 2, 3) and total_mins > 23 * 60 + 55) or
+                  (now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25) or
                   (now_ist.weekday() == 6 and total_mins >= 12 * 60)
               )
               if needs_sentinel:

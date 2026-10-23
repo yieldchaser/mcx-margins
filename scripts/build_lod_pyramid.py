@@ -22,6 +22,7 @@ Modes:
 import json
 import os
 import sys
+import re
 import sqlite3
 from pathlib import Path
 import pandas as pd
@@ -38,12 +39,25 @@ def find_vault_parquet(name: str) -> Path:
         return candidates[-1]
     return VAULT_DIR / f"{name}_1m_continuous_2019_2026.parquet"
 
+_MONTH_ORDER = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+
+def _contract_file_sort_key(p: Path):
+    """Sorts contract parquets by chronological expiry (e.g. 26OCT before 26NOV before 26DEC before 27JAN)."""
+    m = re.search(r"(\d{2})([A-Z]{3})FUT", p.name)
+    if not m:
+        return (9999, 99)
+    yy, mmm = m.groups()
+    yr = int(yy) + 2000
+    mon = _MONTH_ORDER.index(mmm) + 1 if mmm in _MONTH_ORDER else 99
+    return (yr, mon)
+
 def find_contract_wise_parquets(name: str) -> list[Path]:
-    """Dynamically discovers all contract-wise 1m parquets for the commodity (active and future)."""
+    """Dynamically discovers all contract-wise 1m parquets for the commodity sorted chronologically by expiry."""
     contract_dir = VAULT_DIR / "contract_wise"
     if not contract_dir.exists():
         return []
-    return sorted(contract_dir.glob(f"MCX_{name}*FUT_1m_contract_wise.parquet"))
+    files = list(contract_dir.glob(f"MCX_{name}*FUT_1m_contract_wise.parquet"))
+    return sorted(files, key=_contract_file_sort_key)
 
 SYMBOLS_CONFIG = [
     {
@@ -151,7 +165,7 @@ def build_symbol_pyramid(sym_cfg):
                 merged_count += len(df_cp)
             except Exception as e:
                 print(f"[{sym_cfg['name']}] Notice merging {cp.name}: {e}")
-        df = df.drop_duplicates(subset=["epoch"], keep="last").sort_values("epoch").reset_index(drop=True)
+        df = df.drop_duplicates(subset=["epoch"], keep="first").sort_values("epoch").reset_index(drop=True)
         print(f"[{sym_cfg['name']}] Successfully merged {merged_count:,} contract bars across all active/future contracts (Total: {len(df):,}).")
 
     df["dt"] = pd.to_datetime(df["epoch"], unit="s", utc=True).dt.tz_convert("Asia/Kolkata")

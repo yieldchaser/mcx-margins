@@ -3552,11 +3552,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    const targetTab = document.getElementById('tab-' + btn.dataset.tab);
+    if (targetTab) targetTab.classList.add('active');
     if (btn.dataset.tab === 'market') {
       if (window.initDeepChart) setTimeout(window.initDeepChart, 50);
       if (window.initTODSeasonality) setTimeout(window.initTODSeasonality, 60);
     }
+    // Refresh canvas layouts for charts unhidden in the active tab
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 40);
   });
 });
 
@@ -4275,10 +4280,10 @@ async function renderOverview() {
         `• <strong>Surveillance Status:</strong> ${upDistPct <= 3.0 ? '<span style="color:#f87171;font-weight:700;">CRITICAL PROXIMITY</span> (within 3% buffer)' : '<span style="color:#3fb950;font-weight:700;">STABLE BUFFER</span>'}`;
 
       const dynBodyLower = `<strong>Lower Margin Hike Trigger (Crash Breach P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br><br>` +
-        `• <strong>Floor Cushion:</strong> −₹${dnDistRs.toFixed(2)} (<strong>${dnDistPct}%</strong> downside cushion)<br>` +
-        `• <strong>Clearinghouse Horizon:</strong> If price retraces to ₹${dnTrigger.toFixed(2)}, exchange volatility parameters reset toward baseline, reducing margin requirements.<br>` +
-        `• <strong>Statutory Floor:</strong> Margin reductions remain clamped at SEBI's 13.00% statutory floor.<br>` +
-        `• <strong>Downside State:</strong> Sufficient headroom before floor reset scenario trips.`;
+        `• <strong>Downside Buffer:</strong> −₹${dnDistRs.toFixed(2)} (<strong>${dnDistPct}%</strong> downside cushion)<br>` +
+        `• <strong>Clearinghouse Horizon:</strong> If price crashes to ₹${dnTrigger.toFixed(2)}, clearinghouse SPAN volatility parameters spike from elevated intraday range, triggering an overnight margin hike.<br>` +
+        `• <strong>Capital Call Impact:</strong> Downside panic shocks force identical SPAN margin expansion (+₹${rupeeDelta.toLocaleString('en-IN')}/lot) due to symmetric squared log-return EWMA variance expansion.<br>` +
+        `• <strong>Surveillance Status:</strong> ${Math.abs(dnDistPct) <= 3.0 ? '<span style="color:#f87171;font-weight:700;">CRITICAL PROXIMITY</span> (within 3% buffer)' : '<span style="color:#3fb950;font-weight:700;">STABLE BUFFER</span>'}`;
 
       const dynBodyCorridor = `<strong>Clearinghouse Scan Corridor Position:</strong><br><br>` +
         `• <strong>Floor Boundary (P*<sub>dn</sub>):</strong> ₹${dnTrigger.toFixed(2)}<br>` +
@@ -5569,17 +5574,19 @@ function _hexRgba(hex, a) {
 const _LC_MONTHS_3 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const _LC_MONTHS_DISP = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function _contractLabel(expiry) {
-  // expiry = "27APR2026"  →  parse month+year, add 1 month
+  if (!expiry || typeof expiry !== 'string' || expiry.length < 7) return '';
   const mon3 = expiry.slice(2, 5);                     // "APR"
-  const yr   = parseInt(expiry.slice(5), 10);           // 2026
+  const yr   = parseInt(expiry.slice(5), 10) || 0;     // 2026
   const mi   = _LC_MONTHS_3.indexOf(mon3);              // 3
+  if (mi === -1) return expiry;
   const dmi  = (mi + 1) % 12;                           // 4 = MAY
   const dyr  = mi === 11 ? yr + 1 : yr;                 // roll Jan if Dec
   return _LC_MONTHS_DISP[dmi] + ' ' + dyr;              // "May 2026"
 }
 function _contractDeliveryYear(expiry) {
+  if (!expiry || typeof expiry !== 'string' || expiry.length < 7) return 0;
   const mon3 = expiry.slice(2, 5);
-  const yr   = parseInt(expiry.slice(5), 10);
+  const yr   = parseInt(expiry.slice(5), 10) || 0;
   return _LC_MONTHS_3.indexOf(mon3) === 11 ? yr + 1 : yr; // Dec rolls to next year
 }
 // Compact chart-axis label: "27APR2026" → "May '26"
@@ -10725,14 +10732,21 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 // Back to top
-const bttBtn = document.getElementById('backToTop');
-if (bttBtn) {
-  window.addEventListener('scroll', () => {
-    bttBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-    bttBtn.style.alignItems = 'center';
-    bttBtn.style.justifyContent = 'center';
-  });
-  bttBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+function initBackToTop() {
+  const bttBtn = document.getElementById('backToTop');
+  if (bttBtn) {
+    window.addEventListener('scroll', () => {
+      bttBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+      bttBtn.style.alignItems = 'center';
+      bttBtn.style.justifyContent = 'center';
+    }, { passive: true });
+    bttBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBackToTop);
+} else {
+  initBackToTop();
 }
 
 // ═══════════════════════════════════════════════════════════════════

@@ -88,6 +88,8 @@ def compute_dte(expiry_str, ref_date_str):
         day = int(expiry_str[:2])
         mon = MONTH_MAP[expiry_str[2:5]]
         yr = int(expiry_str[5:])
+        if yr < 100:
+            yr += 2000
         expiry_date = date(yr, mon, day)
         ref = date.fromisoformat(ref_date_str)
         return (expiry_date - ref).days
@@ -3072,13 +3074,34 @@ def main():
         # 2. Hurdle-Gated SPAN Initial Margin Forecast
         predicted_initial = _calc_hurdle_span_im(im, dv, r_log)
 
-        # 3. Deterministic Forward Tender Lookahead Schedule
+        # 3. Deterministic Forward Tender Lookahead Schedule (5 TRADING days before expiry)
+        trading_days_to_expiry = None
+        try:
+            exp_d = int(exp[:2])
+            exp_m = MONTH_MAP.get(exp[2:5].upper())
+            exp_y = int(exp[5:])
+            if exp_d and exp_m and exp_y:
+                exp_date = date(exp_y, exp_m, exp_d)
+                ref_date = date.fromisoformat(latest_date)
+                cur_dt = ref_date + timedelta(days=1)
+                t_count = 0
+                while cur_dt <= exp_date:
+                    if cur_dt.weekday() < 5:  # Mon-Fri trading day
+                        t_count += 1
+                    cur_dt += timedelta(days=1)
+                trading_days_to_expiry = t_count
+        except Exception:
+            pass
+
         if dte is not None and dte <= 0:
             # Contract expires and ceases trading today; no forward tender margin tomorrow
             next_tender = 0.0
         elif tender_margin > 0:
             # Currently climbing tender ladder: +5% tomorrow up to 25% cap
             next_tender = min(25.0, tender_margin + 5.0)
+        elif trading_days_to_expiry is not None and 1 <= trading_days_to_expiry <= 5:
+            # Next trading day enters or remains in tender window
+            next_tender = 5.0
         elif dte is not None and 1 <= dte <= 5:
             # Tomorrow enters or remains in tender window
             next_tender = 5.0

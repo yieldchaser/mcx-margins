@@ -94,7 +94,7 @@ jobs:
           target_open = None
           if is_weekday and total_mins < 8 * 60 + 50:
               target_open = now_ist.replace(hour=8, minute=55, second=0, microsecond=0)
-          elif now_ist.weekday() in (0, 1, 2, 3) and total_mins > 23 * 60 + 55:
+          elif now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25:
               target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
           elif now_ist.weekday() == 6 and total_mins >= 12 * 60:
               target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)

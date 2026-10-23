@@ -854,8 +854,9 @@
   }
 
   function getDeliveryYear(exp) {
+    if (!exp || typeof exp !== 'string' || exp.length < 7) return new Date().getFullYear();
     const mon3 = exp.slice(2, 5).toUpperCase();
-    const yr = parseInt(exp.slice(5), 10);
+    const yr = parseInt(exp.slice(5), 10) || new Date().getFullYear();
     return mon3 === 'DEC' ? yr + 1 : yr;
   }
 
@@ -1389,11 +1390,11 @@
         try {
           const dnLine = targetSeries.createPriceLine({
             price: c.hike_trigger_dn_price,
-            color: '#10b981',
+            color: '#f97316',
             lineWidth: 2,
             lineStyle: dashedStyle,
             axisLabelVisible: true,
-            title: `P* DN: ₹${c.hike_trigger_dn_price.toFixed(2)}`,
+            title: `P* DN: ₹${c.hike_trigger_dn_price.toFixed(2)} (-${c.hike_trigger_pct}%)`,
           });
           hikeTriggerLines.push(dnLine);
         } catch(e) {}
