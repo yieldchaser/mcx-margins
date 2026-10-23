@@ -5191,7 +5191,7 @@ async function renderTermStructure() {
                     if (!r) return [];
                     const state = r.rupeeDrag > 0 ? 'Contango (Roll Drag for Longs)' : 'Backwardation (Roll Yield for Longs)';
                     return [
-                      `Price Difference: ${r.priceDiff >= 0 ? '+' : ''}₹${r.priceDiff.toFixed(2)}`,
+                      `Price Difference: ${r.priceDiff < 0 ? '-' : '+'}₹${Math.abs(r.priceDiff).toFixed(2)}`,
                       `Annualized Roll Yield: ${r.annRollYield >= 0 ? '+' : ''}${r.annRollYield}%`,
                       `Regime: ${state}`
                     ];
