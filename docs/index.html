@@ -5431,11 +5431,13 @@ async function renderHistory(chartName, startIdx, endIdx) {
         if (decomp && decomp.timeseries) {
           const tsMap = {}; decomp.timeseries.forEach(r => tsMap[r.date] = r);
           const aligned = labels.map(l => tsMap[l] || {fair_margin:null, actual:null, policy_buffer:null});
-          // Snap x-axis: trim leading rows where all fields are null
-          const firstDecompIdx = aligned.findIndex(r => r.fair_margin !== null || r.actual !== null);
+          // Snap x-axis: trim leading rows where fair_margin is null (volatility data only exists from 2020-04-27)
+          const firstDecompIdx = aligned.findIndex(r => r.fair_margin !== null);
           const decompLabels  = firstDecompIdx > 0 ? labels.slice(firstDecompIdx)  : labels;
           const decompAligned = firstDecompIdx > 0 ? aligned.slice(firstDecompIdx) : aligned;
-          _histDecompRC.setLabels(decompLabels[0], decompLabels[decompLabels.length - 1]);
+          if (decompLabels.length > 0) {
+            _histDecompRC.setLabels(decompLabels[0], decompLabels[decompLabels.length - 1]);
+          }
           if (histChartDecomp) histChartDecomp.destroy();
           histChartDecomp = new Chart(document.getElementById('chartDecomp'), {
             type: 'line',

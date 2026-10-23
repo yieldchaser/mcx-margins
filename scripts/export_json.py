@@ -2052,22 +2052,31 @@ def _export_decomposition(fm_series, regime_params):
             if ann_vol and ann_vol > 0:
                 vol = ann_vol / (252 ** 0.5)
             else:
-                vol = 0.02
-        vol_pct = vol * 100
+                vol = None
 
-        yr = row.get("year") or int(row["date"][:4])
-        curr_rp = rp_a if yr < 2019 else rp_b
+        actual = row.get("initial_margin_pct")
+        if vol is not None and vol > 0:
+            vol_pct = vol * 100
+            yr = row.get("year") or int(row["date"][:4])
+            curr_rp = rp_a if yr < 2019 else rp_b
 
-        fair = max(0.0, curr_rp["slope"] * vol_pct + curr_rp["intercept"])
-        actual = row["initial_margin_pct"]
-        buf = actual - fair
-        buffers.append(buf)
-        ts.append({
-            "date": row["date"],
-            "actual": round(actual, 3),
-            "fair_margin": round(fair, 3),
-            "policy_buffer": round(buf, 3),
-        })
+            fair = max(0.0, curr_rp["slope"] * vol_pct + curr_rp["intercept"])
+            buf = actual - fair if actual is not None else None
+            if buf is not None:
+                buffers.append(buf)
+            ts.append({
+                "date": row["date"],
+                "actual": round(actual, 3) if actual is not None else None,
+                "fair_margin": round(fair, 3),
+                "policy_buffer": round(buf, 3) if buf is not None else None,
+            })
+        else:
+            ts.append({
+                "date": row["date"],
+                "actual": round(actual, 3) if actual is not None else None,
+                "fair_margin": None,
+                "policy_buffer": None,
+            })
 
     # Buffer percentile for today based on trailing 365 observations
     recent_bufs = buffers[-365:] if len(buffers) >= 365 else buffers
