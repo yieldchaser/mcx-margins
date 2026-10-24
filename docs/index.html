@@ -1297,13 +1297,17 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             const istStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
             const ist = new Date(istStr);
             const d = ist.getDay(), m = ist.getHours() * 60 + ist.getMinutes();
-            const isOpen = (d >= 1 && d <= 5 && m >= 540 && m <= 1415);
+            const nyStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' });
+            const isSummer = nyStr.includes('EDT');
+            const closeMins = isSummer ? 1410 : 1435;
+            const hoursStr = isSummer ? '09:00 - 23:30 IST' : '09:00 - 23:55 IST';
+            const isOpen = (d >= 1 && d <= 5 && m >= 540 && m <= closeMins);
             const dot = document.getElementById('stalenessDot');
             const label = document.getElementById('lastPriceUpdated');
             if (dot) {
               dot.style.background = isOpen ? '#3fb950' : '#8b949e';
               dot.style.boxShadow = isOpen ? '0 0 6px #3fb950' : 'none';
-              dot.title = isOpen ? 'MCX Market Open · Live Feed Active' : 'MCX Market Closed (Mon-Fri 09:00 - 23:30 IST)';
+              dot.title = isOpen ? 'MCX Market Open · Live Feed Active' : `MCX Market Closed (Mon-Fri ${hoursStr})`;
             }
             if (label) {
               label.textContent = isOpen ? 'MCX Live Feed Active' : 'MCX Closed';

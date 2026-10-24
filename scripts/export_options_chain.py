@@ -128,6 +128,8 @@ print(f"Loaded {len(df_fut):,} futures bars. Latest Futures Price: ₹{latest_fu
 
 # 2. Black-76 Pricing Formula & Greeks
 def black76_price(F, K, T, r, sigma, is_call):
+    if F <= 0 or K <= 0:
+        return 0.0
     if T <= 0 or sigma <= 0:
         return max(0.0, F - K) if is_call else max(0.0, K - F)
     # Strictly zero drift inside d1 for futures options
@@ -140,6 +142,8 @@ def black76_price(F, K, T, r, sigma, is_call):
         return disc * (K * norm.cdf(-d2) - F * norm.cdf(-d1))
 
 def solve_black76_iv(F, K, T, r, target_price, is_call):
+    if F <= 0 or K <= 0 or T <= 0:
+        return 0.05
     disc = np.exp(-r * T)
     floor = disc * max(0.0, F - K if is_call else K - F)
     if target_price <= floor + 0.01:
@@ -158,7 +162,7 @@ def solve_black76_iv(F, K, T, r, target_price, is_call):
         return 0.45
 
 def calculate_greeks(F, K, T, r, sigma, is_call):
-    if T <= 0 or sigma <= 0:
+    if F <= 0 or K <= 0 or T <= 0 or sigma <= 0:
         delta = (1.0 if F > K else 0.0) if is_call else (-1.0 if F < K else 0.0)
         return {"delta": float(delta), "gamma": 0.0, "theta": 0.0, "vega": 0.0}
     d1 = (np.log(F / K) + 0.5 * (sigma ** 2) * T) / (sigma * np.sqrt(T))

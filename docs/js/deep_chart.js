@@ -489,17 +489,24 @@
     const day = istDate.getDay(); // 0 = Sunday, 6 = Saturday
     const mins = istDate.getHours() * 60 + istDate.getMinutes();
 
+    const nyStr = dateObj.toLocaleTimeString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' });
+    const isSummer = nyStr.includes('EDT');
+    const sessionHoursStr = isSummer ? '09:00 - 23:30 IST' : '09:00 - 23:55 IST';
+
     // Weekend check: MCX is strictly closed on Saturday & Sunday
     if (day === 0 || day === 6) {
-      return { isOpen: false, state: 'closed', label: 'MCX Closed' };
+      return { isOpen: false, state: 'closed', label: 'MCX Closed', hours: sessionHoursStr };
     }
 
-    // Weekday hours: 09:00 IST (540m) to 23:30 IST (1410m) / winter 23:55 IST (1435m)
-    if (mins >= 540 && mins <= 1415) {
-      return { isOpen: true, state: 'live', label: 'MCX Live' };
+    // Dynamic Seasonal Market Hours:
+    // Summer (US EDT): 09:00 to 23:30 IST (1410m)
+    // Winter (US EST): 09:00 to 23:55 IST (1435m)
+    const closeMins = isSummer ? 1410 : 1435;
+    if (mins >= 540 && mins <= closeMins) {
+      return { isOpen: true, state: 'live', label: 'MCX Live', hours: sessionHoursStr };
     }
 
-    return { isOpen: false, state: 'closed', label: 'MCX Closed' };
+    return { isOpen: false, state: 'closed', label: 'MCX Closed', hours: sessionHoursStr };
   }
   window.getMCXSessionStatus = getMCXSessionStatus;
 
@@ -593,7 +600,7 @@
       } else {
         stalenessDot.style.background = '#8b949e';
         stalenessDot.style.boxShadow = 'none';
-        stalenessDot.title = 'MCX Market Closed (Mon-Fri 09:00 - 23:30 IST)';
+        stalenessDot.title = 'MCX Market Closed (Mon-Fri ' + session.hours + ')';
       }
     }
 
