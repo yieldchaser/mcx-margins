@@ -14,7 +14,7 @@ import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, date
 import duckdb
 import numpy as np
 import pandas as pd
@@ -88,7 +88,14 @@ if exp_code and len(exp_code) == 5:
                     f_day = int(f_exp_str[:2])
                     f_mo = MONTH_CODES.get(f_exp_str[2:5].upper(), exp_mo)
                     f_yr = int(f_exp_str[5:])
-                    exp_dt_exact = datetime(f_yr, f_mo, max(1, f_day - 2), 18, 0, 0, tzinfo=timezone.utc)
+                    fut_date = date(f_yr, f_mo, f_day)
+                    b_days_sub = 0
+                    curr_d = fut_date
+                    while b_days_sub < 2:
+                        curr_d -= timedelta(days=1)
+                        if curr_d.weekday() < 5:  # Mon-Fri business days
+                            b_days_sub += 1
+                    exp_dt_exact = datetime(curr_d.year, curr_d.month, curr_d.day, 18, 0, 0, tzinfo=timezone.utc)
     except Exception:
         pass
 
@@ -255,7 +262,7 @@ else:
 
 # Max Pain Calculation across all strike levels
 min_loss = float("inf")
-max_pain_strike = strikes[len(strikes) // 2]
+max_pain_strike = strikes[len(strikes) // 2] if strikes else 0
 
 for candidate_price in strikes:
     total_loss = 0.0
@@ -270,7 +277,7 @@ for candidate_price in strikes:
         max_pain_strike = candidate_price
 
 # ATM Strike & 1-SD Expected Move Cone
-atm_strike = min(strikes, key=lambda x: abs(x - latest_fut_price))
+atm_strike = min(strikes, key=lambda x: abs(x - latest_fut_price)) if strikes else 0
 atm_row = chain_records.get(atm_strike, {})
 atm_call_iv = atm_row.get("call", {}).get("iv", 45.0) / 100.0
 atm_put_iv = atm_row.get("put", {}).get("iv", 45.0) / 100.0
@@ -289,7 +296,7 @@ risk_reversal_25d = round((call_25d["call"]["iv"] - put_25d["put"]["iv"]), 2) if
 # Filtered Active Ladder (Liquid strikes: OI > 10 or within +- 15 strikes of ATM)
 filtered_strikes = [
     s for s in strikes 
-    if abs(s - atm_strike) <= 30 or (chain_records[s].get("call", {}).get("oi", 0) > 10 or chain_records[s].get("put", {}).get("oi", 0) > 10)
+    if abs(s - atm_strike) <= 30 or (chain_records.get(s, {}).get("call", {}).get("oi", 0) > 10 or chain_records.get(s, {}).get("put", {}).get("oi", 0) > 10)
 ]
 
 output_data = {
@@ -304,9 +311,9 @@ output_data = {
     },
     "indicators": {
         "call_wall_strike": call_wall_strike,
-        "call_wall_oi": chain_records[call_wall_strike].get("call", {}).get("oi", 0),
+        "call_wall_oi": chain_records.get(call_wall_strike, {}).get("call", {}).get("oi", 0),
         "put_wall_strike": put_wall_strike,
-        "put_wall_oi": chain_records[put_wall_strike].get("put", {}).get("oi", 0),
+        "put_wall_oi": chain_records.get(put_wall_strike, {}).get("put", {}).get("oi", 0),
         "max_pain_strike": max_pain_strike,
         "atm_strike": atm_strike,
         "atm_iv_pct": round(atm_avg_iv * 100.0, 2),

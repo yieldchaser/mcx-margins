@@ -186,7 +186,7 @@ def build_symbol_pyramid(sym_cfg):
     daily_bars = []
     for dt, row in daily.iterrows():
         daily_bars.append({
-            "time": int(row["epoch"]),
+            "time": int(dt.timestamp()),
             "open": round(float(row["open"]), 2),
             "high": round(float(row["high"]), 2),
             "low": round(float(row["low"]), 2),
@@ -207,7 +207,7 @@ def build_symbol_pyramid(sym_cfg):
     h1_bars = []
     for dt, row in h1.iterrows():
         h1_bars.append({
-            "time": int(row["epoch"]),
+            "time": int(dt.timestamp()),
             "open": round(float(row["open"]), 2),
             "high": round(float(row["high"]), 2),
             "low": round(float(row["low"]), 2),
@@ -231,7 +231,7 @@ def build_symbol_pyramid(sym_cfg):
     m15_bars = []
     for dt, row in m15.iterrows():
         m15_bars.append({
-            "time": int(row["epoch"]),
+            "time": int(dt.timestamp()),
             "open": round(float(row["open"]), 2),
             "high": round(float(row["high"]), 2),
             "low": round(float(row["low"]), 2),

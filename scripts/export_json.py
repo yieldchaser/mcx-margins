@@ -86,7 +86,9 @@ def compute_dte(expiry_str, ref_date_str):
     """Parse expiry like '26MAR2026' and return days from ref_date."""
     try:
         day = int(expiry_str[:2])
-        mon = MONTH_MAP[expiry_str[2:5]]
+        mon = MONTH_MAP.get(expiry_str[2:5].upper())
+        if not mon:
+            return 9999
         yr = int(expiry_str[5:])
         if yr < 100:
             yr += 2000
@@ -1035,8 +1037,8 @@ def _export_market_intelligence(margin_cur):
                     if price and price > 0:
                         lot_size = 250 if symbol == "NATGASMINI" else 1250
                         
-                        lots_35 = math.floor(350000 / (price * lot_size * total_margin_req))
-                        max_35 = math.floor((350000 * 2.5) / (price * lot_size))
+                        lots_35 = math.floor(3500000 / (price * lot_size * total_margin_req))
+                        max_35 = math.floor((3500000 * 2.5) / (price * lot_size))
                         live_vamb_lots_35l = max(0, min(lots_35, max_35))
                         
                         lots_10 = math.floor(1000000 / (price * lot_size * total_margin_req))
@@ -2689,8 +2691,8 @@ def main():
             init_margin_pct = row["initial_margin_pct"] or 20.0
             total_margin_req = (init_margin_pct / 100.0) + shield
             
-            lots_35 = math.floor(350000 / (price * lot_size * total_margin_req))
-            max_35 = math.floor((350000 * 2.5) / (price * lot_size))
+            lots_35 = math.floor(3500000 / (price * lot_size * total_margin_req))
+            max_35 = math.floor((3500000 * 2.5) / (price * lot_size))
             live_vamb_lots_35l = max(0, min(lots_35, max_35))
             
             lots_10 = math.floor(1000000 / (price * lot_size * total_margin_req))
@@ -2898,7 +2900,9 @@ def main():
         im = row.get("initial_margin_pct")
         tot = row.get("total_margin_pct")
         try:
-            exp_month = MONTH_MAP[expiry[2:5]]
+            exp_month = MONTH_MAP.get(expiry[2:5].upper())
+            if not exp_month:
+                continue
             exp_year = expiry[5:]
         except (KeyError, IndexError):
             continue

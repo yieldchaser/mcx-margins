@@ -4808,7 +4808,7 @@ async function renderOverview() {
                   <span style="font-size:9px;background:var(--surface2);padding:1px 5px;border-radius:3px;border:1px solid var(--border);color:var(--text);">${volCushion >= 0 ? 'Active SPAN' : 'Floor-Bound'}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:var(--text-muted);">Daily Volatility</span><strong>${((c.daily_volatility||0)*100).toFixed(2)}%</strong></div>
-                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:var(--text-muted);">Annualized Volatility</span><strong>${((c.daily_volatility||0)*15.811*100).toFixed(1)}%</strong></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:var(--text-muted);">Annualized Volatility</span><strong>${((c.annualized_volatility != null ? c.annualized_volatility : (c.daily_volatility||0)*15.8745)*100).toFixed(1)}%</strong></div>
                 <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:var(--text-muted);">Floor Threshold Trigger</span><strong>2.35% daily</strong></div>
                 <div style="display:flex;justify-content:space-between;padding:4px 0 0;font-weight:700;"><span style="color:var(--text-muted);">Distance to Floor</span><strong style="${volCushion >= 0 ? 'color:var(--accent-red);' : 'color:var(--accent-cyan);'}">${volCushion >= 0 ? '+' : ''}${volCushion}%</strong></div>
               </div>
@@ -7590,9 +7590,9 @@ async function renderAnalytics() {
         if (cond) {
           document.getElementById('deltaCondSummary').innerHTML =
             `Based on current margin (<strong>${dd.current_margin}%, ${cq}</strong>), historical next-day range: ` +
-            `<span style="color:var(--accent-red);">Bear P10: ${cond.P10 > 0 ? '+' : ''}${cond.P10}%</span> | ` +
+            `<span style="color:var(--accent-green);">Relief P10: ${cond.P10 > 0 ? '+' : ''}${cond.P10}%</span> | ` +
             `<span>Median P50: ${cond.P50 > 0 ? '+' : ''}${cond.P50}%</span> | ` +
-            `<span style="color:var(--accent-green);">Bull P90: ${cond.P90 > 0 ? '+' : ''}${cond.P90}%</span> ` +
+            `<span style="color:var(--accent-red);">Hike P90: ${cond.P90 > 0 ? '+' : ''}${cond.P90}%</span> ` +
             `<span style="font-size:11px;color:var(--text-muted);">(n=${cond.n})</span>`;
           attachTooltips();
         }
@@ -8196,13 +8196,11 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
 
         // Map parameters back to downstream equity curve and drawdown render engines
         lots = finalLots;
-        usedMargin = finalLots * price * LOT_SIZE * mReq;
 
         // Save these for downstream ribbon rendering
         window._rsaeLastCalc = { leff, shield, lotsCeil, lotsRaw, mReq };
     } else {
         lots = 0;
-        usedMargin = 0;
         window._rsaeLastCalc = null;
     }
   } else {
@@ -8297,7 +8295,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     shieldPath.push(dailyShield);
 
     if (mPct != null && lots > 0) {
-      const curMargin = (p * lotSize * mPct * lots) / 100;
+      const curMargin = ((p * lotSize * mPct * lots) / 100) * spreadMarginFactor;
       // Dynamic M2M: available capital = initial capital +/- cumulative P/L settled to date.
       // Math.max(0,...) clamps to zero — a real broker would have squared off before a negative balance.
       const availableCapital = isM2M ? Math.max(0, capital + pl) : capital;
