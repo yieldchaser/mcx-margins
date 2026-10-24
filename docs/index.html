@@ -3734,12 +3734,58 @@ function heatColor(value, mode = 'liquidity') {
 
 initMarketIntelShell();
 
-// Staleness badge
-function setStaleness(dateStr) {
+// Smart EOD Settlement & Margin badge
+function renderEODClearingBadge(marginDateStr, bhavcopyDateStr) {
+  if (marginDateStr) window._eodMarginDate = marginDateStr;
+  if (bhavcopyDateStr) window._eodBhavcopyDate = bhavcopyDateStr;
+
   const label = document.getElementById('lastUpdated');
-  if (label) {
-    label.textContent = 'Clearing Margins: ' + dateStr;
+  if (!label) return;
+
+  const mStr = window._eodMarginDate;
+  const bStr = window._eodBhavcopyDate;
+
+  if (!mStr && !bStr) {
+    label.textContent = 'Loading...';
+    return;
   }
+
+  const formatShort = (s) => {
+    if (!s) return '';
+    const parts = s.split('-');
+    if (parts.length === 3) {
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    }
+    return s;
+  };
+
+  const mShort = formatShort(mStr);
+  const bShort = formatShort(bStr);
+
+  if (mStr && !bStr) {
+    label.innerHTML = `Margin: <span style="color:var(--text); font-weight:600;">${mShort}</span>`;
+    return;
+  }
+  if (!mStr && bStr) {
+    label.innerHTML = `Settle: <span style="color:var(--text); font-weight:600;">${bShort}</span>`;
+    return;
+  }
+
+  if (mStr === bStr) {
+    label.innerHTML = `MCX Settle & Margin: <span style="color:var(--text); font-weight:600;">${mShort}</span>`;
+    label.title = `Official MCX Settlement Prices and Clearinghouse Margins are fully synchronized for ${mShort}.`;
+  } else if (mStr > bStr) {
+    label.innerHTML = `Margin: <span style="color:var(--text); font-weight:600;">${mShort}</span> (Active) · Settle: <span style="color:var(--text); font-weight:600;">${bShort}</span>`;
+    label.title = `Clearing Margins are active for ${mShort} (morning release). Official Bhavcopy settlement prices are from ${bShort} (compiles post-market close).`;
+  } else {
+    label.innerHTML = `Margin: <span style="color:var(--text); font-weight:600;">${mShort}</span> · Settle: <span style="color:var(--text); font-weight:600;">${bShort}</span>`;
+    label.title = `Clearing Margins: ${mShort} · Bhavcopy Settlement: ${bShort}`;
+  }
+}
+
+function setStaleness(dateStr) {
+  renderEODClearingBadge(dateStr, null);
 }
 
 async function renderMarketOverviewContext() {
@@ -3751,6 +3797,9 @@ async function renderMarketOverviewContext() {
     if (meta.status === 'missing') {
       card.style.display = 'none';
       return;
+    }
+    if (meta.latest_date) {
+      renderEODClearingBadge(null, meta.latest_date);
     }
     const [current, signals] = await Promise.all([
       loadMarketJSON('current'), loadMarketJSON('signals')
