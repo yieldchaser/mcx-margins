@@ -482,10 +482,49 @@
     return Array.isArray(b) ? b[5] : (b.volume !== undefined ? b.volume : (b.v !== undefined ? b.v : 0));
   }
 
+  // ── Exchange Market Hours & Status Helpers (MCX Commodity Rules) ──
+  function getMCXSessionStatus(dateObj = new Date()) {
+    const istStr = dateObj.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const istDate = new Date(istStr);
+    const day = istDate.getDay(); // 0 = Sunday, 6 = Saturday
+    const mins = istDate.getHours() * 60 + istDate.getMinutes();
+
+    // Weekend check: MCX is strictly closed on Saturday & Sunday
+    if (day === 0 || day === 6) {
+      return { isOpen: false, state: 'closed', label: 'MCX Closed' };
+    }
+
+    // Weekday hours: 09:00 IST (540m) to 23:30 IST (1410m) / winter 23:55 IST (1435m)
+    if (mins >= 540 && mins <= 1415) {
+      return { isOpen: true, state: 'live', label: 'MCX Live' };
+    }
+
+    return { isOpen: false, state: 'closed', label: 'MCX Closed' };
+  }
+  window.getMCXSessionStatus = getMCXSessionStatus;
+
+  function isValidMCXTradeTimestamp(d) {
+    if (!d || isNaN(d.getTime())) return false;
+    const istStr = d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const istDate = new Date(istStr);
+    const day = istDate.getDay();
+    const mins = istDate.getHours() * 60 + istDate.getMinutes();
+
+    // 1. Must NOT be on a weekend (Saturday or Sunday)
+    if (day === 0 || day === 6) return false;
+
+    // 2. Must fall within MCX trading session hours [08:55 to 23:55 IST]
+    if (mins < 535 || mins > 1435) return false;
+
+    return true;
+  }
+  window.isValidMCXTradeTimestamp = isValidMCXTradeTimestamp;
+
   function updateGlobalLiveTimestamp(lastBar) {
     if (!lastBar) return;
     const priceLabel = document.getElementById('lastPriceUpdated');
     if (!priceLabel) return;
+    const stalenessDot = document.getElementById('stalenessDot');
 
     let epoch = null;
     let closePrice = null;
@@ -507,8 +546,15 @@
       d = new Date(epoch);
     }
 
-    // STRICT FIREWALL: If date is invalid or NaN, NEVER display 'Invalid Date'!
+    // STRICT FIREWALL 1: If date is invalid or NaN, NEVER display 'Invalid Date'!
     if (!d || isNaN(d.getTime())) return;
+
+    // STRICT FIREWALL 2: Exchange Market Hours & Weekend Sanity Check
+    // A market trade timestamp can NEVER occur on Saturday/Sunday or outside 09:00-23:55 IST!
+    // Rejects server pipeline cron execution times (e.g. 02:49 AM).
+    if (!isValidMCXTradeTimestamp(d)) {
+      return;
+    }
 
     const barSec = Math.floor(d.getTime() / 1000);
 
@@ -537,7 +583,21 @@
     const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
     const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
 
-    priceLabel.textContent = `MCX Live: ${dateStr} ${timeStr} IST${formattedPrice}`;
+    // Determine current exchange status (Live vs Closed)
+    const session = getMCXSessionStatus(new Date());
+    if (stalenessDot) {
+      if (session.isOpen) {
+        stalenessDot.style.background = '#3fb950';
+        stalenessDot.style.boxShadow = '0 0 6px #3fb950';
+        stalenessDot.title = 'MCX Market Open · Live Feed Active';
+      } else {
+        stalenessDot.style.background = '#8b949e';
+        stalenessDot.style.boxShadow = 'none';
+        stalenessDot.title = 'MCX Market Closed (Mon-Fri 09:00 - 23:30 IST)';
+      }
+    }
+
+    priceLabel.textContent = `${session.label}: ${dateStr} ${timeStr} IST${formattedPrice}`;
   }
   window.updateGlobalLiveTimestamp = updateGlobalLiveTimestamp;
 
