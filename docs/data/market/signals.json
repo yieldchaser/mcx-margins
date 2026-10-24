@@ -58,7 +58,7 @@
         "volume_lots": 117371,
         "open_interest": 23035
       },
-      "reason": "Liquidity score is 61.1; lower values indicate weaker volume and open-interest support."
+      "reason": "Underlying liquidity score is 61.1/100 (Stress score: 38.9/100); lower liquidity indicates weaker volume and open-interest support."
     },
     {
       "id": "margin_market_divergence",
@@ -129,7 +129,7 @@
         "volume_lots": 138954,
         "open_interest": 30881
       },
-      "reason": "Liquidity score is 50.1; lower values indicate weaker volume and open-interest support."
+      "reason": "Underlying liquidity score is 50.1/100 (Stress score: 49.9/100); lower liquidity indicates weaker volume and open-interest support."
     },
     {
       "id": "margin_market_divergence",

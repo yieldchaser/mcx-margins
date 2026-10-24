@@ -602,7 +602,7 @@ def _build_market_signals(symbol, history_rows, joined_rows):
         liq_score,
         "Trailing 252 observations",
         {"liquidity_score": liq, "volume_lots": latest.get("volume_lots"), "open_interest": latest.get("open_interest")},
-        f"Liquidity score is {liq:.1f}; lower values indicate weaker volume and open-interest support." if liq is not None else "Insufficient liquidity history for scoring.",
+        f"Underlying liquidity score is {liq:.1f}/100 (Stress score: {liq_score}/100); lower liquidity indicates weaker volume and open-interest support." if liq is not None else "Insufficient liquidity history for scoring.",
         "STRESS" if liq_score >= 60 else "NORMAL",
     ))
 
@@ -1720,7 +1720,7 @@ def _export_forecast_bands(fm_series, panic_entries, regime_params):
     # Build forecast bands per expiry from panic_entries
     bands = []
     for entry in panic_entries:
-        pred = entry["predicted_tomorrow"]
+        pred = entry.get("predicted_initial", entry["predicted_tomorrow"])
         dte = entry["dte"]
         # FIX 15: DTE-bucketed sigma — near expiries tighter, far expiries wider
         if dte <= 30:
@@ -1806,13 +1806,26 @@ def _export_model_health(fm_series):
             if abs(p["residual"]) <= 2 * sigma:
                 hits_2s += 1
 
+        # Naive Persistence Benchmark:
+        # Tomorrow's margin is forecast as today's current margin.
+        # Error = |tomorrow - today| = |actual_delta|.
+        naive_errors = [abs(p["actual_delta"]) for p in recent_pairs]
+        naive_mae = sum(naive_errors) / n
+        naive_rmse = math.sqrt(sum(e ** 2 for e in naive_errors) / n)
+        hurdle_advantage_pp = naive_mae - mae
+        hurdle_advantage_pct = (hurdle_advantage_pp / naive_mae * 100) if naive_mae > 0 else 0.0
+
         return {
             "directional_accuracy": round(dir_correct / n * 100, 1),
             "mae": round(mae, 3),
             "rmse": round(rmse, 3),
             "interval_hit_rate_1sigma": round(hits_1s / n * 100, 1),
             "interval_hit_rate_2sigma": round(hits_2s / n * 100, 1),
-            "n": n,
+            "n": int(n),
+            "naive_mae": round(naive_mae, 3),
+            "naive_rmse": round(naive_rmse, 3),
+            "hurdle_advantage_pp": round(hurdle_advantage_pp, 3),
+            "hurdle_advantage_pct": round(hurdle_advantage_pct, 1),
         }
 
     result = {}
@@ -2171,9 +2184,10 @@ def _export_stress_score(cur, fm_series, latest_date):
     """Compute composite 0-100 stress score from margin + vol percentiles."""
     print("  [Item 8] Stress score...")
 
-    # Trailing 5-year data for percentile baselines
-    cutoff_year = int(latest_date[:4]) - 5
-    recent = [r for r in fm_series if r["year"] >= cutoff_year]
+    # Trailing 5-year data for percentile baselines (calendar date based, no year-boundary distortion)
+    from datetime import datetime as _dt, timedelta as _td
+    _cutoff_5y = (_dt.strptime(latest_date, "%Y-%m-%d") - _td(days=int(5 * 365.25))).strftime("%Y-%m-%d")
+    recent = [r for r in fm_series if r["date"] >= _cutoff_5y]
 
     all_margins = sorted([r["initial_margin_pct"] for r in recent])
     all_vols = sorted([r["daily_volatility"] * 100 for r in recent])
@@ -2518,7 +2532,7 @@ def _export_vamb_analytics(cur, fm_series):
             
         # For each leg, trace margin constraints and run VAMB sizing simulation
         margin_lookup = {}
-        for r in fm_series:
+        for r in _load_symbol_margin_history_rows(cur, "NATURALGAS"):
             margin_lookup[(r["date"], r["expiry"])] = r
             
         total_legs_simulated = 0

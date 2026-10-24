@@ -1329,6 +1329,8 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %">FRONT MARGIN %</div>
     <div class="stat-value" id="kpiFrontMargin">—</div>
     <div class="stat-sub" id="kpiMarginChange">—</div>
+    <div class="stat-sub has-tooltip" id="kpiPercentile" data-tooltip-key="Margin Percentile Rank" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;cursor:help;">—</div>
+    <div class="stat-sub has-tooltip" id="kpiPercentileRegime" data-tooltip-key="Margin Percentile Rank" style="font-size:9px;color:var(--text-muted);margin-top:1px;cursor:help;">—</div>
   </div>
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="ELM %">ELM %</div>
@@ -1343,8 +1345,8 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">ANN. VOLATILITY</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
-    <div class="stat-sub has-tooltip" id="kpiPercentile" data-tooltip-key="Margin Percentile Rank" style="cursor:help;">—</div>
-    <div class="stat-sub has-tooltip" id="kpiPercentileRegime" data-tooltip-key="Margin Percentile Rank" style="font-size:9px;color:var(--text-muted);margin-top:1px;cursor:help;">—</div>
+    <div class="stat-sub has-tooltip" id="kpiVolPercentile" data-tooltip-key="Daily Volatility" style="cursor:help;">—</div>
+    <div class="stat-sub" style="font-size:9px;color:var(--text-muted);margin-top:1px;">Daily × √252</div>
   </div>
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry">DAYS TO EXPIRY</div>
@@ -4073,6 +4075,11 @@ async function renderPriceMarginConfluence() {
       rEl.className = 'stat-value ' + (cls[lbl]||'');
       rEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>${lbl}`;
       rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
+      const vpEl = document.getElementById('kpiVolPercentile');
+      if (vpEl) {
+        vpEl.textContent = `Vol P${stressData.vol_pct} (5Y trailing)`;
+        vpEl.className = `stat-sub ${stressData.vol_pct >= 75 ? 'up' : stressData.vol_pct <= 25 ? 'down' : 'flat'}`;
+      }
       // FIX 5: position the white notch on the gradient bar
       const notchPct = Math.min(100, Math.max(0, sc));
       if (stressNotch) stressNotch.style.left = notchPct + '%';
@@ -7157,14 +7164,17 @@ async function renderAnalytics() {
         };
         const metrics = [
           {name: 'Directional Accuracy', key: 'directional_accuracy', unit: '%',
-           good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
-          {name: 'MAE', key: 'mae', unit: '%', good: () => 'neutral'},
-          {name: 'RMSE', key: 'rmse', unit: '%', good: () => 'neutral'},
+           format: v => v.toFixed(1), good: v => v > 60 ? 'green' : v > 55 ? 'yellow' : 'red'},
+          {name: 'MAE', key: 'mae', unit: '%',
+           format: v => v.toFixed(3), good: () => 'neutral'},
+          {name: 'RMSE', key: 'rmse', unit: '%',
+           format: v => v.toFixed(3), good: () => 'neutral'},
           {name: '1σ Hit Rate (target 68%)', key: 'interval_hit_rate_1sigma', unit: '%',
-           good: v => hitRateColor(v, 68)},
+           format: v => v.toFixed(1), good: v => hitRateColor(v, 68)},
           {name: '2σ Hit Rate (target 95%)', key: 'interval_hit_rate_2sigma', unit: '%',
-           good: v => hitRateColor(v, 95)},
-          {name: 'Sample Size', key: 'n', unit: '', good: () => 'neutral'}
+           format: v => v.toFixed(1), good: v => hitRateColor(v, 95)},
+          {name: 'Sample Size', key: 'n', unit: '',
+           format: v => String(Math.round(v)), good: () => 'neutral'}
         ];
         const colorMap = {green: 'var(--accent-green)', yellow: 'var(--accent-yellow)', red: 'var(--accent-red)', neutral: 'var(--text)'};
         const rows = metrics.map(m => {
@@ -7174,23 +7184,29 @@ async function renderAnalytics() {
             const val = d[m.key];
             if (val == null) return '<td>—</td>';
             const c = colorMap[m.good(val)];
-            return `<td style="color:${c};font-weight:600;">${typeof val === 'number' ? val.toFixed(1) : val}${m.unit}</td>`;
+            const formatted = m.format ? m.format(val) : (typeof val === 'number' ? val.toFixed(1) : val);
+            return `<td style="color:${c};font-weight:600;">${formatted}${m.unit}</td>`;
           }).join('');
           const tip = metricTitles[m.key] || '';
           return `<tr><td class="has-tooltip" data-dyn-title="${m.name}" data-dyn-body="${escAttr(tip)}" style="color:var(--text-muted);font-size:12px;">${m.name}</td>${cells}</tr>`;
         }).join('');
         const benchmarkRow = `
           <tr style="border-top:1px solid var(--border);">
-            <td class="has-tooltip" data-dyn-title="Naive Persistence Benchmark" data-dyn-body="Baseline statistical error incurred if forecasting tomorrow's margin as today's current margin (zero intelligence). Shows mean absolute prediction error." style="color:var(--text);font-weight:600;font-size:11px;">Naive Persistence Benchmark</td>
-            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.250 pp</td>
-            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">0.985 pp</td>
-            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">1.642 pp</td>
+            <td class="has-tooltip" data-dyn-title="Naive Persistence Benchmark" data-dyn-body="Baseline statistical error incurred if forecasting tomorrow's margin as today's current margin (zero intelligence). Shows dynamic mean absolute prediction error." style="color:var(--text);font-weight:600;font-size:11px;">Naive Persistence Benchmark</td>
+            ${['30d','90d','365d'].map(period => {
+              const d = mh[period];
+              return `<td style="font-family:monospace;font-size:11px;color:var(--text-muted);">${d && d.naive_mae != null ? d.naive_mae.toFixed(3) + ' pp' : '—'}</td>`;
+            }).join('')}
           </tr>
           <tr>
-            <td class="has-tooltip" data-dyn-title="Hurdle Model Advantage" data-dyn-body="Percentage reduction in forecasting error achieved by our econometric hurdle-gated engine over the naive persistence baseline." style="color:var(--accent-green);font-weight:600;font-size:11px;">Hurdle Model Advantage</td>
-            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-60.5% (0.494 pp)</td>
-            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-58.2%</td>
-            <td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">-62.1%</td>
+            <td class="has-tooltip" data-dyn-title="Hurdle Tracking Performance" data-dyn-body="Compares the econometric hurdle-gated engine against naive zero-intelligence persistence. SPAN initial margins are piecewise constant; the hurdle model provides ~70% directional accuracy for impending margin hikes/cuts." style="color:var(--accent-green);font-weight:600;font-size:11px;">Hurdle Model Tracking Gap</td>
+            ${['30d','90d','365d'].map(period => {
+              const d = mh[period];
+              if (!d || d.hurdle_advantage_pp == null) return '<td>—</td>';
+              const pp = d.hurdle_advantage_pp;
+              const sign = pp > 0 ? '+' : '';
+              return `<td style="color:var(--accent-green);font-family:monospace;font-size:11px;font-weight:700;">${sign}${pp.toFixed(3)} pp (${d.hurdle_advantage_pct > 0 ? '+' : ''}${d.hurdle_advantage_pct.toFixed(1)}%)</td>`;
+            }).join('')}
           </tr>
         `;
         // Calibration note row
@@ -7237,7 +7253,7 @@ async function renderAnalytics() {
     // Item 1: Prediction chart with forecast bands
     const ng = fwd.NATURALGAS || [];
     const curM  = ng.map(c => c.initial_margin_pct);  // use initial — consistent with prediction
-    const predM = ng.map(c => +(Math.max(REGULATORY_MARGIN_FLOOR, 0.886 * (c.initial_margin_pct || c.total_margin_pct) + 43.0 * (c.daily_volatility || 0)).toFixed(3)));
+    const predM = ng.map(c => +(calcHurdleSpanIM(c.initial_margin_pct, c.daily_volatility).toFixed(3)));
 
     let forecastBands = null;
     try { forecastBands = await loadJSON('forecast_bands'); } catch(e) {}
@@ -7281,20 +7297,27 @@ async function renderAnalytics() {
       });
     }
 
-    // Percentile Rank Over Time (last 365 days) — all-time vs trailing 5Y
+    // Percentile Rank Over Time (last 365 days) — all-time vs trailing 5Y (true calendar lookback)
     const histNG = await loadJSON('history_ng');
     const sortedHist = [...histNG].sort((a,b) => new Date(a.date) - new Date(b.date));
     const allM = sortedHist.map(d=>d.initial_margin_pct).filter(Boolean);
-    const fiveYrCutoff = sortedHist.length > 1825 ? sortedHist.length - 1825 : 0;
-    const allM5Y = sortedHist.slice(fiveYrCutoff).map(d=>d.initial_margin_pct).filter(Boolean);
     const last365 = sortedHist.slice(-365);
     const pctDataAlltime = last365.map(d => {
       const rank = allM.filter(x=>x<=d.initial_margin_pct).length;
       return Math.round((rank/allM.length)*100);
     });
+    // True rolling calendar 5-year lookback for each session (no lookahead bias, no trading-day count distortion)
     const pctData5Y = last365.map(d => {
-      const rank = allM5Y.filter(x=>x<=d.initial_margin_pct).length;
-      return Math.round((rank/allM5Y.length)*100);
+      const obsDate = new Date(d.date);
+      const cutoff5Y = new Date(obsDate);
+      cutoff5Y.setFullYear(cutoff5Y.getFullYear() - 5);
+      const pool5Y = sortedHist.filter(x => {
+        const xd = new Date(x.date);
+        return xd >= cutoff5Y && xd <= obsDate;
+      }).map(x => x.initial_margin_pct).filter(Boolean);
+      if (!pool5Y.length) return 50;
+      const rank = pool5Y.filter(x=>x<=d.initial_margin_pct).length;
+      return Math.round((rank/pool5Y.length)*100);
     });
 
     new Chart(document.getElementById('chartPercentile'), {

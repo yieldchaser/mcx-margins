@@ -95,6 +95,10 @@ jobs:
       - name: Export dashboard JSON
         run: python scripts/export_json.py
 
+      - name: Export Options Chain
+        run: python scripts/export_options_chain.py
+        continue-on-error: true
+
       # ── Step 4: alert ───────────────────────────────────────────────────
       # Only alert if genuinely fresh today's data or backfill was found.
       - name: Check margin change and send alert
