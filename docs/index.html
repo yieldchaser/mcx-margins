@@ -2596,6 +2596,119 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
       <div class="chart-container" style="height:320px;"><canvas id="chartMarketFlow"></canvas></div>
     </div>
+    <!-- ── MCX Futures Market Sizing & Turnover Intelligence (2007–2026) ── -->
+    <div class="card mb-4" id="marketTurnoverCard">
+      <!-- Module Header -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div class="module-kicker" style="color:var(--accent-orange);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Exchange Liquidity & Capital Sizing</div>
+          <div class="card-title has-tooltip" data-tooltip-key="Market Turnover & Sizing" id="turnoverCardTitle" style="margin:2px 0 0;">
+            Market Turnover & Structural Growth (2007–Present)
+          </div>
+          <div class="scope-row" style="margin-top:4px;">
+            <span class="scope-chip"><strong>Metric</strong> Traded Notional (INR)</span>
+            <span class="scope-chip"><strong>Coverage</strong> NATURALGAS & NATGASMINI</span>
+            <span class="scope-chip"><strong>Source</strong> MCX Trade Settlement Archive</span>
+          </div>
+        </div>
+        <!-- Global Quick Range Presets -->
+        <div style="display:flex; gap:6px; align-items:center;" id="turnoverGlobalRangeBtns">
+          <button type="button" class="range-btn active-range" data-turnover-range="ALL" id="turnoverBtnAll">All</button>
+          <button type="button" class="range-btn" data-turnover-range="5Y">5Y</button>
+          <button type="button" class="range-btn" data-turnover-range="1Y">1Y</button>
+          <button type="button" class="range-btn" data-turnover-range="YTD">YTD</button>
+        </div>
+      </div>
+
+      <!-- Metric KPI Summary Strip -->
+      <div class="grid-4 mb-4" id="turnoverKpiStrip" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+        <div class="mkt-card market-kpi-card has-tooltip" data-tooltip-key="turnover-kpi-daily">
+          <div class="stat-label">Current Session Turnover</div>
+          <div class="stat-value" id="turnoverKpiDaily" style="color:var(--text); font-size:22px; font-weight:700;">--</div>
+          <div class="stat-sub" id="turnoverKpiDailySub" style="color:var(--text-muted); font-size:11px;">M1: -- · Mini: --</div>
+        </div>
+        <div class="mkt-card market-kpi-card has-tooltip" data-tooltip-key="turnover-kpi-ytd">
+          <div class="stat-label" id="turnoverKpiYtdLabel">YTD Cumulative Turnover</div>
+          <div class="stat-value" id="turnoverKpiYtd" style="color:var(--accent); font-size:22px; font-weight:700;">--</div>
+          <div class="stat-sub" id="turnoverKpiYtdSub" style="color:var(--accent-green); font-size:11px;">Ann. Run Rate: --</div>
+        </div>
+        <div class="mkt-card market-kpi-card has-tooltip" data-tooltip-key="turnover-kpi-ath">
+          <div class="stat-label">All-Time Peak Day Turnover</div>
+          <div class="stat-value" id="turnoverKpiAth" style="color:var(--accent-orange); font-size:22px; font-weight:700;">--</div>
+          <div class="stat-sub" id="turnoverKpiAthDate" style="color:var(--text-muted); font-size:11px;">-- (Energy Shock Peak)</div>
+        </div>
+        <div class="mkt-card market-kpi-card has-tooltip" data-tooltip-key="turnover-kpi-front-share">
+          <div class="stat-label">Front-Month Market Share</div>
+          <div class="stat-value" id="turnoverKpiShare" style="color:var(--accent-purple); font-size:22px; font-weight:700;">--</div>
+          <div class="stat-sub" id="turnoverKpiShareSub" style="color:var(--text-muted); font-size:11px;">M2: -- · Far: --</div>
+        </div>
+      </div>
+
+      <!-- Interactive Dual-Panel Grid -->
+      <div class="grid-2 market-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(460px, 1fr)); gap:16px;">
+        
+        <!-- Panel A (Left): Macro Sizing & Rupee Velocity -->
+        <div class="card" style="margin:0; background:var(--surface2); border:1px solid var(--border); display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div class="stat-label" style="font-size:11px; color:var(--accent-cyan); font-weight:700;">Panel A · Macro Trend</div>
+              <div class="card-title has-tooltip" data-tooltip-key="turnover-macro-trend" style="margin:0; font-size:13px; font-weight:600;">
+                Turnover Size & Multi-Year Expansion
+              </div>
+            </div>
+            <!-- Panel A Mode Selector Buttons -->
+            <div style="display:flex; gap:4px;" id="turnoverTrendModeBtns">
+              <button type="button" class="range-btn active-range" data-trend-mode="annual" style="padding:3px 8px; font-size:11px;">Annual (₹ Lakh Cr)</button>
+              <button type="button" class="range-btn" data-trend-mode="daily" style="padding:3px 8px; font-size:11px;">Daily (₹ Cr) + 30D MA</button>
+            </div>
+          </div>
+          <div class="chart-container" style="height:350px; position:relative;">
+            <canvas id="chartMarketTurnoverTrend"></canvas>
+          </div>
+          <div id="turnoverTrendFootnote" style="margin-top:8px; font-size:10.5px; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>Scale: INR Crores / Lakh Crores</span>
+            <span>Includes Big (1,250) + Mini (250) contracts</span>
+          </div>
+        </div>
+
+        <!-- Panel B (Right): Tenor & Contract Decomposition -->
+        <div class="card" style="margin:0; background:var(--surface2); border:1px solid var(--border); display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div class="stat-label" style="font-size:11px; color:var(--accent-purple); font-weight:700;">Panel B · Breakdown</div>
+              <div class="card-title has-tooltip" data-tooltip-key="turnover-tenor-decomp" style="margin:0; font-size:13px; font-weight:600;">
+                Tenor Distribution & Product Share
+              </div>
+            </div>
+            <!-- Panel B Mode Selector Buttons -->
+            <div style="display:flex; gap:4px;" id="turnoverDecompModeBtns">
+              <button type="button" class="range-btn active-range" data-decomp-mode="tenor" style="padding:3px 8px; font-size:11px;">Tenor Share %</button>
+              <button type="button" class="range-btn" data-decomp-mode="product" style="padding:3px 8px; font-size:11px;">Big vs Mini</button>
+              <button type="button" class="range-btn" data-decomp-mode="seasonality" style="padding:3px 8px; font-size:11px;">Monthly Seasonality</button>
+            </div>
+          </div>
+          <div class="chart-container" style="height:350px; position:relative;">
+            <canvas id="chartMarketTurnoverDecomp"></canvas>
+          </div>
+          <div id="turnoverDecompFootnote" style="margin-top:8px; font-size:10.5px; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>M1 (Front Month) vs M2 (Next Month) vs M3+ (Far)</span>
+            <span>Normalized 100% Notional Value Share</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Explanatory Footnote -->
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(22,27,34,0.6); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--text-muted); line-height:1.5; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div>
+          <strong style="color:var(--text);">Notional Traded Turnover Valuation:</strong> Calculated as <code>Total Lots Traded × Contract Multiplier (1,250 MMBtu for Big / 250 MMBtu for Mini) × Daily Settlement Price ₹</code>. 1 Crore = ₹ 1,00,00,000; 1 Lakh Crore = ₹ 1,00,000 Crores (₹ 1 Trillion INR).
+        </div>
+        <div style="white-space:nowrap; font-family:monospace; color:var(--accent);">
+          Zero Roll-Double-Counting
+        </div>
+      </div>
+    </div>
+
     <div class="grid-2 market-grid mb-4">
       <div class="card">
         <div class="card-title has-tooltip" data-tooltip-key="Realized Volatility & Regime">Realized Volatility & Regime</div>
@@ -3583,6 +3696,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'market') {
       if (window.initDeepChart) setTimeout(window.initDeepChart, 50);
       if (window.initTODSeasonality) setTimeout(window.initTODSeasonality, 60);
+      if (window.initMarketTurnover) setTimeout(window.initMarketTurnover, 70);
     }
     // Refresh canvas layouts for charts unhidden in the active tab
     setTimeout(() => {
@@ -9008,6 +9122,7 @@ async function renderMarketIntel(force = false) {
     // Launch deep TradingView chart and TOD seasonality without blocking
     if (window.initDeepChart) setTimeout(window.initDeepChart, 50);
     if (window.initTODSeasonality) setTimeout(window.initTODSeasonality, 60);
+      if (window.initMarketTurnover) setTimeout(window.initMarketTurnover, 70);
 
     // ── Term Structure Curve Chart ──
     if (marketCurveChart) marketCurveChart.destroy();
@@ -10714,6 +10829,34 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "macro-th-corpus": {
     title: "Ending Corpus",
     body: `The final net portfolio value at the end of the year, which serves as the starting capital for the next year.`
+  },
+  "Market Turnover & Sizing": {
+    title: "Market Turnover & Capital Sizing",
+    body: `Aggregates cumulative notional traded value across all MCX Natural Gas futures contracts (standard 1,250 MMBtu and NATGASMINI 250 MMBtu) from 2007 to the present day. Derived directly from MCX daily trade settlement archives.`
+  },
+  "turnover-kpi-daily": {
+    title: "Current Session Turnover",
+    body: `Total gross notional rupee value traded across all active tenors during the latest completed trading session, with breakdown between Front-Month (M1) and NATGASMINI contracts.`
+  },
+  "turnover-kpi-ytd": {
+    title: "YTD Cumulative Turnover",
+    body: `Total notional turnover traded year-to-date in the current calendar year, alongside the Average Daily Turnover (ADT) and annualized full-year run rate assuming a 252-session trading year.`
+  },
+  "turnover-kpi-ath": {
+    title: "All-Time Peak Turnover Day",
+    body: `The single trading session in MCX Natural Gas history with the highest recorded rupee turnover, detailing the peak date, total value traded, and leading active contracts.`
+  },
+  "turnover-kpi-front-share": {
+    title: "Front-Month Market Share",
+    body: `The percentage of total daily turnover concentrated in the nearest (M1) expiration contract versus the next month (M2) and far expirations (M3+).`
+  },
+  "turnover-macro-trend": {
+    title: "Macro Turnover Trend & Capital Velocity",
+    body: `Visualizes multi-year capital expansion in natural gas futures. Toggle between <strong>Annual Turnover</strong> (₹ Lakh Crores) with Average Daily Turnover (ADT) and <strong>Daily Notional</strong> with a 30-session trailing moving average.`
+  },
+  "turnover-tenor-decomp": {
+    title: "Tenor & Contract Decomposition",
+    body: `Inspect liquidity distribution across product structures. Switch between <strong>Tenor Share %</strong> (M1 vs M2 vs Far vs Mini), <strong>Big vs Mini</strong> absolute rupee turnover, and <strong>Monthly Seasonality</strong> across the 20-year history.`
   }
 };
 
@@ -11504,6 +11647,517 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && active < allTabBtns.length - 1) allTabBtns[active+1].click();
   if (e.key === 'ArrowLeft'  && active > 0) allTabBtns[active-1].click();
 });
+
+// ── MCX Futures Market Sizing & Turnover Intelligence Module ──
+(function() {
+  let turnoverData = null;
+  let chartTurnoverTrend = null;
+  let chartTurnoverDecomp = null;
+  let turnoverRange = 'ALL';
+  let trendMode = 'annual';
+  let decompMode = 'tenor';
+
+  function fmtInrCr(val) {
+    if (val == null || isNaN(val)) return '--';
+    return Number(val).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+  }
+
+  function fmtInrLakhCr(val) {
+    if (val == null || isNaN(val)) return '--';
+    return Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function updateKpiCards(data) {
+    if (!data || !data.kpis) return;
+    const k = data.kpis;
+    const cur = k.current_session || {};
+    const ytd = k.ytd_current || {};
+    const ath = k.ath_day || {};
+
+    const elTitle = document.getElementById('turnoverCardTitle');
+    if (elTitle && data.meta && data.meta.date_range) {
+      const fromY = data.meta.date_range.from ? data.meta.date_range.from.slice(0, 4) : '2007';
+      const toY = data.meta.date_range.to ? data.meta.date_range.to.slice(0, 4) : '';
+      elTitle.textContent = `Market Turnover & Structural Growth (${fromY}–${toY})`;
+    }
+
+    const btnAll = document.getElementById('turnoverBtnAll');
+    if (btnAll && data.meta && data.meta.date_range) {
+      const fromY = data.meta.date_range.from ? data.meta.date_range.from.slice(0, 4) : '2007';
+      const toY = data.meta.date_range.to ? data.meta.date_range.to.slice(0, 4) : '';
+      btnAll.textContent = `All (${fromY}–${toY})`;
+    }
+
+    const elDaily = document.getElementById('turnoverKpiDaily');
+    const elDailySub = document.getElementById('turnoverKpiDailySub');
+    if (elDaily) elDaily.textContent = `₹ ${fmtInrCr(cur.turnover_cr)} Cr`;
+    if (elDailySub) elDailySub.textContent = `M1: ₹${fmtInrCr(cur.front_cr)} Cr (${cur.front_share_pct || 0}%) · Mini: ₹${fmtInrCr(cur.mini_cr)} Cr (${cur.mini_share_pct || 0}%)`;
+
+    const elYtdLabel = document.getElementById('turnoverKpiYtdLabel');
+    if (elYtdLabel) elYtdLabel.textContent = `${ytd.year || ''} YTD Cumulative Turnover`;
+
+    const elYtd = document.getElementById('turnoverKpiYtd');
+    const elYtdSub = document.getElementById('turnoverKpiYtdSub');
+    if (elYtd) elYtd.textContent = `₹ ${fmtInrLakhCr(ytd.turnover_lakh_cr)} Lakh Cr`;
+    if (elYtdSub) elYtdSub.textContent = `ADT: ₹${fmtInrCr(ytd.adt_cr)} Cr/d · Ann: ₹${fmtInrLakhCr(ytd.annualized_lakh_cr)}L Cr`;
+
+    const elAth = document.getElementById('turnoverKpiAth');
+    const elAthDate = document.getElementById('turnoverKpiAthDate');
+    if (elAth) elAth.textContent = `₹ ${fmtInrCr(ath.turnover_cr)} Cr`;
+    if (elAthDate) elAthDate.textContent = `${ath.date || '--'} (${Number(ath.volume_lots || 0).toLocaleString('en-IN')} lots)`;
+
+    const elShare = document.getElementById('turnoverKpiShare');
+    const elShareSub = document.getElementById('turnoverKpiShareSub');
+    if (elShare) elShare.textContent = `${cur.front_share_pct || 0}%`;
+    if (elShareSub) elShareSub.textContent = `M2: ₹${fmtInrCr(cur.next_cr)} Cr · Far: ₹${fmtInrCr(cur.far_cr)} Cr`;
+  }
+
+  function filterYearlyData(yearlyList, range) {
+    if (!yearlyList || !yearlyList.length) return [];
+    if (range === 'ALL') return yearlyList;
+    if (range === '5Y') return yearlyList.slice(-5);
+    if (range === '1Y') return yearlyList.slice(-2);
+    if (range === 'YTD') return yearlyList.filter(y => y.is_ytd);
+    return yearlyList;
+  }
+
+  function filterDailyData(dailyList, range) {
+    if (!dailyList || !dailyList.length) return [];
+    if (range === 'ALL') return dailyList;
+    const latestDateStr = dailyList[dailyList.length - 1][0];
+    if (range === 'YTD') {
+      const curYear = latestDateStr.slice(0, 4);
+      return dailyList.filter(row => row[0].startsWith(curYear));
+    }
+    const parts = latestDateStr.split('-').map(Number);
+    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+    if (range === '1Y') {
+      d.setUTCFullYear(d.getUTCFullYear() - 1);
+    } else if (range === '5Y') {
+      d.setUTCFullYear(d.getUTCFullYear() - 5);
+    }
+    const cutoffStr = d.toISOString().slice(0, 10);
+    return dailyList.filter(row => row[0] >= cutoffStr);
+  }
+
+  function renderTrendChart() {
+    const canvas = document.getElementById('chartMarketTurnoverTrend');
+    if (!canvas || !turnoverData) return;
+    if (chartTurnoverTrend) {
+      chartTurnoverTrend.destroy();
+      chartTurnoverTrend = null;
+    }
+
+    const fnTrend = document.getElementById('turnoverTrendFootnote');
+    if (fnTrend) {
+      if (trendMode === 'annual') {
+        fnTrend.innerHTML = '<span>Scale: ₹ Lakh Crores (bars) & ₹ Crores/day (ADT line)</span><span>Includes Big (1,250) + Mini (250) contracts</span>';
+      } else {
+        fnTrend.innerHTML = '<span>Scale: Daily Notional ₹ Crores (fill) & 30-Day Moving Average (line)</span><span>Includes Big (1,250) + Mini (250) contracts</span>';
+      }
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    if (trendMode === 'annual') {
+      const yearly = filterYearlyData(turnoverData.yearly || [], turnoverRange);
+      const labels = yearly.map(y => y.year + (y.is_ytd ? ' (YTD)' : ''));
+      const toLakhCr = yearly.map(y => y.turnover_lakh_cr);
+      const adtCr = yearly.map(y => y.adt_cr);
+
+      chartTurnoverTrend = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Annual Turnover (₹ Lakh Cr)',
+              data: toLakhCr,
+              backgroundColor: yearly.map(y => y.is_ytd ? 'rgba(57, 197, 187, 0.7)' : 'rgba(56, 139, 253, 0.75)'),
+              borderColor: yearly.map(y => y.is_ytd ? '#39c5bb' : '#388bfd'),
+              borderWidth: 1,
+              borderRadius: 3,
+              yAxisID: 'yLakh'
+            },
+            {
+              label: 'Avg Daily Turnover (₹ Cr)',
+              data: adtCr,
+              type: 'line',
+              borderColor: '#3fb950',
+              backgroundColor: '#3fb950',
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              tension: 0.25,
+              yAxisID: 'yAdt'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#f0f6fc',
+              bodyColor: '#c9d1d9',
+              callbacks: {
+                label: function(ctx) {
+                  if (ctx.datasetIndex === 0) {
+                    return `Turnover: ₹ ${Number(ctx.raw).toFixed(2)} Lakh Cr`;
+                  }
+                  return `ADT: ₹ ${Number(ctx.raw).toLocaleString('en-IN', { maximumFractionDigits: 1 })} Cr/day`;
+                },
+                afterBody: function(items) {
+                  const idx = items[0]?.dataIndex;
+                  if (idx == null) return [];
+                  const y = yearly[idx];
+                  if (!y) return [];
+                  const lines = [
+                    `Total Lots: ${Number(y.total_lots).toLocaleString('en-IN')}`,
+                    `Trading Days: ${y.trading_days}`
+                  ];
+                  if (y.mini_share_pct > 0) lines.push(`Mini Share: ${y.mini_share_pct}%`);
+                  if (y.peak_day && y.peak_day.date) lines.push(`Peak Day: ${y.peak_day.date} (₹${Number(y.peak_day.turnover_cr).toLocaleString('en-IN')} Cr)`);
+                  return lines;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+            yLakh: {
+              position: 'left',
+              title: { display: true, text: 'Annual Turnover (₹ Lakh Cr)' },
+              ticks: { callback: v => `₹ ${v}L Cr` }
+            },
+            yAdt: {
+              position: 'right',
+              title: { display: true, text: 'ADT (₹ Cr)' },
+              grid: { drawOnChartArea: false },
+              ticks: { callback: v => `₹ ${v} Cr` }
+            }
+          }
+        }
+      });
+    } else {
+      // Daily mode
+      const filtered = filterDailyData(turnoverData.daily || [], turnoverRange);
+      const labels = filtered.map(row => row[0]);
+      const dailyCr = filtered.map(row => row[1]);
+      const ma30Cr = filtered.map(row => row[2]);
+
+      chartTurnoverTrend = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Daily Turnover (₹ Cr)',
+              data: dailyCr,
+              borderColor: 'rgba(56, 139, 253, 0.4)',
+              backgroundColor: 'rgba(56, 139, 253, 0.1)',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: true
+            },
+            {
+              label: '30-Day Moving Avg (₹ Cr)',
+              data: ma30Cr,
+              borderColor: '#d29922',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#f0f6fc',
+              bodyColor: '#c9d1d9',
+              callbacks: {
+                label: function(ctx) {
+                  return `${ctx.dataset.label}: ₹ ${Number(ctx.raw).toLocaleString('en-IN', { maximumFractionDigits: 1 })} Cr`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 12, font: { size: 10 } }, grid: { display: false } },
+            y: {
+              title: { display: true, text: 'Turnover (₹ Crores)' },
+              ticks: { callback: v => `₹ ${v} Cr` }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  function renderDecompChart() {
+    const canvas = document.getElementById('chartMarketTurnoverDecomp');
+    if (!canvas || !turnoverData) return;
+    if (chartTurnoverDecomp) {
+      chartTurnoverDecomp.destroy();
+      chartTurnoverDecomp = null;
+    }
+
+    const fnDecomp = document.getElementById('turnoverDecompFootnote');
+    if (fnDecomp) {
+      if (decompMode === 'tenor') {
+        fnDecomp.innerHTML = '<span>M1 (Front Month) vs M2 (Next Month) vs M3+ (Far) vs Mini</span><span>Normalized 100% Notional Value Share</span>';
+      } else if (decompMode === 'product') {
+        fnDecomp.innerHTML = '<span>NATURALGAS (Big 1,250 mmBtu) vs NATGASMINI (250 mmBtu)</span><span>Absolute Traded Turnover (₹ Crores)</span>';
+      } else if (decompMode === 'seasonality') {
+        fnDecomp.innerHTML = '<span>Aggregate Historical ADT & Volume Share by Calendar Month</span><span>20-Year Full Dataset (2007–Present)</span>';
+      }
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    if (decompMode === 'tenor') {
+      const yearly = filterYearlyData(turnoverData.yearly || [], turnoverRange);
+      const labels = yearly.map(y => y.year + (y.is_ytd ? ' (YTD)' : ''));
+      const frontShares = yearly.map(y => y.front_share_pct);
+      const nextShares = yearly.map(y => y.next_share_pct);
+      const farShares = yearly.map(y => y.far_share_pct);
+      const miniShares = yearly.map(y => y.mini_share_pct);
+
+      chartTurnoverDecomp = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Front Month (M1) %', data: frontShares, backgroundColor: 'rgba(56, 139, 253, 0.85)', stack: 'stack0' },
+            { label: 'Next Month (M2) %', data: nextShares, backgroundColor: 'rgba(163, 113, 247, 0.85)', stack: 'stack0' },
+            { label: 'Far Expiries (M3+) %', data: farShares, backgroundColor: 'rgba(251, 143, 68, 0.85)', stack: 'stack0' },
+            { label: 'NATGASMINI %', data: miniShares, backgroundColor: 'rgba(57, 197, 187, 0.85)', stack: 'stack0' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10.5 } } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#f0f6fc',
+              bodyColor: '#c9d1d9',
+              callbacks: {
+                label: function(ctx) {
+                  return `${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+            y: {
+              stacked: true,
+              max: 100,
+              title: { display: true, text: 'Share of Traded Value (%)' },
+              ticks: { callback: v => `${v}%` }
+            }
+          }
+        }
+      });
+    } else if (decompMode === 'product') {
+      const yearly = filterYearlyData(turnoverData.yearly || [], turnoverRange);
+      const labels = yearly.map(y => y.year + (y.is_ytd ? ' (YTD)' : ''));
+      const bigCr = yearly.map(y => Number((y.front_cr + y.next_cr + y.far_cr).toFixed(1)));
+      const miniCr = yearly.map(y => y.mini_cr);
+
+      chartTurnoverDecomp = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'NATURALGAS (Big 1,250)', data: bigCr, backgroundColor: 'rgba(56, 139, 253, 0.8)', stack: 's0' },
+            { label: 'NATGASMINI (Mini 250)', data: miniCr, backgroundColor: 'rgba(57, 197, 187, 0.85)', stack: 's0' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#f0f6fc',
+              bodyColor: '#c9d1d9',
+              callbacks: {
+                label: function(ctx) {
+                  return `${ctx.dataset.label}: ₹ ${Number(ctx.raw).toLocaleString('en-IN', { maximumFractionDigits: 1 })} Cr`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+            y: {
+              stacked: true,
+              title: { display: true, text: 'Turnover (₹ Crores)' },
+              ticks: { callback: v => `₹ ${v} Cr` }
+            }
+          }
+        }
+      });
+    } else if (decompMode === 'seasonality') {
+      const seasons = turnoverData.monthly_seasonality || [];
+      const labels = seasons.map(s => s.month_name);
+      const adtList = seasons.map(s => s.adt_cr);
+      const shareList = seasons.map(s => s.share_pct);
+
+      chartTurnoverDecomp = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Seasonal ADT (₹ Cr/day)',
+              data: adtList,
+              backgroundColor: seasons.map(s => (s.month_num >= 10 || s.month_num === 1) ? 'rgba(251, 143, 68, 0.8)' : 'rgba(56, 139, 253, 0.75)'),
+              borderColor: seasons.map(s => (s.month_num >= 10 || s.month_num === 1) ? '#fb8f44' : '#388bfd'),
+              borderWidth: 1,
+              borderRadius: 3,
+              yAxisID: 'yAdt'
+            },
+            {
+              label: 'Total Volume Share (%)',
+              data: shareList,
+              type: 'line',
+              borderColor: '#3fb950',
+              backgroundColor: '#3fb950',
+              borderWidth: 2,
+              pointRadius: 4,
+              yAxisID: 'yShare'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#f0f6fc',
+              bodyColor: '#c9d1d9',
+              callbacks: {
+                label: function(ctx) {
+                  if (ctx.datasetIndex === 0) {
+                    return `Seasonal ADT: ₹ ${Number(ctx.raw).toLocaleString('en-IN', { maximumFractionDigits: 1 })} Cr/day`;
+                  }
+                  return `Share of Historical Volume: ${Number(ctx.raw).toFixed(2)}%`;
+                },
+                afterBody: function(items) {
+                  const idx = items[0]?.dataIndex;
+                  const s = seasons[idx];
+                  if (!s) return [];
+                  return [
+                    `Historical Sessions: ${s.trading_days}`,
+                    `Avg Daily Volume: ${Number(s.avg_daily_volume_lots).toLocaleString('en-IN')} lots`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+            yAdt: {
+              position: 'left',
+              title: { display: true, text: 'Average Daily Turnover (₹ Cr)' },
+              ticks: { callback: v => `₹ ${v} Cr` }
+            },
+            yShare: {
+              position: 'right',
+              title: { display: true, text: 'Share of Historical Traded Value (%)' },
+              grid: { drawOnChartArea: false },
+              ticks: { callback: v => `${v}%` }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  function setupEventListeners() {
+    // Global range filter buttons
+    const rangeBtns = document.querySelectorAll('#turnoverGlobalRangeBtns [data-turnover-range]');
+    rangeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        rangeBtns.forEach(b => b.classList.remove('active-range'));
+        btn.classList.add('active-range');
+        turnoverRange = btn.dataset.turnoverRange;
+        renderTrendChart();
+        renderDecompChart();
+      });
+    });
+
+    // Panel A mode buttons
+    const trendBtns = document.querySelectorAll('#turnoverTrendModeBtns [data-trend-mode]');
+    trendBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        trendBtns.forEach(b => b.classList.remove('active-range'));
+        btn.classList.add('active-range');
+        trendMode = btn.dataset.trendMode;
+        renderTrendChart();
+      });
+    });
+
+    // Panel B mode buttons
+    const decompBtns = document.querySelectorAll('#turnoverDecompModeBtns [data-decomp-mode]');
+    decompBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        decompBtns.forEach(b => b.classList.remove('active-range'));
+        btn.classList.add('active-range');
+        decompMode = btn.dataset.decompMode;
+        renderDecompChart();
+      });
+    });
+  }
+
+  window.initMarketTurnover = async function() {
+    if (!turnoverData) {
+      try {
+        const res = await fetch('data/market/turnover_analytics.json?v=' + Date.now());
+        if (!res.ok) return;
+        turnoverData = await res.json();
+      } catch (e) {
+        console.warn('Failed to load turnover analytics:', e);
+        return;
+      }
+      setupEventListeners();
+    }
+
+    updateKpiCards(turnoverData);
+    renderTrendChart();
+    renderDecompChart();
+  };
+})();
+
 </script>
 
 

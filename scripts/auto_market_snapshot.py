@@ -406,6 +406,7 @@ def run_snapshot_cycle():
         scripts_to_run.append(os.path.join(REPO_DIR, "scripts", "export_tod_seasonality.py"))
 
     scripts_to_run.extend([
+        os.path.join(REPO_DIR, "scripts", "export_turnover.py"),
         os.path.join(REPO_DIR, "scripts", "export_options_chain.py"),
         os.path.join(REPO_DIR, "scripts", "export_intraday_rollups.py")
     ])
