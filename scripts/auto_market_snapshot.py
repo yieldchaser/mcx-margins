@@ -134,7 +134,7 @@ def resolve_active_contracts(fyers_client, now_dt):
         sym_mini = f"MCX:NATGASMINI{exp_code}FUT"
         candidates.append((y, m_idx + 1, exp_code, sym_ng, sym_mini))
         
-    is_roll = (now_dt.day >= 26)
+    is_roll = False
     try:
         q = fyers_client.quotes({"symbols": f"{candidates[0][3]},{candidates[1][3]}"})
         if q.get("s") == "ok":
@@ -148,15 +148,20 @@ def resolve_active_contracts(fyers_client, now_dt):
             vol0 = v0.get("volume", 0) or 0
             vol1 = v1.get("volume", 0) or 0
             lp0 = v0.get("lp", 0) or 0
-            # If front candidate has zero volume/quote past the 18th (e.g. early expiry), or next contract has overtaken volume
-            if now_dt.day >= 18 and (vol0 == 0 or lp0 <= 0):
+            # If front candidate has zero volume/quote past the 22nd (e.g. expired or inactive), or next contract has overtaken volume
+            if now_dt.day >= 22 and (vol0 == 0 or lp0 <= 0):
                 is_roll = True
-            elif vol1 > 0 and vol1 > vol0 and now_dt.day >= 18:
+            elif vol1 > 0 and vol1 > vol0 and now_dt.day >= 20:
                 is_roll = True
+            else:
+                is_roll = False
         elif q.get("code") in (-300, 400, 404):
             is_roll = True
+        else:
+            # Fallback if quotes API unavailable: roll on or after the 27th
+            is_roll = (now_dt.day >= 27)
     except Exception:
-        pass
+        is_roll = (now_dt.day >= 27)
         
     front_idx = 1 if is_roll else 0
     vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")

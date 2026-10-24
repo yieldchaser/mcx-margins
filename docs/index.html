@@ -4170,6 +4170,7 @@ async function renderOverview() {
         sym === 'NATURALGAS' ? 'NaturalGas' : 'NatGasMini';
       const seen = new Set();
       const deduped = rows.filter(c => {
+        if (c.dte != null && c.dte < 0) return false;
         if (seen.has(c.expiry)) return false;
         seen.add(c.expiry);
         return true;

@@ -100,8 +100,10 @@ if exp_code and len(exp_code) == 5:
     EXPIRY_EPOCH = int(expiry_dt.timestamp())
     EXPIRY_DATE_STR = expiry_dt.strftime("%Y-%m-%d")
 else:
-    EXPIRY_EPOCH = int(datetime(2026, 10, 23, 18, 0, 0, tzinfo=timezone.utc).timestamp())
-    EXPIRY_DATE_STR = "2026-10-23"
+    now_utc = datetime.now(timezone.utc)
+    fallback_dt = now_utc.replace(hour=18, minute=0, second=0, microsecond=0)
+    EXPIRY_EPOCH = int(fallback_dt.timestamp())
+    EXPIRY_DATE_STR = fallback_dt.strftime("%Y-%m-%d")
 
 print("=" * 80)
 print("EXTRACTING BLACK-76 NATURAL GAS OPTIONS CHAIN & GREEKS")
