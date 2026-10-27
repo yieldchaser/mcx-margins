@@ -2666,6 +2666,16 @@ def main():
                     price_lookup[key] = pr["close"]
 
     result = {"as_of": latest_date, "NATURALGAS": [], "NATGASMINI": []}
+    
+    # Pre-fetch previous trading day's margins for contract-wise day-over-day tracking
+    cur.execute("SELECT MAX(date) FROM margins WHERE date < ?", (latest_date,))
+    prev_d_row = cur.fetchone()
+    prev_date = prev_d_row[0] if prev_d_row else None
+    prev_margin_lookup = {}
+    if prev_date:
+        for p_row in _load_margin_rows(cur, "date = ?", (prev_date,)):
+            prev_margin_lookup[(p_row["symbol"], p_row["expiry"])] = p_row
+
     for row in _load_margin_rows(cur, "date = ?", (latest_date,), "symbol ASC, expiry ASC"):
         sym = row["symbol"]
         expiry = row["expiry"]
@@ -2707,6 +2717,11 @@ def main():
             max_100 = math.floor((10000000 * 2.5) / (price * lot_size))
             live_vamb_lots_100l = max(0, min(lots_100, max_100))
 
+        prev_m = prev_margin_lookup.get((sym, expiry))
+        prev_tot = prev_m["total_margin_pct"] if prev_m else None
+        prev_init = prev_m["initial_margin_pct"] if prev_m else None
+        prev_vol = prev_m["daily_volatility"] if prev_m else None
+
         entry = {
             "expiry": expiry,
             "dte": dte,
@@ -2714,6 +2729,9 @@ def main():
             "elm_pct": row["elm_pct"],
             "tender_margin_pct": row["tender_margin_pct"],
             "total_margin_pct": row["total_margin_pct"],
+            "prev_initial_margin_pct": prev_init,
+            "prev_total_margin_pct": prev_tot,
+            "prev_daily_volatility": prev_vol,
             "additional_long_margin_pct": row["additional_long_margin_pct"],
             "additional_short_margin_pct": row["additional_short_margin_pct"],
             "special_long_margin_pct": row["special_long_margin_pct"],

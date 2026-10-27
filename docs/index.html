@@ -4155,31 +4155,58 @@ async function renderPriceMarginConfluence() {
     document.getElementById('kpiAnnVol').textContent = front.annualized_volatility != null ? (front.annualized_volatility * 100).toFixed(1) + '%' : '—';
     document.getElementById('kpiDTE').textContent = front.dte != null ? front.dte + 'd' : '—';
 
-    // Day-over-day change
-    if (histNG && histNG.length >= 2) {
+    // Day-over-day change (contract-isolated to eliminate rollover discontinuity)
+    let totChange = 0;
+    let spanChange = 0;
+    let vChange = 0;
+    let hasDelta = false;
+    let isRollover = false;
+
+    if (front.prev_total_margin_pct != null) {
+      totChange = front.total_margin_pct - front.prev_total_margin_pct;
+      spanChange = (front.initial_margin_pct ?? 0) - (front.prev_initial_margin_pct ?? 0);
+      vChange = ((front.daily_volatility ?? 0) - (front.prev_daily_volatility ?? 0)) * 100;
+      hasDelta = true;
+    } else if (histNG && histNG.length >= 2) {
       const sorted = [...histNG].sort((a,b) => new Date(b.date) - new Date(a.date));
-      const totToday = sorted[0]?.total_margin_pct ?? sorted[0]?.initial_margin_pct ?? 0;
-      const totPrev = sorted[1]?.total_margin_pct ?? sorted[1]?.initial_margin_pct ?? 0;
-      const totChange = totToday - totPrev;
-      const spanChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
-      const vChange = ((sorted[0]?.daily_volatility ?? 0) - (sorted[1]?.daily_volatility ?? 0)) * 100;
-      const mEl = document.getElementById('kpiMarginChange');
-      const vEl = document.getElementById('kpiVolChange');
+      if (sorted[0]?.expiry === sorted[1]?.expiry) {
+        totChange = (sorted[0]?.total_margin_pct ?? sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.total_margin_pct ?? sorted[1]?.initial_margin_pct ?? 0);
+        spanChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
+        vChange = ((sorted[0]?.daily_volatility ?? 0) - (sorted[1]?.daily_volatility ?? 0)) * 100;
+        hasDelta = true;
+      } else {
+        isRollover = true;
+      }
+    }
 
-      const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
-      const tenderInfo = (front.tender_margin_pct > 0)
-        ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">SPAN ${front.initial_margin_pct.toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%</div>`
-        : '';
+    const mEl = document.getElementById('kpiMarginChange');
+    const vEl = document.getElementById('kpiVolChange');
 
-      if (Math.abs(totChange) < 0.01) { mEl.innerHTML = `→ flat vs prev${tenderInfo}`; mEl.className = 'stat-sub flat'; }
-      else if (totChange > 0) { mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev${tenderInfo}`; mEl.className = 'stat-sub up'; }
-      else { mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev${tenderInfo}`; mEl.className = 'stat-sub down'; }
+    const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
+    const tenderInfo = (front.tender_margin_pct > 0)
+      ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">SPAN ${front.initial_margin_pct.toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%</div>`
+      : '';
 
-      if (Math.abs(vChange) < 0.005) { vEl.textContent = '→ flat'; vEl.className = 'stat-sub flat'; }
-      else if (vChange > 0) { vEl.textContent = `▲ +${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub up'; }
-      else { vEl.textContent = `▼ ${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub down'; }
+    if (isRollover) {
+      mEl.innerHTML = `→ rollover roll${tenderInfo}`;
+      mEl.className = 'stat-sub flat';
+    } else if (!hasDelta || Math.abs(totChange) < 0.01) {
+      mEl.innerHTML = `→ flat vs prev${tenderInfo}`;
+      mEl.className = 'stat-sub flat';
+    } else if (totChange > 0) {
+      mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev${tenderInfo}`;
+      mEl.className = 'stat-sub up';
+    } else {
+      mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev${tenderInfo}`;
+      mEl.className = 'stat-sub down';
+    }
 
-      // Historical percentile rank
+    if (!hasDelta || Math.abs(vChange) < 0.005) { vEl.textContent = '→ flat'; vEl.className = 'stat-sub flat'; }
+    else if (vChange > 0) { vEl.textContent = `▲ +${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub up'; }
+    else { vEl.textContent = `▼ ${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub down'; }
+
+    // Historical percentile rank
+    if (histNG && histNG.length > 0) {
       const allM = histNG.map(d => d.initial_margin_pct).filter(Boolean).sort((a,b) => a-b);
       const pct = Math.round((allM.filter(v => v <= front.initial_margin_pct).length / allM.length) * 100);
       const pEl = document.getElementById('kpiPercentile');
