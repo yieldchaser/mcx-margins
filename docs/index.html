@@ -4162,9 +4162,13 @@ async function renderPriceMarginConfluence() {
       const mEl = document.getElementById('kpiMarginChange');
       const vEl = document.getElementById('kpiVolChange');
 
-      if (Math.abs(mChange) < 0.01) { mEl.textContent = '→ flat'; mEl.className = 'stat-sub flat'; }
-      else if (mChange > 0) { mEl.textContent = `▲ +${mChange.toFixed(2)}% vs prev`; mEl.className = 'stat-sub up'; }
-      else { mEl.textContent = `▼ ${mChange.toFixed(2)}% vs prev`; mEl.className = 'stat-sub down'; }
+      const tenderTag = (front.tender_margin_pct > 0) 
+        ? `<div style="font-size:9.5px;color:var(--accent-red);font-weight:600;margin-top:2px;">Gross ${front.total_margin_pct.toFixed(2)}% (+${front.tender_margin_pct.toFixed(0)}% tender)</div>` 
+        : '';
+      const spanSuffix = front.tender_margin_pct > 0 ? ' SPAN' : '';
+      if (Math.abs(mChange) < 0.01) { mEl.innerHTML = `→ flat${spanSuffix}${tenderTag}`; mEl.className = 'stat-sub flat'; }
+      else if (mChange > 0) { mEl.innerHTML = `▲ +${mChange.toFixed(2)}%${spanSuffix} vs prev${tenderTag}`; mEl.className = 'stat-sub up'; }
+      else { mEl.innerHTML = `▼ ${mChange.toFixed(2)}%${spanSuffix} vs prev${tenderTag}`; mEl.className = 'stat-sub down'; }
 
       if (Math.abs(vChange) < 0.005) { vEl.textContent = '→ flat'; vEl.className = 'stat-sub flat'; }
       else if (vChange > 0) { vEl.textContent = `▲ +${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub up'; }
@@ -10663,8 +10667,8 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`
   },
   "Front Margin %": {
-    title: "Front Margin %",
-    body: `The Initial Margin % for the nearest expiring contract.<br><br>This is the primary bellwether for market margin conditions, as front-month contracts experience the highest volatility and tender pressure.`
+    title: "Front Margin % (SPAN Initial)",
+    body: `The SPAN Initial Margin % for the nearest active contract.<br><br>• <strong>SPAN Initial Margin:</strong> Core clearinghouse volatility requirement (MCXCCL minimum 13.00% floor).<br>• <strong>Tender Period:</strong> During the 5 trading days prior to expiry, MCX adds a progressive 5% per day tender margin (+25.00% max), bringing Gross Margin to SPAN + Tender.<br><br>Day-over-day change measures core SPAN volatility margin shift.`
   },
   "ELM %": {
     title: "Extreme Loss Margin %",
