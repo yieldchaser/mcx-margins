@@ -4184,7 +4184,7 @@ async function updateStatsBar(sym = currentStatsSym) {
     let isRollover = false;
 
     if (front.prev_total_margin_pct != null) {
-      totChange = front.total_margin_pct - front.prev_total_margin_pct;
+      totChange = totalMargin - front.prev_total_margin_pct;
       spanChange = (front.initial_margin_pct ?? 0) - (front.prev_initial_margin_pct ?? 0);
       vChange = ((front.daily_volatility ?? 0) - (front.prev_daily_volatility ?? 0)) * 100;
       hasDelta = true;
@@ -4211,14 +4211,15 @@ async function updateStatsBar(sym = currentStatsSym) {
       mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev`;
       mEl.className = 'stat-sub up';
     } else {
-      mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev`;
+      mEl.innerHTML = `▼ ${Math.abs(totChange).toFixed(2)}% vs prev`;
       mEl.className = 'stat-sub down';
     }
 
     const mSubEl = document.getElementById('kpiMarginSub');
     if (mSubEl) {
       if ((front.tender_margin_pct ?? 0) > 0) {
-        const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
+        const spanAbs = Math.abs(spanChange);
+        const spanText = spanAbs < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanAbs.toFixed(2)}%`);
         mSubEl.innerHTML = `SPAN ${(front.initial_margin_pct ?? 0).toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%`;
       } else {
         mSubEl.textContent = 'SPAN Initial Margin only';
@@ -4260,10 +4261,15 @@ async function updateStatsBar(sym = currentStatsSym) {
       pEl.textContent = `₹${mkt.close.toFixed(2)}`;
       if (mkt.return_pct != null) {
         const rp = mkt.return_pct;
-        const arrow = rp > 0.01 ? '▲' : rp < -0.01 ? '▼' : '→';
-        const sign = rp > 0 ? '+' : '';
+        const isFlat = Math.abs(rp) <= 0.01;
         const col = rp > 0.01 ? '#22c55e' : rp < -0.01 ? '#ef4444' : 'var(--text-muted)';
-        prRetEl.textContent = `${arrow} ${sign}${rp.toFixed(2)}% vs prev`;
+        if (isFlat) {
+          prRetEl.textContent = '→ flat vs prev';
+        } else if (rp > 0) {
+          prRetEl.textContent = `▲ +${rp.toFixed(2)}% vs prev`;
+        } else {
+          prRetEl.textContent = `▼ ${Math.abs(rp).toFixed(2)}% vs prev`;
+        }
         prRetEl.className = 'stat-sub';
         prRetEl.style.color = col;
       } else {
@@ -4308,7 +4314,10 @@ async function updateStatsBar(sym = currentStatsSym) {
       if (totalMargin > 0 && front.daily_volatility > 0) {
         const cover = (totalMargin / (front.daily_volatility * 100)).toFixed(1);
         const coverNum = parseFloat(cover);
-        const coverCol = coverNum < 10 ? '#ef4444' : coverNum < 15 ? '#f59e0b' : '#22c55e';
+        const isTender = (front.tender_margin_pct ?? 0) > 0;
+        const redThresh = isTender ? 10 : 5;
+        const warnThresh = isTender ? 14 : 7;
+        const coverCol = coverNum < redThresh ? '#ef4444' : coverNum < warnThresh ? '#f59e0b' : '#22c55e';
         vCoverEl.innerHTML = `<span style="color:${coverCol};font-weight:600;">${cover}× margin cover</span> <span style="color:var(--text-muted);font-size:9px;">(Daily × √252)</span>`;
       } else {
         vCoverEl.textContent = 'Daily × √252';
@@ -4326,9 +4335,9 @@ async function updateStatsBar(sym = currentStatsSym) {
     if (front.dte != null) {
       if (front.dte === 0) {
         expNoticeEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">Expires Tonight (11:30 PM)</span>';
-      } else if (front.dte <= 5) {
+      } else if (front.dte > 0 && front.dte <= 5) {
         expNoticeEl.innerHTML = `<span style="color:#ef4444;font-weight:600;">Tender Window (${front.dte}d left)</span>`;
-      } else if (front.dte <= 10) {
+      } else if (front.dte > 5 && front.dte <= 10) {
         expNoticeEl.innerHTML = `<span style="color:#f59e0b;font-weight:600;">Roll in ~${front.dte - 5}d</span>`;
       } else {
         expNoticeEl.innerHTML = `<span style="color:var(--text-muted);">Front Month (${_formatExpiryShort(front.expiry)})</span>`;
@@ -4337,7 +4346,8 @@ async function updateStatsBar(sym = currentStatsSym) {
 
     if (nextContract) {
       const nextMargin = nextContract.total_margin_pct != null ? nextContract.total_margin_pct : nextContract.initial_margin_pct;
-      rollSubEl.innerHTML = `Next: <strong>${_formatExpiryShort(nextContract.expiry)}</strong> (${nextContract.dte}d) &middot; ${nextMargin.toFixed(2)}%`;
+      const nextMarginStr = nextMargin != null ? nextMargin.toFixed(2) + '%' : '—';
+      rollSubEl.innerHTML = `Next: <strong>${_formatExpiryShort(nextContract.expiry)}</strong> (${nextContract.dte}d) &middot; ${nextMarginStr}`;
     } else {
       rollSubEl.textContent = 'Front-month contract';
     }
@@ -4351,7 +4361,7 @@ async function updateStatsBar(sym = currentStatsSym) {
       const stressData = await loadJSON('stress_score');
       const sc = stressData.stress_score;
       const lbl = stressData.stress_label;
-      const cls = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
+      const cls = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis', CRISIS:'regime-crisis'};
       rEl.className = 'stat-value ' + (cls[lbl]||'');
       rEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>${lbl}`;
       rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
@@ -4359,6 +4369,10 @@ async function updateStatsBar(sym = currentStatsSym) {
       // Update Card 1 subtitle with 5Y trailing percentile if not in tender
       if ((front.tender_margin_pct ?? 0) === 0 && mSubEl) {
         mSubEl.textContent = `Margin P${stressData.margin_pct} (5Y trailing)`;
+      }
+
+      if (typeof TOOLTIPS !== 'undefined' && TOOLTIPS['Margin Percentile Rank']) {
+        TOOLTIPS['Margin Percentile Rank'].body = `Today's front-month initial margin ranks at the <strong>P${stressData.margin_pct}</strong> percentile against all daily closing margin requirements across the trailing 5-year distribution.`;
       }
 
       const notchPct = Math.min(100, Math.max(0, sc));
