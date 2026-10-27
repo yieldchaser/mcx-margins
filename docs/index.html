@@ -1496,7 +1496,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <th class="has-tooltip" data-dyn-title="Total Margin % Requirement (Today)" data-dyn-body="The current clearing house gross margin requirement as a percentage of contract notional value.<br><br><strong>Decomposition:</strong><br>• <strong>SPAN Initial Margin (IM):</strong> Baseline 99% VaR 3-day MPOR requirement.<br>• <strong>Tender Margin (T):</strong> Regulatory delivery risk charge (+5%/day over final 5 days up to 25%).<br>• <em>Extreme Loss Margin (ELM, 1.25%) is an exchange line item added on top.</em>">Total %</th>
             <th class="has-tooltip" data-dyn-title="Hurdle-Gated SPAN Point Forecast (Tomorrow)" data-dyn-body="Tomorrow's projected total margin requirement, combining the Hurdle-Gated SPAN level forecast with the deterministic forward tender schedule.<br><br>• <strong>Hurdle Rule:</strong> Holds margin flat on calm days (|Δ| ≤ 0.50%), fires instant jump on volatility expansion, and applies sticky 30% step-down on cuts.<br>• <strong>Floor:</strong> Clamped strictly at SEBI's 13.00% statutory floor.<br>• <strong>Tender Lookahead:</strong> Adds tomorrow's exact scheduled tender step (+5%) where active.">Pred. Total %</th>
             <th class="has-tooltip" data-dyn-title="Cash Capital Required per Lot (1,250 mmBtu)" data-dyn-body="The actual rupee capital blocked by your broker for holding 1 Natural Gas contract (1,250 mmBtu).<br><br><strong>Formula:</strong> 1,250 mmBtu × Settlement Price × Total Margin %<br>Use this to size RMS maintenance margin buffers across multiple lots.">₹ Margin / Lot</th>
-            <th class="has-tooltip" data-dyn-title="Expected Overnight Capital Call Delta (₹ / Lot)" data-dyn-body="Projected change in required rupee capital per lot from today to tomorrow.<br><br>• <span style='color:var(--accent-red)'>+₹Δ (Red)</span>: Expected overnight margin hike — ensure excess account cash before 11:30 PM IST close to prevent RMS liquidation.<br>• <span style='color:var(--accent-green)'>-₹Δ (Green)</span>: Expected capital release upon volatility decay.<br>• <strong>₹0 Flat</strong>: Margin remains locked in place.">Overnight Δ₹</th>
+            <th class="has-tooltip" data-dyn-title="Expected Overnight Capital Call Delta (₹ / Lot)" data-dyn-body="Projected change in required rupee capital per lot from today to tomorrow.<br><br>• <span style='color:var(--accent-red)'>+₹Δ (Red)</span>: Expected overnight margin hike — ensure excess account cash before market close (11:30 PM summer / 11:55 PM winter IST) to prevent RMS liquidation.<br>• <span style='color:var(--accent-green)'>-₹Δ (Green)</span>: Expected capital release upon volatility decay.<br>• <strong>₹0 Flat</strong>: Margin remains locked in place.">Overnight Δ₹</th>
             <th class="has-tooltip" data-dyn-title="Intraday Hike Trigger Price (Closed-Form Inversion)" data-dyn-body="The exact price boundary that will force tomorrow's MCXCCL EWMA volatility across the +0.50% hike hurdle.<br><br><strong>EWMA Inversion Formula:</strong><br>|r*| = √[ ((σ* )² − 0.94·σ_t²) / 0.06 ]<br>Trigger Price = Settle Price × e<sup>±|r*|</sup><br><br>• If today's price crosses above <strong>Upper Breach</strong> or crashes below <strong>Lower Breach</strong> before close, an overnight hike is mathematically locked.<br>• <strong>LOCKED IN</strong> indicates carryover volatility alone has already breached the threshold.">Intraday Hike Trigger</th>
             <th class="has-tooltip" data-dyn-title="Outcome Probability Distribution (Tomorrow)" data-dyn-body="Calibrated logistic model probabilities across three mutually exclusive outcomes tomorrow:<br><br>• <span style='color:var(--accent-green)'>Green Bar</span>: <strong>Cut</strong> (&gt;0.5% decrease)<br>• <span style='color:var(--text-muted)'>Grey Bar</span>: <strong>Flat</strong> (within ±0.5% corridor)<br>• <span style='color:var(--accent-red)'>Red Bar</span>: <strong>Hike</strong> (&gt;0.5% increase)<br><br>Features include initial margin level, daily volatility, DTE, gated dormancy, and policy buffer.">Probability</th>
             <th class="has-tooltip" data-dyn-title="Dominant Directional Signal & Surveillance Alert" data-dyn-body="Synthesized directional directive.<br><br>• <span style='color:#ef4444'>▲ HIKE X%</span>: High probability of margin expansion. Amber row glow at &gt;65% hike probability; Red row glow at &gt;80%.<br>• <span style='color:#3fb950'>▼ CUT X%</span>: Probability favours margin reduction.<br>• <span>→ FLAT X%</span>: Normal volatility equilibrium.">Signal</th>
@@ -3313,6 +3313,25 @@ let _ttTimer; let _ttMouseX = 0, _ttMouseY = 0; let _ttActiveTrigger = null; let
 // Escape double quotes so HTML content is safe inside data-attr="..."
 function escAttr(s) { return s ? s.replace(/"/g, '&quot;') : ''; }
 
+/**
+ * Dynamic MCX Session Timing Engine:
+ * Returns whether MCX is in Summer (US EDT, closing at 11:30 PM IST)
+ * or Winter (US EST, closing at 11:55 PM IST).
+ */
+function getMcxClosingTime(date) {
+  const d = date ? (date instanceof Date ? date : new Date(date)) : new Date();
+  const nyStr = d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' });
+  const isSummer = nyStr.includes('EDT');
+  return {
+    isSummer: isSummer,
+    isWinter: !isSummer,
+    timeStr: isSummer ? '11:30 PM' : '11:55 PM',
+    timeStrFull: isSummer ? '11:30 PM IST' : '11:55 PM IST',
+    closeMins: isSummer ? 1410 : 1435,
+    hoursStr: isSummer ? '09:00 - 23:30 IST' : '09:00 - 23:55 IST'
+  };
+}
+
 // ── Shared UI Components ──
 
 /**
@@ -4334,7 +4353,8 @@ async function updateStatsBar(sym = currentStatsSym) {
 
     if (front.dte != null) {
       if (front.dte === 0) {
-        expNoticeEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">Expires Tonight (11:30 PM)</span>';
+        const mcxClose = getMcxClosingTime();
+        expNoticeEl.innerHTML = `<span style="color:#ef4444;font-weight:700;">Expires Tonight (${mcxClose.timeStr})</span>`;
       } else if (front.dte > 0 && front.dte <= 5) {
         expNoticeEl.innerHTML = `<span style="color:#ef4444;font-weight:600;">Tender Window (${front.dte}d left)</span>`;
       } else if (front.dte > 5 && front.dte <= 10) {
@@ -4678,7 +4698,7 @@ async function renderOverview() {
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#d29922;"></span>
               <span style="font-size:12px;font-weight:700;color:#d29922;">EXPIRY TODAY &middot; ${_expLabel(expiringContract.expiry)}</span>
-              <span style="font-size:11.5px;color:var(--text-muted);">Current Margin: <strong>${expiringContract.total_margin_pct.toFixed(2)}%</strong> (₹${(expiringContract.rupee_margin_current||0).toLocaleString('en-IN')}) &middot; Ceases trading at 11:30 PM IST &middot; Final Cash Settlement (No overnight capital call)</span>
+              <span style="font-size:11.5px;color:var(--text-muted);">Current Margin: <strong>${expiringContract.total_margin_pct.toFixed(2)}%</strong> (₹${(expiringContract.rupee_margin_current||0).toLocaleString('en-IN')}) &middot; Ceases trading at ${getMcxClosingTime().timeStrFull} &middot; Final Cash Settlement (No overnight capital call)</span>
             </div>
             <span class="scope-chip" style="font-size:10.5px;font-weight:600;color:#d29922;background:rgba(210,153,34,0.15);border:1px solid rgba(210,153,34,0.3);">SETTLES TONIGHT</span>
           </div>
@@ -5059,20 +5079,20 @@ async function renderOverview() {
       const levColor = tm > 35 ? '#ef4444' : tm > 22 ? '#f59e0b' : '#22c55e';
 
       // Cell-specific dynamic tooltips
-      const tipExpiry = `Contract Lifecycle: ${_contractLabel(c.expiry)}<br>Expiry: ${_formatExpiryShort(c.expiry)}<br>DTE: <strong>${c.dte} calendar days</strong>.<br><br>${isExpiringToday ? '<span style="color:#d29922;font-weight:700;">Expires Today &middot; Final Settlement 11:30 PM IST</span>' : c.dte <= 7 ? '<span style="color:var(--accent-red);font-weight:600;">High Tender Risk Zone</span>' : '<span style="color:var(--accent-green);">Normal Trading Window</span>'}`;
+      const tipExpiry = `Contract Lifecycle: ${_contractLabel(c.expiry)}<br>Expiry: ${_formatExpiryShort(c.expiry)}<br>DTE: <strong>${c.dte} calendar days</strong>.<br><br>${isExpiringToday ? `<span style="color:#d29922;font-weight:700;">Expires Today &middot; Final Settlement ${getMcxClosingTime().timeStrFull}</span>` : c.dte <= 7 ? '<span style="color:var(--accent-red);font-weight:600;">High Tender Risk Zone</span>' : '<span style="color:var(--accent-green);">Normal Trading Window</span>'}`;
       const tipTotal = `<strong>Current Gross Margin: ${tm.toFixed(2)}%</strong><br><br>• SPAN Initial Margin: <strong>${im.toFixed(2)}%</strong><br>• Tender Margin: <strong>${tenderPct.toFixed(2)}%</strong><br>• Extreme Loss Margin (ELM): <strong>${elmPct.toFixed(2)}%</strong> (exchange line item)<br>• Effective Leverage: <strong>${leverage}x</strong>`;
       const tipPred = isExpiringToday 
-        ? `<strong>Contract Expiry Day (0d DTE):</strong><br><br>• Contract ceases trading tonight at 11:30 PM IST.<br>• Positions settle to cash at MCX Final Settlement Price (FSP).<br>• No overnight margin requirement applies for tomorrow.`
+        ? `<strong>Contract Expiry Day (0d DTE):</strong><br><br>• Contract ceases trading tonight at ${getMcxClosingTime().timeStrFull}.<br>• Positions settle to cash at MCX Final Settlement Price (FSP).<br>• No overnight margin requirement applies for tomorrow.`
         : `<strong>Tomorrow's Forecast: ${predictedTotal ? predictedTotal.toFixed(2) + '%' : '—'} (${diffSign}${diffTotal.toFixed(2)}%)</strong><br><br>• Predicted SPAN IM: <strong>${(predictedTotal - (pEntry?.predicted_tender ?? (tenderPct >= 25 ? 25 : (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0)))).toFixed(2)}%</strong><br>• Predicted Tender Step: <strong>${(pEntry?.predicted_tender ?? (tenderPct >= 25 ? 25 : (tenderPct > 0 ? Math.min(25, tenderPct + 5) : 0))).toFixed(2)}%</strong><br><br>Hurdle-Gated SPAN model anchors on MCXCCL's empirical curve (M* = 7.589·σ − 4.845) with SEBI EWMA decay (λ = 0.94).`;
       const tipCapital = `<strong>Capital Required: ₹${rupeeCurrent.toLocaleString('en-IN')} / Lot</strong><br><br>Notional Size: 1,250 mmBtu @ ₹${pSettle || '—'}<br><strong>Calculation:</strong> 1,250 × ₹${pSettle || 0} × ${tm.toFixed(2)}% = <strong>₹${rupeeCurrent.toLocaleString('en-IN')}</strong><br><br>Sensitivity: A 1.00% margin hike requires <strong>₹${Math.round(12.5 * (pSettle || 260)).toLocaleString('en-IN')}</strong> additional cash per lot.`;
       const tipDelta = isExpiringToday
         ? `<strong>Final Settlement Tonight:</strong><br><br>Contract ceases trading tonight. No overnight capital call or margin release applies because the contract settles to cash at the Final Settlement Price.`
         : `<strong>Overnight Capital Shift: ${diffSign}₹${Math.abs(rupeeDelta).toLocaleString('en-IN')} / Lot</strong><br><br>${rupeeDelta > 0 ? `<strong style="color:var(--accent-red);">CAPITAL CALL RISK:</strong> Expect to deposit +₹${rupeeDelta.toLocaleString('en-IN')} per lot before market open to avoid RMS liquidation.` : rupeeDelta < 0 ? `<strong style="color:var(--accent-green);">CAPITAL RELEASE:</strong> Expect ~₹${Math.abs(rupeeDelta).toLocaleString('en-IN')} per lot to be freed as margin decays.` : '<strong>STABLE:</strong> Margin requirement is expected to remain unchanged.'}`;
       const tipTrigger = isExpiringToday
-        ? `<strong>Final Settlement Day:</strong><br><br>Intraday SPAN volatility triggers do not apply for overnight margin since this contract ceases trading at 11:30 PM IST.`
-        : (hikeLocked ? `<strong>HIKE LOCKED IN:</strong> Carryover EWMA volatility alone guarantees an overnight margin hike even on a 0.0% price move.` : `<strong>Intraday Hike Breach Price:</strong><br>• Upper Breach: <strong>₹${triggerUp}</strong> (+${triggerPct}%)<br>• Lower Breach: <strong>₹${triggerDn}</strong> (-${triggerPct}%)<br><br>If price breaches either boundary today before 11:30 PM IST close, EWMA volatility forces an overnight margin hike.`);
+        ? `<strong>Final Settlement Day:</strong><br><br>Intraday SPAN volatility triggers do not apply for overnight margin since this contract ceases trading at ${getMcxClosingTime().timeStrFull}.`
+        : (hikeLocked ? `<strong>HIKE LOCKED IN:</strong> Carryover EWMA volatility alone guarantees an overnight margin hike even on a 0.0% price move.` : `<strong>Intraday Hike Breach Price:</strong><br>• Upper Breach: <strong>₹${triggerUp}</strong> (+${triggerPct}%)<br>• Lower Breach: <strong>₹${triggerDn}</strong> (-${triggerPct}%)<br><br>If price breaches either boundary today before ${getMcxClosingTime().timeStrFull} close, EWMA volatility forces an overnight margin hike.`);
       const tipSignal = isExpiringToday 
-        ? `<strong>Surveillance Directive: ● EXPIRES TODAY</strong><br><br>Contract expires and ceases trading tonight at 11:30 PM IST. Positions close out or settle to cash at MCX Final Settlement Price (FSP). No overnight margin call or tender ladder hike applies tomorrow.`
+        ? `<strong>Surveillance Directive: ● EXPIRES TODAY</strong><br><br>Contract expires and ceases trading tonight at ${getMcxClosingTime().timeStrFull}. Positions close out or settle to cash at MCX Final Settlement Price (FSP). No overnight margin call or tender ladder hike applies tomorrow.`
         : (tenderPct >= 25 
             ? `<strong>Surveillance Directive: ■ TENDER 25% (MAX)</strong><br><br>Tender margin is at the statutory maximum ceiling of 25.0%. It will not increase further.`
             : `<strong>Surveillance Directive: ${sigText}</strong><br><br>${tenderPct > 0 ? '<strong style="color:var(--accent-red);">▲ MANDATORY TENDER HIKE:</strong> Regulatory physical delivery ramp forces +5% margin step regardless of market volatility.' : (pEntry?.predicted_tender > 0 ? '<strong style="color:var(--accent-red);">▲ TENDER ENTRY:</strong> Contract enters the 5-day delivery tender window tomorrow (+5% mandatory tender margin).' : (ep && ep.p_hike > 0.65 ? '<strong style="color:var(--accent-red);">▲ ELEVATED HIKE RISK:</strong> Contract volatility is significantly above floor threshold. High probability of clearing house margin hike.' : '<strong style="color:var(--text-muted);">→ STABLE / FLAT:</strong> Volatility is at or near the 13.00% statutory floor equilibrium.'))}`);
@@ -5090,7 +5110,7 @@ async function renderOverview() {
         <td class="has-tooltip" data-dyn-title="${isExpiringToday ? 'Contract Expiry Day' : `Hurdle SPAN Point Forecast: ${predictedTotal ? predictedTotal.toFixed(2) + '%' : '—'}`}" data-dyn-body="${escAttr(tipPred)}">
           ${isExpiringToday ? `
             <strong style="color:#d29922;font-size:12px;">Final Settle</strong>
-            <div style="font-size:9px;color:var(--text-muted);margin-top:2px;font-weight:600;">Ceases 11:30 PM</div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:2px;font-weight:600;">Ceases ${getMcxClosingTime().timeStr}</div>
           ` : `
             <strong style="color:${diffColor};">${predictedTotal.toFixed(2)}%</strong>
             <div style="font-size:9px;color:${diffColor};font-weight:600;margin-top:2px;">${diffSign}${diffTotal.toFixed(2)}% ${diffTotal > 0.2 ? '▲' : diffTotal < -0.2 ? '▼' : '→'}</div>
@@ -9293,7 +9313,7 @@ async function renderMarketIntel(force = false) {
           const callColor = (p.rupee_delta || 0) > 0 ? 'var(--accent-red)' : (p.rupee_delta || 0) < 0 ? 'var(--accent-green)' : 'var(--text-muted)';
           const callSign = (p.rupee_delta || 0) > 0 ? '+' : '';
           if (isExp) {
-            dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Status: <strong style="color:#d29922;">Contract Expires Today</strong><br>• Final Settlement: <strong>11:30 PM IST (Cash Settled at FSP)</strong><br>• Current Gross Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)<br>• Overnight Risk: <strong>None (Contract ceases trading tonight)</strong>`;
+            dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Status: <strong style="color:#d29922;">Contract Expires Today</strong><br>• Final Settlement: <strong>${getMcxClosingTime().timeStrFull} (Cash Settled at FSP)</strong><br>• Current Gross Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)<br>• Overnight Risk: <strong>None (Contract ceases trading tonight)</strong>`;
           } else {
             dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Current Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)${(p.tender_margin_pct ?? 0) > 0 ? ` [includes ${p.tender_margin_pct.toFixed(1)}% tender ramp]` : ''}<br>• Predicted T+1 Margin: <strong>${p.predicted_tomorrow != null ? p.predicted_tomorrow.toFixed(2) + '%' : '—'}</strong>${p.rupee_margin_predicted != null ? ` (₹${p.rupee_margin_predicted.toLocaleString('en-IN')}/lot)` : ''}<br>• Immediate Capital Shift: <strong style="color:${callColor};">${callSign}₹${(p.rupee_delta ?? 0).toLocaleString('en-IN')} / lot</strong><br>• Upper Hike Trigger (P*up): <strong>₹${p.hike_trigger_up_price != null ? p.hike_trigger_up_price.toFixed(2) : '—'}</strong>${p.hike_trigger_pct != null ? ` (+${p.hike_trigger_pct.toFixed(2)}%)` : ''}<br>• Lower Cut Trigger (P*dn): <strong>₹${p.hike_trigger_dn_price != null ? p.hike_trigger_dn_price.toFixed(2) : '—'}</strong><br>• Surveillance Action: <strong>${p.action || 'HOLD'}</strong>`;
           }
