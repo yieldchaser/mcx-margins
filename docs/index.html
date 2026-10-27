@@ -4148,7 +4148,8 @@ async function renderPriceMarginConfluence() {
     const front = ng.filter(c => c.dte >= 0).sort((a,b) => a.dte - b.dte)[0] || ng[0];
     if (!front) return;
 
-    document.getElementById('kpiFrontMargin').textContent = front.initial_margin_pct != null ? front.initial_margin_pct.toFixed(2) + '%' : '—';
+    const totalMargin = front.total_margin_pct != null ? front.total_margin_pct : front.initial_margin_pct;
+    document.getElementById('kpiFrontMargin').textContent = totalMargin != null ? totalMargin.toFixed(2) + '%' : '—';
     document.getElementById('kpiElm').textContent = front.elm_pct != null ? front.elm_pct.toFixed(2) + '%' : '—';
     document.getElementById('kpiDailyVol').textContent = front.daily_volatility != null ? (front.daily_volatility * 100).toFixed(2) + '%' : '—';
     document.getElementById('kpiAnnVol').textContent = front.annualized_volatility != null ? (front.annualized_volatility * 100).toFixed(1) + '%' : '—';
@@ -4157,18 +4158,22 @@ async function renderPriceMarginConfluence() {
     // Day-over-day change
     if (histNG && histNG.length >= 2) {
       const sorted = [...histNG].sort((a,b) => new Date(b.date) - new Date(a.date));
-      const mChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
+      const totToday = sorted[0]?.total_margin_pct ?? sorted[0]?.initial_margin_pct ?? 0;
+      const totPrev = sorted[1]?.total_margin_pct ?? sorted[1]?.initial_margin_pct ?? 0;
+      const totChange = totToday - totPrev;
+      const spanChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
       const vChange = ((sorted[0]?.daily_volatility ?? 0) - (sorted[1]?.daily_volatility ?? 0)) * 100;
       const mEl = document.getElementById('kpiMarginChange');
       const vEl = document.getElementById('kpiVolChange');
 
-      const tenderTag = (front.tender_margin_pct > 0) 
-        ? `<div style="font-size:9.5px;color:var(--accent-red);font-weight:600;margin-top:2px;">Gross ${front.total_margin_pct.toFixed(2)}% (+${front.tender_margin_pct.toFixed(0)}% tender)</div>` 
+      const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
+      const tenderInfo = (front.tender_margin_pct > 0)
+        ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">SPAN ${front.initial_margin_pct.toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%</div>`
         : '';
-      const spanSuffix = front.tender_margin_pct > 0 ? ' SPAN' : '';
-      if (Math.abs(mChange) < 0.01) { mEl.innerHTML = `→ flat${spanSuffix}${tenderTag}`; mEl.className = 'stat-sub flat'; }
-      else if (mChange > 0) { mEl.innerHTML = `▲ +${mChange.toFixed(2)}%${spanSuffix} vs prev${tenderTag}`; mEl.className = 'stat-sub up'; }
-      else { mEl.innerHTML = `▼ ${mChange.toFixed(2)}%${spanSuffix} vs prev${tenderTag}`; mEl.className = 'stat-sub down'; }
+
+      if (Math.abs(totChange) < 0.01) { mEl.innerHTML = `→ flat vs prev${tenderInfo}`; mEl.className = 'stat-sub flat'; }
+      else if (totChange > 0) { mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev${tenderInfo}`; mEl.className = 'stat-sub up'; }
+      else { mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev${tenderInfo}`; mEl.className = 'stat-sub down'; }
 
       if (Math.abs(vChange) < 0.005) { vEl.textContent = '→ flat'; vEl.className = 'stat-sub flat'; }
       else if (vChange > 0) { vEl.textContent = `▲ +${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub up'; }
@@ -10667,8 +10672,8 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`
   },
   "Front Margin %": {
-    title: "Front Margin % (SPAN Initial)",
-    body: `The SPAN Initial Margin % for the nearest active contract.<br><br>• <strong>SPAN Initial Margin:</strong> Core clearinghouse volatility requirement (MCXCCL minimum 13.00% floor).<br>• <strong>Tender Period:</strong> During the 5 trading days prior to expiry, MCX adds a progressive 5% per day tender margin (+25.00% max), bringing Gross Margin to SPAN + Tender.<br><br>Day-over-day change measures core SPAN volatility margin shift.`
+    title: "Front Margin % (Total Gross Margin)",
+    body: `The total gross margin percentage required to hold 1 lot of the front-month contract.<br><br>• <strong>Total Gross Margin:</strong> The full margin blocked by brokers, consisting of SPAN Initial Margin + any active Tender Margin.<br>• <strong>Tender Period:</strong> During the 5 trading days prior to expiry, MCX imposes a progressive 5% per day physical delivery tender margin (up to 25.00%).<br>• <strong>SPAN Initial Margin:</strong> Core clearinghouse volatility requirement calculated via SEBI EWMA.`
   },
   "ELM %": {
     title: "Extreme Loss Margin %",
