@@ -9126,30 +9126,36 @@ async function renderMarketIntel(force = false) {
       bodyEl.innerHTML = curRows.map(r => {
         const liqBand = marketLiquidityBand(r.liquidity_score);
         const p = panicMap[r.expiry];
+        const isExp = (r.dte != null && r.dte <= 0) || Boolean(p?.is_expiring_today);
 
         let dynBody = '';
         if (showPred && p) {
           const callColor = (p.rupee_delta || 0) > 0 ? 'var(--accent-red)' : (p.rupee_delta || 0) < 0 ? 'var(--accent-green)' : 'var(--text-muted)';
           const callSign = (p.rupee_delta || 0) > 0 ? '+' : '';
-          dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Current Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)${(p.tender_margin_pct ?? 0) > 0 ? ` [includes ${p.tender_margin_pct.toFixed(1)}% tender ramp]` : ''}<br>• Predicted T+1 Margin: <strong>${(p.predicted_tomorrow ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_predicted ?? 0).toLocaleString('en-IN')}/lot)<br>• Immediate Capital Shift: <strong style="color:${callColor};">${callSign}₹${(p.rupee_delta ?? 0).toLocaleString('en-IN')} / lot</strong><br>• Upper Hike Trigger (P*up): <strong>₹${(p.hike_trigger_up_price ?? 0).toFixed(2)}</strong> (+${(p.hike_trigger_pct ?? 0).toFixed(2)}%)<br>• Lower Cut Trigger (P*dn): <strong>₹${(p.hike_trigger_dn_price ?? 0).toFixed(2)}</strong><br>• Surveillance Action: <strong>${p.action || 'HOLD'}</strong>`;
+          if (isExp) {
+            dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Status: <strong style="color:#d29922;">Contract Expires Today</strong><br>• Final Settlement: <strong>11:30 PM IST (Cash Settled at FSP)</strong><br>• Current Gross Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)<br>• Overnight Risk: <strong>None (Contract ceases trading tonight)</strong>`;
+          } else {
+            dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br>Settle: <strong>₹${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br><br>• Current Margin: <strong>${(p.total_margin_pct ?? 0).toFixed(2)}%</strong> (₹${(p.rupee_margin_current ?? 0).toLocaleString('en-IN')}/lot)${(p.tender_margin_pct ?? 0) > 0 ? ` [includes ${p.tender_margin_pct.toFixed(1)}% tender ramp]` : ''}<br>• Predicted T+1 Margin: <strong>${p.predicted_tomorrow != null ? p.predicted_tomorrow.toFixed(2) + '%' : '—'}</strong>${p.rupee_margin_predicted != null ? ` (₹${p.rupee_margin_predicted.toLocaleString('en-IN')}/lot)` : ''}<br>• Immediate Capital Shift: <strong style="color:${callColor};">${callSign}₹${(p.rupee_delta ?? 0).toLocaleString('en-IN')} / lot</strong><br>• Upper Hike Trigger (P*up): <strong>₹${p.hike_trigger_up_price != null ? p.hike_trigger_up_price.toFixed(2) : '—'}</strong>${p.hike_trigger_pct != null ? ` (+${p.hike_trigger_pct.toFixed(2)}%)` : ''}<br>• Lower Cut Trigger (P*dn): <strong>₹${p.hike_trigger_dn_price != null ? p.hike_trigger_dn_price.toFixed(2) : '—'}</strong><br>• Surveillance Action: <strong>${p.action || 'HOLD'}</strong>`;
+          }
         } else {
           dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>DTE: <strong>${r.dte} days</strong><br><br>Close: <strong>${fmtNum(r.close, 2)}</strong> (${fmtPct(r.return_pct, 2)})<br>Liquidity: <strong>${fmtNum(r.liquidity_score, 1)}</strong> (${liqBand})<br>Volume: <strong>${fmtNum(r.volume_lots, 0)}</strong> lots<br>OI: <strong>${fmtNum(r.open_interest, 0)}</strong><br><br><em>Insight:</em> This contract carries ${liqBand === 'deep' ? 'maximum' : liqBand === 'thin' ? 'restricted' : 'standard'} tradability. High OI relative to volume suggests stable positioning.`;
         }
 
         if (showPred) {
           const curMargin = p?.total_margin_pct != null ? `${p.total_margin_pct.toFixed(2)}%` : '—';
-          const predMargin = p?.predicted_tomorrow != null ? `${p.predicted_tomorrow.toFixed(2)}%` : '—';
+          const predMargin = isExp ? '<span style="color:#d29922;font-size:11px;font-weight:600;">Final Settle</span>' : (p?.predicted_tomorrow != null ? `${p.predicted_tomorrow.toFixed(2)}%` : '—');
           const rDelta = p?.rupee_delta ?? 0;
           const callColor = rDelta > 0 ? 'var(--accent-red)' : rDelta < 0 ? 'var(--accent-green)' : 'var(--text-muted)';
           const callSign = rDelta > 0 ? '+' : '';
-          const callText = p ? `${callSign}₹${rDelta.toLocaleString('en-IN')}` : '—';
+          const callText = isExp ? '<span style="color:var(--text-muted);font-size:11px;">Settles Tonight</span>' : (p ? `${callSign}₹${rDelta.toLocaleString('en-IN')}` : '—');
           const act = p?.action || 'HOLD';
-          const badgeHtml = act === 'HIKE' 
+          const badgeHtml = isExp
+            ? '<span class="scope-chip" style="font-size:10px;padding:2px 6px;color:#d29922;background:rgba(210,153,34,0.15);border:1px solid rgba(210,153,34,0.3);">EXPIRES TODAY</span>'
+            : act === 'HIKE' 
             ? '<span class="badge-hike" style="font-size:10px;padding:2px 6px;">HIKE RISK</span>' 
             : act === 'CUT' 
             ? '<span class="badge-safe" style="font-size:10px;padding:2px 6px;">RELIEF</span>' 
             : '<span class="badge-safe" style="font-size:10px;padding:2px 6px;">HOLD</span>';
-
           return `
             <tr class="has-tooltip" data-dyn-title="Futures Detail: ${r.expiry}" data-dyn-body="${escAttr(dynBody)}">
               <td><strong>${_contractLabel(r.expiry)}</strong><div style="font-size:10px;color:var(--text-muted);">${_formatExpiryShort(r.expiry)}</div></td>
