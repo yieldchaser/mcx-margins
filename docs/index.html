@@ -1327,37 +1327,38 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 <!-- ── Stats Bar ── -->
 <div class="stats-bar" id="statsBar">
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %">FRONT MARGIN %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %" id="kpiMarginLabel">FRONT MARGIN %</div>
     <div class="stat-value" id="kpiFrontMargin">—</div>
     <div class="stat-sub" id="kpiMarginChange">—</div>
-    <div class="stat-sub has-tooltip" id="kpiPercentile" data-tooltip-key="Margin Percentile Rank" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;cursor:help;">—</div>
-    <div class="stat-sub has-tooltip" id="kpiPercentileRegime" data-tooltip-key="Margin Percentile Rank" style="font-size:9px;color:var(--text-muted);margin-top:1px;cursor:help;">—</div>
+    <div class="stat-sub has-tooltip" id="kpiMarginSub" data-tooltip-key="Margin Percentile Rank" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;cursor:help;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="ELM %">ELM %</div>
-    <div class="stat-value" id="kpiElm">—</div>
-    <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Constant</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="kpi-capital" id="kpiCapitalLabel">CAPITAL / LOT</div>
+    <div class="stat-value" id="kpiCapitalLot">—</div>
+    <div class="stat-sub" id="kpiCapitalSensitivity" style="font-size:11px;font-weight:600;color:var(--text);">—</div>
+    <div class="stat-sub" id="kpiCapitalNotional" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">DAILY VOL</div>
-    <div class="stat-value" id="kpiDailyVol">—</div>
-    <div class="stat-sub" id="kpiVolChange">—</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="kpi-price" id="kpiPriceLabel">SETTLE PRICE</div>
+    <div class="stat-value" id="kpiSettlePrice">—</div>
+    <div class="stat-sub" id="kpiPriceReturn">—</div>
+    <div class="stat-sub" id="kpiPriceRange" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="Daily Volatility">ANN. VOLATILITY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="kpi-volatility" id="kpiVolLabel">VOLATILITY (EWMA)</div>
     <div class="stat-value" id="kpiAnnVol">—</div>
-    <div class="stat-sub has-tooltip" id="kpiVolPercentile" data-tooltip-key="Daily Volatility" style="cursor:help;">—</div>
-    <div class="stat-sub" style="font-size:9px;color:var(--text-muted);margin-top:1px;">Daily × √252</div>
+    <div class="stat-sub" id="kpiDailyVolSub">—</div>
+    <div class="stat-sub has-tooltip" id="kpiVolCover" data-tooltip-key="kpi-volatility" style="font-size:9.5px;margin-top:2px;cursor:help;">—</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry">DAYS TO EXPIRY</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Next Expiry" id="kpiDTELabel">DAYS TO EXPIRY</div>
     <div class="stat-value" id="kpiDTE">—</div>
-    <div class="stat-sub flat" style="color:var(--text-muted);font-size:10px;">Front month</div>
+    <div class="stat-sub" id="kpiExpiryNotice" style="font-size:11px;font-weight:600;">Front month</div>
+    <div class="stat-sub" id="kpiRolloverSub" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">—</div>
   </div>
   <div class="stat-card">
     <div class="stat-label has-tooltip" data-tooltip-key="Stress Score" id="kpiRegimeLabel">REGIME</div>
     <div class="stat-value" id="kpiRegime" style="font-size:16px;">—</div>
-    <!-- FIX 5: Full gradient bar with white notch indicator -->
     <div style="height:4px;border-radius:2px;background:linear-gradient(to right,#22c55e,#eab308,#f97316,#ef4444);margin:4px 0 2px;position:relative;overflow:visible;">
       <div id="stressNotch" style="position:absolute;top:-2px;width:3px;height:8px;background:white;border-radius:1px;transform:translateX(-50%);box-shadow:0 0 3px rgba(0,0,0,0.5);transition:left 0.5s;left:0%;"></div>
     </div>
@@ -3973,8 +3974,9 @@ async function renderMarketOverviewContext() {
       snapMarketLookup[sym] = {};
       (current[sym] || []).forEach(r => { snapMarketLookup[sym][r.expiry] = r; });
     });
-    // Re-render snapshot table now that price data is available
+    // Re-render snapshot table and top stats bar now that price data is available
     if (_reRenderSnapshot) _reRenderSnapshot();
+    if (typeof updateStatsBar === 'function') updateStatsBar();
 
     document.getElementById('marketOverviewFreshness').textContent =
       `Market data: ${meta.latest_date || '-'} | ${fresh.label || 'UNKNOWN'}${fresh.age_days != null ? ' | age ' + fresh.age_days + 'd' : ''}`;
@@ -4137,23 +4139,42 @@ async function renderPriceMarginConfluence() {
 }
 
 
-(async () => {
+let currentStatsSym = 'NATURALGAS';
+async function updateStatsBar(sym = currentStatsSym) {
+  currentStatsSym = sym;
   try {
-    const [meta, current, histNG] = await Promise.all([
-      loadJSON('meta'), loadJSON('current'), loadJSON('history_ng')
+    const isMini = sym === 'NATGASMINI';
+    const [meta, current, histData] = await Promise.all([
+      loadJSON('meta'),
+      loadJSON('current'),
+      loadJSON(isMini ? 'history_ngm' : 'history_ng').catch(() => [])
     ]);
-    setStaleness(meta.last_updated);
+    if (meta && meta.last_updated) setStaleness(meta.last_updated);
 
-    const ng = current.NATURALGAS || [];
-    const front = ng.filter(c => c.dte >= 0).sort((a,b) => a.dte - b.dte)[0] || ng[0];
+    const contracts = current[sym] || [];
+    const front = contracts.filter(c => c.dte >= 0).sort((a,b) => a.dte - b.dte)[0] || contracts[0];
     if (!front) return;
+
+    // Next active contract for rollover guidance
+    const nextContract = contracts.filter(c => c.dte > front.dte).sort((a,b) => a.dte - b.dte)[0];
+
+    // Market data lookup for price, return, high, low
+    let mkt = snapMarketLookup[sym]?.[front.expiry];
+    if (!mkt) {
+      try {
+        const mktCurr = await loadMarketJSON('current');
+        if (mktCurr && mktCurr[sym]) {
+          mkt = mktCurr[sym].find(r => r.expiry === front.expiry);
+        }
+      } catch(e) {}
+    }
+
+    // ── CARD 1: FRONT MARGIN % ──────────────────────────────────────────
+    const marginLbl = document.getElementById('kpiMarginLabel');
+    if (marginLbl) marginLbl.textContent = isMini ? 'FRONT MARGIN % (MINI)' : 'FRONT MARGIN %';
 
     const totalMargin = front.total_margin_pct != null ? front.total_margin_pct : front.initial_margin_pct;
     document.getElementById('kpiFrontMargin').textContent = totalMargin != null ? totalMargin.toFixed(2) + '%' : '—';
-    document.getElementById('kpiElm').textContent = front.elm_pct != null ? front.elm_pct.toFixed(2) + '%' : '—';
-    document.getElementById('kpiDailyVol').textContent = front.daily_volatility != null ? (front.daily_volatility * 100).toFixed(2) + '%' : '—';
-    document.getElementById('kpiAnnVol').textContent = front.annualized_volatility != null ? (front.annualized_volatility * 100).toFixed(1) + '%' : '—';
-    document.getElementById('kpiDTE').textContent = front.dte != null ? front.dte + 'd' : '—';
 
     // Day-over-day change (contract-isolated to eliminate rollover discontinuity)
     let totChange = 0;
@@ -4167,8 +4188,8 @@ async function renderPriceMarginConfluence() {
       spanChange = (front.initial_margin_pct ?? 0) - (front.prev_initial_margin_pct ?? 0);
       vChange = ((front.daily_volatility ?? 0) - (front.prev_daily_volatility ?? 0)) * 100;
       hasDelta = true;
-    } else if (histNG && histNG.length >= 2) {
-      const sorted = [...histNG].sort((a,b) => new Date(b.date) - new Date(a.date));
+    } else if (histData && histData.length >= 2) {
+      const sorted = [...histData].sort((a,b) => new Date(b.date) - new Date(a.date));
       if (sorted[0]?.expiry === sorted[1]?.expiry) {
         totChange = (sorted[0]?.total_margin_pct ?? sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.total_margin_pct ?? sorted[1]?.initial_margin_pct ?? 0);
         spanChange = (sorted[0]?.initial_margin_pct ?? 0) - (sorted[1]?.initial_margin_pct ?? 0);
@@ -4180,61 +4201,169 @@ async function renderPriceMarginConfluence() {
     }
 
     const mEl = document.getElementById('kpiMarginChange');
-    const vEl = document.getElementById('kpiVolChange');
-
-    const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
-    const tenderInfo = (front.tender_margin_pct > 0)
-      ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">SPAN ${front.initial_margin_pct.toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%</div>`
-      : '';
-
     if (isRollover) {
-      mEl.innerHTML = `→ rollover roll${tenderInfo}`;
+      mEl.innerHTML = '→ rollover roll';
       mEl.className = 'stat-sub flat';
     } else if (!hasDelta || Math.abs(totChange) < 0.01) {
-      mEl.innerHTML = `→ flat vs prev${tenderInfo}`;
+      mEl.innerHTML = '→ flat vs prev';
       mEl.className = 'stat-sub flat';
     } else if (totChange > 0) {
-      mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev${tenderInfo}`;
+      mEl.innerHTML = `▲ +${totChange.toFixed(2)}% vs prev`;
       mEl.className = 'stat-sub up';
     } else {
-      mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev${tenderInfo}`;
+      mEl.innerHTML = `▼ ${totChange.toFixed(2)}% vs prev`;
       mEl.className = 'stat-sub down';
     }
 
-    if (!hasDelta || Math.abs(vChange) < 0.005) { vEl.textContent = '→ flat'; vEl.className = 'stat-sub flat'; }
-    else if (vChange > 0) { vEl.textContent = `▲ +${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub up'; }
-    else { vEl.textContent = `▼ ${vChange.toFixed(3)}% vs prev`; vEl.className = 'stat-sub down'; }
-
-    // Historical percentile rank
-    if (histNG && histNG.length > 0) {
-      const allM = histNG.map(d => d.initial_margin_pct).filter(Boolean).sort((a,b) => a-b);
-      const pct = Math.round((allM.filter(v => v <= front.initial_margin_pct).length / allM.length) * 100);
-      const pEl = document.getElementById('kpiPercentile');
-      pEl.textContent = `Hist. P${pct}`;
-      pEl.className = `stat-sub ${pct >= 75 ? 'up' : pct <= 25 ? 'down' : 'flat'}`;
+    const mSubEl = document.getElementById('kpiMarginSub');
+    if (mSubEl) {
+      if ((front.tender_margin_pct ?? 0) > 0) {
+        const spanText = Math.abs(spanChange) < 0.01 ? 'flat' : (spanChange > 0 ? `▲ +${spanChange.toFixed(2)}%` : `▼ ${spanChange.toFixed(2)}%`);
+        mSubEl.innerHTML = `SPAN ${(front.initial_margin_pct ?? 0).toFixed(2)}% (${spanText}) &middot; Tender ${front.tender_margin_pct.toFixed(0)}%`;
+      } else {
+        mSubEl.textContent = 'SPAN Initial Margin only';
+      }
     }
 
-    // Regime — Item 8: Stress score widget
+    // ── CARD 2: CAPITAL / LOT ───────────────────────────────────────────
+    const capLbl = document.getElementById('kpiCapitalLabel');
+    if (capLbl) capLbl.textContent = isMini ? 'CAPITAL / LOT (MINI)' : 'CAPITAL / LOT';
+
+    const LOT = isMini ? 250 : 1250;
+    const price = mkt?.close ?? 0;
+    const capEl = document.getElementById('kpiCapitalLot');
+    const capSensEl = document.getElementById('kpiCapitalSensitivity');
+    const capNotionalEl = document.getElementById('kpiCapitalNotional');
+
+    if (price > 0 && totalMargin > 0) {
+      const marginRs = Math.round((totalMargin / 100) * price * LOT);
+      const perOnePct = Math.round(price * LOT * 0.01);
+      const notionalLakhs = ((price * LOT) / 100000).toFixed(2);
+      capEl.textContent = `₹${marginRs.toLocaleString('en-IN')}`;
+      capSensEl.textContent = `±₹${perOnePct.toLocaleString('en-IN')} / 1% shift`;
+      capNotionalEl.textContent = `₹${notionalLakhs} L notional (${LOT.toLocaleString('en-IN')} MMBtu)`;
+    } else {
+      capEl.textContent = '—';
+      capSensEl.textContent = 'Awaiting price';
+      capNotionalEl.textContent = `${LOT.toLocaleString('en-IN')} MMBtu / lot`;
+    }
+
+    // ── CARD 3: SETTLE PRICE ────────────────────────────────────────────
+    const prLbl = document.getElementById('kpiPriceLabel');
+    if (prLbl) prLbl.textContent = isMini ? 'SETTLE PRICE (MINI)' : 'SETTLE PRICE';
+
+    const pEl = document.getElementById('kpiSettlePrice');
+    const prRetEl = document.getElementById('kpiPriceReturn');
+    const prRangeEl = document.getElementById('kpiPriceRange');
+
+    if (mkt?.close != null) {
+      pEl.textContent = `₹${mkt.close.toFixed(2)}`;
+      if (mkt.return_pct != null) {
+        const rp = mkt.return_pct;
+        const arrow = rp > 0.01 ? '▲' : rp < -0.01 ? '▼' : '→';
+        const sign = rp > 0 ? '+' : '';
+        const col = rp > 0.01 ? '#22c55e' : rp < -0.01 ? '#ef4444' : 'var(--text-muted)';
+        prRetEl.textContent = `${arrow} ${sign}${rp.toFixed(2)}% vs prev`;
+        prRetEl.className = 'stat-sub';
+        prRetEl.style.color = col;
+      } else {
+        prRetEl.textContent = '—';
+        prRetEl.className = 'stat-sub flat';
+        prRetEl.style.color = '';
+      }
+      if (mkt.low != null && mkt.high != null) {
+        prRangeEl.textContent = `Range: ₹${mkt.low.toFixed(1)} – ₹${mkt.high.toFixed(1)}`;
+      } else {
+        prRangeEl.textContent = 'Official MCX Settle';
+      }
+    } else {
+      pEl.textContent = '—';
+      prRetEl.textContent = '—';
+      prRetEl.className = 'stat-sub flat';
+      prRetEl.style.color = '';
+      prRangeEl.textContent = 'Pending settlement';
+    }
+
+    // ── CARD 4: VOLATILITY (EWMA) ───────────────────────────────────────
+    const annVolEl = document.getElementById('kpiAnnVol');
+    const dVolSubEl = document.getElementById('kpiDailyVolSub');
+    const vCoverEl = document.getElementById('kpiVolCover');
+
+    if (front.annualized_volatility != null) {
+      annVolEl.textContent = (front.annualized_volatility * 100).toFixed(1) + '%';
+    } else {
+      annVolEl.textContent = '—';
+    }
+
+    if (front.daily_volatility != null) {
+      const dVolPct = (front.daily_volatility * 100).toFixed(2);
+      let vDeltaStr = '';
+      if (hasDelta && Math.abs(vChange) >= 0.005) {
+        vDeltaStr = vChange > 0 ? ` · ▲ +${vChange.toFixed(3)}%` : ` · ▼ ${vChange.toFixed(3)}%`;
+      } else if (hasDelta) {
+        vDeltaStr = ' · flat';
+      }
+      dVolSubEl.textContent = `${dVolPct}% daily${vDeltaStr}`;
+
+      if (totalMargin > 0 && front.daily_volatility > 0) {
+        const cover = (totalMargin / (front.daily_volatility * 100)).toFixed(1);
+        const coverNum = parseFloat(cover);
+        const coverCol = coverNum < 10 ? '#ef4444' : coverNum < 15 ? '#f59e0b' : '#22c55e';
+        vCoverEl.innerHTML = `<span style="color:${coverCol};font-weight:600;">${cover}× margin cover</span> <span style="color:var(--text-muted);font-size:9px;">(Daily × √252)</span>`;
+      } else {
+        vCoverEl.textContent = 'Daily × √252';
+      }
+    } else {
+      dVolSubEl.textContent = '—';
+      vCoverEl.textContent = 'Daily × √252';
+    }
+
+    // ── CARD 5: DAYS TO EXPIRY ──────────────────────────────────────────
+    document.getElementById('kpiDTE').textContent = front.dte != null ? front.dte + 'd' : '—';
+    const expNoticeEl = document.getElementById('kpiExpiryNotice');
+    const rollSubEl = document.getElementById('kpiRolloverSub');
+
+    if (front.dte != null) {
+      if (front.dte === 0) {
+        expNoticeEl.innerHTML = '<span style="color:#ef4444;font-weight:700;">Expires Tonight (11:30 PM)</span>';
+      } else if (front.dte <= 5) {
+        expNoticeEl.innerHTML = `<span style="color:#ef4444;font-weight:600;">Tender Window (${front.dte}d left)</span>`;
+      } else if (front.dte <= 10) {
+        expNoticeEl.innerHTML = `<span style="color:#f59e0b;font-weight:600;">Roll in ~${front.dte - 5}d</span>`;
+      } else {
+        expNoticeEl.innerHTML = `<span style="color:var(--text-muted);">Front Month (${_formatExpiryShort(front.expiry)})</span>`;
+      }
+    }
+
+    if (nextContract) {
+      const nextMargin = nextContract.total_margin_pct != null ? nextContract.total_margin_pct : nextContract.initial_margin_pct;
+      rollSubEl.innerHTML = `Next: <strong>${_formatExpiryShort(nextContract.expiry)}</strong> (${nextContract.dte}d) &middot; ${nextMargin.toFixed(2)}%`;
+    } else {
+      rollSubEl.textContent = 'Front-month contract';
+    }
+
+    // ── CARD 6: REGIME (Unified 5Y Baseline) ───────────────────────────
     const rEl = document.getElementById('kpiRegime');
     const rsEl = document.getElementById('kpiRegimeSub');
     const stressNotch = document.getElementById('stressNotch');
+
     try {
       const stressData = await loadJSON('stress_score');
       const sc = stressData.stress_score;
       const lbl = stressData.stress_label;
-      const cls   = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
+      const cls = {CALM:'regime-calm', NORMAL:'regime-elevated', MONITOR:'regime-stressed', ELEVATED:'regime-crisis', STRESS:'regime-crisis'};
       rEl.className = 'stat-value ' + (cls[lbl]||'');
       rEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>${lbl}`;
       rsEl.textContent = `Score: ${sc} / 100 │ Margin P${stressData.margin_pct} │ Vol P${stressData.vol_pct}`;
-      const vpEl = document.getElementById('kpiVolPercentile');
-      if (vpEl) {
-        vpEl.textContent = `Vol P${stressData.vol_pct} (5Y trailing)`;
-        vpEl.className = `stat-sub ${stressData.vol_pct >= 75 ? 'up' : stressData.vol_pct <= 25 ? 'down' : 'flat'}`;
+
+      // Update Card 1 subtitle with 5Y trailing percentile if not in tender
+      if ((front.tender_margin_pct ?? 0) === 0 && mSubEl) {
+        mSubEl.textContent = `Margin P${stressData.margin_pct} (5Y trailing)`;
       }
-      // FIX 5: position the white notch on the gradient bar
+
       const notchPct = Math.min(100, Math.max(0, sc));
       if (stressNotch) stressNotch.style.left = notchPct + '%';
-      // Update Stress Score tooltip with live values
+
       if (typeof TOOLTIPS !== 'undefined' && TOOLTIPS['Stress Score']) {
         TOOLTIPS['Stress Score'].body = `Combines margin percentile rank and volatility percentile weighted equally against a trailing 5-year distribution.<br><br>
 <strong>0–40: CALM</strong> — Low cost environment.<br>
@@ -4246,7 +4375,6 @@ async function renderPriceMarginConfluence() {
 Scores above 75 historically preceded margin hikes within 5 days in a majority of cases.`;
       }
     } catch(e) {
-      // Fallback to margin-based
       const m = front.initial_margin_pct;
       if (m < 20) { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>CALM'; rEl.className='stat-value regime-calm'; rsEl.textContent='Low cost'; }
       else if (m < 35) { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>NORMAL'; rEl.className='stat-value regime-elevated'; rsEl.textContent='Monitor'; }
@@ -4254,36 +4382,14 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
       else { rEl.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;"></span>CRISIS'; rEl.className='stat-value regime-crisis'; rsEl.textContent='Extreme'; }
     }
 
-    // Item 3: Regime percentile display
-    try {
-      const regimeModel = await loadJSON('regime_model');
-      const prEl = document.getElementById('kpiPercentileRegime');
-      prEl.textContent = `P${regimeModel.current_pct_regime} in Regime ${regimeModel.current_regime}`;
-      const pEl2 = document.getElementById('kpiPercentile');
-      pEl2.textContent = `P${regimeModel.current_pct_alltime} all-time`;
-      // Update percentile tooltip with live regime context
-      if (typeof TOOLTIPS !== 'undefined' && TOOLTIPS['Margin Percentile Rank']) {
-        const ra = regimeModel.regime_a, rb = regimeModel.regime_b;
-        const curRegime = regimeModel.current_regime;
-        const otherRegime = curRegime === 'A' ? 'B' : 'A';
-        const regimeDesc = curRegime === 'A'
-          ? 'Regime A (Structural) — vol &lt; 4.5% or pre-2019. Calm, low-cost era.'
-          : 'Regime B (Elevated) — vol ≥ 4.5% &amp; 2019-present. High-stress era.';
-        const slopeA = ra ? ra.slope.toFixed(2) : '—';
-        const slopeB = rb ? rb.slope.toFixed(2) : '—';
-        TOOLTIPS['Margin Percentile Rank'].body =
-          `<strong>P${regimeModel.current_pct_alltime} all-time</strong> — today's margin is higher than ${regimeModel.current_pct_alltime}% of every front-month observation since 2010. Spans the quiet 2010–2018 era AND the volatile 2019+ era together, so this number can be misleading in isolation.<br><br>` +
-          `<strong>P${regimeModel.current_pct_regime} in Regime ${curRegime}</strong> — compared only against days in the <em>current</em> regime (${regimeDesc}). This is the like-for-like number — similar vol level, similar structural conditions.<br><br>` +
-          `<strong>Why two numbers?</strong> The two regimes have materially different vol-to-margin relationships:<br>` +
-          `Regime A slope = <strong>${slopeA} margin pts per 1% vol</strong> (${ra ? ra.n : '—'} obs)<br>` +
-          `Regime B slope = <strong>${slopeB} margin pts per 1% vol</strong> (${rb ? rb.n : '—'} obs)<br><br>` +
-          `<em>Use the all-time rank for long-run context. Use the regime rank for trading decisions — it tells you where you stand vs comparable market conditions.</em>`;
-        attachTooltips();
-      }
-    } catch(e) {}
+    if (typeof attachTooltips === 'function') attachTooltips();
+  } catch(err) {
+    console.error('Error updating stats bar:', err);
+  }
+}
 
-  } catch(e) { console.error('KPI load failed:', e); }
-})();
+// Initial top stats bar render
+updateStatsBar('NATURALGAS');
 
 // ═══════════════════════════════════════════════════════════════════
 // PART 2 — Overview Tab
@@ -4452,7 +4558,10 @@ async function renderOverview() {
     }
 
     // Expose re-render hook at module scope so renderMarketOverviewContext can trigger it
-    _reRenderSnapshot = () => renderSnapshotTable(activeSnapSym);
+    _reRenderSnapshot = () => {
+      renderSnapshotTable(activeSnapSym);
+      if (typeof updateStatsBar === 'function') updateStatsBar(activeSnapSym);
+    };
 
     renderSnapshotTable(activeSnapSym);
 
@@ -4468,6 +4577,7 @@ async function renderOverview() {
         btn.style.border = 'none';
         activeSnapSym = btn.dataset.sym;
         renderSnapshotTable(activeSnapSym);
+        if (typeof updateStatsBar === 'function') updateStatsBar(activeSnapSym);
       });
     });
     // Forward curve contract arrays
@@ -10701,6 +10811,18 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "Front Margin %": {
     title: "Front Margin % (Total Gross Margin)",
     body: `The total gross margin percentage required to hold 1 lot of the front-month contract.<br><br>• <strong>Total Gross Margin:</strong> The full margin blocked by brokers, consisting of SPAN Initial Margin + any active Tender Margin.<br>• <strong>Tender Period:</strong> During the 5 trading days prior to expiry, MCX imposes a progressive 5% per day physical delivery tender margin (up to 25.00%).<br>• <strong>SPAN Initial Margin:</strong> Core clearinghouse volatility requirement calculated via SEBI EWMA.`
+  },
+  "kpi-capital": {
+    title: "Capital / Lot & Sensitivity",
+    body: `<strong>Required Margin Capital:</strong> The exact Rupee cash outlay blocked by brokers to hold 1 futures lot of the front-month contract.<br><br>• <strong>Calculation:</strong> Settle Price × Lot Size (1,250 MMBtu for NG, 250 MMBtu for MINI) × Total Margin %.<br>• <strong>Capital Sensitivity:</strong> The Rupee shift in account margin required for every 1.00% change in clearinghouse margin or price.<br>• <strong>Notional Value:</strong> Full contract exposure controlled by 1 lot.`
+  },
+  "kpi-price": {
+    title: "MCX Front Settle Price & Trading Range",
+    body: `<strong>Official Daily Settle Price (DSP):</strong> The exchange settlement price for the front-month contract from the latest trading session.<br><br>• <strong>Day's Return:</strong> Percentage price change relative to the prior session's settlement.<br>• <strong>Session Range:</strong> High and Low traded prices during the regular session.<br>• <strong>Impact:</strong> Settle price directly determines the rupee margin required per lot.`
+  },
+  "kpi-volatility": {
+    title: "EWMA Volatility & Clearinghouse Margin Cover",
+    body: `<strong>Volatility Dynamics & Risk Cushion:</strong><br><br>• <strong>Annualized Volatility:</strong> Daily EWMA volatility scaled by √252.<br>• <strong>Daily Volatility:</strong> Exchange official Exponentially Weighted Moving Average (EWMA) volatility factor.<br>• <strong>Margin Cover Ratio:</strong> Total Margin % ÷ Daily Vol %. Measures how many days of 1-standard-deviation price swings the current clearinghouse margin buffer absorbs.<br>• <strong>Safety Tiers:</strong> &gt;15× is conservative/safe; 10–15× is normal; &lt;10× indicates thin buffer with elevated hike vulnerability.`
   },
   "ELM %": {
     title: "Extreme Loss Margin %",
