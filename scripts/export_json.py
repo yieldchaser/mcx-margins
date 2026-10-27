@@ -3120,23 +3120,32 @@ def main():
         except Exception:
             pass
 
-        if dte is not None and dte <= 0:
-            # Contract expires and ceases trading today; no forward tender margin tomorrow
-            next_tender = 0.0
+        is_expiring_today = (dte is not None and dte <= 0)
+
+        if is_expiring_today:
+            # Contract expires and ceases trading today at 11:30 PM IST.
+            # There is NO overnight margin tomorrow; positions settle to cash at FSP.
+            next_tender = None
+            predicted_total = None
+        elif tender_margin >= 25.0:
+            # Already at statutory maximum tender margin cap (25.0%); cannot hike further
+            next_tender = 25.0
+            predicted_total = round(predicted_initial + next_tender, 3)
         elif tender_margin > 0:
             # Currently climbing tender ladder: +5% tomorrow up to 25% cap
             next_tender = min(25.0, tender_margin + 5.0)
+            predicted_total = round(predicted_initial + next_tender, 3)
         elif trading_days_to_expiry is not None and 1 <= trading_days_to_expiry <= 5:
             # Next trading day enters or remains in tender window
             next_tender = 5.0
+            predicted_total = round(predicted_initial + next_tender, 3)
         elif dte is not None and 1 <= dte <= 5:
             # Tomorrow enters or remains in tender window
             next_tender = 5.0
+            predicted_total = round(predicted_initial + next_tender, 3)
         else:
             next_tender = 0.0
-
-        # Total predicted margin
-        predicted_total = round(predicted_initial + next_tender, 3)
+            predicted_total = round(predicted_initial + next_tender, 3)
 
         # 4. Vol Cushion to statutory floor (2.35% daily vol)
         vol_cushion_pct = round(((dv * 100 - 2.35) / 2.35) * 100, 1)
@@ -3152,30 +3161,44 @@ def main():
             r_req = math.sqrt(term)
             hike_locked = False
 
-        p_up = round(p_close * math.exp(r_req), 2) if p_close else None
-        p_dn = round(p_close * math.exp(-r_req), 2) if p_close else None
-        r_req_pct = round(r_req * 100, 2)
+        p_up = round(p_close * math.exp(r_req), 2) if (p_close and not is_expiring_today) else None
+        p_dn = round(p_close * math.exp(-r_req), 2) if (p_close and not is_expiring_today) else None
+        r_req_pct = round(r_req * 100, 2) if not is_expiring_today else None
 
         # 6. Rupee Margin per lot (1,250 mmBtu)
         lot_size = 1250
         if p_close:
             lot_notional = p_close * lot_size
             rupee_current = round(lot_notional * (tm / 100.0), 0)
-            rupee_predicted = round(lot_notional * (predicted_total / 100.0), 0)
-            rupee_delta = round(rupee_predicted - rupee_current, 0)
+            if is_expiring_today:
+                rupee_predicted = None
+                rupee_delta = 0
+            elif predicted_total is not None:
+                rupee_predicted = round(lot_notional * (predicted_total / 100.0), 0)
+                rupee_delta = round(rupee_predicted - rupee_current, 0)
+            else:
+                rupee_predicted = None
+                rupee_delta = 0
         else:
-            rupee_current, rupee_predicted, rupee_delta = 0, 0, 0
+            rupee_current, rupee_predicted, rupee_delta = 0, None, 0
 
         spread_vs_next = (
             tm - ng_fwd[i + 1]["total_margin_pct"]
             if i + 1 < len(ng_fwd)
             else 0.0
         )
-        action = "HIKE" if predicted_total > tm + 0.2 else ("CUT" if predicted_total < tm - 0.2 else "FLAT")
+        if is_expiring_today:
+            action = "EXPIRES_TODAY"
+        elif predicted_total is not None:
+            action = "HIKE" if predicted_total > tm + 0.2 else ("CUT" if predicted_total < tm - 0.2 else "FLAT")
+        else:
+            action = "FLAT"
+
         panic_entries.append(
             {
                 "expiry": exp,
                 "dte": dte,
+                "is_expiring_today": is_expiring_today,
                 "initial_margin_pct": round(im, 3),
                 "total_margin_pct": round(tm, 3),
                 "tender_margin_pct": round(tender_margin, 2),
@@ -3184,15 +3207,15 @@ def main():
                 "vol_pct": round(dv * 100, 3),
                 "vol_cushion_pct": vol_cushion_pct,
                 "predicted_initial": round(predicted_initial, 3),
-                "predicted_tender": round(next_tender, 2),
+                "predicted_tender": round(next_tender, 2) if next_tender is not None else None,
                 "predicted_tomorrow": predicted_total,
                 "hike_trigger_up_price": p_up,
                 "hike_trigger_dn_price": p_dn,
                 "hike_trigger_pct": r_req_pct,
-                "hike_locked": hike_locked,
+                "hike_locked": hike_locked if not is_expiring_today else False,
                 "settle_price": round(p_close, 2) if p_close else None,
                 "rupee_margin_current": int(rupee_current),
-                "rupee_margin_predicted": int(rupee_predicted),
+                "rupee_margin_predicted": int(rupee_predicted) if rupee_predicted is not None else None,
                 "rupee_delta": int(rupee_delta),
                 "spread_vs_next": round(spread_vs_next, 3),
                 "action": action,
