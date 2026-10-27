@@ -286,7 +286,7 @@ def main():
         impact_desc = f"+₹{format_inr(primary['rupee_delta'])} / Lot required overnight"
         impact_color = "#f85149"
         action_title = "RMS Protocol"
-        action_desc = "Account must carry adequate free margin collateral before the 11:30 PM IST close to prevent automated RMS liquidation. Non-delivery participants should execute calendar rolls before physical tender lock-in."
+        action_desc = "Account must carry adequate free margin collateral before the market close (11:30 PM summer / 11:55 PM winter IST) to prevent automated RMS liquidation. Non-delivery participants should execute calendar rolls before physical tender lock-in."
 
         dir_text = "HIKED ▲" if primary["delta_total"] > 0 else "CUT ▼"
         subject = f"MCX Margin Alert: NATURALGAS {primary['expiry']} {dir_text} {abs(primary['delta_total']):.2f}pp (Total {primary['today_total']:.2f}%) — {today_date}"
@@ -314,7 +314,7 @@ def main():
             impact_desc = f"+₹{format_inr(primary['rupee_delta'])} / Lot required overnight"
             impact_color = "#f85149"
             action_title = "RMS Protocol"
-            action_desc = "Fund account with sufficient collateral buffer prior to 11:30 PM IST to absorb clearing house margin increases."
+            action_desc = "Fund account with sufficient collateral buffer prior to market close (11:30 PM summer / 11:55 PM winter IST) to absorb clearing house margin increases."
         else:
             driver_title = "Market Driver"
             driver_desc = f"Realized volatility cooled. Clearing house reduced base SPAN margin by {abs(primary['delta_im']):.2f} pp."

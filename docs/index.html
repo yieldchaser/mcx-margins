@@ -2565,7 +2565,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <div class="card mb-4" id="todSeasonalityCard">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
         <div>
-          <div class="module-kicker has-tooltip" data-dyn-title="Intraday Volatility Profile" data-dyn-body="Average volume and Garman-Klass realized volatility across 15-minute session intervals (09:00 to 23:30 IST).">Intraday Liquidity & Volatility Cycle</div>
+          <div class="module-kicker has-tooltip" data-dyn-title="Intraday Volatility Profile" data-dyn-body="Average volume and Garman-Klass realized volatility across 15-minute session intervals (09:00 to 23:30 Summer / 23:55 Winter IST).">Intraday Liquidity & Volatility Cycle</div>
           <div class="card-title has-tooltip" data-dyn-title="Time-of-Day Seasonality" data-dyn-body="15-minute interval distribution showing NYMEX pit open and Thursday EIA storage report windows across seasonal daylight saving time shifts.">Intraday Time-of-Day Seasonality Profile (15-Min Intervals)</div>
           <div class="scope-row" style="margin-top:2px;">
             <span class="scope-chip has-tooltip" data-dyn-title="Historical Coverage" data-dyn-body="Aggregated from 1-minute futures data across full historical continuous vault."><strong>Scope</strong> Continuous (2019–Present)</span>
@@ -2574,7 +2574,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </div>
         <!-- DST Profile Buttons -->
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="deep-tf-btn active has-tooltip" data-tod-profile="combined" data-dyn-title="Combined Profile" data-dyn-body="All trading sessions across historical vault, displaying average volume and Garman-Klass volatility from 09:00 to 23:30 IST.">Combined</button>
+          <button class="deep-tf-btn active has-tooltip" data-tod-profile="combined" data-dyn-title="Combined Profile" data-dyn-body="All trading sessions across historical vault, displaying average volume and Garman-Klass volatility from 09:00 to 23:30 Summer / 23:55 Winter IST.">Combined</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="summer_edt" data-dyn-title="US Summer (EDT)" data-dyn-body="During US Daylight Saving Time (March to November), US NYMEX Pit opens at 18:30 IST and Thursday EIA storage reports release at 20:00 IST.">US Summer (EDT)</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="winter_est" data-dyn-title="US Winter (EST)" data-dyn-body="During US Standard Time (November to March), US NYMEX Pit opens at 19:30 IST and Thursday EIA storage reports release at 21:00 IST.">US Winter (EST)</button>
           <button class="deep-tf-btn has-tooltip" data-tod-profile="thursday_eia" data-dyn-title="Thursday Inventory Day (EIA)" data-dyn-body="Thursday trading sessions specifically isolated to demonstrate the 2.8x volatility explosion during the weekly storage injection/withdrawal announcement.">Thursday (EIA)</button>
@@ -8803,7 +8803,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       ? 'Dynamic M2M: margin calls measured against your live ledger balance.'
       : 'Static capital: margin calls measured against fixed initial deposit.';
     const liveNote = isLastLive
-      ? ` <strong>Live Mark:</strong> Final valuation uses real-time intraday LTP (₹${fmtNum(pByDate[lastD].close, 2)} at ${pByDate[lastD].live_time}). Official exchange settlement occurs at 23:30 IST.`
+      ? ` <strong>Live Mark:</strong> Final valuation uses real-time intraday LTP (₹${fmtNum(pByDate[lastD].close, 2)} at ${pByDate[lastD].live_time}). Official exchange settlement occurs at ${getMcxClosingTime().isSummer ? '23:30 IST' : '23:55 IST'}.`
       : '';
     infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em>${liveNote}</span>`;
   }
