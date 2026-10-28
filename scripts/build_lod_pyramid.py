@@ -54,6 +54,14 @@ MCX_NG_EXPIRY_SCHEDULE = {
     "27FEB": "2027-02-23 23:55:00",
     "27MAR": "2027-03-25 23:30:00",
     "27APR": "2027-04-27 23:30:00",
+    "27MAY": "2027-05-26 23:30:00",
+    "27JUN": "2027-06-25 23:30:00",
+    "27JUL": "2027-07-27 23:30:00",
+    "27AUG": "2027-08-26 23:30:00",
+    "27SEP": "2027-09-27 23:30:00",
+    "27OCT": "2027-10-26 23:30:00",
+    "27NOV": "2027-11-24 23:55:00",
+    "27DEC": "2027-12-28 23:55:00",
 }
 
 def find_vault_parquet(name: str) -> Path:
@@ -80,6 +88,23 @@ def get_contract_expiry_epoch(exp_code: str, fallback_last_epoch: int) -> int:
     if exp_code in MCX_NG_EXPIRY_SCHEDULE:
         ts = pd.Timestamp(MCX_NG_EXPIRY_SCHEDULE[exp_code], tz="Asia/Kolkata")
         return int(ts.timestamp())
+    # Dynamic fallback: query docs/data/contract_index.json or standard 26th
+    try:
+        ci_path = Path("docs/data/contract_index.json")
+        if ci_path.exists():
+            import json
+            with open(ci_path, "r", encoding="utf-8") as f:
+                ci = json.load(f)
+            for item in ci.get("ng", []):
+                exp_raw = item.get("expiry", "")
+                if exp_code in exp_raw:
+                    from datetime import datetime
+                    dt_p = datetime.strptime(exp_raw, "%d%b%Y")
+                    close_str = "23:55:00" if dt_p.month in [11, 12, 1, 2] else "23:30:00"
+                    ts = pd.Timestamp(f"{dt_p.strftime('%Y-%m-%d')} {close_str}", tz="Asia/Kolkata")
+                    return int(ts.timestamp())
+    except Exception:
+        pass
     return fallback_last_epoch
 
 def find_contract_wise_parquets(name: str) -> list[Path]:

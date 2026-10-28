@@ -4172,11 +4172,12 @@ async function updateStatsBar(sym = currentStatsSym) {
     if (meta && meta.last_updated) setStaleness(meta.last_updated);
 
     const contracts = current[sym] || [];
-    const front = contracts.filter(c => c.dte >= 0).sort((a,b) => a.dte - b.dte)[0] || contracts[0];
+    const activeContracts = contracts.filter(c => !isContractExpired(c.expiry) && (c.dte == null || c.dte >= 0)).sort((a,b) => (a.dte ?? 999) - (b.dte ?? 999));
+    const front = activeContracts[0] || contracts[0];
     if (!front) return;
 
     // Next active contract for rollover guidance
-    const nextContract = contracts.filter(c => c.dte > front.dte).sort((a,b) => a.dte - b.dte)[0];
+    const nextContract = activeContracts.find(c => c.dte > front.dte) || contracts.filter(c => c.dte > front.dte).sort((a,b) => a.dte - b.dte)[0];
 
     // Market data lookup for price, return, high, low
     let mkt = snapMarketLookup[sym]?.[front.expiry];
