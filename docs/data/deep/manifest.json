@@ -2,15 +2,15 @@
   "ng": {
     "daily": {
       "file": "data/deep/ng_daily.json",
-      "bars": 1941
+      "bars": 1949
     },
     "h1": {
       "file": "data/deep/ng_1h.json",
-      "bars": 28288
+      "bars": 28391
     },
     "m15": {
       "file": "data/deep/ng_15m.json",
-      "bars": 26442
+      "bars": 30513
     },
     "m1_months": [
       {
@@ -99,9 +99,9 @@
       },
       {
         "month": "2026_10",
-        "bars": 15543,
+        "bars": 15458,
         "start": 1790825400,
-        "end": 1793179920,
+        "end": 1793174820,
         "file": "data/deep/1m/2026_10.json"
       }
     ]
@@ -109,15 +109,15 @@
   "ngm": {
     "daily": {
       "file": "data/deep/ngm_daily.json",
-      "bars": 860
+      "bars": 868
     },
     "h1": {
       "file": "data/deep/ngm_1h.json",
-      "bars": 12563
+      "bars": 12666
     },
     "m15": {
       "file": "data/deep/ngm_15m.json",
-      "bars": 26442
+      "bars": 30513
     },
     "m1_months": [
       {
@@ -206,9 +206,9 @@
       },
       {
         "month": "2026_10",
-        "bars": 15544,
+        "bars": 15458,
         "start": 1790825400,
-        "end": 1793179920,
+        "end": 1793174820,
         "file": "data/deep/1m_ngm/2026_10.json"
       }
     ]

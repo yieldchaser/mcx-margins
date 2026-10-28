@@ -120,9 +120,68 @@ def get_authenticated_fyers():
     return fyers_inst, user_name
 
 MONTH_CODES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+ROLL_STATE_FILE = os.path.join(REPO_DIR, "data", "roll_state.json")
+CONTRACT_INDEX_FILE = os.path.join(REPO_DIR, "docs", "data", "contract_index.json")
+
+# Official MCX Natural Gas Expiration Schedule (Standard Expiry: 4th or 5th business day before end of month)
+MCX_NG_EXPIRY_SCHEDULE = {
+    # 2026
+    "26JAN": "2026-01-27",
+    "26FEB": "2026-02-24",
+    "26MAR": "2026-03-26",
+    "26APR": "2026-04-27",
+    "26MAY": "2026-05-26",
+    "26JUN": "2026-06-25",
+    "26JUL": "2026-07-28",
+    "26AUG": "2026-08-26",
+    "26SEP": "2026-09-25",
+    "26OCT": "2026-10-27",
+    "26NOV": "2026-11-24",
+    "26DEC": "2026-12-28",
+    # 2027
+    "27JAN": "2027-01-25",
+    "27FEB": "2027-02-23",
+    "27MAR": "2027-03-25",
+    "27APR": "2027-04-27",
+    "27MAY": "2027-05-26",
+    "27JUN": "2027-06-25",
+    "27JUL": "2027-07-27",
+    "27AUG": "2027-08-26",
+    "27SEP": "2027-09-27",
+    "27OCT": "2027-10-26",
+    "27NOV": "2027-11-24",
+    "27DEC": "2027-12-28",
+}
+
+def get_ng_contract_expiry_dt(exp_code: str, yr: int, mo: int) -> datetime:
+    """Returns official contract expiry datetime in Asia/Kolkata timezone (23:30 summer, 23:55 winter)."""
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    date_str = MCX_NG_EXPIRY_SCHEDULE.get(exp_code)
+    
+    if not date_str and os.path.exists(CONTRACT_INDEX_FILE):
+        try:
+            with open(CONTRACT_INDEX_FILE, "r", encoding="utf-8") as f:
+                ci = json.load(f)
+            for item in ci.get("ng", []):
+                exp_raw = item.get("expiry", "")
+                if exp_code in exp_raw:
+                    dt_parsed = datetime.strptime(exp_raw, "%d%b%Y")
+                    date_str = dt_parsed.strftime("%Y-%m-%d")
+                    break
+        except Exception:
+            pass
+
+    if not date_str:
+        # Standard fallback: 26th of contract month
+        date_str = f"{yr:04d}-{mo:02d}-26"
+
+    # MCX session close: 23:55 IST in winter (Nov-Feb), 23:30 IST in summer (Mar-Oct)
+    close_time_str = "23:55:00" if mo in [11, 12, 1, 2] else "23:30:00"
+    exp_dt = datetime.strptime(f"{date_str} {close_time_str}", "%Y-%m-%d %H:%M:%S").replace(tzinfo=ist_tz)
+    return exp_dt
 
 def resolve_active_contracts(fyers_client, now_dt):
-    """Dynamically resolves front-month, near-month, and mini contracts for ANY date of the year."""
+    """Dynamically resolves front-month, near-month, and mini contracts anchored to official expiry."""
     candidates = []
     for offset in range(6):
         m_idx = (now_dt.month - 1 + offset) % 12
@@ -132,48 +191,92 @@ def resolve_active_contracts(fyers_client, now_dt):
         exp_code = f"{yy}{mmm}"
         sym_ng = f"MCX:NATURALGAS{exp_code}FUT"
         sym_mini = f"MCX:NATGASMINI{exp_code}FUT"
-        candidates.append((y, m_idx + 1, exp_code, sym_ng, sym_mini))
-        
+        exp_dt = get_ng_contract_expiry_dt(exp_code, y, m_idx + 1)
+        candidates.append({
+            "year": y,
+            "month": m_idx + 1,
+            "exp_code": exp_code,
+            "sym_ng": sym_ng,
+            "sym_mini": sym_mini,
+            "expiry_dt": exp_dt,
+            "expiry_epoch": int(exp_dt.timestamp())
+        })
+
+    # Ensure now_dt is timezone-aware in Asia/Kolkata
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    if now_dt.tzinfo is None:
+        now_dt = now_dt.replace(tzinfo=ist_tz)
+
+    # Rollover logic: Candidate 0 remains active front month until its official expiry close timestamp.
+    # In live trading (with non-zero hour/minute), Candidate 0 expires at official session close (23:30 / 23:55).
+    # For date-only test callers (hour==0 and minute==0), expiry day triggers roll.
+    c0 = candidates[0]
+    c1 = candidates[1]
+
     is_roll = False
+    if now_dt.hour == 0 and now_dt.minute == 0:
+        is_roll = (now_dt.date() >= c0["expiry_dt"].date())
+    else:
+        is_roll = (now_dt > c0["expiry_dt"])
+
+    if is_roll:
+        front_idx = 1
+        active_candidate = c1
+        tenure_start_epoch = c0["expiry_epoch"]
+    else:
+        front_idx = 0
+        active_candidate = c0
+        tenure_start_epoch = c0["expiry_epoch"] - (32 * 86400)
+
+    # Read ratchet lock from data/roll_state.json for forward-monotonic safety
+    roll_state = {}
+    if os.path.exists(ROLL_STATE_FILE):
+        try:
+            with open(ROLL_STATE_FILE, "r", encoding="utf-8") as f:
+                roll_state = json.load(f)
+        except Exception:
+            roll_state = {}
+
+    last_locked_epoch = roll_state.get("locked_expiry_epoch", 0)
+    rolled_at_str = roll_state.get("rolled_at")
     try:
-        q = fyers_client.quotes({"symbols": f"{candidates[0][3]},{candidates[1][3]}"})
-        if q.get("s") == "ok":
-            v0 = {}
-            v1 = {}
-            for item in q.get("d", []):
-                if item.get("n") == candidates[0][3]:
-                    v0 = item.get("v", {})
-                elif item.get("n") == candidates[1][3]:
-                    v1 = item.get("v", {})
-            vol0 = v0.get("volume", 0) or 0
-            vol1 = v1.get("volume", 0) or 0
-            lp0 = v0.get("lp", 0) or 0
-            # If front candidate has zero volume/quote past the 22nd (e.g. expired or inactive), or next contract has overtaken volume
-            if now_dt.day >= 22 and (vol0 == 0 or lp0 <= 0):
-                is_roll = True
-            elif vol1 > 0 and vol1 > vol0 and now_dt.day >= 20:
-                is_roll = True
-            else:
-                is_roll = False
-        elif q.get("code") in (-300, 400, 404):
-            is_roll = True
-        else:
-            # Fallback if quotes API unavailable: roll on or after the 27th
-            is_roll = (now_dt.day >= 27)
+        rolled_at_dt = datetime.fromisoformat(rolled_at_str) if rolled_at_str else None
+        if rolled_at_dt and rolled_at_dt.tzinfo is None:
+            rolled_at_dt = rolled_at_dt.replace(tzinfo=ist_tz)
     except Exception:
-        is_roll = (now_dt.day >= 27)
-        
-    front_idx = 1 if is_roll else 0
+        rolled_at_dt = None
+
+    # Ratchet lock: if already rolled forward at or before now_dt, never roll backwards
+    if not is_roll and rolled_at_dt and now_dt >= rolled_at_dt and last_locked_epoch >= c1["expiry_epoch"]:
+        front_idx = 1
+        active_candidate = c1
+        tenure_start_epoch = c0["expiry_epoch"]
+
+    # Persist irreversible ratchet lock on forward roll
+    if front_idx > 0 and active_candidate["expiry_epoch"] > last_locked_epoch:
+        try:
+            roll_state["locked_expiry_epoch"] = active_candidate["expiry_epoch"]
+            roll_state["active_symbol"] = active_candidate["sym_ng"]
+            roll_state["active_exp_code"] = active_candidate["exp_code"]
+            roll_state["rolled_at"] = now_dt.isoformat()
+            with open(ROLL_STATE_FILE, "w", encoding="utf-8") as f:
+                json.dump(roll_state, f, indent=2)
+            log(f"Rollover ratchet lock updated: {active_candidate['sym_ng']} (Expiry: {active_candidate['expiry_dt'].strftime('%Y-%m-%d %H:%M IST')})")
+        except Exception as e:
+            log(f"Notice persisting roll_state.json: {e}")
+
     vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")
     os.makedirs(vault_dir, exist_ok=True)
     
     contracts = []
     for i, c in enumerate(candidates):
         is_front = (i == front_idx)
-        pfile_ng = os.path.join(vault_dir, f"{c[3].replace(':', '_')}_1m_contract_wise.parquet")
-        contracts.append(("NATURALGAS", c[2], c[3], pfile_ng, is_front, c[0], c[1]))
-        pfile_mini = os.path.join(vault_dir, f"{c[4].replace(':', '_')}_1m_contract_wise.parquet")
-        contracts.append(("NATGASMINI", c[2], c[4], pfile_mini, is_front, c[0], c[1]))
+        # Tenure start: for c0, prior expiry; for c1, c0 expiry; for c2, c1 expiry
+        c_tenure_start = candidates[i-1]["expiry_epoch"] if i > 0 else (c["expiry_epoch"] - (32 * 86400))
+        pfile_ng = os.path.join(vault_dir, f"{c['sym_ng'].replace(':', '_')}_1m_contract_wise.parquet")
+        contracts.append(("NATURALGAS", c["exp_code"], c["sym_ng"], pfile_ng, is_front, c["year"], c["month"], c_tenure_start, c["expiry_epoch"]))
+        pfile_mini = os.path.join(vault_dir, f"{c['sym_mini'].replace(':', '_')}_1m_contract_wise.parquet")
+        contracts.append(("NATGASMINI", c["exp_code"], c["sym_mini"], pfile_mini, is_front, c["year"], c["month"], c_tenure_start, c["expiry_epoch"]))
         
     return contracts
 
@@ -188,7 +291,7 @@ def run_snapshot_cycle():
     active_contracts = resolve_active_contracts(fyers, now_ist)
     start_dt = now - timedelta(days=5)
 
-    for base, exp, sym, pfile, is_front, front_yr, front_mo in active_contracts:
+    for base, exp, sym, pfile, is_front, front_yr, front_mo, tenure_start_epoch, expiry_epoch in active_contracts:
         payload = {
             "symbol": sym,
             "resolution": "1",
@@ -222,6 +325,7 @@ def run_snapshot_cycle():
                 log(f"Updated {sym}: {len(df_combined):,} bars (+{len(df_new):,} fetched). Latest Close: ₹{df_combined['close'].iloc[-1]:.2f}")
 
                 # If front month, update the deep chart LOD tiers for this symbol
+                # CRITICAL: Sliced strictly to active front-month tenure to NEVER overwrite historical bars across roll boundaries
                 if is_front:
                     try:
                         sym_prefix = "ngm" if base == "NATGASMINI" else "ng"
@@ -230,9 +334,12 @@ def run_snapshot_cycle():
                         deep_1m_dir = os.path.join(REPO_DIR, "docs", "data", "deep", dir_1m)
                         os.makedirs(deep_1m_dir, exist_ok=True)
 
+                        # Filter strictly within this contract's official front-month tenure
+                        df_front_bars = df_combined[(df_combined["epoch"] >= tenure_start_epoch) & (df_combined["epoch"] <= expiry_epoch)].copy()
+
                         # Partition recent candles by calendar month of trading (not contract month)
                         recent_threshold = int((now - timedelta(days=7)).timestamp())
-                        df_recent_1m = df_combined[df_combined["epoch"] >= recent_threshold].copy()
+                        df_recent_1m = df_front_bars[df_front_bars["epoch"] >= recent_threshold].copy()
                         df_recent_1m["ym"] = df_recent_1m["ts_ist"].dt.strftime("%Y_%m")
 
                         for ym, grp in df_recent_1m.groupby("ym"):
@@ -288,9 +395,9 @@ def run_snapshot_cycle():
                         # Synchronize Tier 2: {sym_prefix}_15m.json
                         m15_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_15m.json")
                         if os.path.exists(m15_file):
-                            # ONLY resample the active recent 5-day window to preserve continuous historical front-month data
+                            # ONLY resample the active recent 5-day window from front-month tenure bars
                             recent_start_epoch = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp())
-                            df_resample = df_combined[df_combined["epoch"] >= recent_start_epoch].copy()
+                            df_resample = df_front_bars[df_front_bars["epoch"] >= recent_start_epoch].copy()
                             if len(df_resample) > 0:
                                 df_resample.index = pd.to_datetime(df_resample["epoch"], unit="s", utc=True)
                                 m15_res = df_resample.resample("15min").agg({
@@ -327,7 +434,7 @@ def run_snapshot_cycle():
                         daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_daily.json")
                         if os.path.exists(daily_file):
                             today_str = now_ist.strftime("%Y-%m-%d")
-                            today_bars = df_combined[df_combined["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
+                            today_bars = df_front_bars[df_front_bars["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
                             if len(today_bars) > 0:
                                 today_epoch = int(pd.Timestamp(f"{today_str} 09:00:00", tz="Asia/Kolkata").timestamp())
                                 latest_bar_epoch = int(today_bars["epoch"].iloc[-1])

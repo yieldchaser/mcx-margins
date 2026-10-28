@@ -2498,6 +2498,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
           <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
           <button class="deep-tf-btn active has-tooltip" id="deepHikeTriggersBtn" data-dyn-title="Clearinghouse Hike Trigger Lines" data-dyn-body="Toggles dynamic Upper and Lower clearinghouse margin hike price triggers directly onto the candlestick chart." style="color:#ffffff;border-color:var(--accent);background:var(--accent);">Triggers ON</button>
           <span style="border-left:1px solid var(--border); height:16px; margin:0 3px;"></span>
+          <button class="deep-tf-btn active has-tooltip" id="btnToggleAdjustment" data-dyn-title="Price Series (Raw)" data-dyn-body="Unadjusted exchange traded prices. Reflects actual historical cash execution." title="Unadjusted exchange traded prices. Reflects actual historical cash execution.">Raw</button>
           <button class="deep-tf-btn has-tooltip" id="btnToggleChartType" data-dyn-title="Chart Type" data-dyn-body="Toggle between Candlestick and Area Line chart." title="Toggle Candlestick / Area Line">Line</button>
           <button class="deep-tf-btn has-tooltip" id="btnResetDeepZoom" data-dyn-title="Reset View" data-dyn-body="Resets zoom and pans to the full view." title="Reset Zoom to Full View">Reset</button>
         </div>
@@ -2550,6 +2551,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <span id="hudLow"></span>
         <span id="hudClose"></span>
         <span id="hudVolume"></span>
+        <span id="hudRollover" style="display:none; color:#58a6ff; font-weight:600; margin-left:6px; background:rgba(56,139,253,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(56,139,253,0.3);"></span>
       </div>
 
       <!-- TradingView Lightweight Charts Container -->

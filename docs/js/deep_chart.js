@@ -40,6 +40,89 @@
   let contractIndexCache = null; // cached contract_index.json
   const contractCache = {}; // tag -> { '15m': bars, '1m': bars, 'daily': bars }
 
+  let isBackAdjusted = false; // false: Raw, true: B-ADJ (Panama Canal Back-Adjusted Continuous Series)
+  let rolloversCache = null; // cached rollovers.json: { ng: [...], ngm: [...] }
+
+  async function loadRolloversData() {
+    if (rolloversCache) return rolloversCache;
+    try {
+      const res = await fetch(`data/deep/rollovers.json?_v=${Date.now()}`);
+      if (res.ok) {
+        rolloversCache = await res.json();
+      }
+    } catch (e) {
+      console.warn('Failed to load rollovers.json:', e);
+    }
+    return rolloversCache;
+  }
+  loadRolloversData();
+
+  function applyBackAdjustment(cleanBars, sym) {
+    if (!isBackAdjusted || activeContractMode !== 'continuous') return cleanBars;
+    const list = (rolloversCache && rolloversCache[sym]) ? rolloversCache[sym] : [];
+    if (!list || !list.length) return cleanBars;
+
+    const sortedRolls = [...list].sort((a, b) => a.time - b.time);
+    return cleanBars.map(b => {
+      let spreadDelta = 0;
+      for (let i = 0; i < sortedRolls.length; i++) {
+        const r = sortedRolls[i];
+        if (b.time < r.time) {
+          spreadDelta += (r.spread || 0);
+        }
+      }
+      if (Math.abs(spreadDelta) < 0.001) return b;
+      return {
+        ...b,
+        open: Math.round((b.open + spreadDelta) * 100) / 100,
+        high: Math.round((b.high + spreadDelta) * 100) / 100,
+        low: Math.round((b.low + spreadDelta) * 100) / 100,
+        close: Math.round((b.close + spreadDelta) * 100) / 100
+      };
+    });
+  }
+
+  function updateRolloverMarkers(res) {
+    if (!candleSeries || !areaSeries) return;
+    if (activeContractMode !== 'continuous') {
+      try {
+        candleSeries.setMarkers([]);
+        areaSeries.setMarkers([]);
+      } catch (e) {}
+      return;
+    }
+    const sym = activeContractSym;
+    const list = (rolloversCache && rolloversCache[sym]) ? rolloversCache[sym] : [];
+    if (!list || !list.length) {
+      try {
+        candleSeries.setMarkers([]);
+        areaSeries.setMarkers([]);
+      } catch (e) {}
+      return;
+    }
+
+    const markers = [];
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      markers.push({
+        time: r.time,
+        position: 'aboveBar',
+        color: '#58a6ff',
+        shape: 'arrowDown',
+        text: 'R',
+        size: 1,
+        id: `roll_${r.time}`
+      });
+    }
+    markers.sort((a, b) => a.time - b.time);
+    try {
+      candleSeries.setMarkers(markers);
+      areaSeries.setMarkers(markers);
+    } catch (e) {
+      console.warn('Error setting rollover markers:', e);
+    }
+  }
+
   // In-memory data caches per symbol
   const cache = {
     ng: {
@@ -393,9 +476,45 @@
           hudVolume.innerHTML = `Vol: <strong style="color:var(--text)">${volVal.toLocaleString()} lots</strong>`;
         }
 
+        // Check if cursor is hovering at or near a rollover boundary
+        const hudRollover = document.getElementById('hudRollover');
+        let activeRoll = null;
+        if (activeContractMode === 'continuous' && rolloversCache) {
+          const rolls = rolloversCache[activeContractSym] || [];
+          for (let i = 0; i < rolls.length; i++) {
+            const r = rolls[i];
+            if (param.time === r.time || (r.expiry_epoch && param.time === r.expiry_epoch) || Math.abs(param.time - r.time) <= 86400) {
+              activeRoll = r;
+              break;
+            }
+          }
+        }
+
+        if (activeRoll && hudRollover) {
+          const fromClean = activeRoll.from_symbol.replace('MCX:NATURALGAS','').replace('MCX:NATGASMINI','').replace('FUT','');
+          const toClean = activeRoll.to_symbol.replace('MCX:NATURALGAS','').replace('MCX:NATGASMINI','').replace('FUT','');
+          const spreadSign = activeRoll.spread >= 0 ? '+' : '';
+          hudRollover.style.display = 'inline';
+          hudRollover.innerHTML = `Rollover: <strong>${fromClean} &rarr; ${toClean}</strong> | Spread: <strong style="color:var(--accent-green)">${spreadSign}₹${activeRoll.spread.toFixed(2)}</strong>`;
+        } else if (hudRollover) {
+          hudRollover.style.display = 'none';
+        }
+
         // 2. Update Dynamic Floating Tooltip
         if (floatingTooltip) {
           floatingTooltip.style.display = 'block';
+
+          let rollBannerHtml = '';
+          if (activeRoll) {
+            const fromClean = activeRoll.from_symbol.replace('MCX:NATURALGAS','').replace('MCX:NATGASMINI','').replace('FUT','');
+            const toClean = activeRoll.to_symbol.replace('MCX:NATURALGAS','').replace('MCX:NATGASMINI','').replace('FUT','');
+            const spreadSign = activeRoll.spread >= 0 ? '+' : '';
+            rollBannerHtml = `
+              <div style="margin-top:6px; padding:4px 8px; background:rgba(56,139,253,0.15); border:1px solid rgba(56,139,253,0.4); border-radius:4px; font-size:11px; color:#58a6ff;">
+                Rollover: <strong>${fromClean} &rarr; ${toClean}</strong> | Spread: <strong style="color:var(--accent-green);">${spreadSign}₹${activeRoll.spread.toFixed(2)}</strong>
+              </div>
+            `;
+          }
 
           let ohlcHtml = '';
           if (openPrice !== undefined && highPrice !== undefined && lowPrice !== undefined) {
@@ -435,13 +554,14 @@
               <span style="font-weight:700; color:#58a6ff; font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">${timeDisplay}</span>
               <span style="background:rgba(56,139,253,0.15); color:var(--accent); font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid rgba(56,139,253,0.3);">${currentResolution.toUpperCase()}</span>
             </div>
+            ${rollBannerHtml}
             ${ohlcHtml}
             ${volHtml}
           `;
 
           // Position smoothly without obscuring the cursor or candle
           const w = 230;
-          const h = (openPrice !== undefined) ? 165 : 115;
+          const h = (openPrice !== undefined) ? (activeRoll ? 195 : 165) : (activeRoll ? 145 : 115);
           let left = param.point.x + 20;
           if (left + w > container.clientWidth - 12) {
             left = param.point.x - w - 20;
@@ -461,6 +581,8 @@
 
     container.addEventListener('mouseleave', () => {
       if (floatingTooltip) floatingTooltip.style.display = 'none';
+      const hudRollover = document.getElementById('hudRollover');
+      if (hudRollover) hudRollover.style.display = 'none';
     });
   }
 
@@ -623,86 +745,49 @@
         sTS.daily = Date.now();
       }
 
-      const cleanBars = sanitizeBars(sCache.daily);
-      const areaData = [];
-      const candleData = [];
-      const volumeData = [];
-
-      for (let i = 0; i < cleanBars.length; i++) {
-        const b = cleanBars[i];
-        areaData.push({ time: b.time, value: b.close });
-        candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
-        volumeData.push({
-          time: b.time,
-          value: b.volume,
-          color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
-        });
-      }
-
-      areaSeries.setData(areaData);
-      candleSeries.setData(candleData);
-      volumeSeries.setData(volumeData);
-
-      currentResolution = 'daily';
-      updateBadges('Daily (Macro)', `${cleanBars.length.toLocaleString()} bars`);
-
-      // Ensure today's daily bar dynamically reflects the latest available intraday trade time
-      if (cleanBars.length > 0) {
-        const lastBar = cleanBars[cleanBars.length - 1];
-        updateGlobalLiveTimestamp(lastBar);
-
-        const trySyncLatestIntraday = (fresh15) => {
-          if (fresh15 && fresh15.length) {
-            const latest15 = fresh15[fresh15.length - 1];
-            if (latest15 && latest15.time > lastBar.time) {
-              lastBar.time = latest15.time;
-              lastBar.close = latest15.close;
-              if (areaData.length) {
-                areaData[areaData.length - 1].time = latest15.time;
-                areaData[areaData.length - 1].value = latest15.close;
-              }
-              if (candleData.length) {
-                candleData[candleData.length - 1].time = latest15.time;
-                candleData[candleData.length - 1].close = latest15.close;
-              }
-              if (volumeData.length) {
-                volumeData[volumeData.length - 1].time = latest15.time;
-              }
-              areaSeries.setData(areaData);
-              candleSeries.setData(candleData);
-              volumeSeries.setData(volumeData);
-              updateGlobalLiveTimestamp(latest15);
-            }
-          }
-        };
-
-        if (sCache.m15 && sCache.m15.length) {
-          trySyncLatestIntraday(sCache.m15);
-        } else if (!lastBar.latest_time && (!window._maxObservedLiveEpoch || window._maxObservedLiveEpoch <= (lastBar.time || 0))) {
-          fetch(`data/deep/manifest.json?_v=${Date.now()}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(man => {
-              if (man && man[symPrefix] && man[symPrefix].m1_months && man[symPrefix].m1_months.length) {
-                const m1List = man[symPrefix].m1_months;
-                const latestM1 = m1List[m1List.length - 1];
-                if (latestM1 && latestM1.end) {
-                  updateGlobalLiveTimestamp({
-                    time: latestM1.end,
-                    close: lastBar.close
-                  });
-                }
-              }
-            })
-            .catch(() => {});
-        }
-      }
-
-      if (fit) {
-        chart.timeScale().fitContent();
-      }
+      renderDailyFromCache(sCache.daily, fit);
     } catch (err) {
       console.error('Error loading daily tier:', err);
       updateBadges('Error', 'Failed to load');
+    }
+  }
+
+  function renderDailyFromCache(rawBars, fit) {
+    const sym = activeContractSym;
+    const cleanBars = sanitizeBars(rawBars);
+    const displayBars = applyBackAdjustment(cleanBars, sym);
+    const areaData = [];
+    const candleData = [];
+    const volumeData = [];
+
+    for (let i = 0; i < displayBars.length; i++) {
+      const b = displayBars[i];
+      areaData.push({ time: b.time, value: b.close });
+      candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
+      volumeData.push({
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
+      });
+    }
+
+    areaSeries.setData(areaData);
+    candleSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    updateRolloverMarkers('daily');
+
+    currentResolution = 'daily';
+    const adjLabel = isBackAdjusted ? ' [B-ADJ]' : '';
+    updateBadges(`Daily (Macro)${adjLabel}`, `${cleanBars.length.toLocaleString()} bars`);
+
+    // Ensure today's daily bar dynamically reflects the latest available intraday trade time
+    if (displayBars.length > 0) {
+      const lastBar = displayBars[displayBars.length - 1];
+      updateGlobalLiveTimestamp(lastBar);
+    }
+
+    if (fit) {
+      chart.timeScale().fitContent();
     }
   }
 
@@ -721,32 +806,40 @@
         sTS.m15 = Date.now();
       }
 
-      const cleanBars = sanitizeBars(sCache.m15);
-      const areaData = [];
-      const candleData = [];
-      const volumeData = [];
-
-      for (let i = 0; i < cleanBars.length; i++) {
-        const b = cleanBars[i];
-        areaData.push({ time: b.time, value: b.close });
-        candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
-        volumeData.push({
-          time: b.time,
-          value: b.volume,
-          color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
-        });
-      }
-
-      areaSeries.setData(areaData);
-      candleSeries.setData(candleData);
-      volumeSeries.setData(volumeData);
-
-      currentResolution = '15m';
-      updateBadges('15-Minute (Swing)', `${cleanBars.length.toLocaleString()} bars`);
-      if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
+      render15mFromCache(sCache.m15);
     } catch (err) {
       console.error('Error loading 15m tier:', err);
     }
+  }
+
+  function render15mFromCache(rawBars) {
+    const sym = activeContractSym;
+    const cleanBars = sanitizeBars(rawBars);
+    const displayBars = applyBackAdjustment(cleanBars, sym);
+    const areaData = [];
+    const candleData = [];
+    const volumeData = [];
+
+    for (let i = 0; i < displayBars.length; i++) {
+      const b = displayBars[i];
+      areaData.push({ time: b.time, value: b.close });
+      candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
+      volumeData.push({
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? 'rgba(63, 185, 80, 0.45)' : 'rgba(248, 81, 73, 0.45)'
+      });
+    }
+
+    areaSeries.setData(areaData);
+    candleSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    updateRolloverMarkers('15m');
+
+    currentResolution = '15m';
+    const adjLabel = isBackAdjusted ? ' [B-ADJ]' : '';
+    updateBadges(`15-Minute (Swing)${adjLabel}`, `${cleanBars.length.toLocaleString()} bars`);
+    if (displayBars.length > 0) updateGlobalLiveTimestamp(displayBars[displayBars.length - 1]);
   }
 
   async function load1mTier(fromTs, toTs) {
@@ -794,13 +887,14 @@
       close: b[4],
       volume: b[5]
     })));
+    const displayBars = applyBackAdjustment(cleanBars, activeContractSym);
 
     const areaData = [];
     const candleData = [];
     const volumeData = [];
 
-    for (let i = 0; i < cleanBars.length; i++) {
-      const b = cleanBars[i];
+    for (let i = 0; i < displayBars.length; i++) {
+      const b = displayBars[i];
       areaData.push({ time: b.time, value: b.close });
       candleData.push({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close });
       volumeData.push({
@@ -813,10 +907,12 @@
     areaSeries.setData(areaData);
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
+    updateRolloverMarkers('1m');
 
     currentResolution = '1m';
-    updateBadges('1-Minute (Microstructure)', `${cleanBars.length.toLocaleString()} bars`);
-    if (cleanBars.length > 0) updateGlobalLiveTimestamp(cleanBars[cleanBars.length - 1]);
+    const adjLabel = isBackAdjusted ? ' [B-ADJ]' : '';
+    updateBadges(`1-Minute (Microstructure)${adjLabel}`, `${cleanBars.length.toLocaleString()} bars`);
+    if (displayBars.length > 0) updateGlobalLiveTimestamp(displayBars[displayBars.length - 1]);
   }
 
   // ── Client-side Silent Live Polling (60-second Interval) ──
@@ -1417,6 +1513,45 @@
         applyTimeframe(tf);
       });
     });
+
+    // Toggle Raw / B-ADJ (Panama Canal Back-Adjusted Continuous Series)
+    const btnAdj = document.getElementById('btnToggleAdjustment');
+    if (btnAdj) {
+      btnAdj.addEventListener('click', () => {
+        isBackAdjusted = !isBackAdjusted;
+        if (isBackAdjusted) {
+          btnAdj.textContent = 'B-ADJ';
+          btnAdj.style.color = '#58a6ff';
+          btnAdj.style.borderColor = '#58a6ff';
+          btnAdj.setAttribute('data-dyn-title', 'Back-Adjusted Continuous Series (B-ADJ)');
+          btnAdj.setAttribute('data-dyn-body', 'Back-Adjusted Continuous Series (Panama Canal method). Eliminates calendar roll gaps for seamless technical analysis.');
+          btnAdj.setAttribute('title', 'Back-Adjusted Continuous Series (Panama Canal method). Eliminates calendar roll gaps for seamless technical analysis.');
+        } else {
+          btnAdj.textContent = 'Raw';
+          btnAdj.style.color = '';
+          btnAdj.style.borderColor = '';
+          btnAdj.setAttribute('data-dyn-title', 'Price Series (Raw)');
+          btnAdj.setAttribute('data-dyn-body', 'Unadjusted exchange traded prices. Reflects actual historical cash execution.');
+          btnAdj.setAttribute('title', 'Unadjusted exchange traded prices. Reflects actual historical cash execution.');
+        }
+
+        // Instantly refresh active series data with adjusted or raw prices
+        if (activeContractMode === 'continuous') {
+          const sym = activeContractSym;
+          const sCache = cache[sym] || cache.ng;
+          if (currentResolution === 'daily' && sCache.daily) {
+            renderDailyFromCache(sCache.daily, false);
+          } else if (currentResolution === '15m' && sCache.m15) {
+            render15mFromCache(sCache.m15);
+          } else if (currentResolution === '1m') {
+            const range = chart.timeScale().getVisibleRange();
+            const fromTs = range ? range.from : null;
+            const toTs = range ? range.to : null;
+            load1mTier(fromTs, toTs);
+          }
+        }
+      });
+    }
 
     // Toggle Candlesticks / Line
     const btnToggle = document.getElementById('btnToggleChartType');
