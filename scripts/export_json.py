@@ -99,6 +99,37 @@ def compute_dte(expiry_str, ref_date_str):
         return 9999
 
 
+def contract_label(expiry_str):
+    """MCX Natural Gas contracts are named strictly by trading expiry month.
+    e.g. '27OCT2026' -> 'Oct 2026', '24NOV2026' -> 'Nov 2026', '25JAN2027' -> 'Jan 2027'.
+    """
+    if not expiry_str or len(expiry_str) < 7:
+        return str(expiry_str or "")
+    mon_str = expiry_str[2:5].upper()
+    yr_str = expiry_str[5:]
+    if mon_str not in MONTH_MAP:
+        return expiry_str
+    try:
+        yr = int(yr_str)
+        if yr < 100:
+            yr += 2000
+        mon_disp = mon_str.capitalize()
+        return f"{mon_disp} {yr}"
+    except Exception:
+        return expiry_str
+
+
+def contract_delivery_year(expiry_str):
+    """Return true expiry year for MCX cash-settled contracts."""
+    if not expiry_str or len(expiry_str) < 7:
+        return 0
+    try:
+        yr = int(expiry_str[5:])
+        return yr + 2000 if yr < 100 else yr
+    except Exception:
+        return 0
+
+
 def safe_corr(x, y):
     n = min(len(x), len(y))
     if n < 2:
@@ -1002,13 +1033,28 @@ def _export_market_intelligence(margin_cur):
         save("market/curve_history.json", curve_history)
         outputs.append("market/curve_history.json")
 
+        margin_latest_date = None
+        if margin_cur:
+            try:
+                row_m = margin_cur.execute("SELECT MAX(date) FROM margins").fetchone()
+                if row_m and row_m[0]:
+                    margin_latest_date = row_m[0]
+            except Exception:
+                pass
+        ref_date = max(filter(None, [latest_date, margin_latest_date])) if (latest_date or margin_latest_date) else latest_date
+
         current = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date, "series_scope": "active_curve"}
         forward = {"schema_version": MARKET_SCHEMA_VERSION, "as_of": latest_date, "series_scope": "active_curve"}
         for symbol in MARKET_SYMBOLS:
-            active = sorted(
-                [r for r in by_symbol_date[symbol].get(latest_date, []) if r["dte"] >= 0],
-                key=lambda r: r["dte"],
-            )
+            raw_active = by_symbol_date[symbol].get(latest_date, [])
+            active_candidates = []
+            for r in raw_active:
+                d_dte = compute_dte(r["expiry"], ref_date) if ref_date else r.get("dte")
+                if d_dte is not None and d_dte >= 0:
+                    r_copy = dict(r)
+                    r_copy["dte"] = d_dte
+                    active_candidates.append(r_copy)
+            active = sorted(active_candidates, key=lambda r: r["dte"])
             volumes = [r.get("volume_lots") for r in active]
             ois = [r.get("open_interest") for r in active]
             front_close = active[0]["close"] if active else None

@@ -3946,7 +3946,8 @@ async function renderMarketOverviewContext() {
       loadMarketJSON('current'), loadMarketJSON('signals')
     ]);
     const fresh = meta.freshness || {};
-    const ng = (current.NATURALGAS || []).filter(r => r.dte >= 0).sort((a,b) => a.dte - b.dte)[0];
+    const activeNgList = resolveActiveMarketCurve(current.NATURALGAS || []);
+    const ng = activeNgList[0];
     const ngSignals = (signals.signals || []).filter(s => s.symbol === 'NATURALGAS').sort((a,b) => b.score - a.score);
     if (!ng) return;
 
@@ -6050,29 +6051,148 @@ function _hexRgba(hex, a) {
   return 'rgba('+r+','+g+','+b+','+a+')';
 }
 
-// MCX NG naming: contract expires ~26th of month M, delivers month M+1
-// e.g. "26MAR2026" = April 2026 contract  |  "28DEC2025" = January 2026 contract
+// MCX Natural Gas cash-settled contracts are named strictly by their TRADING EXPIRY MONTH.
+// e.g. "27OCT2026" = Oct 2026 | "24NOV2026" = Nov 2026 | "28DEC2026" = Dec 2026 | "25JAN2027" = Jan 2027
 const _LC_MONTHS_3 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const _LC_MONTHS_DISP = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 function _contractLabel(expiry) {
-  if (!expiry || typeof expiry !== 'string' || expiry.length < 7) return '';
-  const mon3 = expiry.slice(2, 5);                     // "APR"
-  const yr   = parseInt(expiry.slice(5), 10) || 0;     // 2026
-  const mi   = _LC_MONTHS_3.indexOf(mon3);              // 3
-  if (mi === -1) return expiry;
-  const dmi  = (mi + 1) % 12;                           // 4 = MAY
-  const dyr  = mi === 11 ? yr + 1 : yr;                 // roll Jan if Dec
-  return _LC_MONTHS_DISP[dmi] + ' ' + dyr;              // "May 2026"
+  if (!expiry || typeof expiry !== 'string') return '';
+  const clean = expiry.trim();
+  const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (m) {
+    const mon3 = m[2].toUpperCase();
+    const mi = _LC_MONTHS_3.indexOf(mon3);
+    const monDisp = mi >= 0 ? _LC_MONTHS_DISP[mi] : (mon3.charAt(0).toUpperCase() + mon3.slice(1).toLowerCase());
+    const yr = m[3].length === 2 ? '20' + m[3] : m[3];
+    return `${monDisp} ${yr}`;
+  }
+  if (clean.length >= 7) {
+    const mon3 = clean.slice(2, 5).toUpperCase();
+    const yr = parseInt(clean.slice(5), 10) || 0;
+    const mi = _LC_MONTHS_3.indexOf(mon3);
+    if (mi !== -1) return _LC_MONTHS_DISP[mi] + ' ' + (yr < 100 ? 2000 + yr : yr);
+  }
+  return clean;
 }
+
 function _contractDeliveryYear(expiry) {
-  if (!expiry || typeof expiry !== 'string' || expiry.length < 7) return 0;
-  const mon3 = expiry.slice(2, 5);
-  const yr   = parseInt(expiry.slice(5), 10) || 0;
-  return _LC_MONTHS_3.indexOf(mon3) === 11 ? yr + 1 : yr; // Dec rolls to next year
+  if (!expiry || typeof expiry !== 'string') return 0;
+  const clean = expiry.trim();
+  const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (m) {
+    const yr = parseInt(m[3].length === 2 ? '20' + m[3] : m[3], 10);
+    return yr || 0;
+  }
+  const yr = parseInt(clean.slice(5), 10) || 0;
+  return yr < 100 && yr > 0 ? 2000 + yr : yr;
 }
-// Compact chart-axis label: "27APR2026" → "May '26"
+
+// Compact chart-axis label: "27OCT2026" → "Oct '26"
 function _expLabel(expiry) {
-  return _contractLabel(expiry).replace(' 20', " '");
+  const lbl = _contractLabel(expiry);
+  return lbl.replace(/ (\d{2})(\d{2})$/, " '$2");
+}
+
+/**
+ * Dynamic Expiry & Rollover Engine
+ */
+function getNowIst() {
+  const now = new Date();
+  return new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+}
+
+function parseMcxExpiry(expiryStr) {
+  if (!expiryStr || typeof expiryStr !== 'string') return null;
+  const clean = expiryStr.trim();
+  const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const mon3 = m[2].toUpperCase();
+  const mi = _LC_MONTHS_3.indexOf(mon3);
+  if (mi === -1) return null;
+  const yr = parseInt(m[3].length === 2 ? '20' + m[3] : m[3], 10);
+
+  const refDate = new Date(yr, mi, day, 12, 0, 0);
+  const session = typeof getMcxClosingTime === 'function' ? getMcxClosingTime(refDate) : { isSummer: true };
+  const closeHour = 23;
+  const closeMin = session.isSummer ? 30 : 55;
+
+  const utcMs = Date.UTC(yr, mi, day, closeHour, closeMin, 0) - (5.5 * 60 * 60 * 1000);
+  return new Date(utcMs);
+}
+
+function isContractExpired(expiryStr) {
+  const expDate = parseMcxExpiry(expiryStr);
+  if (!expDate) return false;
+  return Date.now() >= expDate.getTime();
+}
+
+function calcDynamicDte(expiryStr) {
+  if (!expiryStr || typeof expiryStr !== 'string') return null;
+  const clean = expiryStr.trim();
+  const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const mon3 = m[2].toUpperCase();
+  const mi = _LC_MONTHS_3.indexOf(mon3);
+  if (mi === -1) return null;
+  const yr = parseInt(m[3].length === 2 ? '20' + m[3] : m[3], 10);
+
+  const nowIst = getNowIst();
+  const todayIst = new Date(nowIst.getFullYear(), nowIst.getMonth(), nowIst.getDate());
+  const expDay = new Date(yr, mi, day);
+  const diffMs = expDay.getTime() - todayIst.getTime();
+  const dte = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return dte;
+}
+
+function resolveActiveMarketCurve(curveRows, currentRows) {
+  const list = (curveRows && curveRows.length ? curveRows : currentRows) || [];
+  if (!list.length) return [];
+
+  const active = [];
+  for (const row of list) {
+    if (!row || !row.expiry) continue;
+    if (isContractExpired(row.expiry)) continue;
+    const dte = calcDynamicDte(row.expiry);
+    if (dte !== null && dte < 0) continue;
+
+    const r = Object.assign({}, row);
+    if (dte !== null) r.dte = dte;
+    active.push(r);
+  }
+
+  active.sort((a, b) => (a.dte ?? 999) - (b.dte ?? 999));
+  if (!active.length) return [];
+
+  const frontClose = active[0].close;
+  for (let i = 0; i < active.length; i++) {
+    const cur = active[i];
+    cur.spread_vs_front = (cur.close != null && frontClose != null)
+      ? +(cur.close - frontClose).toFixed(4)
+      : null;
+
+    if (i + 1 < active.length && cur.close != null && active[i + 1].close != null) {
+      cur.spread_vs_next = +(active[i + 1].close - cur.close).toFixed(4);
+      if (cur.close !== 0) {
+        cur.roll_yield_pct = +(((cur.close - active[i + 1].close) / cur.close) * 100).toFixed(3);
+      } else {
+        cur.roll_yield_pct = null;
+      }
+    } else {
+      cur.spread_vs_next = null;
+      cur.roll_yield_pct = null;
+    }
+  }
+
+  const ranked = [...active].sort((a, b) => (b.liquidity_score ?? -1) - (a.liquidity_score ?? -1));
+  ranked.forEach((r, idx) => {
+    const match = active.find(item => item.expiry === r.expiry);
+    if (match) match.liquidity_rank = idx + 1;
+  });
+
+  return active;
 }
 // Human-readable short expiry date: "27OCT2026" → "27 Oct '26"
 function _formatExpiryShort(expiry) {
@@ -9161,10 +9281,15 @@ async function renderMarketIntel(force = false) {
   // REUSABLE KPI STRIP RENDERER (Fast Initial Render & Deep Hydration)
   // ═══════════════════════════════════════════════════════════════════
   function renderMarketKpiStrip(latestData, latestAlignedData, fwdData) {
-    const retVal = latestData.return_1d_pct ?? latestData.return_pct;
+    let activeData = latestData;
+    if (!activeData || isContractExpired(activeData.expiry) || (activeData.dte != null && activeData.dte < 0)) {
+      const fwdCurve = resolveActiveMarketCurve(fwdData?.[symbol]?.curve || []);
+      if (fwdCurve.length > 0) activeData = fwdCurve[0];
+    }
+    const retVal = activeData?.return_1d_pct ?? activeData?.return_pct;
     const colRet = retVal > 0 ? 'var(--accent-green)' : (retVal < 0 ? 'var(--accent-red)' : 'var(--text)');
-    const colOI = latestData.oi_change_pct > 0 ? 'var(--accent-green)' : (latestData.oi_change_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
-    const ret5dStr = latestData.return_5d_pct != null ? `5D ${fmtPct(latestData.return_5d_pct, 2)}` : '5D —';
+    const colOI = activeData?.oi_change_pct > 0 ? 'var(--accent-green)' : (activeData?.oi_change_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+    const ret5dStr = activeData?.return_5d_pct != null ? `5D ${fmtPct(activeData.return_5d_pct, 2)}` : '5D —';
     const frictionVal = latestAlignedData?.funding_friction_score != null ? fmtNum(latestAlignedData.funding_friction_score, 1) : '—';
     const frictionSub = latestAlignedData?.matched_expiry || (latestAlignedData ? 'No aligned join' : 'Syncing joins...');
     const frictionTip = latestAlignedData?.funding_friction_score != null 
@@ -9174,35 +9299,35 @@ async function renderMarketIntel(force = false) {
     const marketKpiCards = [
       {
         label: 'Front Close',
-        value: fmtNum(latestData.close, 2),
-        sub: `${_contractLabel(latestData.expiry || '')} | ${latestData.dte ?? '-'}d`,
-        tip: `Front month closes at <strong>${fmtNum(latestData.close, 2)}</strong> for ${latestData.expiry || '-'} with <strong>${latestData.dte ?? '-'}</strong> days to expiry.<br><br>This is the primary liquidity hub for ${symbol}. Monitor for price shocks that often lead margin changes.`
+        value: fmtNum(activeData?.close, 2),
+        sub: `${_contractLabel(activeData?.expiry || '')} | ${activeData?.dte ?? '-'}d`,
+        tip: `Front month closes at <strong>${fmtNum(activeData?.close, 2)}</strong> for ${_contractLabel(activeData?.expiry || '')} (${activeData?.expiry || '-'}) with <strong>${activeData?.dte ?? '-'}</strong> days to expiry.<br><br>This is the primary liquidity hub for ${symbol}. Monitor for price shocks that often lead margin changes.`
       },
       {
         label: '1D Return',
         value: fmtPct(retVal, 2),
         valColor: colRet,
         sub: ret5dStr,
-        tip: `Daily move: <strong>${fmtPct(retVal, 2)}</strong><br>5-day drift: <strong>${latestData.return_5d_pct != null ? fmtPct(latestData.return_5d_pct, 2) : '—'}</strong><br><br>Sustained directional moves (5D drift) are higher-confidence signals for policy adjustment than single-day noise.`
+        tip: `Daily move: <strong>${fmtPct(retVal, 2)}</strong><br>5-day drift: <strong>${activeData?.return_5d_pct != null ? fmtPct(activeData.return_5d_pct, 2) : '—'}</strong><br><br>Sustained directional moves (5D drift) are higher-confidence signals for policy adjustment than single-day noise.`
       },
       {
         label: 'Realized Vol',
-        value: fmtPct(latestData.rolling_realized_vol_20d, 2),
-        sub: `5D ${fmtPct(latestData.rolling_realized_vol_5d, 2)}`,
-        tip: `20-day realized vol: <strong>${fmtPct(latestData.rolling_realized_vol_20d, 2)}</strong><br>5-day realized vol: <strong>${fmtPct(latestData.rolling_realized_vol_5d, 2)}</strong><br><br>When 5D vol exceeds 20D vol, risk is accelerating. MCX typically hikes margins when 20D vol sustained above P75 levels.`
+        value: fmtPct(activeData?.rolling_realized_vol_20d, 2),
+        sub: `5D ${fmtPct(activeData?.rolling_realized_vol_5d, 2)}`,
+        tip: `20-day realized vol: <strong>${fmtPct(activeData?.rolling_realized_vol_20d, 2)}</strong><br>5-day realized vol: <strong>${fmtPct(activeData?.rolling_realized_vol_5d, 2)}</strong><br><br>When 5D vol exceeds 20D vol, risk is accelerating. MCX typically hikes margins when 20D vol sustained above P75 levels.`
       },
       {
         label: 'OI Flow State',
-        value: formatLabel(latestData.oi_flow_state),
-        sub: `OI ${fmtPct(latestData.oi_change_pct, 2)}`,
+        value: formatLabel(activeData?.oi_flow_state),
+        sub: `OI ${fmtPct(activeData?.oi_change_pct, 2)}`,
         subColor: colOI,
-        tip: `Current State: <strong>${latestData.oi_flow_state || 'neutral'}</strong><br>OI Change: <strong>${fmtPct(latestData.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(latestData.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
+        tip: `Current State: <strong>${activeData?.oi_flow_state || 'neutral'}</strong><br>OI Change: <strong>${fmtPct(activeData?.oi_change_pct, 2)}</strong><br><br>Positioning context: ${marketOiFlowHint(activeData?.oi_flow_state)}. Rising OI with rising price suggests strong conviction in a bull phase.`
       },
       {
         label: 'Liquidity Score',
-        value: fmtNum(latestData.liquidity_score, 1),
+        value: fmtNum(activeData?.liquidity_score, 1),
         sub: `Concentration ${fmtNum(fwdData?.[symbol]?.liquidity_concentration, 1)}`,
-        tip: `Liquidity score: <strong>${fmtNum(latestData.liquidity_score, 1)}</strong> (${marketLiquidityBand(latestData.liquidity_score)})<br>Concentration: <strong>${fmtNum(fwdData?.[symbol]?.liquidity_concentration, 1)}</strong><br><br>Higher concentration means liquidity is tightly clustered in the front month. Low concentration may signal a roll in progress.`
+        tip: `Liquidity score: <strong>${fmtNum(activeData?.liquidity_score, 1)}</strong> (${marketLiquidityBand(activeData?.liquidity_score)})<br>Concentration: <strong>${fmtNum(fwdData?.[symbol]?.liquidity_concentration, 1)}</strong><br><br>Higher concentration means liquidity is tightly clustered in the front month. Low concentration may signal a roll in progress.`
       },
       {
         label: 'Funding Friction',
@@ -9241,9 +9366,11 @@ async function renderMarketIntel(force = false) {
     }
 
     const fresh = meta.freshness || {};
-    const curve = forward[symbol]?.curve || [];
-    const curRows = current[symbol] || [];
-    const frontRow = curRows[0] || curve[0] || {};
+    const rawCurve = forward[symbol]?.curve || [];
+    const rawCurRows = current[symbol] || [];
+    const curve = resolveActiveMarketCurve(rawCurve, rawCurRows);
+    const curRows = resolveActiveMarketCurve(rawCurRows, rawCurve);
+    const frontRow = curve[0] || curRows[0] || {};
 
     const analytics = overviewAnalytics?.symbols?.[symbol] || {};
     const recent = analytics.flow_recent || [];
@@ -9263,8 +9390,8 @@ async function renderMarketIntel(force = false) {
       escAttr(`Latest refresh date: <strong>${meta.latest_date || '-'}</strong><br>Freshness: <strong>${fresh.label || 'UNKNOWN'}</strong><br>Rows captured: <strong>${fmtNum(meta.row_count, 0)}</strong>${joinedSummary.aligned_obs ? `<br>Aligned joins: <strong>${joinedSummary.aligned_obs}</strong>` : ''}`)
     );
 
-    // Render fast hydrated KPI strip
-    renderMarketKpiStrip(latestHist, latestAligned, forward);
+    // Render fast hydrated KPI strip with active front contract
+    renderMarketKpiStrip(frontRow, latestAligned, forward);
 
     // ── Current MCX Futures Snapshot Table ──
     function renderMarketCurrentSnapshot() {
@@ -9448,14 +9575,9 @@ async function renderMarketIntel(force = false) {
               ${expiryRows.map(r => {
                 const urgency = r.dte <= 10 ? '#f85149' : r.dte <= 30 ? '#d29922' : 'var(--text-muted)';
                 const dteBg   = r.dte <= 10 ? 'rgba(248,81,73,0.14)' : r.dte <= 30 ? 'rgba(210,153,34,0.14)' : 'var(--surface2)';
-                const cleanExp = (r.expiry || '').trim();
-                const m = cleanExp.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
-                const monDisp = m ? (m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase()) : cleanExp;
-                const yrDisp  = m ? (m[3].length === 4 ? m[3] : '20' + m[3]) : '';
-                const contractTitle = m ? `${monDisp} ${yrDisp}` : cleanExp;
                 return `
                   <tr>
-                    <td style="font-weight:600;color:var(--text);padding:7px 8px;">${contractTitle}</td>
+                    <td style="font-weight:600;color:var(--text);padding:7px 8px;">${_contractLabel(r.expiry)}</td>
                     <td style="color:var(--text-muted);padding:7px 8px;">${_formatExpiryShort(r.expiry)}</td>
                     <td style="text-align:right;padding:7px 8px;">
                       <span style="font-size:11px;font-weight:700;color:${urgency};background:${dteBg};border-radius:3px;padding:2px 7px;display:inline-block;min-width:34px;text-align:center;">${r.dte}d</span>
@@ -9500,13 +9622,15 @@ async function renderMarketIntel(force = false) {
       const maxAbsYield  = Math.max(...orderedCurve.map(r => Math.abs(r.roll_yield_pct || 0)), 0.01);
       document.getElementById('rollYieldSpectrum').innerHTML = `
         <div style="border-top:1px solid var(--border);padding:12px 0 4px;">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:10px;">ROLL YIELD SPECTRUM</div>
+          <div class="has-tooltip" data-tooltip-key="Roll Yield Spectrum" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:10px;cursor:help;">ROLL YIELD SPECTRUM</div>
           ${orderedCurve.map(r => {
             const pct   = r.roll_yield_pct || 0;
             const barW  = Math.round(Math.min(Math.abs(pct) / maxAbsYield * 45, 45));
             const color = pct >= 0 ? '#3fb950' : '#f85149';
             const side  = pct >= 0 ? 'left:50%' : `right:50%`;
-            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            const stateLabel = pct >= 0 ? 'Backwardation (Positive Carry)' : 'Contango (Carry Drag)';
+            const dynBody = `Contract: <strong>${_contractLabel(r.expiry)}</strong> (${_formatExpiryShort(r.expiry)})<br>Market State: <strong>${stateLabel}</strong><br>Roll Yield: <strong>${fmtPct(pct, 2)}</strong><br>Annualized Carry: <strong>${fmtPct(pct * 12, 1)}</strong><br>Front Spread (vs M1): <strong>₹${fmtNum(r.spread_vs_front, 2)}</strong><br>Next Spread: <strong>₹${fmtNum(r.spread_vs_next, 2)}</strong><br><br><em>Implication:</em> ${pct >= 0 ? 'Holding long positions earns positive convergence roll yield as expiration nears.' : 'Holding long positions incurs negative carry decay when rolling into deferred tenors.'}`;
+            return `<div class="has-tooltip" data-dyn-title="Roll Yield: ${_contractLabel(r.expiry)}" data-dyn-body="${escAttr(dynBody)}" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:help;">
               <div style="width:68px;font-size:10px;color:var(--text-muted);text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;">${_contractLabel(r.expiry)}</div>
               <div style="flex:1;height:11px;background:var(--surface2);border-radius:3px;overflow:visible;position:relative;">
                 <div style="position:absolute;${side};width:${barW}%;height:100%;background:${color};opacity:.85;"></div>
@@ -9526,6 +9650,11 @@ async function renderMarketIntel(force = false) {
       const bestEntry  = [...curve].sort((a,b) => (b.liquidity_score||0) - (a.liquidity_score||0))[0]   || {};
       const bestCarry  = [...curve].sort((a,b) => (b.roll_yield_pct||0)   - (a.roll_yield_pct||0))[0]   || {};
       const bestOI     = [...curve].sort((a,b) => (b.open_interest||0)    - (a.open_interest||0))[0]    || {};
+      const pickTips = {
+        'Best Entry': `<strong>Optimal Liquidity Anchor:</strong> Highest market liquidity score (<strong>${fmtNum(bestEntry.liquidity_score, 1)}</strong>). Tightest bid-ask spreads, minimal execution slippage, and maximum lot depth for entry.`,
+        'Best Carry': `<strong>Roll Yield Optimizer:</strong> Highest curve roll yield (<strong>${fmtPct(bestCarry.roll_yield_pct, 2)}</strong>). Maximizes backwardation roll gain or minimizes contango carry drag across active tenors.`,
+        'Deepest OI': `<strong>Institutional Positioning Anchor:</strong> Concentrates largest open interest pool (<strong>${fmtNum(bestOI.open_interest, 0)} lots</strong>). Primary liquidity hub for institutional position building.`
+      };
       const picks = [
         { label: 'Best Entry',  sub: 'Highest liquidity', contract: bestEntry, val: `Liq ${fmtNum(bestEntry.liquidity_score,1)}`,  color: '#58a6ff' },
         { label: 'Best Carry',  sub: 'Highest roll yield', contract: bestCarry, val: fmtPct(bestCarry.roll_yield_pct,2),            color: '#3fb950' },
@@ -9533,17 +9662,20 @@ async function renderMarketIntel(force = false) {
       ];
       document.getElementById('contractIntelPicks').innerHTML = `
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">CONTRACT INTELLIGENCE PICKS</div>
-          ${picks.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:7px 10px;background:${p.color}0D;border-left:3px solid ${p.color};border-radius:0 4px 4px 0;">
-            <div>
-              <div style="font-size:11px;font-weight:600;color:${p.color};">${p.label}</div>
-              <div style="font-size:10px;color:var(--text-muted);">${p.sub}</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:12px;font-weight:700;color:var(--text);">${_contractLabel(p.contract.expiry)}</div>
-              <div style="font-size:11px;color:${p.color};font-weight:600;">${p.val}</div>
-            </div>
-          </div>`).join('')}
+          <div class="has-tooltip" data-tooltip-key="Contract Intelligence Picks" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;cursor:help;">CONTRACT INTELLIGENCE PICKS</div>
+          ${picks.map(p => {
+            const pickBody = pickTips[p.label] || `Pick: <strong>${p.label}</strong><br>Contract: <strong>${_contractLabel(p.contract.expiry)}</strong>`;
+            return `<div class="has-tooltip" data-dyn-title="Intelligence Pick: ${p.label}" data-dyn-body="${escAttr(pickBody)}" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:7px 10px;background:${p.color}0D;border-left:3px solid ${p.color};border-radius:0 4px 4px 0;cursor:help;">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:${p.color};">${p.label}</div>
+                <div style="font-size:10px;color:var(--text-muted);">${p.sub}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;font-weight:700;color:var(--text);">${_contractLabel(p.contract.expiry)}</div>
+                <div style="font-size:11px;color:${p.color};font-weight:600;">${p.val}</div>
+              </div>
+            </div>`;
+          }).join('')}
         </div>`;
     }
 
@@ -9617,7 +9749,7 @@ async function renderMarketIntel(force = false) {
       const midCount   = sigRows.filter(r => r.severity === 'MEDIUM').length;
       document.getElementById('marketSignalBias').innerHTML = `
         <div style="border-top:1px solid var(--border);padding:12px 0 2px;">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;">SIGNAL BIAS</div>
+          <div class="has-tooltip" data-tooltip-key="Signal Bias" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;cursor:help;">SIGNAL BIAS</div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="flex:1;height:7px;border-radius:4px;background:var(--surface2);overflow:hidden;">
               <div style="width:${bullPct}%;height:100%;background:linear-gradient(90deg,#3fb950 0%,#58a6ff 100%);border-radius:4px;"></div>
@@ -9629,7 +9761,7 @@ async function renderMarketIntel(force = false) {
             <span>${highCount} High &nbsp;|&nbsp; ${midCount} Med &nbsp;|&nbsp; ${sigRows.length - highCount - midCount} Low</span>
             <span>&#9660; Bear ${bearPct}%</span>
           </div>
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:5px;">DOMINANT SIGNAL</div>
+          <div class="has-tooltip" data-tooltip-key="Dominant Signal" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:5px;cursor:help;">DOMINANT SIGNAL</div>
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;">${formatLabel(topSig.label || '-')}&nbsp;<span style="font-size:11px;color:var(--text-muted);font-weight:400;">Score ${topSig.score || 0}/100</span></div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">${topSig.reason || '-'}</div>
         </div>`;
@@ -9881,17 +10013,17 @@ async function renderMarketIntel(force = false) {
           if (histInsightEl) {
             histInsightEl.innerHTML = `
               <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 0 2px;margin-top:8px;">
-                <div>
+                <div class="has-tooltip" data-tooltip-key="Front-Second Spread" style="cursor:help;">
                   <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">FRONT-SECOND SPREAD</div>
                   <div style="font-size:15px;font-weight:700;color:var(--text);">₹${frontSecondSpread}</div>
                   <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Calendar carry</div>
                 </div>
-                <div>
+                <div class="has-tooltip" data-tooltip-key="Roll Yield (1M)" style="cursor:help;">
                   <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">ROLL YIELD (1M)</div>
                   <div style="font-size:15px;font-weight:700;color:${(latestTrail.roll_yield_pct || 0) >= 0 ? '#3fb950' : '#f85149'};">${rollYield}</div>
                   <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">1-Month Roll Spread</div>
                 </div>
-                <div>
+                <div class="has-tooltip" data-tooltip-key="Curve Concentration" style="cursor:help;">
                   <div style="font-size:9px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:4px;">CONCENTRATION</div>
                   <div style="font-size:15px;font-weight:700;color:${concColor};">${fmtNum(conc, 1)}</div>
                   <div style="font-size:10px;color:${concColor};margin-top:2px;">${concLabel} curve</div>
@@ -9948,7 +10080,7 @@ async function renderMarketIntel(force = false) {
           }[curReg] || 'Insufficient history to generate playbook.';
           document.getElementById('regimePlaybook').innerHTML = `
             <div style="border-top:1px solid var(--border);padding-top:12px;">
-              <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;">CURRENT REGIME PLAYBOOK</div>
+              <div class="has-tooltip" data-tooltip-key="Current Regime Playbook" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:8px;cursor:help;">CURRENT REGIME PLAYBOOK</div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
                 <span style="background:${regColor}22;color:${regColor};border:1px solid ${regColor}55;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700;">${REGIME_LABELS[curReg] || curReg || 'Unknown'}</span>
                 <span style="font-size:11px;color:var(--text-muted);">${persistPct}% persistence</span>
@@ -9964,7 +10096,7 @@ async function renderMarketIntel(force = false) {
           const totalDays  = REGIME_STATES.reduce((s, r) => s + (rowTotals[r] || 0), 0) || 1;
           document.getElementById('regimeFrequencyStats').innerHTML = `
             <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
-              <div style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;">REGIME FREQUENCY</div>
+              <div class="has-tooltip" data-tooltip-key="Regime Frequency" style="font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.07em;margin-bottom:9px;cursor:help;">REGIME FREQUENCY</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 ${REGIME_STATES.map(r => {
                   const days = rowTotals[r] || 0;
@@ -10345,6 +10477,67 @@ document.querySelector('[data-tab="explorer"]').addEventListener('click', () => 
 
 // ── Tooltip Data ──
 const TOOLTIPS = {
+  "Roll Yield Spectrum": {
+    title: "Roll Yield Spectrum & Carry Term Structure",
+    body: `<strong>Annualized Carry Dynamics:</strong> Displays the annualized roll yield across active contract tenors.<br><br>
+• <strong>Positive Roll Yield (Backwardation):</strong> Near-month contract trades at a premium to deferred months ((P<sub>t</sub> − P<sub>t+1</sub>) ÷ P<sub>t</sub> > 0). Long positions generate positive roll carry as contracts converge toward spot.<br>
+• <strong>Negative Roll Yield (Contango):</strong> Deferred months trade at a premium ((P<sub>t</sub> − P<sub>t+1</sub>) ÷ P<sub>t</sub> < 0), inflicting negative carry decay on rolling long positions.<br>
+• <strong>Bar Width:</strong> Scaled relative to the maximum observed curve yield to visualize term structure slopes.`
+  },
+  "Contract Intelligence Picks": {
+    title: "Contract Intelligence & Execution Picks",
+    body: `<strong>Algorithmic Tenor Selection:</strong> Evaluates all active futures maturities to identify optimal contract selection across three tactical dimensions:<br><br>
+• <strong>Best Entry (Liquidity Leader):</strong> Contract with highest composite order book depth, turnover, and tightest bid-ask spread for minimal execution slippage.<br>
+• <strong>Best Carry (Roll Yield Optimizer):</strong> Tenor offering maximum positive carry yield (backwardation) or lowest contango decay cost.<br>
+• <strong>Deepest OI (Positioning Anchor):</strong> Contract concentrating greatest participant open interest and institutional commitment.`
+  },
+  "Signal Bias": {
+    title: "Quantitative Signal Bias Composite",
+    body: `<strong>Cross-Regime Composite Balance:</strong> Synthesizes directional conviction across all active algorithmic risk signals weighted by individual model confidence scores (0–100).<br><br>
+• <strong>Bullish Bias (> 55%):</strong> Net upside price momentum and long positioning accumulation outweigh defensive indicators.<br>
+• <strong>Bearish Bias (> 55%):</strong> Downside velocity, short buildup, or elevated margin hike vulnerability dominate.<br>
+• <strong>Mixed Bias (45–55%):</strong> Conflicting directional cues or transitional market microstructure balance.`
+  },
+  "Dominant Signal": {
+    title: "Lead Regime Driver & Dominant Signal",
+    body: `<strong>Primary Microstructure Signal:</strong> The highest-scoring quantitative indicator driving currently active portfolio risk models.<br><br>
+Identifies whether near-term market behavior is primarily dictated by price velocity shocks, open interest accumulation or unwinding, margin-volatility divergence, or calendar curve shifts.`
+  },
+  "Current Regime Playbook": {
+    title: "Current Regime Tactical Playbook",
+    body: `<strong>Tactical Portfolio Directive:</strong> Prescriptive execution guidance tailored to the prevailing clearinghouse volatility regime (Calm, Elevated, Stress, Crisis).<br><br>
+Incorporates historical regime persistence, Markov transition probabilities to adjacent states, and recommended leverage constraints to avert margin deficit events.`
+  },
+  "Regime Frequency": {
+    title: "Historical Regime Frequency Distribution",
+    body: `<strong>Empirical State Distribution:</strong> Long-run empirical frequency of MCX Natural Gas market sessions spent in each volatility regime tier (Calm, Elevated, Stress, Crisis).<br><br>
+Serves as the empirical prior distribution for Markov transition matrices and multi-horizon stress probability forecasts.`
+  },
+  "Front-Second Spread": {
+    title: "Front-to-Second Month Calendar Spread",
+    body: `<strong>M1–M2 Price Basis:</strong> The absolute price differential between the second active maturity (M2) and the front-month contract (M1) in ₹/MMBtu: (Close<sub>M2</sub> − Close<sub>M1</sub>).<br><br>
+• <strong>Positive (> ₹0.50):</strong> Contango structure reflecting deferred carrying costs or near-term supply abundance.<br>
+• <strong>Negative (< −₹0.50):</strong> Backwardation structure reflecting near-term physical tightness or delivery squeeze.`
+  },
+  "Roll Yield (1M)": {
+    title: "1-Month Term Structure Roll Yield",
+    body: `<strong>Near-Month Roll Carry %:</strong> The monthly carry return earned or cost incurred when rolling a position between the front and second contracts: ((Close<sub>M1</sub> − Close<sub>M2</sub>) ÷ Close<sub>M1</sub>) × 100.<br><br>
+Green indicates positive roll yield (backwardation); red indicates contango drag.`
+  },
+  "Curve Concentration": {
+    title: "Curve Liquidity Concentration",
+    body: `<strong>Open Interest Concentration Index:</strong> Measures the clustering of trading volume and open interest within the front-month contract relative to total active curve open interest.<br><br>
+• <strong>> 70% (Crowded):</strong> Heavy front-month concentration. High liquidity in M1 but rollover execution bottlenecks during maturity week.<br>
+• <strong>45–70% (Balanced):</strong> Normal institutional distribution across near tenors.<br>
+• <strong>< 45% (Diffused):</strong> Active roll in progress or migration toward deferred contracts.`
+  },
+  "Concentration": {
+    title: "Curve Liquidity Concentration",
+    body: `<strong>Open Interest Concentration Index:</strong> Measures the clustering of trading volume and open interest within the front-month contract relative to total active curve open interest.<br><br>
+• <strong>> 70% (Crowded):</strong> Heavy front-month concentration. High liquidity in M1 but rollover execution bottlenecks during maturity week.<br>
+• <strong>45–70% (Balanced):</strong> Normal institutional distribution across near tenors.<br>
+• <strong>< 45% (Diffused):</strong> Active roll in progress or migration toward deferred contracts.`
+  },
   "Intraday Trigger Proximity Cockpit": {
     title: "Hike Trigger Proximity & Capital Risk Cockpit",
     body: `<strong>Real-Time Clearinghouse Surveillance:</strong> Monitors front-month spot and settle price proximity to MCXCCL/SEBI margin hike trigger boundaries.<br><br>

@@ -379,5 +379,68 @@ class MarketExportTests(unittest.TestCase):
             self.assertIn("summary", ng_data)
 
 
+    def test_contract_label_and_delivery_year_unification(self):
+        self.assertEqual(export_json.contract_label("27OCT2026"), "Oct 2026")
+        self.assertEqual(export_json.contract_delivery_year("27OCT2026"), 2026)
+        self.assertEqual(export_json.contract_label("24NOV2026"), "Nov 2026")
+        self.assertEqual(export_json.contract_delivery_year("24NOV2026"), 2026)
+        self.assertEqual(export_json.contract_label("28DEC2026"), "Dec 2026")
+        self.assertEqual(export_json.contract_delivery_year("28DEC2026"), 2026)
+        self.assertEqual(export_json.contract_label("25JAN2027"), "Jan 2027")
+        self.assertEqual(export_json.contract_delivery_year("25JAN2027"), 2027)
+
+    def test_export_market_intelligence_rolls_expired_contract_when_newer_margin_date(self):
+        margin_conn = self._make_margin_conn()
+        margin_cur = margin_conn.cursor()
+        margin_cur.execute(
+            """
+            INSERT INTO margins (
+                date, symbol, expiry, file_id, created_at,
+                initial_margin_pct, total_margin_pct
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("2026-10-28", "NATURALGAS", "24NOV2026", 1, "2026-10-28T09:00:00", 20.0, 21.25)
+        )
+        margin_conn.commit()
+
+        with TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            out_dir = tmp_path / "out"
+            price_db = tmp_path / "prices.db"
+            self._make_price_db(
+                price_db,
+                [
+                    ("2026-10-27", "NATURALGAS", "27OCT2026", "FUTCOM", 256.0, 258.0, 255.0, 256.4, 255.0, 1000, 1000.0, 10.0, 5000),
+                    ("2026-10-27", "NATURALGAS", "24NOV2026", "FUTCOM", 288.0, 289.0, 287.0, 288.4, 287.0, 800, 800.0, 8.0, 4000),
+                    ("2026-10-27", "NATURALGAS", "28DEC2026", "FUTCOM", 332.0, 333.0, 331.0, 332.3, 331.0, 300, 300.0, 3.0, 1500),
+                ],
+            )
+
+            old_out_dir = export_json.OUT_DIR
+            old_price_db = export_json.PRICE_DB_PATH
+            export_json.OUT_DIR = out_dir
+            export_json.PRICE_DB_PATH = price_db
+            try:
+                result = export_json._export_market_intelligence(margin_cur)
+            finally:
+                export_json.OUT_DIR = old_out_dir
+                export_json.PRICE_DB_PATH = old_price_db
+
+            self.assertIn(result["status"], ("ok", "warn"))
+            current = json.loads((out_dir / "market" / "current.json").read_text(encoding="utf-8"))
+            curve = current["NATURALGAS"]
+            expiries = [c["expiry"] for c in curve]
+            self.assertNotIn("27OCT2026", expiries)
+            self.assertEqual(expiries, ["24NOV2026", "28DEC2026"])
+            self.assertEqual(curve[0]["expiry"], "24NOV2026")
+            self.assertEqual(curve[0]["dte"], 27)
+            self.assertEqual(curve[0]["spread_vs_front"], 0.0)
+            self.assertEqual(curve[1]["spread_vs_front"], 43.9)
+
+            forward = json.loads((out_dir / "market" / "forward_curve.json").read_text(encoding="utf-8"))
+            ng_fwd = forward["NATURALGAS"]
+            self.assertEqual(ng_fwd["front_second_spread"], 43.9)
+
+
 if __name__ == "__main__":
     unittest.main()
