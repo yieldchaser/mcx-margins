@@ -918,14 +918,14 @@
     const day = parseInt(exp.slice(0, 2), 10) || 1;
     const mon = _DEEP_MON[exp.slice(2, 5).toUpperCase()] ?? 0;
     const yr = parseInt(exp.slice(5), 10) || new Date().getFullYear();
-    return new Date(Date.UTC(yr, mon, day));
+    // MCX contracts trade until official close in IST (23:30 summer / 23:55 winter = 18:00 UTC)
+    return new Date(Date.UTC(yr, mon, day, 18, 0, 0));
   }
 
   function getDeliveryYear(exp) {
     if (!exp || typeof exp !== 'string' || exp.length < 7) return new Date().getFullYear();
-    const mon3 = exp.slice(2, 5).toUpperCase();
     const yr = parseInt(exp.slice(5), 10) || new Date().getFullYear();
-    return mon3 === 'DEC' ? yr + 1 : yr;
+    return yr < 100 ? 2000 + yr : yr;
   }
 
   function formatExpiryLabel(sym, exp) {
@@ -933,14 +933,13 @@
     const day = exp.slice(0, 2);
     const mon3 = exp.slice(2, 5).toUpperCase();
     const yr = exp.slice(5);
+    const yrFull = parseInt(yr, 10) < 100 ? 2000 + parseInt(yr, 10) : parseInt(yr, 10);
     const mi = _DEEP_MON_KEYS.indexOf(mon3);
-    const dmi = (mi + 1) % 12;
-    const dyr = mi === 11 ? parseInt(yr, 10) + 1 : parseInt(yr, 10);
-    const delivName = _DEEP_MON_NAMES[dmi] + ' ' + dyr;
-    const shortExp = `${day} ${_DEEP_MON_NAMES[mi]} '${yr.slice(-2)}`;
+    const contractMonth = mi >= 0 ? _DEEP_MON_NAMES[mi] : mon3;
+    const delivName = `${contractMonth} ${yrFull}`;
+    const shortExp = `${day} ${contractMonth} '${String(yrFull).slice(-2)}`;
     return { delivName, shortExp, fullLabel: `${prefix} ${delivName} (${shortExp})` };
   }
-
   async function buildDeepContractDropdowns(sym = 'ng', autoSelectExpiry = null) {
     activeContractSym = sym;
     const yrSel = document.getElementById('deepYearSelect');
