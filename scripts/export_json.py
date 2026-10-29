@@ -227,10 +227,11 @@ MARGIN_COMPLETENESS_SQL = " + ".join(
 def _load_margin_rows(cur, where_sql="1=1", params=(), order_by="date ASC, symbol ASC, expiry ASC"):
     cols_sql = ", ".join(MARGIN_ROW_COLUMNS)
     query = f"""
-        SELECT {cols_sql}
+        SELECT {cols_sql}, max_intraday_margin_pct
         FROM (
             SELECT
                 {cols_sql},
+                MAX(initial_margin_pct) OVER (PARTITION BY date, symbol, expiry) AS max_intraday_margin_pct,
                 ROW_NUMBER() OVER (
                     PARTITION BY date, symbol, expiry
                     ORDER BY
@@ -264,9 +265,15 @@ def _normalize_margin_row(row):
         "expiry": row.get("expiry"),
         "dte": compute_dte(row.get("expiry", ""), row.get("date")),
         "initial_margin_pct": row.get("initial_margin_pct"),
+        "max_intraday_margin_pct": row.get("max_intraday_margin_pct"),
         "total_margin_pct": row.get("total_margin_pct"),
         "elm_pct": row.get("elm_pct"),
         "tender_margin_pct": row.get("tender_margin_pct"),
+        "delivery_margin_pct": row.get("delivery_margin_pct"),
+        "additional_long_margin_pct": row.get("additional_long_margin_pct"),
+        "additional_short_margin_pct": row.get("additional_short_margin_pct"),
+        "special_long_margin_pct": row.get("special_long_margin_pct"),
+        "special_short_margin_pct": row.get("special_short_margin_pct"),
         "daily_volatility": row.get("daily_volatility"),
         "annualized_volatility": ann_vol,
         "vamb_safety_shield_pct": round(shield, 4),
@@ -318,9 +325,15 @@ def _build_margin_contract_histories(cur, symbol):
             "date": row.get("date"),
             "dte": compute_dte(expiry, row.get("date")),
             "initial_margin_pct": row.get("initial_margin_pct"),
+            "max_intraday_margin_pct": row.get("max_intraday_margin_pct"),
             "total_margin_pct": row.get("total_margin_pct"),
             "elm_pct": row.get("elm_pct"),
             "tender_margin_pct": row.get("tender_margin_pct"),
+            "delivery_margin_pct": row.get("delivery_margin_pct"),
+            "additional_long_margin_pct": row.get("additional_long_margin_pct"),
+            "additional_short_margin_pct": row.get("additional_short_margin_pct"),
+            "special_long_margin_pct": row.get("special_long_margin_pct"),
+            "special_short_margin_pct": row.get("special_short_margin_pct"),
             "daily_volatility": round(dv * 100, 4) if dv is not None else None,
             "annualized_volatility": round(av * 100, 4) if av is not None else None,
             "vamb_safety_shield_pct": round(shield, 4),
@@ -470,6 +483,7 @@ def _select_front_month(rows, ref_date=None):
 def _enrich_market_history(rows, oi_lookup=None, margin_lookup=None):
     enriched = []
     closes, returns, volumes, open_interest = [], [], [], []
+    high_lows = []
     for idx, row in enumerate(sorted(rows, key=lambda r: r["date"])):
         close = row.get("close")
         high = row.get("high")
@@ -505,6 +519,17 @@ def _enrich_market_history(rows, oi_lookup=None, margin_lookup=None):
         )
         turnover_ratio = round(volume / oi, 4) if volume is not None and oi not in (None, 0) else None
 
+        # 20-day Rolling Parkinson High-Low Volatility (Annualized %)
+        high_lows.append((high, low))
+        hl_window = high_lows[-20:]
+        valid_hl = [(h, l) for (h, l) in hl_window if h is not None and l is not None and h > 0 and l > 0 and h >= l]
+        if len(valid_hl) >= 2:
+            sum_sq = sum(math.log(h / l) ** 2 for (h, l) in valid_hl)
+            daily_var = sum_sq / (4.0 * math.log(2.0) * len(valid_hl))
+            parkinson_vol_20d = round(math.sqrt(daily_var * 252.0) * 100.0, 3)
+        else:
+            parkinson_vol_20d = None
+
         # Aggregate Cross-Contract OI Trend
         sym = row.get("symbol")
         dt = row.get("date")
@@ -528,6 +553,7 @@ def _enrich_market_history(rows, oi_lookup=None, margin_lookup=None):
             "range_pct": range_pct,
             "rolling_realized_vol_5d": round(realized_5d * math.sqrt(252), 3) if realized_5d is not None else None,
             "rolling_realized_vol_20d": round(realized * math.sqrt(252), 3) if realized is not None else None,
+            "parkinson_vol_20d": parkinson_vol_20d,
             "volume_z_20d": vol_z,
             "volume_pct_252d": volume_pct,
             "oi_change": oi_change,
@@ -973,13 +999,7 @@ def _export_market_intelligence(margin_cur):
                 if i < 5:
                     is_up = False
                 else:
-                    is_up = (
-                        combined_oi_series[i] > combined_oi_series[i-1] and
-                        combined_oi_series[i-1] > combined_oi_series[i-2] and
-                        combined_oi_series[i-2] > combined_oi_series[i-3] and
-                        combined_oi_series[i-3] > combined_oi_series[i-4] and
-                        combined_oi_series[i-4] > combined_oi_series[i-5]
-                    )
+                    is_up = bool(combined_oi_series[i] > combined_oi_series[i-5])
                 oi_aggregate_build_5d_lookup[(symbol, symbol_dates[i])] = is_up
 
         by_symbol_date = {symbol: {} for symbol in MARKET_SYMBOLS}
@@ -1287,7 +1307,15 @@ def _export_market_intelligence(margin_cur):
                     "alignment_status": alignment_status,
                     "dte": m["dte"],
                     "initial_margin_pct": m["initial_margin_pct"],
+                    "max_intraday_margin_pct": m.get("max_intraday_margin_pct"),
                     "total_margin_pct": m["total_margin_pct"],
+                    "elm_pct": m.get("elm_pct"),
+                    "tender_margin_pct": m.get("tender_margin_pct"),
+                    "delivery_margin_pct": m.get("delivery_margin_pct"),
+                    "additional_long_margin_pct": m.get("additional_long_margin_pct"),
+                    "additional_short_margin_pct": m.get("additional_short_margin_pct"),
+                    "special_long_margin_pct": m.get("special_long_margin_pct"),
+                    "special_short_margin_pct": m.get("special_short_margin_pct"),
                     "daily_volatility": m["daily_volatility"],
                     "annualized_volatility": m["annualized_volatility"],
                     "margin_change_1d": margin_change_1d,
@@ -1324,6 +1352,7 @@ def _export_market_intelligence(margin_cur):
                         "return_20d_pct": market.get("return_20d_pct"),
                         "rolling_realized_vol_5d": market.get("rolling_realized_vol_5d"),
                         "rolling_realized_vol_20d": market.get("rolling_realized_vol_20d"),
+                        "parkinson_vol_20d": market.get("parkinson_vol_20d"),
                         "range_pct": market.get("range_pct"),
                         "volume_lots": market["volume_lots"],
                         "volume_z_20d": market.get("volume_z_20d"),

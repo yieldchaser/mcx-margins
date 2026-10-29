@@ -120,6 +120,9 @@ class MarketExportTests(unittest.TestCase):
         self.assertIn("range_pct", enriched[-1])
         self.assertIn("turnover_ratio", enriched[-1])
         self.assertIn("oi_flow_state", enriched[-1])
+        self.assertIn("parkinson_vol_20d", enriched[-1])
+        self.assertIsNotNone(enriched[-1]["parkinson_vol_20d"])
+        self.assertGreater(enriched[-1]["parkinson_vol_20d"], 0)
         self.assertEqual(enriched[-1]["return_5d_pct"], round(((124 - 119) / 119) * 100, 3))
 
     def test_market_signals_are_explainable(self):
@@ -242,6 +245,7 @@ class MarketExportTests(unittest.TestCase):
         by_expiry = {row["expiry"]: row for row in rows}
         self.assertEqual(by_expiry["25JAN2026"]["file_id"], 2)
         self.assertEqual(by_expiry["25JAN2026"]["initial_margin_pct"], 12.0)
+        self.assertEqual(by_expiry["25JAN2026"]["max_intraday_margin_pct"], 12.0)
         self.assertEqual(by_expiry["26FEB2026"]["created_at"], "2026-01-03T12:00:00")
         self.assertEqual(by_expiry["26FEB2026"]["initial_margin_pct"], 21.0)
         self.assertEqual(by_expiry["27MAR2026"]["total_margin_pct"], 32.25)
