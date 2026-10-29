@@ -11,10 +11,16 @@ Trading commodity futures—specifically energy contracts such as **MCX Natural 
 3. **Mandatory Tender Period Surcharges:** During the final 5 to 7 days to expiry (DTE), MCX imposes escalating delivery tender margins (typically increasing in 5% daily tranches up to 25%+), while contract liquidity evaporates as volume rolls forward.
 4. **Portfolio Path-Dependency (Risk of Ruin):** Static position sizing during an ongoing portfolio drawdown accelerates capital destruction. An institutional sizing model must de-risk exposure as cumulative paper losses deepen.
 
-### 1.2 Core Mandate
-The **Volatility-Adjusted Margin Buffer (VAMB / RSAE v2.0)** sizing engine solves a constrained optimization problem:
-- **Primary Mandate (Zero Liquidation Guarantee):** Ensure that the held position survives multi-sigma price shocks, sudden overnight margin quadruplings, and delivery tender period surcharges without triggering forced liquidation or broker margin calls.
-- **Secondary Mandate (Safe Profit Maximization):** Dynamically extract maximum market upside by scaling up leverage when volatility is compressed, institutional open interest confirms trend accumulation, and account equity is near high-water marks.
+### 1.2 Core Mandate & The Principle of Asymmetric Aggression
+The **Volatility-Adjusted Margin Buffer (VAMB / RSAE v2.0)** sizing engine solves a dual-objective constrained optimization problem governed by the **Principle of Asymmetric Aggression**:
+
+1. **Aggressive Profit Harvesting in Favorable Regimes (Do Not Leave Money on the Table):**
+   - When volatility is compressed, clearinghouse margin requirements are stable, institutional open interest confirms trend accumulation, and account equity is healthy, the system must **maximize profit extraction**.
+   - It should not be unnecessarily timid or under-leveraged when market fragility is low. The engine is expected to deploy the maximum mathematically safe leverage to extract compounding returns.
+
+2. **Ruthless Capital Preservation in High-Fragility Regimes (Zero-Compromise Defense):**
+   - When volatility expands rapidly, exchange margin gaps widen, delivery tender periods approach, or portfolio drawdowns occur, the system must instantly pivot into **hyper-defensive preservation**.
+   - Notional exposure must be drastically curtailed to guarantee survival through multi-sigma price shocks, short squeezes, and overnight margin quadruplings without forced liquidation.
 
 ---
 
