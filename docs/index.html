@@ -245,30 +245,14 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 }
 .calc-lot-chip {
   cursor: pointer;
-  padding: 1px 4px;
-  border-radius: 3px;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   user-select: none;
-  display: inline-block;
-  line-height: 1.25;
+  white-space: nowrap;
 }
 .calc-lot-chip:hover {
-  background: var(--surface2);
-  color: var(--text);
   text-decoration: underline;
 }
 .calc-lot-chip--vamb {
-  color: var(--accent);
   font-weight: 700;
-}
-.calc-lot-chip--vamb:hover {
-  background: rgba(56, 139, 253, 0.2);
-  color: #58a6ff;
-}
-.calc-lot-chip.is-active {
-  background: rgba(56, 139, 253, 0.18);
-  color: var(--accent);
-  border: 1px solid rgba(56, 139, 253, 0.45);
 }
 .calc-lot-sep {
   color: var(--text-muted);
@@ -8754,7 +8738,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     tiers.sort((a, b) => b.lots - a.lots || (a.isVamb ? -1 : (b.isVamb ? 1 : 0)));
 
     lotGuideEl.innerHTML = tiers.map(t => {
-      const activeCls = (currentCustomVal === t.lots) ? ' is-active' : '';
+      const activeCls = '';
       const vambCls = t.isVamb ? ' calc-lot-chip--vamb' : '';
       return `<span class="calc-lot-chip${vambCls}${activeCls}" data-lots="${t.lots}" role="button" tabindex="0" title="Click to set ${t.lots} lots — ${t.title}">${t.label}</span>`;
     }).join('<span class="calc-lot-sep"> | </span>');
