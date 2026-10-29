@@ -1,28 +1,180 @@
-# Volatility-Adjusted Margin Buffer (VAMB / RSAE v2.0) Model Specification
+# Volatility-Adjusted Margin Buffer (VAMB / RSAE v2.0) System & Data Specification
 
 ---
 
-## 1. Executive Summary & Objective
+## 1. System Architecture & Objective
 
 ### 1.1 The Quantitative Problem
-Trading commodity derivative contracts—specifically hyper-volatile energy futures such as **MCX Natural Gas** (Multi Commodity Exchange of India)—presents extreme non-linear risk characteristics:
-1. **Exchange Dynamic Margin Expansion:** Clearinghouses frequently double or triple SPAN and Extreme Loss Margins (ELM) overnight during high-volatility events (e.g., from ~18% to 45%+), immediately triggering forced liquidation or margin penalties for traders holding maximum or near-maximum leverage.
-2. **Asymmetric Tail Risk (Short Squeeze Risk):** While long positions have bounded downside (price cannot drop below zero), short commodity positions face mathematically unbounded upside risk with severe right-skewed spikes during geopolitical supply disruptions or cold-freeze inventory drawdowns.
-3. **Near-Expiry Tender Period Illiquidity:** During the final 5 to 7 days to expiry (DTE), exchanges mandate escalating physical tender margins (typically escalating in 5% daily tranches up to 25%+), accompanied by liquidity evaporation as market open interest rolls into the next cycle.
-4. **Portfolio Path-Dependency (Risk of Ruin):** Sizing positions independently of current equity curve state creates drawdown compounding: entering at full leverage while in an existing account drawdown drastically increases the statistical probability of permanent capital impairment.
+Trading commodity futures—specifically energy contracts such as **MCX Natural Gas** (Multi Commodity Exchange of India)—presents extreme non-linear risk factors that cause standard fixed-fraction or static leverage models to fail:
+1. **Exchange Dynamic Margin Expansion:** Clearinghouses (MCXCCL) dynamically adjust SPAN and Extreme Loss Margins (ELM). During extreme volatility expansions, margins frequently double or quadruple overnight (e.g. from 14.5% to 66.05%), instantly causing forced liquidation for traders utilizing typical 3x to 5x leverage.
+2. **Asymmetric Tail Risk (Short Squeeze Convexity):** Long commodity positions are bounded at zero price, whereas short positions face mathematically unbounded upside risk with severe positive skewness during supply shocks or pipeline freezes.
+3. **Mandatory Tender Period Surcharges:** During the final 5 to 7 days to expiry (DTE), MCX imposes escalating delivery tender margins (typically increasing in 5% daily tranches up to 25%+), while contract liquidity evaporates as volume rolls forward.
+4. **Portfolio Path-Dependency (Risk of Ruin):** Static position sizing during an ongoing portfolio drawdown accelerates capital destruction. An institutional sizing model must de-risk exposure as cumulative paper losses deepen.
 
-### 1.2 Core Objective
-The VAMB / RSAE v2.0 engine was developed to solve this specific dual-objective optimization:
-- **Primary Mandate (Capital Preservation & Survival):** Eliminate margin-call liquidations across extreme historical tail-events (e.g., the Feb 2026 contract collapse, sudden 30%+ overnight margin hikes, and multi-sigma price squeezes).
-- **Secondary Mandate (Safe Profit Extraction):** Dynamically extract maximum allowable market upside by expanding leverage when volatility is compressed, open interest confirms institutional accumulation, and the portfolio is operating at or near its high-water mark.
+### 1.2 Core Mandate
+The **Volatility-Adjusted Margin Buffer (VAMB / RSAE v2.0)** sizing engine solves a constrained optimization problem:
+- **Primary Mandate (Zero Liquidation Guarantee):** Ensure that the held position survives multi-sigma price shocks, sudden overnight margin quadruplings, and delivery tender period surcharges without triggering forced liquidation or broker margin calls.
+- **Secondary Mandate (Safe Profit Maximization):** Dynamically extract maximum market upside by scaling up leverage when volatility is compressed, institutional open interest confirms trend accumulation, and account equity is near high-water marks.
 
 ---
 
-## 2. Production Code & Mathematical Formulation
+## 2. Market Contract Specifications
 
-The engine is implemented in production in `docs/index.html` within the core calculator pipeline (`window.updateCalc`).
+The engine sizes positions across two contract types on MCX:
 
-### 2.1 Complete Production Code (JavaScript)
+| Specification | Natural Gas (Standard / Big) | Natural Gas Mini (NGM) |
+| :--- | :--- | :--- |
+| **Exchange Symbol** | `NATURALGAS` | `NATGASMINI` |
+| **Trading Multiplier** | **1,250 MMBtu** per lot | **250 MMBtu** per lot |
+| **Quotation Basis** | ₹ per 1 MMBtu | ₹ per 1 MMBtu |
+| **Tick Size** | ₹ 0.10 (= ₹125 / lot P&L per tick) | ₹ 0.10 (= ₹25 / lot P&L per tick) |
+| **Settlement Type** | Both Physical Delivery & Compulsory Cash | Physical Delivery Tender Mechanism |
+| **Standard Tenor** | Monthly expiration (~23rd to 26th of month) | Monthly expiration (~23rd to 26th of month) |
+| **Trading Hours** | 09:00 to 23:30 / 23:55 IST | 09:00 to 23:30 / 23:55 IST |
+
+---
+
+## 3. Mathematical Formulation
+
+The engine executes a **Dual-Firewall** quantitative pipeline. It calculates two independent bounds—a **Margin Coverage Firewall** and a **Leverage Ceiling Firewall**—and takes their minimum:
+
+$$\text{VAMB Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
+
+```
+                                    ┌─── Capital Available (₹)
+                                    │
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │                   DATA INGESTION & REGIME              │
+       │  Price (P), SPAN Margin %, Realized Vol (σ), DTE,      │
+       │  Direction (Long/Short), Margin Gap, Portfolio DD %    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │
+            ┌───────────────────────┴───────────────────────┐
+            ▼                                               ▼
+┌───────────────────────────────┐   ┌───────────────────────────────┐
+│ FIREWALL 1: MARGIN SUFFICIENCY│   │ FIREWALL 2: LEVERAGE CEILING  │
+│                               │   │                               │
+│ • Asymmetric Vol Shield       │   │ • Base Leverage (3.25L / 1.75S│
+│ • Near-Expiry Tender Surch.   │   │ • 5-day OI Trend Boost (1.20x)│
+│ • Total Margin Buffer (mReq)  │   │ • Margin-Skew Haircut         │
+│                               │   │ • DTE Liquidity Taper         │
+│                               │   │ • Portfolio Drawdown Brake    │
+│                               │   │                               │
+│ Lots_Raw = Floor(Cap / Margin)│   │ Lots_Ceil = Floor(Cap*L / Not)│
+└───────────────┬───────────────┘   └───────────────┬───────────────┘
+                │                                   │
+                └─────────────────┬─────────────────┘
+                                  ▼
+                ┌───────────────────────────────────┐
+                │        DUAL-FIREWALL CLAMP        │
+                │ VAMB Lots = min(Lots_Raw,Lots_Ceil│
+                └───────────────────────────────────┘
+```
+
+---
+
+### Step 1: Direction-Decoupled Asymmetric Safety Shield
+
+The model computes an extra volatility cushion applied over and above the exchange initial margin:
+
+$$\text{Shield} = \min\left(0.40, \max\left(s_{\text{Min}}, c_{\text{Co}} \times \sigma_{\text{ann}}\right)\right)$$
+
+Where:
+- $\sigma_{\text{ann}}$ is the 20-day rolling annualized realized volatility (or exchange annualized volatility if higher).
+- **Asymmetry Parameters:**
+  - **LONG Position:** $s_{\text{Min}} = 0.10$ (10% floor cushion), $c_{\text{Co}} = 0.25$
+  - **SHORT Position:** $s_{\text{Min}} = 0.18$ (18% floor cushion), $c_{\text{Co}} = 0.40$
+- **Cap:** Hard ceiling at $0.40$ (40% buffer) to prevent excessive capital starvation during extreme vol regimes.
+
+*Rationale:*
+- For Longs, $0.25 \times \sigma_{\text{ann}}$ is calibrated to withstand a $\approx 4\sigma$ single-day price shock ($0.25 \times \sqrt{252} \approx 3.97$).
+- For Shorts, the higher floor ($18\%$) and multiplier ($0.40$) explicitly account for the right-tailed skewness and explosive upside velocity of commodity squeezes.
+
+---
+
+### Step 2: Near-Expiry Tender Surcharge & Taper
+
+During the final 7 trading days before expiry, the engine introduces a linear tender margin surcharge $\tau$ and a leverage multiplier $\psi_{\text{DTE}}$:
+
+$$\tau = \begin{cases} 
+0.08 \times \left(\frac{8 - \max(\text{DTE}, 0)}{7}\right) & \text{if } \text{DTE} \le 7 \\
+0 & \text{if } \text{DTE} > 7
+\end{cases}$$
+
+$$\psi_{\text{DTE}} = \begin{cases} 
+0.50 & \text{if } \text{DTE} \le 3 \\
+0.75 & \text{if } 3 < \text{DTE} \le 7 \\
+1.00 & \text{if } \text{DTE} > 7
+\end{cases}$$
+
+*Rationale:*
+- Mirrors MCX tender period rules where delivery margins step up by 5% daily in the final week.
+- Forces automated de-leveraging as market liquidity rolls out to the next month's contract.
+
+---
+
+### Step 3: Corporate Portfolio Path-Dependency Drawdown Brake
+
+To safeguard the firm's capital from compounding drawdowns, position sizing incorporates the cumulative peak-to-trough paper loss of the overall portfolio:
+
+$$\text{portfolioBrake} = \begin{cases} 
+1.00 & \text{if Drawdown } < 5.0\% \quad \text{(Normal regime: full sizing)} \\
+0.65 & \text{if } 5.0\% \le \text{Drawdown} < 10.0\% \quad \text{(35\% defensive haircut)} \\
+0.40 & \text{if Drawdown } \ge 10.0\% \quad \text{(60\% capital preservation clamp)}
+\end{cases}$$
+
+*Rationale:*
+- Prevents revenge trading and statistical ruin by mathematically reducing notional exposure when the account equity curve is impaired.
+
+---
+
+### Step 4: Compound Margin Sufficiency (Firewall 1: $\text{Lots}_{\text{Raw}}$)
+
+$$m_{\text{Req}} = \text{SPAN Margin Pct} + \text{Shield} + \tau$$
+
+$$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
+
+*Rationale:*
+- Ensures that even if the exchange hikes margins overnight by the full safety buffer, the account will not breach regulatory margin limits.
+
+---
+
+### Step 5: Asymmetric Dynamic Leverage Ceilings (Firewall 2: $\text{Lots}_{\text{Ceil}}$)
+
+$$\mathcal{L}_{\text{eff}} = \mathcal{L}_{\text{Base}} \times \kappa_{\text{OI}} \times \phi_{\text{Skew}} \times \psi_{\text{DTE}} \times \text{portfolioBrake}$$
+
+Where:
+1. **Base Leverage ($\mathcal{L}_{\text{Base}}$):**
+   - $\mathcal{L}_{\text{Base}} = 3.25\times$ for LONG
+   - $\mathcal{L}_{\text{Base}} = 1.75\times$ for SHORT
+2. **Open Interest Accumulation Multiplier ($\kappa_{\text{OI}}$):**
+   - $\kappa_{\text{OI}} = 1.20$ if LONG and 5-day continuous aggregate open interest is positive (`oi_aggregate_build_5d === true`).
+   - $\kappa_{\text{OI}} = 1.00$ otherwise.
+3. **Clearinghouse Margin-Skew Contraction ($\phi_{\text{Skew}}$):**
+   When the exchange initial margin substantially exceeds realized volatility, it signals clearinghouse anticipation of impending volatility spikes:
+   $$\text{marginGap} = \text{Initial Margin Pct} - \text{Realized Vol Pct}$$
+   $$\phi_{\text{Skew}} = \min\left(1.0, \max\left(0.40, 1 - 0.15 \times \max(0, \text{marginGap} - 2.0)\right)\right)$$
+
+The maximum permitted lots under the leverage ceiling are:
+$$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{\text{Capital} \times \mathcal{L}_{\text{eff}}}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
+
+---
+
+### Step 6: Dual-Firewall Synthesis Clamp
+
+$$\text{VAMB Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
+
+The dynamic capital utilization percentage is:
+$$\text{VAMB \%} = \min\left(100, \max\left(1, \operatorname{round}\left(\frac{\text{VAMB Lots}}{\text{Max Possible Lots}} \times 100\right)\right)\right)$$
+
+Where $\text{Max Possible Lots} = \left\lfloor \frac{\text{Capital}}{\text{Margin Required per Lot}} \right\rfloor$.
+
+---
+
+## 4. Production Code Implementation
+
+The following JavaScript function runs in production in `docs/index.html` inside `window.updateCalc`:
 
 ```javascript
 // ====== RSAE v2.0 ASYMMETRIC REGIME ENGINE (VAMB) SIZING ======
@@ -110,128 +262,203 @@ if (vPrice > 0 && capital > 0) {
 
 ---
 
-## 3. Mathematical Step-by-Step Breakdown
+## 5. Real Market Data Payloads & Historical Stress Regimes
 
-### Step 1: Direction-Decoupled Asymmetric Safety Shield
-A volatility cushion is added directly on top of the exchange SPAN margin to absorb adverse multi-sigma price swings and sudden regulatory margin hikes.
+The data payloads below are extracted directly from production databases (`data/margins.db` and `data/price.db`).
 
-$$\text{Shield} = \min\left(0.40, \max\left(s_{\text{Min}}, c_{\text{Co}} \times \sigma_{\text{ann}}\right)\right)$$
+### 5.1 Regime 1: Normal Low-Volatility Consolidation (Dec 2, 2025)
+- **Context:** Quiet market regime prior to winter squeeze. Initial margin is low, volatility is moderate.
+- **Contract:** `24FEB2026` (MCX Natural Gas Big)
 
-Where:
-- $\sigma_{\text{ann}}$ is the 20-day rolling annualized realized volatility (or exchange annualized volatility parameter).
-- **Asymmetry Parameters:**
-  - **LONG Position:** $s_{\text{Min}} = 0.10$ (10% floor cushion), $c_{\text{Co}} = 0.25$
-  - **SHORT Position:** $s_{\text{Min}} = 0.18$ (18% floor cushion), $c_{\text{Co}} = 0.40$
-- **Cap:** Hard ceiling at $0.40$ (40% buffer) to avoid over-constraining capital during extreme volatility spikes.
+```json
+{
+  "date": "2025-12-02",
+  "symbol": "NATURALGAS",
+  "expiry": "24FEB2026",
+  "dte": 84,
+  "close": 284.50,
+  "lot_size": 1250,
+  "initial_margin_pct": 14.58,
+  "daily_volatility": 2.3087,
+  "annualized_volatility": 36.5038,
+  "rolling_realized_vol_20d": 35.80,
+  "oi_aggregate_build_5d": true,
+  "margin_vs_realized_vol_gap": -21.22
+}
+```
 
-#### Rationalization:
-- For Long positions, $0.25 \times \sigma_{\text{ann}}$ is statistically calibrated to absorb approximately a $4\sigma$ daily price shock ($0.25 \times \sqrt{252} \approx 3.97$).
-- For Short positions, the higher floor ($18\%$) and multiplier ($0.40$) directly price in the severe upside convexity and positive skewness of commodity price shocks.
+### 5.2 Regime 2: The Extreme Crash & Volatility Quadrupling (Feb 2, 2026)
+- **Context:** Massive winter commodity collapse. Price experienced a single-day **-27.15% collapse**, annualized realized volatility exploded to **145.9%**, and MCX quadrupled margin requirements from ~14% to **66.05%**.
+- **Contract:** `24FEB2026` (MCX Natural Gas Big)
 
----
+```json
+{
+  "date": "2026-02-02",
+  "symbol": "NATURALGAS",
+  "expiry": "24FEB2026",
+  "dte": 22,
+  "close": 294.90,
+  "lot_size": 1250,
+  "return_1d_pct": -27.1492,
+  "initial_margin_pct": 66.05,
+  "daily_volatility": 9.2298,
+  "annualized_volatility": 145.936,
+  "rolling_realized_vol_20d": 135.35,
+  "oi_aggregate_build_5d": false,
+  "margin_vs_realized_vol_gap": -69.30
+}
+```
 
-### Step 2: Near-Expiry Tender Surcharge & Taper
-Commodity delivery contracts in MCX enter a mandatory tender period during the final week before settlement. The engine calculates an explicit margin surcharge $\tau$ and a leverage multiplier $\psi_{\text{DTE}}$:
+### 5.3 Regime 3: Near-Expiry Delivery Tender Window (Feb 18–20, 2026)
+- **Context:** Mandatory delivery tender week during final 6 DTE. MCX steps up tender margins in 5% daily increments.
 
-$$\tau = \begin{cases} 
-0.08 \times \left(\frac{8 - \max(\text{DTE}, 0)}{7}\right) & \text{if } \text{DTE} \le 7 \\
-0 & \text{if } \text{DTE} > 7
-\end{cases}$$
+```json
+[
+  {
+    "date": "2026-02-18",
+    "dte": 6,
+    "close": 288.40,
+    "initial_margin_pct": 47.49,
+    "tender_margin_pct": 5.0,
+    "total_margin_pct": 52.49
+  },
+  {
+    "date": "2026-02-19",
+    "dte": 5,
+    "close": 279.10,
+    "initial_margin_pct": 46.10,
+    "tender_margin_pct": 10.0,
+    "total_margin_pct": 56.10
+  },
+  {
+    "date": "2026-02-20",
+    "dte": 4,
+    "close": 283.60,
+    "initial_margin_pct": 44.70,
+    "tender_margin_pct": 15.0,
+    "total_margin_pct": 59.70
+  }
+]
+```
 
-$$\psi_{\text{DTE}} = \begin{cases} 
-0.50 & \text{if } \text{DTE} \le 3 \\
-0.75 & \text{if } 3 < \text{DTE} \le 7 \\
-1.00 & \text{if } \text{DTE} > 7
-\end{cases}$$
+### 5.4 Regime 4: Current Live Market Environment (Oct 29, 2026)
+- **Context:** Current active front-month contract trading at exchange close.
+- **Contract:** `24NOV2026` (MCX Natural Gas Big)
 
-#### Rationalization:
-- $\tau$ provides a linear step-up surcharge (reaching +8% by expiration day) to mirror clearinghouse tender margin step-ups.
-- $\psi_{\text{DTE}}$ contracts gross permissible leverage by 25% during the final 7 days and by 50% during the final 3 days to force position de-risking as liquidity rolls out.
-
----
-
-### Step 3: Corporate Portfolio Path-Dependency Drawdown Brake
-To protect the firm against drawdown compounding and statistical ruin, position sizing is penalized if the overall trading portfolio is in an existing drawdown:
-
-$$\text{portfolioBrake} = \begin{cases} 
-1.00 & \text{if Drawdown } < 5.0\% \quad \text{(Normal regime)} \\
-0.65 & \text{if } 5.0\% \le \text{Drawdown} < 10.0\% \quad \text{(35\% defensive haircut)} \\
-0.40 & \text{if Drawdown } \ge 10.0\% \quad \text{(60\% capital preservation clamp)}
-\end{cases}$$
-
-#### Rationalization:
-- Traders frequently blow accounts by maintaining constant notional leverage while their equity base declines. The step-down brake acts as a mechanical circuit breaker that forces defensive de-leveraging during losing streaks.
-
----
-
-### Step 4: Compound Margin Sufficiency (Lots Raw)
-The total required margin buffer $m_{\text{Req}}$ combines the exchange SPAN margin, the direction-adjusted shield, and the near-expiry tender surcharge:
-
-$$m_{\text{Req}} = \text{SPAN Margin Pct} + \text{Shield} + \tau$$
-
-$$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
-
-#### Rationalization:
-- This establishes the **Margin Firewall**: how many lots can the trader hold such that if the exchange hikes margins by the safety cushion, or if adverse price movement causes M2M erosion equal to the shield, the account will **not** trigger an intraday margin call.
-
----
-
-### Step 5: Asymmetric Dynamic Leverage Ceilings (Lots Ceil)
-Even if margin requirements appear low (e.g. during quiet summer consolidation), raw margin formulas could permit excessive leverage (e.g., 6x–8x). The engine computes an independent **Leverage Firewall**:
-
-$$\mathcal{L}_{\text{eff}} = \mathcal{L}_{\text{Base}} \times \kappa_{\text{OI}} \times \phi_{\text{Skew}} \times \psi_{\text{DTE}} \times \text{portfolioBrake}$$
-
-Where:
-1. **Base Leverage ($\mathcal{L}_{\text{Base}}$):**
-   - $\mathcal{L}_{\text{Base}} = 3.25\times$ for LONG
-   - $\mathcal{L}_{\text{Base}} = 1.75\times$ for SHORT
-2. **Institutional OI Accumulation Multiplier ($\kappa_{\text{OI}}$):**
-   - $\kappa_{\text{OI}} = 1.20$ if LONG and 5-day continuous aggregate open interest is positive (`oi_aggregate_build_5d === true`).
-   - $\kappa_{\text{OI}} = 1.00$ otherwise.
-3. **Clearinghouse Margin-Skew Contraction ($\phi_{\text{Skew}}$):**
-   Clearinghouses frequently hold private market intelligence and increase initial margin percent above prevailing realized volatility before a major geopolitical or weather event.
-   $$\text{marginGap} = \text{Initial Margin Pct} - \text{Realized Vol Pct}$$
-   $$\phi_{\text{Skew}} = \min\left(1.0, \max\left(0.40, 1 - 0.15 \times \max(0, \text{marginGap} - 2.0)\right)\right)$$
-   If clearinghouses widen margins by more than $2\%$ above realized volatility, $\phi_{\text{Skew}}$ scales down permissible leverage linearly up to a 60% haircut (clamped at 0.40).
-
-The leverage ceiling lots are:
-$$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{\text{Capital} \times \mathcal{L}_{\text{eff}}}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
-
----
-
-### Step 6: Dual-Firewall Synthesis Clamp
-The final position lot recommendation is the intersection of both firewalls:
-
-$$\text{VAMB Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
-
-The dynamic capital utilization percentage is:
-$$\text{VAMB \%} = \min\left(100, \max\left(1, \operatorname{round}\left(\frac{\text{VAMB Lots}}{\text{Max Possible Lots}} \times 100\right)\right)\right)$$
-
-Where $\text{Max Possible Lots} = \lfloor \text{Capital} / \text{Margin Required per Lot} \rfloor$.
-
----
-
-## 4. Current State & Empirical Stress-Testing
-
-In historical backtests against extreme volatility regimes (e.g., the December 2025 – February 2026 collapse and short squeeze in MCX Natural Gas):
-- **100% Capital Utilization (Max Possible Sizing, ~4.5x - 6.5x leverage):** Account suffered complete liquidation on Day 2 of an adverse trend (-55% to -100% loss).
-- **Fixed 50% Sizing (Static Rule-of-Thumb):** Survived moderate volatility but suffered severe margin calls when MCX doubled margin requirements overnight from 34% to 66%.
-- **VAMB / RSAE v2.0 Sizing:**
-  - Dynamically throttled leverage ahead of the spike via the $\phi_{\text{Skew}}$ and $\sigma_{\text{ann}}$ feedback loops.
-  - Successfully prevented liquidation across all 111 trading days of the backtest cycle while preserving 140%+ ROI on margin.
+```json
+{
+  "date": "2026-10-29",
+  "symbol": "NATURALGAS",
+  "expiry": "24NOV2026",
+  "dte": 26,
+  "price": 291.50,
+  "lot_size": 1250,
+  "initial_margin_pct": 13.52,
+  "annualized_volatility": 33.9486,
+  "rolling_realized_vol_20d": 33.219,
+  "oi_aggregate_build_5d": false,
+  "margin_vs_realized_vol_gap": -19.519,
+  "portfolio_drawdown_pct": 0.0
+}
+```
 
 ---
 
-## 5. Summary of Model Strengths & Potential Blindspots
+## 6. Mathematical Step-by-Step Walkthroughs
 
-### Key Strengths:
-1. **Dual Independent Firewalls:** Prevents over-leverage even when margin formulas are relaxed, and prevents margin calls when leverage appears modest.
-2. **Asymmetric Risk Decoupling:** Appropriately penalizes short trades to respect the positive skewness of commodity price spikes.
-3. **Macro-Aware (Clearinghouse Gap & OI):** Treats exchange margin anomalies and aggregate open interest as predictive regime indicators rather than static noise.
-4. **Path-Dependent Capital Protection:** Prevents revenge trading and drawdown spirals by incorporating corporate account drawdown directly into position sizing.
+The following four scenarios trace every intermediate variable through the engine.
 
-### Potential Areas for Review / Improvement:
-1. **Step-Function Discontinuities:** The drawdown brake uses discrete steps (5% and 10%) rather than a continuous sigmoid or linear taper.
-2. **Lagged Volatility Metric:** The model relies on 20-day historical realized volatility ($\sigma_{\text{ann}}$), which may exhibit lag during flash regime shifts unless options implied volatility (IV) or Parkinson/Garman-Klass intraday range metrics are incorporated.
-3. **Absence of Stop-Loss/ATR Distance Coupling:** Sizing is derived strictly from capital margin sufficiency and gross leverage ceiling; it does not currently scale lots based on a trader's specific stop-loss distance (e.g. 2x ATR stop).
-4. **Static Base Leverage Constants:** Base leverage caps ($3.25\times$ Long, $1.75\times$ Short) are fixed constants across all market regimes rather than adjusting dynamically to term structure slope (Contango vs Backwardation).
+### Scenario A: Current Active Contract (Oct 29, 2026) — LONG
+- **Inputs:** Capital = ₹1,00,00,000 (₹1 Crore), Price = ₹291.50, Lot Size = 1,250, SPAN Margin = 13.52%, $\sigma_{\text{ann}} = 33.95\%$, DTE = 26, OI Build = False, Direction = LONG, Portfolio Drawdown = 0%.
+- **Step 1 (Shield):**
+  $$\text{Shield} = \min(0.40, \max(0.10, 0.25 \times 0.3395)) = \min(0.40, \max(0.10, 0.0849)) = 0.1000 \text{ (10.0\%)}$$
+- **Step 2 (Tender):** DTE = 26 > 7 $\implies \tau = 0.00$, $\psi_{\text{DTE}} = 1.00$.
+- **Step 3 (Drawdown Brake):** DD = 0% $\implies \text{portfolioBrake} = 1.00$.
+- **Step 4 (Margin Sufficiency):**
+  $$m_{\text{Req}} = 0.1352 + 0.1000 + 0 = 0.2352 \text{ (23.52\%)}$$
+  $$\text{Notional per Lot} = 291.50 \times 1250 = \text{₹}3,64,375$$
+  $$\text{Margin Req per Lot} = 364375 \times 0.2352 = \text{₹}85,701$$
+  $$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{10000000}{85701} \right\rfloor = \mathbf{116 \text{ lots}}$$
+- **Step 5 (Leverage Ceiling):**
+  $$\mathcal{L}_{\text{Base}} = 3.25, \quad \kappa_{\text{OI}} = 1.00, \quad \phi_{\text{Skew}} = 1.00, \quad \psi_{\text{DTE}} = 1.00, \quad \text{portfolioBrake} = 1.00$$
+  $$\mathcal{L}_{\text{eff}} = 3.25 \times 1.0 \times 1.0 \times 1.0 \times 1.0 = 3.25\times$$
+  $$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{10000000 \times 3.25}{364375} \right\rfloor = \left\lfloor \frac{32500000}{364375} \right\rfloor = \mathbf{89 \text{ lots}}$$
+- **Step 6 (Synthesis):**
+  $$\text{VAMB Lots} = \min(116, 89) = \mathbf{89 \text{ lots}}$$
+  $$\text{Max Possible Lots (at SPAN 13.52\%)} = \left\lfloor \frac{10000000}{364375 \times 0.1352} \right\rfloor = \left\lfloor \frac{10000000}{49263.5} \right\rfloor = 202 \text{ lots}$$
+  $$\text{VAMB Utilization \%} = \operatorname{round}\left(\frac{89}{202} \times 100\right) = \mathbf{44\%}$$
+- *Binding Constraint:* **Leverage Ceiling Firewall** clamps the trade to 89 lots (protects against over-leveraging during low SPAN margin).
+
+---
+
+### Scenario B: Current Active Contract (Oct 29, 2026) — SHORT
+- **Inputs:** Capital = ₹1,00,00,000, Price = ₹291.50, Lot Size = 1,250, SPAN Margin = 13.52%, $\sigma_{\text{ann}} = 33.95\%$, DTE = 26, Direction = SHORT, Portfolio Drawdown = 0%.
+- **Step 1 (Shield):**
+  $$\text{Shield} = \min(0.40, \max(0.18, 0.40 \times 0.3395)) = \min(0.40, \max(0.18, 0.1358)) = 0.1800 \text{ (18.0\%)}$$
+- **Step 2 (Tender):** $\tau = 0$, $\psi_{\text{DTE}} = 1.00$.
+- **Step 3 (Drawdown Brake):** $\text{portfolioBrake} = 1.00$.
+- **Step 4 (Margin Sufficiency):**
+  $$m_{\text{Req}} = 0.1352 + 0.1800 + 0 = 0.3152 \text{ (31.52\%)}$$
+  $$\text{Margin Req per Lot} = 364375 \times 0.3152 = \text{₹}1,14,851$$
+  $$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{10000000}{114851} \right\rfloor = \mathbf{87 \text{ lots}}$$
+- **Step 5 (Leverage Ceiling):**
+  $$\mathcal{L}_{\text{Base}} = 1.75 \text{ (Short Base Leverage)}$$
+  $$\mathcal{L}_{\text{eff}} = 1.75\times$$
+  $$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{10000000 \times 1.75}{364375} \right\rfloor = \left\lfloor \frac{17500000}{364375} \right\rfloor = \mathbf{48 \text{ lots}}$$
+- **Step 6 (Synthesis):**
+  $$\text{VAMB Lots} = \min(87, 48) = \mathbf{48 \text{ lots}}$$
+  $$\text{VAMB Utilization \%} = \operatorname{round}\left(\frac{48}{202} \times 100\right) = \mathbf{24\%}$$
+- *Binding Constraint:* **Short Asymmetric Leverage Ceiling** limits position to 48 lots (insulates against explosive squeeze risk).
+
+---
+
+### Scenario C: Extreme Volatility Spike Regime (Feb 2, 2026 Crash) — LONG
+- **Inputs:** Capital = ₹1,00,00,000, Price = ₹294.90, Lot Size = 1,250, SPAN Margin = 66.05%, $\sigma_{\text{ann}} = 135.35\%$, DTE = 22, Direction = LONG, Portfolio Drawdown = 0%.
+- **Step 1 (Shield):**
+  $$\text{Shield} = \min(0.40, \max(0.10, 0.25 \times 1.3535)) = \min(0.40, 0.3384) = 0.3384 \text{ (33.84\%)}$$
+- **Step 2 (Tender):** $\tau = 0$, $\psi_{\text{DTE}} = 1.00$.
+- **Step 3 (Drawdown Brake):** $\text{portfolioBrake} = 1.00$.
+- **Step 4 (Margin Sufficiency):**
+  $$m_{\text{Req}} = 0.6605 + 0.3384 = 0.9989 \text{ (99.89\% margin requirement!)}$$
+  $$\text{Notional per Lot} = 294.90 \times 1250 = \text{₹}3,68,625$$
+  $$\text{Margin Req per Lot} = 368625 \times 0.9989 = \text{₹}3,68,220$$
+  $$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{10000000}{368220} \right\rfloor = \mathbf{27 \text{ lots}}$$
+- **Step 5 (Leverage Ceiling):**
+  $$\mathcal{L}_{\text{Base}} = 3.25 \implies \text{Lots}_{\text{Ceil}} = \left\lfloor \frac{10000000 \times 3.25}{368625} \right\rfloor = 88 \text{ lots}$$
+- **Step 6 (Synthesis):**
+  $$\text{VAMB Lots} = \min(27, 88) = \mathbf{27 \text{ lots}}$$
+  $$\text{Max Possible Lots (at SPAN 66.05\%)} = \left\lfloor \frac{10000000}{368625 \times 0.6605} \right\rfloor = 41 \text{ lots}$$
+  $$\text{VAMB Utilization \%} = \operatorname{round}\left(\frac{27}{41} \times 100\right) = \mathbf{66\%}$$
+- *Binding Constraint:* **Margin Sufficiency Firewall** binds the trade to 27 lots. If a trader held the max 41 lots, any 3% intraday wiggle would cause liquidation. With 27 lots, the account safely absorbs the extreme volatility.
+
+---
+
+### Scenario D: Near-Expiry Tender Window with Portfolio Drawdown (DTE = 3, DD = 8%)
+- **Inputs:** Capital = ₹50,00,000, Price = ₹280.00, Lot Size = 1,250, SPAN Margin = 45.0%, $\sigma_{\text{ann}} = 40.0\%$, DTE = 3, Direction = LONG, Portfolio Drawdown = 8.0%.
+- **Step 1 (Shield):**
+  $$\text{Shield} = \min(0.40, \max(0.10, 0.25 \times 0.40)) = 0.1000 \text{ (10.0\%)}$$
+- **Step 2 (Tender Surcharge & Taper):**
+  $$\text{DTE} = 3 \le 7 \implies \tau = 0.08 \times \left(\frac{8 - 3}{7}\right) = 0.08 \times \frac{5}{7} = 0.0571 \text{ (+5.71\% surcharge)}$$
+  $$\text{DTE} = 3 \le 3 \implies \psi_{\text{DTE}} = 0.50 \text{ (50\% leverage reduction)}$$
+- **Step 3 (Drawdown Brake):**
+  $$\text{DD} = 8.0\% \ge 5.0\% \implies \text{portfolioBrake} = 0.65 \text{ (35\% defensive haircut)}$$
+- **Step 4 (Margin Sufficiency):**
+  $$m_{\text{Req}} = 0.4500 + 0.1000 + 0.0571 = 0.6071 \text{ (60.71\%)}$$
+  $$\text{Notional per Lot} = 280 \times 1250 = \text{₹}3,50,000$$
+  $$\text{Margin Req per Lot} = 350000 \times 0.6071 = \text{₹}2,12,485$$
+  $$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{5000000}{212485} \right\rfloor = \mathbf{23 \text{ lots}}$$
+- **Step 5 (Leverage Ceiling):**
+  $$\mathcal{L}_{\text{eff}} = 3.25 \times 1.0 \times 1.0 \times 0.50 \times 0.65 = 1.056\times$$
+  $$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{5000000 \times 1.056}{350000} \right\rfloor = \left\lfloor \frac{5280000}{350000} \right\rfloor = \mathbf{15 \text{ lots}}$$
+- **Step 6 (Synthesis):**
+  $$\text{VAMB Lots} = \min(23, 15) = \mathbf{15 \text{ lots}}$$
+- *Binding Constraint:* Both the Tender Taper ($\psi_{\text{DTE}} = 0.50$) and Portfolio Drawdown Brake ($0.65$) combine to compress gross leverage to $1.05\times$, preserving capital during late-stage contract rollover.
+
+---
+
+## 7. Open Technical Constraints & Potential Improvement Vectors
+
+1. **Discrete vs. Continuous Drawdown Brake:** The drawdown brake uses step functions ($5\%$ and $10\%$). A continuous sigmoidal or exponential decay curve could eliminate cliff-edge sizing jumps.
+2. **Backward-Looking Realized Volatility:** The model relies on 20-day historical realized volatility ($\sigma_{\text{ann}}$). Incorporating options implied volatility (IV) or high-frequency Parkinson/Garman-Klass intraday range volatility could provide faster reaction time to emerging market shocks.
+3. **Decoupling from Trade Stop Distance:** The engine derives lots purely from clearinghouse margin absorption and macro leverage ceilings. It does not explicitly take an Average True Range (ATR) stop distance into account.
+4. **Term Structure Slope (Contango / Backwardation):** The base leverage ceiling ($\mathcal{L}_{\text{Base}}$) is fixed regardless of whether the forward curve is in steep Contango (storage overhang) or acute Backwardation (immediate physical scarcity).
