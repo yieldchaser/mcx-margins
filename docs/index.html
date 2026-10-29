@@ -8731,16 +8731,33 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const p90 = Math.round(maxPossibleLots * 0.9);
     const currentCustomVal = parseInt(document.getElementById('calcCustomLots')?.value, 10) || 0;
 
-    const chips = [];
-    if (vambLots > 0) {
-      chips.push(`<span class="calc-lot-chip calc-lot-chip--vamb ${currentCustomVal === vambLots ? 'is-active' : ''}" data-lots="${vambLots}" role="button" tabindex="0" title="Click to set ${vambLots} lots (VAMB Recommendation)">VAMB ${vambLots}</span>`);
-    }
-    chips.push(`<span class="calc-lot-chip ${currentCustomVal === maxPossibleLots ? 'is-active' : ''}" data-lots="${maxPossibleLots}" role="button" tabindex="0" title="Click to set ${maxPossibleLots} lots (100% Max Possible)">MAX ${maxPossibleLots}</span>`);
-    chips.push(`<span class="calc-lot-chip ${currentCustomVal === p50 ? 'is-active' : ''}" data-lots="${p50}" role="button" tabindex="0" title="Click to set ${p50} lots (50% Util)">50% ${p50}</span>`);
-    chips.push(`<span class="calc-lot-chip ${currentCustomVal === p75 ? 'is-active' : ''}" data-lots="${p75}" role="button" tabindex="0" title="Click to set ${p75} lots (75% Util)">75% ${p75}</span>`);
-    chips.push(`<span class="calc-lot-chip ${currentCustomVal === p90 ? 'is-active' : ''}" data-lots="${p90}" role="button" tabindex="0" title="Click to set ${p90} lots (90% Util)">90% ${p90}</span>`);
+    const tiers = [
+      { key: 'max', lots: maxPossibleLots, pct: 100, label: `MAX ${maxPossibleLots}`, title: `100% Max Possible (${maxPossibleLots} lots)`, isVamb: false },
+      { key: 'p90', lots: p90, pct: 90, label: `90% ${p90}`, title: `90% Utilization (${p90} lots)`, isVamb: false },
+      { key: 'p75', lots: p75, pct: 75, label: `75% ${p75}`, title: `75% Utilization (${p75} lots)`, isVamb: false },
+      { key: 'p50', lots: p50, pct: 50, label: `50% ${p50}`, title: `50% Utilization (${p50} lots)`, isVamb: false }
+    ];
 
-    lotGuideEl.innerHTML = chips.join('<span class="calc-lot-sep"> | </span>');
+    if (vambLots > 0) {
+      const vambPct = Math.min(100, Math.max(1, Math.round((vambLots / maxPossibleLots) * 100)));
+      tiers.push({
+        key: 'vamb',
+        lots: vambLots,
+        pct: vambPct,
+        label: `VAMB (${vambPct}%) ${vambLots}`,
+        title: `VAMB ${vambPct}% Risk-Safe Recommendation (${vambLots} lots)`,
+        isVamb: true
+      });
+    }
+
+    // Sort descending by lots; if lots equal, place VAMB first
+    tiers.sort((a, b) => b.lots - a.lots || (a.isVamb ? -1 : (b.isVamb ? 1 : 0)));
+
+    lotGuideEl.innerHTML = tiers.map(t => {
+      const activeCls = (currentCustomVal === t.lots) ? ' is-active' : '';
+      const vambCls = t.isVamb ? ' calc-lot-chip--vamb' : '';
+      return `<span class="calc-lot-chip${vambCls}${activeCls}" data-lots="${t.lots}" role="button" tabindex="0" title="Click to set ${t.lots} lots — ${t.title}">${t.label}</span>`;
+    }).join('<span class="calc-lot-sep"> | </span>');
   } else {
     lotGuideEl.textContent = 'Insufficient Capital';
   }
