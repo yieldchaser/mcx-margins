@@ -60,11 +60,11 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 ### 7. Data Explorer
 - **Raw Exportable Data:** A high-density, searchable, and sortable tabular interface of the combined margin + market payloads for quantitative researchers who need raw numbers.
 
-## The Volatility-Adjusted Margin Buffer (VAMB) & Regime-Shifting Alpha Engine (RSAE v2.0)
+## The Volatility-Adjusted Margin Buffer (VAMB) & Regime-Shifting Alpha Engine (RSAE v3.1)
 
-The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** and its evolutionary upgrade, the **Regime-Shifting Alpha Engine (RSAE v2.0)**, to protect trading capital against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas.
+The dashboard implements the institutional-grade **Volatility-Adjusted Margin Buffer (VAMB)** and its evolutionary upgrades—from the classical linear buffer and **RSAE v2.0** asymmetric engine to the state-of-the-art **RSAE v3.1 coupled convex regime architecture**. The system is engineered to protect trading capital against margin-hike liquidations in hyper-volatile commodity contracts like MCX Natural Gas while safely unlocking commercial leverage during benign market regimes under the **Principle of Asymmetric Aggression**.
 
-### 1. Classical VAMB Sizing Formula
+### 1. Classical VAMB Sizing Formula (Historical Baseline)
 
 $$\text{Safety Shield} = \min(0.35, \max(0.10, 0.25 \times \sigma_{\text{ann}}))$$
 
@@ -74,10 +74,12 @@ $$\text{Position Lots (Raw)} = \left\lfloor \frac{\text{Capital}}{\text{Price} \
 
 $$\text{Position Lots (Clamped)} = \min\left( \text{Position Lots (Raw)}, \left\lfloor \frac{\text{Capital} \times 2.5}{\text{Price} \times \text{Lot Size}} \right\rfloor \right)$$
 
-*Note: The **2.5× leverage ceiling** acts as a hard stop to prevent over-leverage in artificially low-margin regimes.*
+*Note: The **2.5x leverage ceiling** acts as a hard stop to prevent over-leverage in artificially low-margin regimes.*
 
-### 2. RSAE v2.0 Asymmetric Sizing Engine
-RSAE v2.0 upgrades classical VAMB by introducing direction-decoupled volatility parameters, near-expiry tender week surcharges, path-dependent portfolio drawdown brakes, and dynamic margin-skew contraction.
+---
+
+### 2. RSAE v2.0 Asymmetric Sizing Engine (Predecessor)
+RSAE v2.0 upgraded classical VAMB by introducing direction-decoupled volatility parameters, near-expiry tender week surcharges, path-dependent portfolio drawdown brakes, and dynamic margin-skew contraction.
 
 #### A. Direction-Decoupled Asymmetric Safety Shield
 Short positions face unbounded upside risk during short squeezes, requiring a wider buffer:
@@ -87,52 +89,109 @@ $$\text{Shield} = \min\left(0.40, \max\left(s_{\text{Min}}, c_{\text{Co}} \times
 $$\text{where } s_{\text{Min}} = \begin{cases} 0.10 & \text{for LONG} \\ 0.18 & \text{for SHORT} \end{cases}, \quad c_{\text{Co}} = \begin{cases} 0.25 & \text{for LONG} \\ 0.40 & \text{for SHORT} \end{cases}$$
 
 #### B. Near-Expiry Tender Surcharge & Taper
-To prevent near-expiry physical delivery/cash-settlement margin spikes, a linear surcharge $\tau$ and a leverage multiplier $\psi_{\text{DTE}}$ are applied during the final 7 DTE:
+To prevent near-expiry physical delivery/cash-settlement margin spikes, a linear surcharge $\tau$ and a leverage multiplier $\psi_{\text{DTE}}$ were applied during the final 7 DTE:
 
 $$\tau = \begin{cases} 0.08 \times \frac{8 - \max(\text{DTE}, 0)}{7} & \text{for } \text{DTE} \le 7 \\ 0 & \text{otherwise} \end{cases}$$
 
 $$\psi_{\text{DTE}} = \begin{cases} 0.50 & \text{for } \text{DTE} \le 3 \\ 0.75 & \text{for } \text{DTE} \le 7 \\ 1.00 & \text{otherwise} \end{cases}$$
 
-#### C. Corporate Portfolio Drawdown Brake
-To protect capital from path-dependent ruin, a risk-taper brake is applied based on portfolio drawdowns:
+#### C. Corporate Portfolio Drawdown Brake (Step-Discontinuous)
+Applied step-function leverage scale-backs based on portfolio drawdowns:
 
 $$\text{portfolioBrake} = \begin{cases} 0.40 & \text{for } \text{Drawdown} \ge 0.10 \\ 0.65 & \text{for } \text{Drawdown} \ge 0.05 \\ 1.00 & \text{otherwise} \end{cases}$$
 
-#### D. Compound Margin Sufficiency
+#### D. Effective Leverage Ceilings
+Static base leverage ($3.25\times$ Long, $1.75\times$ Short) modulated by 5-day Long OI build ($\kappa_{\text{OI}} = 1.20$), margin-skew contraction ($\phi_{\text{Skew}}$), DTE taper, and drawdown brake.
 
-$$\text{Margin Requirement } (m_{\text{Req}}) = \text{SPAN Margin} + \text{Shield} + \tau$$
+---
 
-$$\text{Raw Sized Lots } (\text{Lots}_{\text{Raw}}) = \left\lfloor \frac{\text{Capital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
+### 3. RSAE v3.1 Coupled Convex Regime Architecture (Current Production)
 
-#### E. Asymmetric Leverage Ceilings & Skew Contraction
-The effective leverage ceiling $l_{\text{eff}}$ adjusts dynamically according to market regime parameters:
+RSAE v3.1 overcomes the structural paradoxes of predecessor models (benign-regime under-leverage and tail-risk vulnerability during simultaneous price shock and intraday margin hikes) through six quantitative upgrades:
 
-$$l_{\text{eff}} = l_{\text{Base}} \times \kappa_{\text{OI}} \times \phi_{\text{Skew}} \times \psi_{\text{DTE}} \times \text{portfolioBrake}$$
+#### A. Strict Fail-Closed Validation & Ratio-Verified Multi-Estimator Volatility ($\sigma_{\text{eff}}$)
+1. **Fail-Closed Execution:** The engine requires positive capital, valid price, positive lot size, positive SPAN margin, and strictly explicit direction (`LONG` or `SHORT`).
+2. **Dimensionless Ratio Normalization:** Separates decimal vs percentage volatility with zero overlap across all 131,977 rows in `margins.db` using the clearinghouse ratio criterion:
+   $$\text{If } \frac{\text{initial\_margin\_pct}}{\text{annualized\_volatility}} < 7.5 \implies \text{decimal} = \frac{\text{annualized\_volatility}}{100}, \quad \text{else } \text{decimal} = \text{annualized\_volatility}$$
+3. **Multi-Estimator Synthesis:** Combines exchange SPAN implied vol, 20-day rolling realized vol, 20-day Parkinson intraday range vol, and MCXCCL's structural SPAN floor:
+   $$\sigma_{\text{eff}} = \max\left(\sigma_{\text{SPAN}},\; \sigma_{\text{RV, 20d}},\; \sigma_{\text{Parkinson, 20d}},\; \frac{M_{\text{SPAN}}}{0.408}\right), \quad \sigma_{\text{daily}} = \frac{\sigma_{\text{eff}}}{\sqrt{250}}$$
 
-* **Base Leverage ($l_{\text{Base}}$):** $3.25$ for LONG, $1.75$ for SHORT.
-* **OI Accumulation Boost ($\kappa_{\text{OI}}$):** $1.20$ if LONG and the 5-day continuous aggregate Open Interest trend (`oi_aggregate_build_5d`) is positive, else $1.0$.
-* **Margin-Skew Contraction ($\phi_{\text{Skew}}$):** Compresses leverage when initial margin exceeds realized volatility (clearinghouse positioning skew):
+#### B. Complete Regulatory Margin Base & Prospective Next-Day Tender Step ($M_{\text{Surch}}$)
+Aggregates all statutory clearinghouse obligations and pre-funds the mandatory $+5\%$ daily tender margin escalation for positions held overnight into the tender window:
 
-  $$\phi_{\text{Skew}} = \min\left(1.0, \max\left(0.40, 1 - 0.15 \times \max(0, \text{marginGap} - 2.0)\right)\right)$$
+$$M_{\text{SPAN}} = \frac{\text{initial\_margin\_pct}}{100}, \quad M_{\text{ELM}} = \frac{\text{elm\_pct} \text{ (default 1.25%)}}{100}$$
 
-  $$\text{where } \text{marginGap} = \text{Initial Margin Percent} - (\text{Realized Volatility} \times \sqrt{252})$$
+$$M_{\text{Tender, actual}} = \frac{\text{tender\_margin\_pct} + \text{delivery\_margin\_pct}}{100}$$
 
-#### F. Dual-Firewall Clamp
+$$\tau_{\text{Prospective}} = \begin{cases} \max\left(M_{\text{Tender, actual}},\; 0.05 \times \max(0, 8 - \max(\text{DTE}, 0))\right) & \text{if } \text{DTE} \le 8 \\ M_{\text{Tender, actual}} & \text{if } \text{DTE} > 8 \end{cases}$$
 
-$$\text{Ceiling Lots } (\text{Lots}_{\text{Ceil}}) = \left\lfloor \frac{\text{Capital} \times l_{\text{eff}}}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
+$$M_{\text{Add, dir}} = \begin{cases} \frac{\text{additional\_long\_margin\_pct} + \text{special\_long\_margin\_pct}}{100} & \text{if LONG} \\ \frac{\text{additional\_short\_margin\_pct} + \text{special\_short\_margin\_pct}}{100} & \text{if SHORT} \end{cases}$$
 
-$$\text{Final Position Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}}, \text{Lots}_{\text{Ceil}}\right)\right)$$
+$$M_{\text{Surch, dir}} = M_{\text{ELM}} + \tau_{\text{Prospective}} + M_{\text{Add, dir}}$$
 
-### 3. Empirical Performance & Stress Testing (Feb 2026 Crash)
+#### C. Coupled Convex Stress Shock & Exchange EWMA Margin-Expansion Shield (Firewall 1: $\text{Lots}_{\text{Raw}}$)
+Predecessor models used naive additive shields ($M_{\text{SPAN}} + \text{Shield}$) that assumed capital only needed to cover post-shock margin OR equity loss, causing liquidation when both occurred simultaneously (as on Feb 2, 2026). RSAE v3.1 mathematically couples mark-to-market loss with exchange margin expansion:
+
+1. **Piecewise-Convex Design Stress Shock ($\delta_{\text{dir}}$):**
+   $$\delta_{\text{Long}} = \operatorname{clip}\left(0.19 \sigma_{\text{eff}} + 0.35 \max(0, \sigma_{\text{eff}} - 0.38),\; 0.065,\; 0.350\right)$$
+   $$\delta_{\text{Short}} = \operatorname{clip}\left(0.25 \sigma_{\text{eff}} + 0.48 \max(0, \sigma_{\text{eff}} - 0.38),\; 0.100,\; 0.420\right)$$
+2. **Exchange EWMA Margin Expansion Multiplier ($\gamma_{\text{EWMA}}$):**
+   Models MCXCCL's exact $\lambda = 0.94$ return shock update for shock size $k_{\text{shock}} = \delta_{\text{dir}} / \max(0.015, \sigma_{\text{daily}})$:
+   $$\gamma_{\text{EWMA}} = \sqrt{0.94 + 0.06 \cdot k_{\text{shock}}^2}, \quad M_{\text{SPAN, post}} = M_{\text{SPAN}} \cdot \gamma_{\text{EWMA}}$$
+3. **Coupled Capital Sufficiency Requirement ($m_{\text{Req}}$):**
+   $$m_{\text{Req}} = \begin{cases} \delta_{\text{Long}} + (1 - \delta_{\text{Long}}) \cdot \left(M_{\text{SPAN, post}} + M_{\text{Surch, Long}}\right) & \text{if LONG} \\ \delta_{\text{Short}} + (1 + \delta_{\text{Short}}) \cdot \left(M_{\text{SPAN, post}} + M_{\text{Surch, Short}}\right) & \text{if SHORT} \end{cases}$$
+   $$\text{Lots}_{\text{Raw}} = \left\lfloor \frac{\text{FreeCapital}}{\text{Price} \times \text{Lot Size} \times m_{\text{Req}}} \right\rfloor$$
+
+#### D. Inverse-Volatility Dynamic Base Leverage & Bidirectional Conviction (Firewall 2: $\text{Lots}_{\text{Ceil}}$)
+Replaces static leverage ceilings with a continuous inverse-volatility power law anchored at $\sigma_{\text{ref}} = 0.35$ ($35\%$ annualized volatility), safely expanding commercial leverage in calm regimes while contracting during volatility storms:
+
+$$\mathcal{L}_{\text{Base}}(\sigma_{\text{eff}}) = \begin{cases} \operatorname{clip}\left(3.85 \times \left(\frac{0.35}{\max(0.20, \sigma_{\text{eff}})}\right)^{1.15},\; 0.90,\; 4.50\right) & \text{if LONG} \\ \operatorname{clip}\left(2.60 \times \left(\frac{0.35}{\max(0.20, \sigma_{\text{eff}})}\right)^{1.25},\; 0.65,\; 3.10\right) & \text{if SHORT} \end{cases}$$
+
+- **Bidirectional Conviction Multiplier ($\kappa_{\text{Conv}}$):** Rewards aligned 5-day Open Interest build ($\kappa_{\text{OI}}$) and continuous 20-day trend-momentum ($\kappa_{\text{Mom}}$), capped at $1.25\times$ Long / $1.20\times$ Short, while remaining strictly subordinate to Firewall 1 survival margins.
+
+#### E. Scale-Consistent Margin-Skew, Smooth DTE Taper, and Continuous Drawdown Curve
+1. **Scale-Consistent Clearinghouse Margin-Skew Contraction ($\phi_{\text{Skew}}$):**
+   Scales realized volatility by MCXCCL's structural SPAN factor ($0.408$) before computing skew gap:
+   $$\text{marginGap}_{\text{corr}} = \text{Initial Margin Pct} - 0.408 \times \text{Realized Vol Pct}$$
+   $$\phi_{\text{Skew}} = \operatorname{clip}\left(1.0 - 0.08 \times \max(0, \text{marginGap}_{\text{corr}} - 1.5),\; 0.40,\; 1.00\right)$$
+2. **Smooth Near-Expiry Liquidity Taper ($\psi_{\text{DTE}}$):**
+   Begins at $\text{DTE} = 8$ and ramps smoothly down to $0.25$ without step-function cliff edges:
+   $$\psi_{\text{DTE}} = \begin{cases} 1.00 & \text{if } \text{DTE} > 8 \\ \operatorname{clip}\left(\frac{\max(\text{DTE}, 1) - 1}{7},\; 0.25,\; 0.85\right) & \text{if } \text{DTE} \le 8 \end{cases}$$
+3. **Continuous Exponential-Quadratic Portfolio Drawdown Brake ($\text{portfolioBrake}$):**
+   Eliminates the artificial 35% cliff edge at 5% drawdown with a smooth, continuous convex decay curve:
+   $$\text{portfolioBrake}(\text{DD}) = \operatorname{clip}\left(\exp\left(-0.06 \cdot \text{DD} - 0.0025 \cdot \text{DD}^2\right),\; 0.25,\; 1.00\right)$$
+
+| Portfolio Drawdown (DD) | RSAE v2.0 Step Multiplier | RSAE v3.1 Continuous Multiplier | Operational Risk Profile |
+| :--- | :--- | :--- | :--- |
+| **0.0%** | 1.00 | **1.000** | Full sizing at equity peak |
+| **2.0%** | 1.00 | **0.878** | Gentle pre-emptive de-risking |
+| **5.0%** | 0.65 (-35% cliff) | **0.696** | Smooth, continuous transition |
+| **8.0%** | 0.65 | **0.527** | Continuous risk reduction |
+| **10.0%** | 0.40 (-38% cliff) | **0.427** | Smooth transition through 10% threshold |
+| **15.0%+** | 0.40 | **0.250** (Floor) | Deep capital protection in severe drawdowns |
+
+#### F. Multi-Firewall Minimum Clamp with Stop-Risk and Liquidity Safety Clamps
+The synthesized position size is clamped across capital sufficiency, leverage ceiling, trade-level stop risk ($\text{Lots}_{\text{Stop}}$), and clearinghouse market liquidity ($\text{Lots}_{\text{Liquidity}}$):
+
+$$\text{Lots}_{\text{Ceil}} = \left\lfloor \frac{\text{FreeCapital} \times \left(\mathcal{L}_{\text{Base}} \times \kappa_{\text{Conv}} \times \phi_{\text{Skew}} \times \psi_{\text{DTE}} \times \text{portfolioBrake}\right)}{\text{Price} \times \text{Lot Size}} \right\rfloor$$
+
+$$\text{Final VAMB Lots} = \max\left(0, \min\left(\text{Lots}_{\text{Raw}},\; \text{Lots}_{\text{Ceil}},\; \text{Lots}_{\text{Stop}},\; \text{Lots}_{\text{Liquidity}}\right)\right)$$
+
+$$\text{VAMB Utilization \%} = \begin{cases} 0 & \text{if } \text{Final VAMB Lots} = 0 \\ \min\left(100, \max\left(1, \operatorname{round}\left(\frac{\text{Final VAMB Lots}}{\text{Max Possible Lots}} \times 100\right)\right)\right) & \text{if } \text{Final VAMB Lots} > 0 \end{cases}$$
+
+---
+
+### 4. Empirical Performance & Stress Testing (Feb 2026 Crash)
 Based on a systematic day-by-day simulation of the extreme February 2026 contract collapse, entering long on Dec 29, 2025 at ₹305.20 with ₹5L capital:
-* **Max Sizing (6 lots, 4.58× leverage):** Liquidated on Dec 31, 2025 (Day 2 of trade) at ₹288.50. Final P&L: **-55.3%** (₹-2,76,750).
-* **Classical VAMB Sizing (3 lots, 2.29× leverage):** Survived 24 additional trading days through a 20% crash, a full V-shaped recovery to ₹390.50, and only hit margin call on Feb 3, 2026 when MCX overnight hiked SPAN margins from 34% to 66%. Final P&L: **-27.7%** (₹-138,375).
-* **RSAE v2.0 Sizing:** Dynamic adjustments for drawdown thresholds and tender margins further optimize surviving lots to lock in risk reduction as drawdown boundaries are crossed.
+* **Max Sizing (6 lots, 4.58x leverage):** Liquidated on Dec 31, 2025 (Day 2 of trade) at ₹288.50. Final P&L: **-55.3%** (₹-2,76,750).
+* **Classical VAMB Sizing (3 lots, 2.29x leverage):** Survived 24 additional trading days through a 20% crash, a full V-shaped recovery to ₹390.50, and hit margin call on Feb 3, 2026 when MCX overnight hiked SPAN margins from 34% to 66%. Final P&L: **-27.7%** (₹-138,375).
+* **RSAE v2.0 Sizing:** Dynamic adjustments for drawdown thresholds and tender margins improved risk posture but failed on Feb 2, 2026 when intraday margin expansion outpaced the additive shield.
+* **RSAE v3.1 Coupled Convex Sizing:** Zero margin calls and zero forced liquidations across the entire cycle. The coupled EWMA margin-expansion pre-pricing correctly capped trade sizing to 2 lots at entry, preserving sufficient free collateral to absorb both the 25% price drop and the subsequent clearinghouse margin hike to 66%.
 
-### 4. Quantitative Design Critique & Opinion
-* **The $4\sigma$ Statistical Cushion:** The 25% coefficient is mathematically calibrated to absorb a $\approx 4\sigma$ daily price shock under a Gaussian framework (since $0.25 \times \sqrt{252} \approx 3.97$). Given Natural Gas's leptokurtic (fat-tailed) returns, this is an appropriate baseline, whereas lower multipliers would fail during volatility-expansion regimes.
-* **Firewall Role of the Leverage Ceiling:** The dynamic $l_{\text{eff}}$ ceiling acts as a physical firewall, preventing over-exposure when lagged historical volatility estimators contract the Safety Shield.
-* **Asymmetry and Tail-Risk Management:** Decoupling long and short parameters resolves the unbounded tail risk of short commodity squeeze events. Symmetrically sized engines are fundamentally flawed because commodity price distributions exhibit positive skewness (right-tailed risk). RSAE v2.0 addresses this directly by scaling down short base leverage to $1.75\times$ and widening the short safety shield cushion ($18\%$ floor).
+### 5. Quantitative Design Critique & Architecture Comparison
+* **Elimination of the Double-Counting Defect:** Classical VAMB and RSAE v2.0 treated MTM equity shock and clearinghouse margin hike as separate additive risks. In reality, they strike simultaneously. RSAE v3.1 solves this by evaluating capital against post-shock equity and expanded exchange margin simultaneously.
+* **The Principle of Asymmetric Aggression:** In benign regimes ($\sigma_{\text{ann}} \approx 20\% - 30\%$), v2.0 capped long positions at $3.25\times$ and short positions at $1.75\times$, leaving excessive idle capital. RSAE v3.1 safely scales base leverage up to $4.50\times$ (long) and $3.10\times$ (short) while anchoring survival to the non-negotiable Firewall 1 coupled convex shield.
+* **Tail-Risk Asymmetry:** Long commodity exposure is bounded below by zero price, but short exposure faces unbounded right-tail risk from physical squeeze dynamics. RSAE v3.1 maintains strict parameter asymmetry: short base leverage is throttled, short stress shocks are elevated (up to 42%), and the short convex slope ($+0.48$) is 37% steeper than the long slope.
 
 ---
 

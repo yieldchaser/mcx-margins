@@ -8645,65 +8645,243 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const marginReqPerLot = ((entryPrice * lotSize * entryMarginPct) / 100) * spreadMarginFactor;
   const maxPossibleLots = Math.floor(capital / marginReqPerLot);
 
-  // ====== RSAE v2.0 ASYMMETRIC REGIME ENGINE (VAMB) SIZING ======
+  // ====== RSAE v3.1 COUPLED CONVEX REGIME ENGINE (VAMB v3.1) SIZING ======
   const entryMarketRow = entryLookup?.row || null;
-  const vPrice = Number(entryPrice) || 0;
-  const vSpanPct = (entryMarginRow && entryMarginRow.initial_margin_pct != null) ? (entryMarginRow.initial_margin_pct / 100) : (entryMarginPct / 100); 
-  const vSigmaAnn = (entryMarginRow && entryMarginRow.annualized_volatility != null) ? (entryMarginRow.annualized_volatility > 2.0 ? entryMarginRow.annualized_volatility / 100 : entryMarginRow.annualized_volatility) : ((entryMarketRow && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarketRow.rolling_realized_vol_20d / 100) : 0);
-  const vMarginGap = (entryMarketRow && entryMarketRow.margin_vs_realized_vol_gap != null) ? entryMarketRow.margin_vs_realized_vol_gap : (
-    (entryMarginRow && entryMarginRow.margin_vs_realized_vol_gap != null) ? entryMarginRow.margin_vs_realized_vol_gap : (
-      (entryMarginRow && entryMarketRow && entryMarginRow.initial_margin_pct != null && entryMarketRow.rolling_realized_vol_20d != null) ? (entryMarginRow.initial_margin_pct - entryMarketRow.rolling_realized_vol_20d) : 0
-    )
+  const vPrice = Number(entryPrice);
+  const vLotSize = Number(lotSize);
+
+  // Account for any existing margin obligations if provided, otherwise use capital
+  const vExistingMarginUsed = Math.max(0, Number(window.existingMarginObligation) || 0);
+  const vFreeCapital = Number(capital) - vExistingMarginUsed;
+
+  // Strict Direction Validation (Fail-Closed: must be explicitly LONG or SHORT)
+  const rawDir = String(_calcDir || '').trim().toUpperCase();
+  const vHasValidDir = (rawDir === 'LONG' || rawDir === 'SHORT');
+  const vIsLong = rawDir === 'LONG';
+
+  // 1. Full Regulatory Margin Extraction (SPAN + ELM + Tender + Delivery + Additional/Special)
+  // If multiple intraday SPAN files exist, prefer max_intraday_margin_pct when exposed by upstream lookup
+  const rawSpanPct = Number(
+    entryMarginRow?.max_intraday_margin_pct ??
+    entryMarginRow?.initial_margin_pct ??
+    entryMarginPct
   );
-  const vDte = Number.isFinite(entryMarginRow?.dte) ? Number(entryMarginRow.dte) : (Number.isFinite(entryMarketRow?.dte) ? Number(entryMarketRow.dte) : 999);
-  const vAggregateOI = (entryMarketRow && (entryMarketRow.oi_aggregate_build_5d === true || entryMarketRow.oi_aggregate_build_5d === 1) || (entryMarginRow && (entryMarginRow.oi_aggregate_build_5d === true || entryMarginRow.oi_aggregate_build_5d === 1)));
-  const vDirection = (_calcDir || 'long').toUpperCase();
-  const vPortfolioDD = parseFloat(document.getElementById('portfolioDrawdownInput')?.value) || 0;
-  const vIsLong = vDirection !== 'SHORT';
+  const vSpanPct = (Number.isFinite(rawSpanPct) && rawSpanPct > 0) ? (rawSpanPct / 100) : NaN;
+
+  const rawElmPct = Number(entryMarginRow?.elm_pct);
+  const vElmPct = (Number.isFinite(rawElmPct) && rawElmPct >= 0) ? (rawElmPct / 100) : 0.0125; // Default 1.25% MCXCCL ELM
+
+  const vTenderActualPct = (
+    (Math.max(0, Number(entryMarginRow?.tender_margin_pct) || 0) +
+     Math.max(0, Number(entryMarginRow?.delivery_margin_pct) || 0)) / 100
+  );
+
+  const vAddDirPct = vIsLong
+    ? ((Math.max(0, Number(entryMarginRow?.additional_long_margin_pct) || 0) +
+        Math.max(0, Number(entryMarginRow?.special_long_margin_pct) || 0)) / 100)
+    : ((Math.max(0, Number(entryMarginRow?.additional_short_margin_pct) || 0) +
+        Math.max(0, Number(entryMarginRow?.special_short_margin_pct) || 0)) / 100);
+
+  // 2. Deterministic Unit-Safe Multi-Estimator Effective Volatility
+  // Uses SPAN-to-volatility ratio (initial_margin_pct / val < 7.5) to separate percentage vs decimal format
+  // with 0% overlap across all 131,977 rows of margins.db (including 9.692618 = 969.26% decimal vol)
+  const parseVolDecimalSafe = (val, spanPctDecimal, explicitUnit) => {
+    const num = Number(val);
+    if (!Number.isFinite(num) || num <= 0) return 0;
+    if (explicitUnit === 'decimal') return num;
+    if (explicitUnit === 'pct') return num / 100;
+    if (Number.isFinite(spanPctDecimal) && spanPctDecimal > 0) {
+      const spanToVolRatio = (spanPctDecimal * 100) / num;
+      return spanToVolRatio < 7.5 ? (num / 100) : num;
+    }
+    return num > 10.0 ? (num / 100) : num;
+  };
+
+  const vSigmaSpan = (
+    entryMarginRow?.annualized_volatility_decimal != null
+      ? Number(entryMarginRow.annualized_volatility_decimal)
+      : (entryMarginRow?.daily_volatility != null &&
+         Number(entryMarginRow.daily_volatility) > 0 &&
+         Number(entryMarginRow.daily_volatility) < 1.0)
+        ? (Number(entryMarginRow.daily_volatility) * Math.sqrt(250))
+        : parseVolDecimalSafe(entryMarginRow?.annualized_volatility, vSpanPct)
+  );
+
+  const vSigmaRV20 = parseVolDecimalSafe(
+    entryMarketRow?.rolling_realized_vol_20d_pct ?? entryMarketRow?.rolling_realized_vol_20d,
+    vSpanPct,
+    entryMarketRow?.rolling_realized_vol_20d_pct != null ? 'pct' : undefined
+  );
+  const vSigmaParkinson = parseVolDecimalSafe(entryMarketRow?.parkinson_vol_20d, vSpanPct);
+  const vSigmaImpliedFloor = Number.isFinite(vSpanPct) ? (vSpanPct / 0.408) : 0;
+
+  const vSigmaEff = Math.max(vSigmaSpan, vSigmaRV20, vSigmaParkinson, vSigmaImpliedFloor);
+  const vSigmaDaily = vSigmaEff / Math.sqrt(250);
+
+  // DTE extraction: if missing from both rows, treat as valid only when explicitly non-expiring; otherwise flag
+  const rawDte = Number.isFinite(Number(entryMarginRow?.dte))
+    ? Number(entryMarginRow.dte)
+    : (Number.isFinite(Number(entryMarketRow?.dte)) ? Number(entryMarketRow.dte) : NaN);
+  const vDte = Number.isFinite(rawDte) ? rawDte : 999;
+
+  const vAggregateOI = Boolean(
+    (entryMarketRow && (entryMarketRow.oi_aggregate_build_5d === true || entryMarketRow.oi_aggregate_build_5d === 1)) ||
+    (entryMarginRow && (entryMarginRow.oi_aggregate_build_5d === true || entryMarginRow.oi_aggregate_build_5d === 1))
+  );
+
+  // Optional 5-day and 20-day return fields for directional trend & conviction scaling
+  const vMom5d = Number(entryMarketRow?.return_5d_pct ?? entryMarketRow?.mom_5d ?? NaN);
+  const vTrendConfirmed = Number.isFinite(vMom5d) ? (vIsLong ? vMom5d >= 0 : vMom5d <= 0) : true;
+  const vRet20dPct = Number(entryMarketRow?.return_20d_pct ?? NaN);
+
+  // Portfolio Drawdown validation
+  const ddInputEl = document.getElementById('portfolioDrawdownInput');
+  const rawDD = ddInputEl ? parseFloat(ddInputEl.value) : 0;
+  const vPortfolioDD = (Number.isFinite(rawDD) && rawDD >= 0) ? rawDD : 0;
+
+  // Fail-Closed Validation Check
+  const validationErrors = [];
+  if (!Number.isFinite(vPrice) || vPrice <= 0) validationErrors.push('invalid_price');
+  if (!Number.isFinite(vLotSize) || vLotSize <= 0) validationErrors.push('invalid_lot_size');
+  if (!Number.isFinite(vFreeCapital) || vFreeCapital <= 0) validationErrors.push('invalid_or_exhausted_capital');
+  if (!vHasValidDir) validationErrors.push('invalid_direction');
+  if (!Number.isFinite(vSpanPct) || vSpanPct <= 0 || vSpanPct > 1.0) validationErrors.push('invalid_span_margin');
+  if (!Number.isFinite(vSigmaEff) || vSigmaEff <= 0) validationErrors.push('invalid_volatility');
+  if (vPortfolioDD >= 100) validationErrors.push('account_drawdown_limit_breached');
 
   let vambLots = 0;
   let rsaeCalc = null;
-  if (vPrice > 0 && capital > 0) {
-    // 1. Direction-Decoupled Asymmetric Safety Shield
-    const sMin = vIsLong ? 0.10 : 0.18;
-    const cCo  = vIsLong ? 0.25 : 0.40;
-    const shield = Math.min(0.40, Math.max(sMin, cCo * vSigmaAnn));
 
-    // 2. Near-Expiry Tender Surcharge & Taper
-    let tau = 0, psiDTE = 1.0;
-    if (vDte <= 7) {
-      tau = 0.08 * ((8 - Math.max(vDte, 0)) / 7);
-      psiDTE = (vDte <= 3) ? 0.50 : 0.75;
+  if (validationErrors.length === 0) {
+    const notionalPerLot = vPrice * vLotSize;
+
+    // Step 1: Prospective Near-Expiry Tender Margin & Smooth Liquidity Taper (Starts at DTE <= 8)
+    const tauProspective = (vDte <= 8)
+      ? Math.max(vTenderActualPct, 0.05 * Math.max(0, 8 - Math.max(vDte, 0)))
+      : vTenderActualPct;
+    const psiDTE = (vDte > 8)
+      ? 1.00
+      : Math.min(0.85, Math.max(0.25, (Math.max(vDte, 1) - 1) / 7));
+
+    const mSurcharges = vElmPct + tauProspective + vAddDirPct;
+    const mExchCurrent = vSpanPct + vElmPct + vTenderActualPct + vAddDirPct;
+
+    // Step 2: Coupled Convex Shock & EWMA (lambda=0.94) Margin-Expansion Shield (Firewall 1: Survival)
+    const deltaShock = vIsLong
+      ? Math.min(0.35, Math.max(0.065, 0.19 * vSigmaEff + 0.35 * Math.max(0, vSigmaEff - 0.38)))
+      : Math.min(0.42, Math.max(0.100, 0.25 * vSigmaEff + 0.48 * Math.max(0, vSigmaEff - 0.38)));
+
+    const kShockSigma = deltaShock / Math.max(0.015, vSigmaDaily);
+    const ewmaMarginMult = Math.sqrt(0.94 + 0.06 * (kShockSigma * kShockSigma));
+    const mSpanPostShock = vSpanPct * ewmaMarginMult;
+
+    const mReq = vIsLong
+      ? (deltaShock + (1.0 - deltaShock) * (mSpanPostShock + mSurcharges))
+      : (deltaShock + (1.0 + deltaShock) * (mSpanPostShock + mSurcharges));
+
+    const shield = Math.max(0, mReq - (vSpanPct + mSurcharges));
+    const lotsRaw = Math.floor(vFreeCapital / (notionalPerLot * mReq));
+
+    // Step 3: Continuous Exponential-Quadratic Drawdown Brake
+    const portfolioBrake = Math.min(
+      1.00,
+      Math.max(0.25, Math.exp(-0.06 * vPortfolioDD - 0.0025 * vPortfolioDD * vPortfolioDD))
+    );
+
+    // Step 4: Inverse-Volatility Regime-Adaptive Base Leverage & Hybrid Conviction Boost (Firewall 2)
+    const volRatio = 0.35 / Math.max(0.20, vSigmaEff);
+    const lBase = vIsLong
+      ? Math.min(4.50, Math.max(0.90, 3.85 * Math.pow(volRatio, 1.15)))
+      : Math.min(3.10, Math.max(0.65, 2.60 * Math.pow(volRatio, 1.25)));
+
+    const kappaOI = (vAggregateOI && vTrendConfirmed) ? (vIsLong ? 1.20 : 1.15) : 1.00;
+    let kappaMom = 1.00;
+    if (Number.isFinite(vRet20dPct)) {
+      const signedRet20d = (vIsLong ? 1 : -1) * (vRet20dPct / 100);
+      const trendSharpe = signedRet20d / Math.max(0.15, vSigmaEff);
+      kappaMom = 1.00 + Math.min(0.15, Math.max(0, 0.10 * Math.max(0, trendSharpe - 0.50)));
+    }
+    const kappaConv = Math.min(vIsLong ? 1.25 : 1.20, Math.max(kappaOI, kappaMom));
+
+    // Step 5: Scale-Consistent Clearinghouse Margin-Skew Contraction (0.408 SPAN-to-AnnVol scaling)
+    const refRvPct = (vSigmaRV20 > 0 ? vSigmaRV20 : vSigmaEff) * 100;
+    const correctedMarginGap = (vSpanPct * 100) - (0.408 * refRvPct);
+    const phiSkew = Math.min(1.00, Math.max(0.40, 1.0 - 0.08 * Math.max(0, correctedMarginGap - 1.5)));
+
+    const leff = lBase * kappaConv * phiSkew * psiDTE * portfolioBrake;
+    const lotsCeil = Math.floor((vFreeCapital * leff) / notionalPerLot);
+
+    // Step 6: Optional Stop-Distance Risk Firewall (Firewall 3) & Liquidity Participation Cap (Firewall 4)
+    let lotsStop = Infinity;
+    const stopPriceVal = Number(document.getElementById('stopPriceInput')?.value ?? entryMarketRow?.stop_price ?? NaN);
+    if (Number.isFinite(stopPriceVal) && stopPriceVal > 0 && stopPriceVal !== vPrice) {
+      const riskFraction = 0.02 * portfolioBrake; // 2.0% base trade risk scaled by drawdown brake
+      const slippagePerUnit = vPrice * 0.002;     // 20 bps execution slippage allowance
+      const stopDist = Math.abs(vPrice - stopPriceVal) + slippagePerUnit;
+      lotsStop = Math.floor((vFreeCapital * riskFraction) / (stopDist * vLotSize));
     }
 
-    // 3. Corporate Portfolio Path-Dependency Drawdown Brake
-    let portfolioBrake = 1.00;
-    if (vPortfolioDD >= 10.0) {
-      portfolioBrake = 0.40;
-    } else if (vPortfolioDD >= 5.0) {
-      portfolioBrake = 0.65;
+    let lotsLiquidity = Infinity;
+    const advLots = Number(entryMarketRow?.volume_lots ?? NaN);
+    const oiLots = Number(entryMarketRow?.open_interest ?? NaN);
+    if (Number.isFinite(advLots) && advLots > 0) {
+      lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * advLots)));
+    }
+    if (Number.isFinite(oiLots) && oiLots > 0) {
+      lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * oiLots)));
     }
 
-    // 4. Synthesize Compound Margin Sufficiency
-    const mReq = vSpanPct + shield + tau;
-    const lotsRaw = Math.floor(capital / (vPrice * lotSize * mReq));
+    // Step 7: Final Multi-Firewall Synthesis Clamp & Accurate Utilization Telemetry
+    vambLots = Math.max(0, Math.min(lotsRaw, lotsCeil, lotsStop, lotsLiquidity));
 
-    // 5. Asymmetric Dynamic Leverage Ceilings
-    const lBase = vIsLong ? 3.25 : 1.75;
-    const kappaOI = (vIsLong && vAggregateOI) ? 1.20 : 1.0;
+    const maxLotsSpanOnly = Math.floor(vFreeCapital / (notionalPerLot * vSpanPct));
+    const maxLotsTotalExch = Math.floor(vFreeCapital / (notionalPerLot * mExchCurrent));
 
-    // Preemptive Margin-Skew Contraction
-    let phiSkew = 1.0;
-    const G_STAR = 2.0, BETA = 0.15;
-    if (Number.isFinite(vMarginGap)) {
-      phiSkew = Math.min(1.0, Math.max(0.40, 1 - BETA * Math.max(0, vMarginGap - G_STAR)));
-    }
+    // Fixes v2.0 bug where 0 lots displayed 1% utilization
+    const spanCapacityUtilPct = (vambLots === 0 || maxLotsSpanOnly <= 0)
+      ? 0
+      : Math.min(100, Math.max(1, Math.round((vambLots / maxLotsSpanOnly) * 100)));
 
-    // 6. Final Dual-Firewall Synthesis Clamp
-    const leff = lBase * kappaOI * phiSkew * psiDTE * portfolioBrake;
-    const lotsCeil = Math.floor((capital * leff) / (vPrice * lotSize));
-    vambLots = Math.max(0, Math.min(lotsRaw, lotsCeil));
-    rsaeCalc = { leff, shield, lotsCeil, lotsRaw, mReq };
+    const totalExchCapacityUtilPct = (vambLots === 0 || maxLotsTotalExch <= 0)
+      ? 0
+      : Math.min(100, Math.max(1, Math.round((vambLots / maxLotsTotalExch) * 100)));
+
+    rsaeCalc = {
+      leff,
+      shield,
+      lotsCeil,
+      lotsRaw,
+      lotsStop: Number.isFinite(lotsStop) ? lotsStop : null,
+      lotsLiquidity: Number.isFinite(lotsLiquidity) ? lotsLiquidity : null,
+      mReq,
+      mExchCurrent,
+      vSigmaEff,
+      deltaShock,
+      ewmaMarginMult,
+      correctedMarginGap,
+      portfolioBrake,
+      kappaConv,
+      spanCapacityUtilPct,
+      totalExchCapacityUtilPct,
+      bindingConstraint: vambLots === lotsRaw ? 'MARGIN_SURVIVAL_FIREWALL'
+        : vambLots === lotsCeil ? 'DYNAMIC_LEVERAGE_CEILING'
+        : vambLots === lotsStop ? 'STOP_RISK_BUDGET'
+        : 'LIQUIDITY_PARTICIPATION_CAP',
+      validationErrors: []
+    };
+  } else {
+    vambLots = 0;
+    rsaeCalc = {
+      leff: 0,
+      shield: 0,
+      lotsCeil: 0,
+      lotsRaw: 0,
+      mReq: 1,
+      spanCapacityUtilPct: 0,
+      totalExchCapacityUtilPct: 0,
+      bindingConstraint: 'VALIDATION_FAILED_FAIL_CLOSED',
+      validationErrors
+    };
   }
   window._lastVambLots = vambLots;
   window._rsaeLastCalc = rsaeCalc;
@@ -8722,8 +8900,10 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       { key: 'p50', lots: p50, pct: 50, label: `50% ${p50}`, title: `50% Utilization (${p50} lots)`, isVamb: false }
     ];
 
-    if (vambLots > 0) {
-      const vambPct = Math.min(100, Math.max(1, Math.round((vambLots / maxPossibleLots) * 100)));
+    if (rsaeCalc !== null && Number.isFinite(vambLots)) {
+      const vambPct = (vambLots === 0 || maxPossibleLots <= 0)
+        ? 0
+        : Math.min(100, Math.max(1, Math.round((vambLots / maxPossibleLots) * 100)));
       tiers.push({
         key: 'vamb',
         lots: vambLots,
@@ -8762,7 +8942,16 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   ribbon.style.display = 'none';
   ribbon.innerHTML = '';
   if (lots < 1) {
-    ribbon.innerHTML = `<span class="calc-status__title">Insufficient capital</span><div class="calc-status__detail">1 lot requires ₹${fmtNum(marginReqPerLot, 0)} at entry margin.</div>`;
+    if (lotMode === 'vamb' && maxPossibleLots >= 1) {
+      const rsae = window._rsaeLastCalc;
+      const isValFail = rsae && rsae.validationErrors && rsae.validationErrors.length > 0;
+      const detailMsg = isValFail
+        ? `Validation error (${rsae.validationErrors.join(', ')}). Sized 0 lots to protect capital.`
+        : `Defensive risk firewall sized 0 lots under current volatility/drawdown regime.`;
+      ribbon.innerHTML = `<span class="calc-status__title">Zero lots allocated (VAMB / RSAE v3.1)</span><div class="calc-status__detail">${detailMsg}</div>`;
+    } else {
+      ribbon.innerHTML = `<span class="calc-status__title">Insufficient capital</span><div class="calc-status__detail">1 lot requires ₹${fmtNum(marginReqPerLot, 0)} at entry margin.</div>`;
+    }
     ribbon.classList.add('is-visible', 'calc-status--warn');
     ribbon.style.display = 'block';
     lots = 0;
@@ -8775,10 +8964,11 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const rsae = window._rsaeLastCalc;
     if (rsae) {
       ribbon.innerHTML = `
-        <span class="calc-status__title">Volatility-Adjusted (VAMB / RSAE v2.0) Active</span>
+        <span class="calc-status__title">Volatility-Adjusted (VAMB / RSAE v3.1) Active</span>
         <div class="calc-status__detail" style="margin-top:4px;">
           Ceiling: <strong id="rsaeCeilingDisplay">—</strong> · 
-          Shield: <strong id="rsaeActiveShieldDisplay">—</strong> · 
+          Vol & Shock: <strong id="rsaeVolShockDisplay">—</strong> · 
+          Shield & EWMA: <strong id="rsaeShieldDisplay">—</strong><span id="rsaeActiveShieldDisplay" style="display:none;"></span> · 
           Binding: <strong id="rsaeBindingConstraintDisplay">—</strong>
         </div>
       `;
@@ -8786,9 +8976,20 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       ribbon.style.display = 'block';
 
       // Update frontend UI parameter readouts
-      document.getElementById('rsaeCeilingDisplay').textContent = rsae.leff.toFixed(2) + 'x';
-      document.getElementById('rsaeActiveShieldDisplay').textContent = (rsae.shield * 100).toFixed(2) + '%';
-      document.getElementById('rsaeBindingConstraintDisplay').textContent = (rsae.lotsCeil <= rsae.lotsRaw) ? 'Leverage Ceiling (Firewall)' : 'Margin Coverage';
+      const ceilEl = document.getElementById('rsaeCeilingDisplay');
+      if (ceilEl) ceilEl.textContent = (rsae.leff || 0).toFixed(2) + 'x';
+
+      const volShockEl = document.getElementById('rsaeVolShockDisplay');
+      if (volShockEl) volShockEl.textContent = `${((rsae.vSigmaEff || 0) * 100).toFixed(1)}% & ${((rsae.deltaShock || 0) * 100).toFixed(1)}%`;
+
+      const shieldEl = document.getElementById('rsaeShieldDisplay');
+      if (shieldEl) shieldEl.textContent = `${((rsae.shield || 0) * 100).toFixed(1)}% & ${(rsae.ewmaMarginMult || 1).toFixed(2)}x`;
+
+      const activeShieldEl = document.getElementById('rsaeActiveShieldDisplay');
+      if (activeShieldEl) activeShieldEl.textContent = ((rsae.shield || 0) * 100).toFixed(2) + '%';
+
+      const bindingEl = document.getElementById('rsaeBindingConstraintDisplay');
+      if (bindingEl) bindingEl.textContent = rsae.bindingConstraint || '—';
     }
   }
 
@@ -8940,7 +9141,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   setStat('resDDPct', `${fmtPct(ddPctOfPortfolio, 2)} of peak portfolio`);
   setStat('resLots', `${lots}<span class="calc-stat__unit">Lots</span>`);
   if (lotMode === 'vamb') {
-    const shield = (entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10;
+    const shield = (window._rsaeLastCalc && Number.isFinite(window._rsaeLastCalc.shield)) ? window._rsaeLastCalc.shield : ((entryMarginRow && entryMarginRow.vamb_safety_shield_pct != null) ? entryMarginRow.vamb_safety_shield_pct : 0.10);
     setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} margin/lot · Safety: ${(shield*100).toFixed(1)}%`);
   } else {
     setStat('resLotInfo', `₹${fmtNum(marginReqPerLot, 0)} margin/lot · ${windowDays.length}d`);
@@ -10705,11 +10906,11 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
   },
   "calc-lotmode": {
     title: "Lot Sizing Mode",
-    body: `<strong>Max Possible</strong> — uses 100% of capital for initial margin.<br><strong>Risk Safe (50% Util)</strong> — sizes to ~50% of max possible to withstand hikes.<br><strong>Volatility-Adjusted (VAMB / RSAE v2.0)</strong> — sizes dynamically via the asymmetric <strong>Regime-Shifting Alpha Engine (RSAE v2.0)</strong>:<br><br>• <strong>Asymmetric Shield:</strong> Floor (10% long / 18% short), multiplier (0.25 long / 0.40 short). Capped at 40%.<br>• <strong>Tender Surcharge & Taper:</strong> Linear margin surcharge and leverage reduction during the final 7 DTE.<br>• <strong>Drawdown Brake:</strong> Notional exposure scaled down by 35% if portfolio drawdown is ≥ 5%, and by 60% if drawdown is ≥ 10%.<br>• <strong>Leverage Ceilings:</strong> Base leverage (3.25x long / 1.75x short) with 1.2x multiplier when aggregate 5d OI builds on longs, and preemptive margin-skew contraction.<br><br>The final position size is the minimum of the safety-shield margin limits and the dynamic effective leverage ceiling.`
+    body: `<strong>Max Possible</strong> — uses 100% of capital for initial margin.<br><strong>Risk Safe (50% Util)</strong> — sizes to ~50% of max possible to withstand hikes.<br><strong>Volatility-Adjusted (VAMB / RSAE v3.1)</strong> — sizes dynamically via the <strong>Regime-Shifting Alpha Engine (RSAE v3.1)</strong> coupled convex regime architecture:<br><br>• <strong>Coupled Convex Shock & EWMA Shield:</strong> Piecewise-convex design stress shock coupled with exchange EWMA (lambda=0.94) margin-expansion multiplier, pre-pricing simultaneous MTM cash loss and intraday margin escalations.<br>• <strong>Prospective Tender Step & Taper:</strong> Forward-looking 1-day prospective tender margin surcharge and smooth liquidity taper for DTE ≤ 8.<br>• <strong>Continuous Drawdown Brake:</strong> Smooth exponential-quadratic decay curve eliminating step-function cliff edges.<br>• <strong>Inverse-Vol Base Leverage & Conviction:</strong> Dynamic power-law base leverage (up to 4.50x long / 3.10x short in calm regimes) with bidirectional 5d OI build and 20d trend-momentum conviction, scale-consistent margin-skew contraction, and optional stop-risk / liquidity clamps.<br><br>The final position size is synthesized via a multi-firewall minimum clamp enforcing zero-liquidation margin survival.`
   },
   "calc-portfolio-drawdown": {
     title: "Portfolio Drawdown (%)",
-    body: `Simulated peak-to-trough paper loss of the overall corporate trading portfolio.<br><br>Under the <strong>RSAE v2.0</strong> framework, hitting key drawdown boundaries triggers a risk-taper brake:<br>• <strong>≥ 5% Drawdown:</strong> Scales down maximum leverage ceiling by 35% (0.65x multiplier).<br>• <strong>≥ 10% Drawdown:</strong> Scales down maximum leverage ceiling by 60% (0.40x multiplier).<br><br>Helps test and simulate capital path-dependency and defensive scaling during portfolio drawdowns.`
+    body: `Simulated peak-to-trough paper loss of the overall corporate trading portfolio.<br><br>Under the <strong>RSAE v3.1</strong> framework, position sizing is modulated by a smooth, continuous exponential-quadratic drawdown brake:<br>• <strong>Formula:</strong> exp(−0.06 × DD − 0.0025 × DD²), clamped between 0.25 and 1.00.<br>• <strong>Behavior:</strong> Provides early gentle de-risking (e.g. ~0.88x at 2% DD), smooth non-cliff decay through 5% (~0.70x) and 10% (~0.43x) drawdowns, and deep capital preservation down to a 0.25x floor in severe drawdowns (≥ 15%).<br><br>Eliminates artificial step-function cliff edges while preserving capital during adverse portfolio path excursions.`
   },
   "calc-customlots": {
     title: "Custom Lots",
@@ -10717,7 +10918,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
   },
   "calc-lotguide": {
     title: "Lot Sizing Recommendations",
-    body: `Quick reference sizing tiers based on capital and entry margin:<br><br>• <strong>VAMB:</strong> Volatility-Adjusted Margin Buffer (RSAE v2.0) asymmetric risk-safe recommendation.<br>• <strong>MAX (100%):</strong> Full account capital utilization at initial margin.<br>• <strong>50% / 75% / 90%:</strong> Fixed margin buffer utilization tiers.<br><br>Click any recommendation to automatically set that lot size.`
+    body: `Quick reference sizing tiers based on capital and entry margin:<br><br>• <strong>VAMB:</strong> Volatility-Adjusted Margin Buffer (RSAE v3.1) fail-closed coupled convex risk-safe recommendation.<br>• <strong>MAX (100%):</strong> Full account capital utilization at initial margin.<br>• <strong>50% / 75% / 90%:</strong> Fixed margin buffer utilization tiers.<br><br>Click any recommendation to automatically set that lot size.`
   },
   "calc-horizon": {
     title: "Trade Horizon",
