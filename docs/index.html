@@ -4984,6 +4984,9 @@ async function renderOverview() {
         const yMin = Math.floor((minP - 10) / 20) * 20;
         const yMax = Math.ceil((maxP + 10) / 20) * 20;
 
+        const existingTriggerChart = Chart.getChart(triggerCanvas);
+        if (existingTriggerChart) existingTriggerChart.destroy();
+
         new Chart(triggerCanvas, {
           type: 'line',
           data: {
@@ -5692,6 +5695,9 @@ async function renderTermStructure() {
     document.getElementById('showFwdPredictedCurve')?.addEventListener('change', renderFwdCone);
     try { window._termPanicData = await loadJSON('panic_spread'); } catch(e) { window._termPanicData = null; }
 
+    const existingVolChart = Chart.getChart(document.getElementById('chartVolCurve'));
+    if (existingVolChart) existingVolChart.destroy();
+
     new Chart(document.getElementById('chartVolCurve'), {
       type: 'line',
       data: {
@@ -5738,6 +5744,8 @@ async function renderTermStructure() {
       }
 
       if (rollPairs.length > 0) {
+        const existingCalChart = Chart.getChart(calendarCanvas);
+        if (existingCalChart) existingCalChart.destroy();
         new Chart(calendarCanvas, {
           type: 'bar',
           data: {
@@ -5975,6 +5983,7 @@ async function renderHistory(chartName, startIdx, endIdx) {
         card.style.display = 'none';
         if (histChartMarketFlow) { histChartMarketFlow.destroy(); histChartMarketFlow = null; }
       } else {
+        card.style.display = 'block';
         try {
           const joinedFront = await loadMarketJSON('margin_joined_front');
           const byDate = {};
