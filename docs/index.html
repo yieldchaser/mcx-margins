@@ -1344,7 +1344,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 <!-- ── Stats Bar ── -->
 <div class="stats-bar" id="statsBar">
   <div class="stat-card">
-    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %" id="kpiMarginLabel">FRONT MARGIN %</div>
+    <div class="stat-label has-tooltip" data-tooltip-key="Front Margin %" id="kpiMarginLabel">FRONT TOTAL MARGIN %</div>
     <div class="stat-value" id="kpiFrontMargin">—</div>
     <div class="stat-sub" id="kpiMarginChange">—</div>
     <div class="stat-sub has-tooltip" id="kpiMarginSub" data-tooltip-key="Margin Percentile Rank" style="font-size:9.5px;color:var(--text-muted);margin-top:2px;cursor:help;">—</div>
@@ -1449,17 +1449,25 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 
     <!-- Price × Margin Confluence Chart -->
     <div class="card mb-4" id="priceMarginConfCard" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
         <div class="card-title has-tooltip" data-tooltip-key="Price Margin Confluence" style="margin-bottom:0;">
           Price &times; Margin Confluence
           <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px;">— 60D Rolling · Front Month NATURALGAS</span>
         </div>
-        <div id="confluenceFreshness" style="font-size:11px;color:var(--text-muted);"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="range-btn-group" id="confMetricToggleGroup" style="display:inline-flex;gap:4px;">
+            <button class="range-btn active-range" id="confMetricTotalBtn" data-mode="total" title="Show Total Margin % (SPAN + Tender + ELM)">Total Margin %</button>
+            <button class="range-btn" id="confMetricSpanBtn" data-mode="span" title="Show SPAN Initial Margin % only (Clearinghouse Base Risk Model)">SPAN Initial %</button>
+            <button class="range-btn" id="confMetricBothBtn" data-mode="both" title="Show Both Total Margin and SPAN Initial Margin">Both</button>
+          </div>
+          <div id="confluenceFreshness" style="font-size:11px;color:var(--text-muted);margin-left:4px;"></div>
+        </div>
       </div>
       <div class="scope-row" style="margin-top:0;margin-bottom:10px;">
-        <span class="scope-chip"><strong>Left Y</strong> Initial Margin %</span>
+        <span class="scope-chip" id="confLeftYChip"><strong>Left Y</strong> Total Margin %</span>
         <span class="scope-chip"><strong>Right Y</strong> MCX Close ₹</span>
         <span class="scope-chip"><strong>Scope</strong> Front Month Contract</span>
+        <span class="scope-chip" id="confTenderChip" style="border-color:rgba(210,153,34,0.4);color:var(--accent-orange);" title="Tender margin applies during the last 5 trading days prior to contract expiry (+5%/day up to +25%)"><strong>Tender Zone</strong> DTE &le; 5 (+5%/day)</span>
       </div>
       <div class="chart-container" style="height:240px;"><canvas id="chartPriceMarginConfluence"></canvas></div>
     </div>
@@ -4058,46 +4066,112 @@ async function renderMarketOverviewContext() {
   }
 }
 
+let currentConfMarginMode = 'total';
+
+function setConfMarginMode(mode) {
+  currentConfMarginMode = mode;
+  const chart = window._priceMarginConfChart || priceMarginChart;
+  const btnTotal = document.getElementById('confMetricTotalBtn');
+  const btnSpan  = document.getElementById('confMetricSpanBtn');
+  const btnBoth  = document.getElementById('confMetricBothBtn');
+  const chipLeft = document.getElementById('confLeftYChip');
+
+  [btnTotal, btnSpan, btnBoth].forEach(b => b?.classList.remove('active-range'));
+
+  if (chart) {
+    if (mode === 'span') {
+      chart.setDatasetVisibility(0, false); // Total Margin
+      chart.setDatasetVisibility(1, true);  // SPAN Initial
+      btnSpan?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> SPAN Initial %';
+    } else if (mode === 'both') {
+      chart.setDatasetVisibility(0, true);  // Total Margin
+      chart.setDatasetVisibility(1, true);  // SPAN Initial
+      btnBoth?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> Total &amp; SPAN %';
+    } else { // default 'total'
+      chart.setDatasetVisibility(0, true);  // Total Margin
+      chart.setDatasetVisibility(1, false); // SPAN Initial
+      btnTotal?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> Total Margin %';
+    }
+    chart.update();
+  } else {
+    if (mode === 'span') {
+      btnSpan?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> SPAN Initial %';
+    } else if (mode === 'both') {
+      btnBoth?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> Total &amp; SPAN %';
+    } else {
+      btnTotal?.classList.add('active-range');
+      if (chipLeft) chipLeft.innerHTML = '<strong>Left Y</strong> Total Margin %';
+    }
+  }
+}
+
 async function renderPriceMarginConfluence() {
   if (!ENABLE_MARKET_INTEL) return;
   const confCard = document.getElementById('priceMarginConfCard');
   if (!confCard) return;
   try {
+    // Wire up toggle button listeners once
+    const btnTotal = document.getElementById('confMetricTotalBtn');
+    const btnSpan  = document.getElementById('confMetricSpanBtn');
+    const btnBoth  = document.getElementById('confMetricBothBtn');
+    if (btnTotal && !btnTotal._bound) {
+      btnTotal._bound = true;
+      btnTotal.addEventListener('click', () => setConfMarginMode('total'));
+    }
+    if (btnSpan && !btnSpan._bound) {
+      btnSpan._bound = true;
+      btnSpan.addEventListener('click', () => setConfMarginMode('span'));
+    }
+    if (btnBoth && !btnBoth._bound) {
+      btnBoth._bound = true;
+      btnBoth.addEventListener('click', () => setConfMarginMode('both'));
+    }
+
     // Load price history (front_month scope) + margin history (already cached)
     const [mktHist, margHist] = await Promise.all([
       loadMarketJSON('history_ng'),
       loadJSON('history_ng')
     ]);
-    // mktHist: { rows: [{date, close, dte, ...}] }  — already front_month scope
-    // margHist: array [{date, expiry, dte, initial_margin_pct, ...}]
 
-    // Build date → front-month price map from market history
+    // Build date -> front-month price map from market history
     const priceByDate = {};
     (mktHist.rows || []).forEach(r => {
       if (r.close != null && r.close > 0) priceByDate[r.date] = r.close;
     });
 
-    // Build date → front-month initial margin map from margin history
+    // Build date -> front-month margin map from margin history (selecting active front contract)
     const margByDate = {};
     (Array.isArray(margHist) ? margHist : []).forEach(r => {
-      if (!margByDate[r.date] || r.dte < margByDate[r.date].dte) {
+      if (!margByDate[r.date] || (r.dte != null && r.dte < (margByDate[r.date].dte ?? 999))) {
         margByDate[r.date] = r;
       }
     });
 
     // Intersect: dates with both price and margin, last 60
     const allDates = Object.keys(priceByDate)
-      .filter(d => margByDate[d]?.initial_margin_pct != null)
+      .filter(d => margByDate[d]?.initial_margin_pct != null || margByDate[d]?.total_margin_pct != null)
       .sort()
       .slice(-60);
 
     if (allDates.length < 10) return;
 
-    const labels      = allDates.map(d => d.slice(5));   // MM-DD
-    const marginData  = allDates.map(d => margByDate[d].initial_margin_pct);
-    const priceData   = allDates.map(d => priceByDate[d]);
+    const labels          = allDates.map(d => d.slice(5));   // MM-DD
+    const totalMarginData = allDates.map(d => margByDate[d]?.total_margin_pct ?? margByDate[d]?.initial_margin_pct ?? null);
+    const spanMarginData  = allDates.map(d => margByDate[d]?.initial_margin_pct ?? null);
+    const tenderData      = allDates.map(d => margByDate[d]?.tender_margin_pct ?? 0);
+    const expiryData      = allDates.map(d => margByDate[d]?.expiry ?? '');
+    const dteData         = allDates.map(d => margByDate[d]?.dte ?? null);
+    const priceData       = allDates.map(d => priceByDate[d] ?? null);
 
     if (priceMarginChart) { priceMarginChart.destroy(); priceMarginChart = null; }
+
+    const isSpanVisible  = currentConfMarginMode === 'span' || currentConfMarginMode === 'both';
+    const isTotalVisible = currentConfMarginMode !== 'span';
 
     priceMarginChart = new Chart(document.getElementById('chartPriceMarginConfluence'), {
       type: 'line',
@@ -4105,23 +4179,37 @@ async function renderPriceMarginConfluence() {
         labels,
         datasets: [
           {
-            label: 'Initial Margin %',
-            data: marginData,
+            label: 'Total Margin %',
+            data: totalMarginData,
             borderColor: '#388bfd',
-            backgroundColor: 'rgba(56,139,253,0.07)',
+            backgroundColor: 'rgba(56,139,253,0.08)',
             fill: true,
-            tension: 0.3,
+            tension: 0.2,
             pointRadius: 0,
             yAxisID: 'yMargin',
             borderWidth: 2,
+            hidden: !isTotalVisible,
+          },
+          {
+            label: 'SPAN Initial %',
+            data: spanMarginData,
+            borderColor: '#a371f7',
+            backgroundColor: 'transparent',
+            borderDash: [4, 4],
+            fill: false,
+            tension: 0.2,
+            pointRadius: 0,
+            yAxisID: 'yMargin',
+            borderWidth: 1.5,
+            hidden: !isSpanVisible,
           },
           {
             label: 'MCX Front Close ₹',
             data: priceData,
             borderColor: '#3fb950',
             backgroundColor: 'rgba(63,185,80,0.05)',
-            fill: true,
-            tension: 0.3,
+            fill: false,
+            tension: 0.2,
             pointRadius: 0,
             yAxisID: 'yPrice',
             borderWidth: 2,
@@ -4140,9 +4228,43 @@ async function renderPriceMarginConfluence() {
           },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.yAxisID === 'yMargin'
-                ? `Margin: ${ctx.parsed.y.toFixed(2)}%`
-                : `Price: ₹${ctx.parsed.y.toFixed(2)}`
+              title: function(items) {
+                if (!items || !items.length) return '';
+                const idx = items[0].dataIndex;
+                const d = allDates[idx];
+                const exp = expiryData[idx];
+                const dte = dteData[idx];
+                const isRollover = idx > 0 && expiryData[idx] !== expiryData[idx - 1];
+                const rollBadge = isRollover ? ' [ROLLOVER DAY]' : '';
+                const dteStr = dte != null ? ` · DTE ${dte}d` : '';
+                const contractStr = exp ? ` · ${_contractLabel(exp)}` : '';
+                return `${d}${contractStr}${dteStr}${rollBadge}`;
+              },
+              label: function(ctx) {
+                if (ctx.dataset.yAxisID === 'yPrice') {
+                  return `MCX Close: ₹${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) : '—'}`;
+                }
+                const idx = ctx.dataIndex;
+                const tot = totalMarginData[idx];
+                const span = spanMarginData[idx];
+                const tndr = tenderData[idx] || 0;
+                const dte = dteData[idx];
+
+                if (ctx.datasetIndex === 0) { // Total Margin
+                  if (tndr > 0) {
+                    return [
+                      `Total Margin: ${tot != null ? tot.toFixed(2) + '%' : '—'} (Effective)`,
+                      `  ├ SPAN Initial: ${span != null ? span.toFixed(2) + '%' : '—'}`,
+                      `  └ Tender Surcharge: +${tndr.toFixed(0)}% (DTE ${dte})`
+                    ];
+                  }
+                  return `Total Margin: ${tot != null ? tot.toFixed(2) + '%' : '—'} (SPAN Base)`;
+                }
+                if (ctx.datasetIndex === 1) { // SPAN Initial
+                  return `SPAN Initial Margin: ${span != null ? span.toFixed(2) + '%' : '—'}`;
+                }
+                return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+              }
             }
           }
         },
@@ -4166,6 +4288,8 @@ async function renderPriceMarginConfluence() {
         }
       }
     });
+
+    window._priceMarginConfChart = priceMarginChart;
 
     document.getElementById('confluenceFreshness').textContent =
       `${allDates[0]} → ${allDates[allDates.length - 1]}`;
@@ -4209,7 +4333,7 @@ async function updateStatsBar(sym = currentStatsSym) {
 
     // ── CARD 1: FRONT MARGIN % ──────────────────────────────────────────
     const marginLbl = document.getElementById('kpiMarginLabel');
-    if (marginLbl) marginLbl.textContent = isMini ? 'FRONT MARGIN % (MINI)' : 'FRONT MARGIN %';
+    if (marginLbl) marginLbl.textContent = isMini ? 'FRONT TOTAL MARGIN % (MINI)' : 'FRONT TOTAL MARGIN %';
 
     const totalMargin = front.total_margin_pct != null ? front.total_margin_pct : front.initial_margin_pct;
     document.getElementById('kpiFrontMargin').textContent = totalMargin != null ? totalMargin.toFixed(2) + '%' : '—';
