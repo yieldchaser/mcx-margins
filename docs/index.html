@@ -1319,7 +1319,26 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 #returnDistCard .data-table th {
   white-space: nowrap;
 }
+#returnDistCard {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#returnDistCard .rd-grid-panels,
+#returnDistCard .rd-grid-panel {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#returnDistCard .chart-container {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
 .rd-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
@@ -1381,28 +1400,33 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   border: 1px solid rgba(248, 81, 73, 0.32);
 }
 
-/* Overview Tail Risk Pill Glow & Pulse */
-@keyframes tailRiskPulse {
-  0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.45); }
-  70% { box-shadow: 0 0 0 6px rgba(248, 81, 73, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
-}
-@keyframes tailDotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.4); opacity: 1; }
-}
-#overviewTailRiskPill {
-  transition: all 0.2s ease;
-}
-#overviewTailRiskPill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-.tail-risk-elevated {
-  animation: tailRiskPulse 2.4s infinite ease-in-out;
-}
-.tail-risk-dot-pulse {
-  animation: tailDotPulse 1.8s infinite ease-in-out;
+@media (max-width: 640px) {
+  #returnDistCard {
+    padding: 12px !important;
+  }
+  #returnDistCard .chart-container {
+    height: 260px !important;
+  }
+  #rdControlToolbar {
+    width: 100%;
+    gap: 6px !important;
+  }
+  #rdControlToolbar .range-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  #rdKpiDeck {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #rdLiveRibbon {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  #rdRibbonText {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
 }
 </style>
 </head>
@@ -1512,16 +1536,9 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
     <div class="card mb-4">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div class="card-title has-tooltip" data-tooltip-key="Current Margin Snapshot" style="margin-bottom:0;">
-          Current Margin Snapshot — <span id="snapshotSymbolLabel">NaturalGas</span>
+          Current Margin Snapshot - <span id="snapshotSymbolLabel">NaturalGas</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <!-- Live Tail Risk Pill Bridge -->
-          <div id="overviewTailRiskPill" class="has-tooltip tail-risk-elevated" data-tooltip-key="Overview Tail Risk Pill"
-               style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.45);color:#f85149;padding:3px 10px;border-radius:12px;font-size:11px;font-family:Inter,sans-serif;font-weight:600;transition:all 0.2s ease;"
-               title="Click to inspect empirical return distribution and survival leverage">
-            <span id="overviewTailRiskDot" class="tail-risk-dot-pulse" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f85149;"></span>
-            <span>Tail Risk: <strong id="overviewTailRiskVal" style="font-family:'JetBrains Mono',monospace;">--</strong> (3σ)</span>
-          </div>
           <div style="display:flex;gap:6px;">
             <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
               style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
@@ -2680,9 +2697,9 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
 
       <!-- Institutional Metrics & Survival Leverage Matrix -->
-      <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px;">
+      <div class="rd-grid-panels" style="display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:16px;">
         <!-- Panel A: Empirical vs Gaussian Tail Frequencies -->
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
+        <div class="rd-grid-panel" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
             <span>Empirical Tail Frequency vs Gaussian Baseline</span>
             <span style="font-size:11px;font-weight:400;color:var(--text-muted);">Sample Size: <span id="rdSampleSizeVal" style="font-family:'JetBrains Mono',monospace;">--</span> sessions</span>
@@ -2706,7 +2723,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </div>
 
         <!-- Panel B: Clearinghouse Volatility Shock & Breakeven Survival Leverage Table -->
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
+        <div class="rd-grid-panel" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
             <span class="has-tooltip" data-tooltip-key="Clearinghouse Volatility Multiplier">
               Clearinghouse Volatility Shock & Breakeven Position Survival Matrix
@@ -2857,7 +2874,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           <span class="scope-chip has-tooltip" id="deepContractDataScopeBadge" data-dyn-title="Continuous Front-Month" data-dyn-body="Continuous front-month price and volume history from 2019 to present."><strong>Data</strong> Continuous</span>
           <span class="scope-chip has-tooltip" id="lodResolutionBadge" data-dyn-title="Chart Resolution" data-dyn-body="Active bar timeframe (Daily, 15-Minute, or 1-Minute). Adjusts automatically based on zoom range."><strong>Resolution:</strong> Daily (Macro)</span>
-          <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Loaded Bars" data-dyn-body="Total number of price bars loaded for the active series."><strong>Loaded:</strong> --</span>
+          <span class="scope-chip has-tooltip" id="lodCandleCountBadge" data-dyn-title="Loaded Bars" data-dyn-body="Total number of price bars loaded for the active series."><strong>Loaded:</strong> -</span>
         </div>
       </div>
       
@@ -4087,55 +4104,6 @@ async function loadJSON(name) {
   return promise;
 }
 
-function updateOverviewTailRiskPill(sym) {
-  const pill = document.getElementById('overviewTailRiskPill');
-  const pillVal = document.getElementById('overviewTailRiskVal');
-  const pillDot = document.getElementById('overviewTailRiskDot');
-  if (!pillVal) return;
-  loadJSON('return_distribution').then(rd => {
-    if (!rd || !rd.symbols || !rd.symbols[sym]) return;
-    const s = rd.symbols[sym];
-    const trm = s?.simple_returns?.tail_frequencies?.beyond_3s?.trm;
-    if (typeof trm !== 'number' || isNaN(trm)) {
-      pillVal.textContent = '--';
-      return;
-    }
-    pillVal.textContent = trm.toFixed(2) + '×';
-
-    if (pill) {
-      if (trm >= 3.0) {
-        pill.classList.add('tail-risk-elevated');
-        pill.style.background = 'rgba(248, 81, 73, 0.12)';
-        pill.style.borderColor = 'rgba(248, 81, 73, 0.45)';
-        pill.style.color = '#f85149';
-        if (pillDot) {
-          pillDot.classList.add('tail-risk-dot-pulse');
-          pillDot.style.background = '#f85149';
-        }
-      } else if (trm >= 2.0) {
-        pill.classList.remove('tail-risk-elevated');
-        pill.style.background = 'rgba(210, 153, 34, 0.12)';
-        pill.style.borderColor = 'rgba(210, 153, 34, 0.45)';
-        pill.style.color = '#d29922';
-        if (pillDot) {
-          pillDot.classList.remove('tail-risk-dot-pulse');
-          pillDot.style.background = '#d29922';
-        }
-      } else {
-        pill.classList.remove('tail-risk-elevated');
-        pill.style.background = 'rgba(63, 185, 80, 0.12)';
-        pill.style.borderColor = 'rgba(63, 185, 80, 0.45)';
-        pill.style.color = '#3fb950';
-        if (pillDot) {
-          pillDot.classList.remove('tail-risk-dot-pulse');
-          pillDot.style.background = '#3fb950';
-        }
-      }
-    }
-  }).catch(() => {});
-}
-window.updateOverviewTailRiskPill = updateOverviewTailRiskPill;
-
 async function loadMarketJSON(name) {
   if (!ENABLE_MARKET_INTEL) throw new Error('Market intelligence disabled');
   return loadJSON('market/' + name);
@@ -4915,8 +4883,6 @@ updateStatsBar('NATURALGAS');
 // PART 2 — Overview Tab
 // ═══════════════════════════════════════════════════════════════════
 
-const PANIC_COEFF_MARGIN = 0.886;
-const PANIC_COEFF_VOL    = 43.0;
 const REGULATORY_MARGIN_FLOOR = 13.0; // MCX statutory margin floor for Natural Gas
 
 function calcHurdleSpanIM(im, dv, r_ret = 0) {
@@ -4952,33 +4918,7 @@ async function renderOverview() {
     const coneLookup = {};
     if (coneData && coneData.cone) coneData.cone.forEach(c => { coneLookup[c.expiry] = c; });
 
-    function updateOverviewTailRiskPill(sym) {
-      window.updateOverviewTailRiskPill(sym);
-    }
-
-    const ovPill = document.getElementById('overviewTailRiskPill');
-    if (ovPill) {
-      ovPill.addEventListener('click', () => {
-        const tabBtn = document.querySelector('[data-tab="analytics"]');
-        if (tabBtn) tabBtn.click();
-        setTimeout(() => {
-          const card = document.getElementById('returnDistCard');
-          if (card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            card.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
-            card.style.borderColor = 'rgba(248, 81, 73, 0.6)';
-            card.style.boxShadow = '0 0 16px rgba(248, 81, 73, 0.25)';
-            setTimeout(() => {
-              card.style.borderColor = '';
-              card.style.boxShadow = '';
-            }, 1500);
-          }
-        }, 150);
-      });
-    }
-
     function renderSnapshotTable(sym) {
-      updateOverviewTailRiskPill(sym);
       const rows = (current[sym] || []);
       document.getElementById('snapshotSymbolLabel').textContent =
         sym === 'NATURALGAS' ? 'NaturalGas' : 'NatGasMini';
@@ -4994,7 +4934,7 @@ async function renderOverview() {
         long_build:   { label: 'Long Build ↑',   c: '#22c55e', b: 'rgba(34,197,94,0.12)'   },
         long_unwind:  { label: 'Long Unwind ↓',  c: '#ef4444', b: 'rgba(239,68,68,0.12)'   },
         short_build:  { label: 'Short Build ↓',  c: '#fb923c', b: 'rgba(251,146,60,0.12)'  },
-        short_unwind: { label: 'Short Unwind ↑', c: '#a78bfa', b: 'rgba(167,139,250,0.12)' },
+        short_cover:  { label: 'Short Cover ↑',  c: '#a78bfa', b: 'rgba(167,139,250,0.12)' },
         neutral:      { label: 'Neutral →',      c: '#8b949e', b: 'rgba(139,148,158,0.12)' }
       };
       document.getElementById('snapshotBody').innerHTML = deduped.map(c => {
@@ -5062,7 +5002,7 @@ async function renderOverview() {
           if (c.daily_volatility != null && c.daily_volatility > 0 && c.total_margin_pct != null) {
             const cover = (c.total_margin_pct / (c.daily_volatility * 100)).toFixed(1);
             const coverNum = parseFloat(cover);
-            const coverCol = coverNum < 10 ? '#ef4444' : coverNum < 15 ? '#f59e0b' : '#8b949e';
+            const coverCol = coverNum < 4.5 ? '#ef4444' : coverNum < 6.0 ? '#f59e0b' : '#8b949e';
             volCell = `${annVolPct}<div style="font-size:9px;color:${coverCol};margin-top:2px;">Cover ${cover}×</div>`;
           } else {
             volCell = annVolPct;
@@ -8880,9 +8820,7 @@ async function renderAnalytics() {
               if (val) {
                 rdState[stateKey] = val;
                 renderReturnDist();
-                if (stateKey === 'symbol') {
-                  updateOverviewTailRiskPill(rdState.symbol);
-                }
+
               }
             });
           });
@@ -8897,7 +8835,6 @@ async function renderAnalytics() {
 
         // Initial render
         renderReturnDist();
-        updateOverviewTailRiskPill(rdState.symbol);
       }
     } catch (e) {
       console.warn('Return distribution engine skipped:', e);
@@ -10406,7 +10343,7 @@ async function renderMarketIntel(force = false) {
       }
     ];
     document.getElementById('marketKpis').innerHTML = marketKpiCards.map(card => `
-      <div class="mkt-card market-kpi-card has-tooltip" data-dyn-title="${card.label} — ${symbol}" data-dyn-body="${escAttr(card.tip)}">
+      <div class="mkt-card market-kpi-card has-tooltip" data-dyn-title="${card.label} - ${symbol}" data-dyn-body="${escAttr(card.tip)}">
         <div class="stat-label" style="font-size:11px; margin-bottom:4px;">${card.label}</div>
         <div class="stat-value" style="font-size:22px; color:${card.valColor || 'var(--text)'};">${card.value}</div>
         <div class="stat-sub" style="font-size:12px; color:${card.subColor || 'var(--text-muted)'}; margin-top:4px;">${card.sub}</div>
@@ -11659,7 +11596,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
 • <strong>Max Statutory Leverage:</strong> The hard clearinghouse ceiling defined by exchange minimum margin: 100 ÷ Margin %. Sizing too close to statutory leverage leaves zero buffer against adverse intraday swings and overnight gap margin calls.`
   },
   "Current Margin Snapshot": {
-    title: "Current Margin Snapshot — NATURALGAS",
+    title: "Current Margin Snapshot - NATURALGAS",
     body: `Live margin table for all active NATURALGAS (and NATGASMINI) expiries as of today's MCX CCL update.<br><br>Hover any <strong>column header</strong> for a detailed explanation of that specific metric. Hover any <strong>row</strong> for contract-level analysis including historical context.`
   },
 
@@ -11829,7 +11766,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
     body: `<strong>OI Flow State</strong> — the net positioning direction derived from combining price direction with open-interest change.<br><br><span style="color:#22c55e;font-weight:600;">Long Build ↑</span> — Price up + OI up. Fresh longs entering. Bullish and structurally sound.<br><span style="color:#ef4444;font-weight:600;">Long Unwind ↓</span> — Price down + OI down. Existing longs exiting. Bearish de-risking.<br><span style="color:#fb923c;font-weight:600;">Short Build ↓</span> — Price down + OI up. Fresh shorts entering. Bearish conviction.<br><span style="color:#a78bfa;font-weight:600;">Short Unwind ↑</span> — Price up + OI down. Shorts covering. Rally less sustainable.<br><span style="color:var(--text-muted);font-weight:600;">Neutral →</span> — No clear directional bias.`
   },
   "snap-dte": {
-    title: "DTE — Days to Expiry",
+    title: "DTE - Days to Expiry",
     body: `<strong>Days remaining</strong> until this contract's MCX expiry date.<br><br><span style="color:#22c55e;">Green badge (≥ 30d)</span>: Far contract. Low tender risk. Normal margin regime.<br><span style="color:#f59e0b;">Amber badge (8–29d)</span>: Approaching expiry. Begin planning your roll.<br><span style="color:#ef4444;">Red badge (≤ 7d)</span>: Tender zone active. MCX applies tender margin on top of initial margin.<br><br><em>Sub-text alert:</em> <span style="color:#ef4444;font-weight:700;">TENDER ZONE</span> if DTE ≤ 7 — roll immediately or expect a margin call. <span style="color:#f59e0b;">Roll ~Xd</span> if DTE 8–14 — start planning.`
   },
   "snap-initial": {
@@ -11837,7 +11774,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
     body: `The <strong>base margin</strong> MCX requires to hold 1 lot overnight, as a percentage of contract value.<br><br>Calculated by MCX using their SPAN-equivalent model: primary input is their annualized volatility estimate. Rises sharply as DTE → 0 (vol uncertainty compresses into fewer remaining days).<br><br>Historical range for NATURALGAS: <strong>6% (2010–2018 low-vol era)</strong> to <strong>65% (2022 Russia-Ukraine crisis peak)</strong>. Current normal: 15–30%.`
   },
   "snap-elm": {
-    title: "ELM % — Extreme Loss Margin",
+    title: "ELM % - Extreme Loss Margin",
     body: `<strong>Extreme Loss Margin</strong> — a fixed additional buffer MCX charges on top of Initial margin.<br><br>For NATURALGAS, ELM is locked at <strong>1.25%</strong> and almost never changes. It is MCX's protection against gap-down opens that exceed the SPAN model's worst-case scenario.<br><br>In practice this column is always 1.25% — it exists for regulatory transparency, not daily risk management.`
   },
   "snap-tender": {
@@ -11846,7 +11783,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
   },
   "snap-total": {
     title: "Total Margin %",
-    body: `<strong>Total margin</strong> = Initial % + ELM % + Tender % + any Additional margin declared by MCX.<br><br>This is the full percentage of contract value you must keep as collateral. <em>Sub-text shows your effective leverage multiple</em>:<br><br><strong>Leverage = 100 ÷ Total %</strong><br>e.g. Total 25% → 4.0× leverage. You control ₹4 of notional for every ₹1 of margin.<br><br><span style="color:#22c55e;">Green</span> = ≤ 22% (conservative, manageable). <span style="color:#f59e0b;">Amber</span> = 22–35% (elevated, monitor). <span style="color:#ef4444;">Red</span> = &gt; 35% (high-margin stress regime).`
+    body: `<strong>Total margin</strong> = Initial % + ELM % + Tender % + any Additional margin declared by MCX.<br><br>This is the full percentage of contract value you must keep as collateral.<br><br><em>Sub-text: Effective Leverage</em> = 100 ÷ Total %<br>Shows the leverage multiple controlled per ₹1 of margin (e.g. Total 25% → 4.0× leverage).<br><br><span style="color:#22c55e;">≤ 22%</span>: Conservative / manageable.<br><span style="color:#f59e0b;">22–35%</span>: Elevated, monitor closely.<br><span style="color:#ef4444;">&gt; 35%</span>: High-margin stress regime.`
   },
   "snap-add-long": {
     title: "Additional Long Margin %",
@@ -11857,21 +11794,21 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
     body: `<strong>Additional margin for short positions</strong> — an extra charge MCX can impose specifically on sellers (short holders).<br><br>Typically zero, but MCX can invoke it when short OI is concentrated or when delivery risk on the short side is elevated.<br><br>When this is non-zero, short positions are more expensive to hold than long positions — asymmetric margin is a strong signal of MCX's view on directional risk.`
   },
   "snap-vol": {
-    title: "Ann. Vol % — Annualized Volatility",
-    body: `MCX's <strong>annualized volatility estimate</strong> for this contract — the single most important input to the Initial margin calculation.<br><br>When vol spikes here, a margin hike is almost certain within 1–2 days. The relationship is near-linear: Initial% ≈ 0.886 × Ann. Vol% + constant.<br><br><em>Sub-text: Vol Cover</em> = Total % ÷ Daily Vol %<br>Shows how many daily vol units your margin buffer absorbs.<br><span style="color:#ef4444;">Below 10×</span>: Margin is thin relative to daily expected moves. MCX historically hikes soon.<br><span style="color:#f59e0b;">10–15×</span>: Moderate buffer. Watch closely.<br><span style="color:var(--text-muted);">Above 15×</span>: Comfortable margin cushion.`
+    title: "Ann. Vol % - Annualized Volatility",
+    body: `MCX's <strong>annualized volatility estimate</strong> for this contract - the primary input to the SPAN scanning risk calculation.<br><br>Clearinghouse initial margin scales with daily volatility (σ<sub>daily</sub> = Ann. Vol ÷ √252) subject to exchange minimum regulatory floors (13.0%).<br><br><em>Sub-text: Vol Cover</em> = Total % ÷ Daily Vol %<br>Shows how many daily standard deviation (1σ) volatility shocks your margin buffer absorbs.<br><span style="color:#ef4444;">Below 4.5×</span>: Thin margin cushion relative to daily expected moves. Elevated hike risk.<br><span style="color:#f59e0b;">4.5–6.0×</span>: Standard regulatory clearinghouse buffer.<br><span style="color:var(--text-muted);">Above 6.0×</span>: Comfortable margin cushion.`
   },
   "snap-lot": {
-    title: "₹/Lot — Capital Blocked per Lot",
+    title: "₹/Lot - Capital Blocked per Lot",
     body: `<strong>Actual rupees</strong> you must keep as margin to hold 1 lot overnight.<br><br><strong>Formula:</strong> (Total % ÷ 100) × Price × Lot Size<br>Lot sizes: 1,250 MMBtu for NATURALGAS · 250 MMBtu for NATGASMINI<br><br>Example: If Total = 25%, Price = ₹200, Lot = 1,250 → ₹62,500 blocked per lot.<br><br><em>Sub-text: ₹/1% Move</em> = Price × Lot Size × 0.01<br>This is your <strong>P&amp;L impact per 1% price swing per lot</strong> — the essential position-sizing number. A 1% adverse move costs you exactly this much. Divide your risk budget by this number to size your position.`
   },
   "snap-hist": {
-    title: "Hist. Pct — Historical Percentile Rank",
+    title: "Hist. Pct - Historical Percentile Rank",
     body: `Where today's margin sits within the <strong>full historical distribution</strong> of margin readings at the same days-to-expiry (±15 days), using trailing 5-year data.<br><br><strong>P5 (5Y)</strong> = Today's margin is higher than only 5% of historical readings at this DTE — historically very cheap.<br><strong>P50 (5Y)</strong> = At the median. Normal regime.<br><strong>P90 (5Y)</strong> = Higher than 90% of historical readings — historically expensive territory.<br><br><span style="color:#22c55e;">Green (≤ P33)</span>: Cheap. Consider this a relatively low-cost entry window.<br><span style="color:var(--text);">Normal (P34–P66)</span>: Standard regime.<br><span style="color:#f59e0b;">Amber (P67–P80)</span>: Elevated. Watch for further hikes.<br><span style="color:#ef4444;">Red (&gt; P80)</span>: Historically expensive. Defensive positioning warranted.`
   },
 
 
   "Forward Curve": {
-    title: "Forward Curve — Margin Term Structure",
+    title: "Forward Curve - Margin Term Structure",
     body: `How MCX-required margin varies across all active expiries today.<br><br>
 <strong>Normal (backwardation):</strong> Front month has highest margin — tender pressure + high near-term vol. Curve slopes down left to right. This is the usual shape.<br>
 <strong>Unusual (contango):</strong> Far months require more margin. Rare — signals MCX is pricing in future stress (e.g., upcoming supply shocks).<br><br>
@@ -11894,7 +11831,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
 If the contract is marked <em>LOCKED IN</em>, carryover volatility alone has already breached the hike threshold even on a 0% price move.`
   },
   "Price Margin Confluence": {
-    title: "Price × Margin Confluence — 60D Rolling",
+    title: "Price × Margin Confluence - 60D Rolling",
     body: `Dual-axis chart showing <strong>MCX front-month price</strong> and <strong>initial margin %</strong> over the last 60 trading days.<br><br>
 <span style="color:#388bfd;"><strong>Blue line (left Y)</strong></span> — Initial Margin %. Watch for divergences where price has moved significantly but margin has not yet responded — these often precede a hike or cut within 1–3 days.<br><br>
 <span style="color:#3fb950;"><strong>Green line (right Y)</strong></span> — MCX Front Month Close ₹. A sharp price move (±3–5%) without a corresponding margin adjustment is a classic leading indicator of an imminent MCX CCL update.<br><br>
@@ -11905,7 +11842,7 @@ If the contract is marked <em>LOCKED IN</em>, carryover volatility alone has alr
 Scope: front-month contract only (minimum DTE ≥ 0 each day). Source: MCX CCL margin circulars + MCX market data.`
   },
   "Forward Margin Curve": {
-    title: "Forward Margin Curve — All Active Expiries",
+    title: "Forward Margin Curve - All Active Expiries",
     body: `Full margin term structure across every active NATURALGAS expiry today.<br><br>
 <strong>Backwardation (normal):</strong> Front-month has highest margin. Tender + near-term vol dominate. Curve slopes down left-to-right.<br>
 <strong>Contango (rare):</strong> Far-month margin exceeds front. Signals MCX pricing in future stress.<br><br>
@@ -11926,7 +11863,7 @@ When this chart spikes on the left, watch for a margin hike in the next 1–2 da
 When the spread is wide, NGM traders enjoy a meaningful capital advantage.`
   },
   "Initial Margin % Over Time": {
-    title: "Historical Margin — Front Month Daily",
+    title: "Historical Margin - Front Month Daily",
     body: `Daily initial margin % for NATURALGAS front month, 2010 to present.<br><br>
 <em>2010–2018:</em> Low era (6–15%). Conservative MCX parameters, low global vol.<br>
 <em>2019–2021:</em> Transition — US LNG exports + India demand growth drove margins up.<br>
@@ -11935,19 +11872,19 @@ When the spread is wide, NGM traders enjoy a meaningful capital advantage.`
 Use range buttons to zoom into specific crises or calm periods.`
   },
   "Daily Volatility Over Time": {
-    title: "Daily Volatility — MCX Estimate",
+    title: "Daily Volatility - MCX Estimate",
     body: `MCX CCL's daily volatility estimate for the front-month contract. This is the <strong>primary input</strong> to MCX's margin calculation.<br><br>
 A sudden spike here is almost always a leading indicator of a margin hike within 1–2 days. Monitor this alongside the Panic Spread signal for early warning.`
   },
   "Margin vs Volatility": {
-    title: "Margin vs Volatility — Scatter",
+    title: "Margin vs Volatility - Scatter",
     body: `Each dot = one trading day. X = daily vol, Y = initial margin.<br><br>
 <strong>Tight cluster (bottom-left)</strong> = 2010–2018 low-vol era.<br>
 <strong>Extended diagonal</strong> = MCX's vol-to-margin scaling function. Near-linear — margin is almost entirely vol-driven.<br>
 <strong>Outliers above trendline</strong> = days MCX charged discretionary extra margin (tender spikes, special margin events). These are rare but operationally significant — margin calls that exceeded what vol alone predicted.`
   },
   "Average Margin by Month": {
-    title: "Seasonal Pattern — Monthly Box Plots",
+    title: "Seasonal Pattern - Monthly Box Plots",
     body: `Statistical dispersion of initial margin % by calendar month (2010–present).<br><br>
 <strong>IQR (Inner Quartile Range)</strong>: The central 50% of readings (P25 to P75). Shows the "normal" seasonal range.<br>
 <strong>Whiskers</strong>: The 10th and 90th percentiles. Readings outside this range are considered extreme outliers.<br>
@@ -11964,7 +11901,7 @@ A sudden spike here is almost always a leading indicator of a margin hike within
 Higher average year = MCX in tight risk mode. Traders need proportionally more capital for the same lot size.`
   },
   "Monthly Margin Heatmap": {
-    title: "Monthly Margin Heatmap — Year × Calendar Month",
+    title: "Monthly Margin Heatmap - Year × Calendar Month",
     body: `Averages the margins of whatever contract was the **active front-month** on each trading day *during that calendar month*.<br><br>
 <strong>Example:</strong> The Jan 2022 cell averages the daily front-month margins from January 1 to January 31, 2022. It represents the actual market stress during that exact calendar window.<br><br>
 <span style="color:var(--accent-green);font-size:12px;">●</span> <em>Dark green</em> = Calm, low-margin market environment.<br>
@@ -11973,7 +11910,7 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 <strong>Key Difference:</strong> Unlike the Contract Lifecycle Heatmap below, this shows calendar-month conditions (when you traded), not a specific contract's lifecycle (which contract you traded).`
   },
   "Contract Lifecycle Heatmap": {
-    title: "Contract Lifecycle Heatmap — Year × Expiry Month",
+    title: "Contract Lifecycle Heatmap - Year × Expiry Month",
     body: `Each cell represents the average margin for a **single specific contract** across its active lifespan (DTE ≤ 90 days), regardless of which calendar months those days fell in.<br><br>
 <strong>Example:</strong> The Jan 2022 cell isolates the Jan 2022 contract and averages its margins from its active life (e.g. DTE ≤ 90d, spanning Nov 2021, Dec 2021, and Jan 2022).<br><br>
 <span style="color:var(--accent-green);font-size:12px;">●</span> <em>Dark green</em> = Low-cost contract lifecycle.<br>
@@ -12000,7 +11937,7 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 <strong>• Tender Period Only (DTE ≤ 5d):</strong> Isolates the extreme margin spike zone in the final 5 days.`
   },
   "DTE vs Margin": {
-    title: "Days to Expiry vs Margin — The Expiry Curve",
+    title: "Days to Expiry vs Margin - The Expiry Curve",
     body: `How MCX margin changes as a contract approaches expiry.<br><br>
 <strong>Blue (Initial):</strong> Rises sharply in the final 30 days. MCX discourages speculative holdover into physical delivery.<br>
 <strong>Red (Tender):</strong> Activates only at DTE ≤ 7. Can jump from 0% to 25% overnight — the most dangerous margin event for underfunded accounts.<br><br>
@@ -12015,7 +11952,7 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 <em>Key insight:</em> MCX is reactive, not predictive. Hikes feel sudden even when vol has been building for days — because MCX waits for it to materialize.`
   },
   "Margin Prediction Model": {
-    title: "Panic Spread — Full Forward Curve",
+    title: "Panic Spread - Full Forward Curve",
     body: `Applies the linear prediction model to every active expiry simultaneously.<br><br>
 <strong>Blue solid</strong> = Today's actual margin per expiry.<br>
 <strong>Orange dashed</strong> = Predicted level for tomorrow: <em>0.886 × Initial Margin + 43.0 × Daily Vol</em>.<br>
@@ -12025,7 +11962,7 @@ Higher average year = MCX in tight risk mode. Traders need proportionally more c
 <em>The bands matter:</em> A wide ±1σ range means the model's level forecast has high historical error — treat the point prediction with more scepticism.`
   },
   "5-Day Rolling": {
-    title: "Margin Momentum — Spot vs 5-Day Average",
+    title: "Margin Momentum - Spot vs 5-Day Average",
     body: `<strong>Blue line</strong> = Daily front-month initial margin %.<br>
 <strong>Yellow dashed</strong> = 5-day rolling average (smoothed trend).<br><br>
 When blue is <em>above</em> yellow and rising: MCX is actively tightening. Expect continued hikes unless vol drops sharply.<br>
@@ -12033,7 +11970,7 @@ When blue is <em>below</em> yellow: Margins are easing. Capital efficiency impro
 <strong>Rule of thumb:</strong> If spot is more than 3 percentage points above the 5-day average, pre-fund your account before the next MCX update cycle.`
   },
   "Historical Percentile": {
-    title: "Historical Percentile Rank — All-time vs Trailing 5Y",
+    title: "Historical Percentile Rank - All-time vs Trailing 5Y",
     body: `Two percentile lines shown, because a single all-time rank is misleading across structural market regimes.<br><br>
 <strong>Gray dashed — All-time (since 2010):</strong> Where today's margin sits vs every observation since 2010. Inflated by the 2010–2018 low-vol era (margins of 6–15%) — today's "normal" 20–25% looks elevated even when it isn't exceptional by post-2019 standards.<br><br>
 <strong>Colored line — Trailing 5Y (actionable):</strong> Rank vs only the last 5 years. Compares you against the <em>same structural regime</em>. This is the number that tells you if margins are cheap or expensive <em>right now</em>, not vs 2012.<br><br>
@@ -12059,7 +11996,7 @@ The green dashed line uses the <em>right Y-axis</em> (USD/MMBtu). The blue margi
 <em>Data coverage:</em> Full history from 2010 to present. Updated with every daily export run.`
   },
   "Model Health": {
-    title: "Model Health — Prediction Backtest Scorecard",
+    title: "Model Health - Prediction Backtest Scorecard",
     body: `These metrics measure how well the prediction model has performed historically.<br><br>
 <strong>Directional Accuracy >60%</strong> indicates the model has genuine edge at predicting whether margin goes up or down.<br>
 <strong>Interval Hit Rate near 68%/95%</strong> confirms the uncertainty bands are calibrated, not cosmetic.<br><br>
@@ -12091,7 +12028,7 @@ Blue area = vol-implied fair margin. Amber area = discretionary policy buffer. T
 <em>Self-sustaining:</em> Every new contract captured by the daily 8 PM IST update script automatically appears in this dropdown — no code changes required.`
   },
   "Margin Percentile Rank": {
-    title: "Margin Percentile Rank — All-time vs Within-Regime",
+    title: "Margin Percentile Rank - All-time vs Within-Regime",
     body: `Loading regime data…`
   },
   "Stress Score": {
@@ -12387,10 +12324,6 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "turnover-tenor-decomp": {
     title: "Tenor & Contract Decomposition",
     body: `Inspect liquidity distribution across product structures. Switch between <strong>Tenor Share %</strong> (M1 vs M2 vs Far vs Mini), <strong>Big vs Mini</strong> absolute rupee turnover, and <strong>Monthly Seasonality</strong> across the 20-year history.`
-  },
-  "Overview Tail Risk Pill": {
-    title: "Clearinghouse Fat-Tail Leptokurtosis Gauge",
-    body: `<strong>Empirical Tail Multiple (TRM<sub>3σ</sub>):</strong> Ratio of observed 3σ return frequency to the Gaussian baseline (0.27%). A multiplier above 1.0 indicates fat tails (leptokurtosis), where price shocks occur with significantly higher frequency than normal distribution assumptions predict. Click to inspect the full distribution and breakeven survival leverage.`
   },
   "Return Distribution Engine": {
     title: "Empirical Return Distribution & Margin Fragility Profiler",
@@ -13272,7 +13205,7 @@ document.addEventListener('keydown', e => {
 
     if (elDailyLabel) {
       elDailyLabel.setAttribute('data-dyn-title', 'Current Session Turnover');
-      elDailyLabel.setAttribute('data-dyn-body', `Gross traded notional value for latest session (<strong>${cur.date || '--'}</strong>): <strong>₹ ${fmtInrCr(cur.turnover_cr)} Crores</strong> across <strong>${Number(cur.volume_lots || 0).toLocaleString('en-IN')} lots</strong>.<br><br>• <strong>Front Month (M1):</strong> ₹ ${fmtInrCr(cur.front_cr)} Cr (${cur.front_share_pct || 0}%)<br>• <strong>NATGASMINI:</strong> ₹ ${fmtInrCr(cur.mini_cr)} Cr (${cur.mini_share_pct || 0}%)<br>• <strong>Next Month (M2):</strong> ₹ ${fmtInrCr(cur.next_cr)} Cr<br>• <strong>Far Months (M3+):</strong> ₹ ${fmtInrCr(cur.far_cr)} Cr`);
+      elDailyLabel.setAttribute('data-dyn-body', `Gross traded notional value for latest session (<strong>${cur.date || '-'}</strong>): <strong>₹ ${fmtInrCr(cur.turnover_cr)} Crores</strong> across <strong>${Number(cur.volume_lots || 0).toLocaleString('en-IN')} lots</strong>.<br><br>• <strong>Front Month (M1):</strong> ₹ ${fmtInrCr(cur.front_cr)} Cr (${cur.front_share_pct || 0}%)<br>• <strong>NATGASMINI:</strong> ₹ ${fmtInrCr(cur.mini_cr)} Cr (${cur.mini_share_pct || 0}%)<br>• <strong>Next Month (M2):</strong> ₹ ${fmtInrCr(cur.next_cr)} Cr<br>• <strong>Far Months (M3+):</strong> ₹ ${fmtInrCr(cur.far_cr)} Cr`);
     }
     if (elDailySub) {
       elDailySub.setAttribute('data-dyn-title', 'Session Contract Breakdown');
@@ -13288,7 +13221,7 @@ document.addEventListener('keydown', e => {
 
     if (elYtdLabel) {
       elYtdLabel.setAttribute('data-dyn-title', `${ytd.year || ''} YTD Cumulative Turnover`);
-      elYtdLabel.setAttribute('data-dyn-body', `Total gross traded notional in ${ytd.year || ''} through ${cur.date || '--'}: <strong>₹ ${fmtInrLakhCr(ytd.turnover_lakh_cr)} Lakh Crores</strong> (₹ ${fmtInrCr(ytd.turnover_cr)} Cr) across <strong>${ytd.days || 0} trading sessions</strong>.<br><br>• <strong>Average Daily Turnover (ADT):</strong> ₹ ${fmtInrCr(ytd.adt_cr)} Cr/day<br>• <strong>Annualized Pace:</strong> ₹ ${fmtInrLakhCr(ytd.annualized_lakh_cr)} Lakh Crores<br>• <strong>Mini Market Share:</strong> ${ytd.mini_share_pct || 0}% of traded value`);
+      elYtdLabel.setAttribute('data-dyn-body', `Total gross traded notional in ${ytd.year || ''} through ${cur.date || '-'}: <strong>₹ ${fmtInrLakhCr(ytd.turnover_lakh_cr)} Lakh Crores</strong> (₹ ${fmtInrCr(ytd.turnover_cr)} Cr) across <strong>${ytd.days || 0} trading sessions</strong>.<br><br>• <strong>Average Daily Turnover (ADT):</strong> ₹ ${fmtInrCr(ytd.adt_cr)} Cr/day<br>• <strong>Annualized Pace:</strong> ₹ ${fmtInrLakhCr(ytd.annualized_lakh_cr)} Lakh Crores<br>• <strong>Mini Market Share:</strong> ${ytd.mini_share_pct || 0}% of traded value`);
     }
     if (elYtdSub) {
       elYtdSub.setAttribute('data-dyn-title', 'Pacing & Annualized Run Rate');
@@ -13299,17 +13232,17 @@ document.addEventListener('keydown', e => {
     const elAthLabel = document.getElementById('turnoverKpiAthLabel');
     const elAthDate = document.getElementById('turnoverKpiAthDate');
     if (elAth) elAth.textContent = `₹ ${fmtInrCr(ath.turnover_cr)} Cr`;
-    if (elAthDate) elAthDate.textContent = `${ath.date || '--'} (${Number(ath.volume_lots || 0).toLocaleString('en-IN')} lots)`;
+    if (elAthDate) elAthDate.textContent = `${ath.date || '-'} (${Number(ath.volume_lots || 0).toLocaleString('en-IN')} lots)`;
 
     if (elAthLabel) {
       const athLots = Number(ath.volume_lots || 0).toLocaleString('en-IN');
       const topContracts = (ath.contracts || []).slice(0, 3).map(c => `• <strong>${c.symbol} ${c.expiry}:</strong> ₹ ${fmtInrCr(c.turnover_cr)} Cr (${Number(c.volume_lots).toLocaleString('en-IN')} lots @ ₹${c.close})`).join('<br>');
-      elAthLabel.setAttribute('data-dyn-title', `All-Time Single-Day Record (${ath.date || '--'})`);
-      elAthLabel.setAttribute('data-dyn-body', `The highest-turnover session in MCX Natural Gas history occurred on <strong>${ath.date || '--'}</strong> with <strong>₹ ${fmtInrCr(ath.turnover_cr)} Crores</strong> ($3.19 Billion USD) transacted in <strong>${athLots} lots</strong>.<br><br>Top contracts traded:<br>${topContracts}`);
+      elAthLabel.setAttribute('data-dyn-title', `All-Time Single-Day Record (${ath.date || '-'})`);
+      elAthLabel.setAttribute('data-dyn-body', `The highest-turnover session in MCX Natural Gas history occurred on <strong>${ath.date || '-'}</strong> with <strong>₹ ${fmtInrCr(ath.turnover_cr)} Crores</strong> ($3.19 Billion USD) transacted in <strong>${athLots} lots</strong>.<br><br>Top contracts traded:<br>${topContracts}`);
     }
     if (elAthDate) {
       elAthDate.setAttribute('data-dyn-title', 'All-Time Climax Session');
-      elAthDate.setAttribute('data-dyn-body', `Historical peak turnover occurred on ${ath.date || '--'} with ${Number(ath.volume_lots || 0).toLocaleString('en-IN')} contracts transacted during extreme winter freeze volatility.`);
+      elAthDate.setAttribute('data-dyn-body', `Historical peak turnover occurred on ${ath.date || '-'} with ${Number(ath.volume_lots || 0).toLocaleString('en-IN')} contracts transacted during extreme winter freeze volatility.`);
     }
 
     const elShare = document.getElementById('turnoverKpiShare');

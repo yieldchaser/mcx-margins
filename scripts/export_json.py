@@ -367,16 +367,19 @@ def _value_sign(value, eps=1e-9):
     return 0
 
 
-def _oi_flow_state(price_return, oi_change_pct):
-    price_sign = _value_sign(price_return)
-    oi_sign = _value_sign(oi_change_pct)
-    if price_sign > 0 and oi_sign > 0:
+def _oi_flow_state(price_return, oi_change_pct, price_eps=0.0010, oi_eps=0.25):
+    # price_return in decimal (0.0010 = 0.10%), oi_change_pct in percent (0.25 = 0.25%)
+    if price_return is None or oi_change_pct is None:
+        return "neutral"
+    p_sign = 1 if price_return > price_eps else (-1 if price_return < -price_eps else 0)
+    oi_sign = 1 if oi_change_pct > oi_eps else (-1 if oi_change_pct < -oi_eps else 0)
+    if p_sign > 0 and oi_sign > 0:
         return "long_build"
-    if price_sign < 0 and oi_sign > 0:
+    if p_sign < 0 and oi_sign > 0:
         return "short_build"
-    if price_sign < 0 and oi_sign < 0:
+    if p_sign < 0 and oi_sign < 0:
         return "long_unwind"
-    if price_sign > 0 and oi_sign < 0:
+    if p_sign > 0 and oi_sign < 0:
         return "short_cover"
     return "neutral"
 

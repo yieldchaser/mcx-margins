@@ -173,6 +173,11 @@ class MarketExportTests(unittest.TestCase):
         self.assertEqual(export_json._oi_flow_state(-1.2, -3.4), "long_unwind")
         self.assertEqual(export_json._oi_flow_state(1.2, -3.4), "short_cover")
         self.assertEqual(export_json._oi_flow_state(0.0, 0.0), "neutral")
+        # Deadband and None checks
+        self.assertEqual(export_json._oi_flow_state(0.0005, 3.4), "neutral")  # below price_eps
+        self.assertEqual(export_json._oi_flow_state(1.2, 0.10), "neutral")    # below oi_eps
+        self.assertEqual(export_json._oi_flow_state(None, 3.4), "neutral")
+        self.assertEqual(export_json._oi_flow_state(1.2, None), "neutral")
 
     def test_contract_alignment_status_covers_overlap_cases(self):
         self.assertEqual(
