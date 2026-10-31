@@ -1343,6 +1343,18 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   font-weight: 600;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
+#rdLiveRibbon.has-tooltip::after {
+  content: none !important;
+  display: none !important;
+}
+.rd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  user-select: none;
+}
 
 /* Leverage Tier Badges */
 .tier-pill {
@@ -2583,17 +2595,25 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
             <button class="range-btn" data-rd-lookback="3Y">3Y</button>
             <button class="range-btn" data-rd-lookback="1Y">1Y</button>
           </div>
+          <!-- View Domain Scope Selector -->
+          <div style="display:flex;gap:4px;" id="rdScopeBtns">
+            <button class="range-btn active-range" data-rd-scope="core">Core Focus (±12%)</button>
+            <button class="range-btn" data-rd-scope="full">Full History</button>
+          </div>
         </div>
       </div>
 
       <!-- Live Session Contextualizer Ribbon -->
-      <div id="rdLiveRibbon" class="has-tooltip" data-tooltip-key="Live Session Contextualizer"
-           style="margin-bottom:14px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#58a6ff;"></span>
+      <div id="rdLiveRibbon"
+           style="margin-bottom:14px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,0.6);"></span>
           <span id="rdRibbonText">Contextualizing active session...</span>
         </div>
-        <div id="rdRibbonTags" style="display:flex;gap:6px;align-items:center;"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="rdRibbonTags" style="display:flex;gap:6px;align-items:center;"></div>
+          <span class="has-tooltip" data-tooltip-key="Live Session Contextualizer" style="cursor:help;color:var(--text-muted);font-size:11px;" title="Live Session Contextualizer"></span>
+        </div>
       </div>
 
       <!-- 6-KPI Top Deck -->
@@ -2630,8 +2650,32 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
         </div>
       </div>
 
-      <!-- Canvas Chart Shell -->
-      <div class="chart-container has-tooltip" data-tooltip-key="Scaled Gaussian PDF Overlay" style="height:320px;position:relative;">
+      <!-- Custom Institutional Legend Pill Bar -->
+      <div id="rdCustomLegend" style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;font-size:11.5px;color:var(--text-muted);flex-wrap:wrap;">
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:12px;height:12px;background:rgba(63,185,80,0.7);border:1px solid rgba(63,185,80,0.85);border-radius:2px;"></span>
+          <span>Positive Sessions</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:12px;height:12px;background:rgba(248,81,73,0.7);border:1px solid rgba(248,81,73,0.85);border-radius:2px;"></span>
+          <span>Negative Sessions</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:12px;height:12px;background:rgba(210,153,34,0.75);border:1px solid #e3b341;border-radius:2px;"></span>
+          <span>Zero Return Bin</span>
+        </div>
+        <div class="has-tooltip" data-tooltip-key="Scaled Gaussian PDF Overlay" style="display:inline-flex;align-items:center;gap:6px;cursor:help;">
+          <span style="display:inline-block;width:18px;height:2.5px;background:#58a6ff;border-radius:2px;"></span>
+          <span>Gaussian Benchmark <span id="rdLegGaussParams" style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;"></span></span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:16px;height:0;border-top:2px dashed #f0883e;"></span>
+          <span>Active Session (<span id="rdLegLiveBadge" style="color:#f0883e;font-family:'JetBrains Mono',monospace;font-weight:600;">--</span>)</span>
+        </div>
+      </div>
+
+      <!-- Canvas Chart Shell (Clean Canvas without Tooltip Wrapper Collision) -->
+      <div class="chart-container" style="height:340px;position:relative;">
         <canvas id="chartReturnDist"></canvas>
       </div>
 
@@ -8339,7 +8383,8 @@ async function renderAnalytics() {
           horizon: '1D',
           metric: 'simple',
           binning: 'fd',
-          lookback: 'max'
+          lookback: 'max',
+          scope: 'core'
         };
 
         function renderReturnDist() {
@@ -8491,6 +8536,10 @@ async function renderAnalytics() {
                 ? 'background:rgba(88,166,255,0.08);border-top:1px dashed rgba(88,166,255,0.4);border-bottom:1px dashed rgba(88,166,255,0.4);'
                 : 'border-bottom:1px solid var(--border);';
 
+              const histCountCell = isBase
+                ? `<span style="color:var(--text-muted);font-style:italic;">— (Baseline N=${row.historical_count.toLocaleString()})</span>`
+                : `<span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted);">${row.historical_count.toLocaleString()}</span>`;
+
               return `
                 <tr style="${rowStyle}">
                   <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;">
@@ -8503,27 +8552,53 @@ async function renderAnalytics() {
                   <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;">₹${row.rupee_margin_lot.toLocaleString()}</td>
                   <td style="padding:6px 10px;">${getLeverageTierHtml(row.survival_leverage_long)}</td>
                   <td style="padding:6px 10px;">${getLeverageTierHtml(row.survival_leverage_short)}</td>
-                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);">${row.historical_count.toLocaleString()}</td>
+                  <td style="padding:6px 10px;">${histCountCell}</td>
                 </tr>
               `;
             }).join('');
           }
 
-          // 5. Render Mixed Chart.js Canvas with Needle Glow & Zero-Boundary Styling
+          // 5. Render Mixed Chart.js Canvas with Domain Scope & Headroom
           if (rdChart) { rdChart.destroy(); rdChart = null; }
 
-          const binLabels = activeBins.bins;
-          const counts = activeBins.counts;
-          const binCenters = activeBins.bin_centers || [];
+          const rawBinLabels = activeBins.bins;
+          const rawCounts = activeBins.counts;
+          const rawBinCenters = activeBins.bin_centers || [];
+          const rawGaussFit = activeBins.gaussian_fit || [];
           const binWidth = activeBins.bin_width || 0.005;
+
+          // Domain Scope Filtering: Core Focus expands 99.2% of sessions across full canvas
+          const isCore = rdState.scope === 'core';
+          const scopeCut = rdState.horizon === '5D' ? 0.25 : 0.12;
+
+          let displayIndices = [];
+          for (let i = 0; i < rawBinCenters.length; i++) {
+            const c = rawBinCenters[i];
+            if (!isCore || (c >= -scopeCut && c <= scopeCut)) {
+              displayIndices.push(i);
+            }
+          }
+          if (displayIndices.length === 0) {
+            displayIndices = rawBinCenters.map((_, i) => i);
+          }
+
+          const binLabels = displayIndices.map(i => rawBinLabels[i]);
+          const counts = displayIndices.map(i => rawCounts[i]);
+          const binCenters = displayIndices.map(i => rawBinCenters[i]);
+          const gaussFit = displayIndices.map(i => rawGaussFit[i]);
+
+          // Update dynamic scope button label
+          const coreBtn = document.querySelector('[data-rd-scope="core"]');
+          if (coreBtn) {
+            coreBtn.textContent = rdState.horizon === '5D' ? 'Core Focus (±25%)' : 'Core Focus (±12%)';
+          }
 
           // Histogram bar styling with subtle zero boundary highlight
           const barColors = [];
           const barBorders = [];
           const barBorderWidths = [];
 
-          binLabels.forEach((lbl, idx) => {
-            const mid = binCenters[idx] != null ? binCenters[idx] : parseFloat(lbl) / 100;
+          binCenters.forEach(mid => {
             const isZeroBin = Math.abs(mid) < (binWidth / 2 + 0.0001);
 
             if (isZeroBin) {
@@ -8541,22 +8616,33 @@ async function renderAnalytics() {
             }
           });
 
-          // Find index closest to Mean
+          // Find index closest to Mean within active scope
           const meanIdx = binCenters.reduce((best, c, idx) =>
             Math.abs(c - moments.mean) < Math.abs(binCenters[best] - moments.mean) ? idx : best, 0);
 
-          // Find index closest to Live Session return
+          // Find index closest to Live Session return within active scope
           let liveIdx = null;
           if (live && binCenters.length > 0) {
             const liveRetDec = (live.simple_return_pct / 100.0);
-            liveIdx = binCenters.reduce((best, c, idx) =>
-              Math.abs(c - liveRetDec) < Math.abs(binCenters[best] - liveRetDec) ? idx : best, 0);
+            if (!isCore || (liveRetDec >= -scopeCut && liveRetDec <= scopeCut)) {
+              liveIdx = binCenters.reduce((best, c, idx) =>
+                Math.abs(c - liveRetDec) < Math.abs(binCenters[best] - liveRetDec) ? idx : best, 0);
+            }
+          }
+
+          // Update Custom HTML Legend Pill Values
+          const legGauss = document.getElementById('rdLegGaussParams');
+          if (legGauss) legGauss.textContent = `(μ=${(meanPct >= 0 ? '+' : '') + meanPct.toFixed(2)}%, σ=${stdDevPct.toFixed(2)}%)`;
+
+          const legLive = document.getElementById('rdLegLiveBadge');
+          if (legLive && live) {
+            legLive.textContent = `${(live.simple_return_pct >= 0 ? '+' : '') + live.simple_return_pct.toFixed(2)}% | ${(live.z_score >= 0 ? '+' : '') + live.z_score.toFixed(2)}σ`;
           }
 
           const extraDatasets = [
             {
-              label: `Scaled Gaussian PDF (μ=${meanPct.toFixed(2)}%, s=${stdDevPct.toFixed(2)}%)`,
-              data: activeBins.gaussian_fit,
+              label: 'Scaled Gaussian PDF',
+              data: gaussFit,
               type: 'line',
               borderColor: '#58a6ff',
               borderWidth: 2,
@@ -8566,21 +8652,6 @@ async function renderAnalytics() {
               order: 0
             }
           ];
-
-          if (liveIdx !== null) {
-            extraDatasets.push({
-              label: `Live Session (${live.simple_return_pct > 0 ? '+' : ''}${live.simple_return_pct}% | ${live.z_score}σ)`,
-              data: [],
-              type: 'line',
-              borderColor: '#f0883e',
-              backgroundColor: '#f0883e',
-              borderWidth: 2,
-              borderDash: [6, 3],
-              pointRadius: 0,
-              fill: false,
-              order: 0
-            });
-          }
 
           const ctxCanvas = document.getElementById('chartReturnDist');
           if (!ctxCanvas) return;
@@ -8603,14 +8674,14 @@ async function renderAnalytics() {
                   ctx.setLineDash([4, 4]);
                   ctx.lineWidth = 1.5;
                   ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-                  ctx.moveTo(mx, chartArea.top + 22);
+                  ctx.moveTo(mx, chartArea.top + 24);
                   ctx.lineTo(mx, chartArea.bottom);
                   ctx.stroke();
 
                   ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
                   ctx.font = '10px "JetBrains Mono", monospace';
                   ctx.textAlign = 'center';
-                  ctx.fillText(`μ ${(meanPct >= 0 ? '+' : '') + meanPct.toFixed(2)}%`, mx, chartArea.top + 16);
+                  ctx.fillText(`μ ${(meanPct >= 0 ? '+' : '') + meanPct.toFixed(2)}%`, mx, chartArea.top + 18);
                   ctx.restore();
                 }
               }
@@ -8638,7 +8709,7 @@ async function renderAnalytics() {
                   ctx.shadowColor = 'transparent';
                   ctx.shadowBlur = 0;
 
-                  // High-contrast Badge at top of chartArea
+                  // High-contrast Badge at top of chartArea (floating in generous padding headroom)
                   const liveText = `Live Today: ${(live.simple_return_pct >= 0 ? '+' : '') + live.simple_return_pct.toFixed(2)}% (${(live.z_score >= 0 ? '+' : '') + live.z_score.toFixed(2)}σ)`;
                   ctx.font = 'bold 10.5px Inter, sans-serif';
                   const textW = ctx.measureText(liveText).width;
@@ -8649,7 +8720,7 @@ async function renderAnalytics() {
                   // Clamp inside chart area
                   if (badgeX < chartArea.left + 4) badgeX = chartArea.left + 4;
                   if (badgeX + badgeW > chartArea.right - 4) badgeX = chartArea.right - 4 - badgeW;
-                  const badgeY = chartArea.top + 3;
+                  const badgeY = chartArea.top + 2;
 
                   // Rounded badge background
                   ctx.fillStyle = '#f0883e';
@@ -8687,6 +8758,10 @@ async function renderAnalytics() {
             }
           };
 
+          const maxObserved = counts.length > 0 ? Math.max(...counts) : 100;
+          const maxExpected = gaussFit.length > 0 ? Math.max(...gaussFit) : 100;
+          const yHeadroomMax = Math.ceil(Math.max(maxObserved, maxExpected) * 1.18);
+
           rdChart = new Chart(ctxCanvas, {
             type: 'bar',
             data: {
@@ -8708,12 +8783,18 @@ async function renderAnalytics() {
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              layout: {
+                padding: {
+                  top: 36,
+                  bottom: 6,
+                  left: 6,
+                  right: 6
+                }
+              },
               interaction: { mode: 'index', intersect: false },
               plugins: {
                 legend: {
-                  display: true,
-                  position: 'top',
-                  labels: { font: { size: 10, family: 'Inter' }, color: '#8b949e', boxWidth: 12, padding: 10 }
+                  display: false
                 },
                 tooltip: {
                   backgroundColor: 'rgba(22, 27, 34, 0.96)',
@@ -8741,13 +8822,10 @@ async function renderAnalytics() {
                         return `Observed Frequency: ${cnt.toLocaleString()} sessions (${pct}%)`;
                       }
                       if (ctx.dataset.label?.startsWith('Scaled Gaussian')) {
-                        const exp = activeBins.gaussian_fit[idx];
+                        const exp = gaussFit[idx];
                         const expPct = ((exp / activeDist.sample_size) * 100).toFixed(2);
                         const diff = (counts[idx] - exp).toFixed(1);
                         return `Gaussian Expectation: ${exp} sessions (${expPct}%) · Empirical Excess: ${diff > 0 ? '+' : ''}${diff}`;
-                      }
-                      if (ctx.dataset.label?.startsWith('Live Session')) {
-                        return `Live Today: ${live.simple_return_pct}% (${live.z_score}σ)`;
                       }
                       return '';
                     },
@@ -8773,11 +8851,12 @@ async function renderAnalytics() {
               },
               scales: {
                 x: {
-                  ticks: { maxTicksLimit: 16, font: { size: 9.5, family: 'JetBrains Mono' }, color: '#8b949e', maxRotation: 45 },
+                  ticks: { maxTicksLimit: 18, font: { size: 9.5, family: 'JetBrains Mono' }, color: '#8b949e', maxRotation: 45 },
                   title: { display: true, text: `${rdState.metric === 'simple' ? 'Simple Return' : 'Log Return'} (%)`, color: '#8b949e', font: { size: 11, family: 'Inter' } },
                   grid: { color: 'rgba(48, 54, 61, 0.4)' }
                 },
                 y: {
+                  suggestedMax: yHeadroomMax,
                   title: { display: true, text: 'Frequency (Trading Sessions)', color: '#8b949e', font: { size: 11, family: 'Inter' } },
                   ticks: { color: '#8b949e', font: { size: 10, family: 'JetBrains Mono' } },
                   grid: { color: 'rgba(48, 54, 61, 0.4)' }
@@ -8810,6 +8889,7 @@ async function renderAnalytics() {
         setupSegmentedGroup('#rdMetricBtns button', 'metric', 'data-rd-metric');
         setupSegmentedGroup('#rdBinBtns button', 'binning', 'data-rd-bin');
         setupSegmentedGroup('#rdLookbackBtns button', 'lookback', 'data-rd-lookback');
+        setupSegmentedGroup('#rdScopeBtns button', 'scope', 'data-rd-scope');
 
         // Initial render
         renderReturnDist();
