@@ -80,6 +80,10 @@ jobs:
         run: python scripts/export_turnover.py
         continue-on-error: true
 
+      - name: Export Return Distribution Profiler
+        run: python scripts/export_return_distribution.py
+        continue-on-error: true
+
       # ── Step 2: commit prices DB ────────────────────────────────────────────
       - name: Commit and push prices DB
         run: |
