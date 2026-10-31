@@ -1294,6 +1294,104 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 .meas-val { font-size: 16px; font-weight: 700; color: var(--text); }
 .meas-pct { font-weight: 600; }
 .meas-sub { color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-top: 4px; }
+
+/* ── Empirical Return Distribution & Tail Risk Profiler Polish ── */
+#returnDistCard .stat-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#returnDistCard .stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 166, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+#returnDistCard .stat-value,
+#returnDistCard .stat-sub {
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+}
+#returnDistCard .data-table tr {
+  transition: background-color 0.15s ease;
+}
+#returnDistCard .data-table tr:hover td {
+  background: rgba(88, 166, 255, 0.08);
+}
+#returnDistCard .data-table td,
+#returnDistCard .data-table th {
+  white-space: nowrap;
+}
+.rd-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.rd-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+.rd-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+#rdControlToolbar .range-btn {
+  transition: all 0.15s ease;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+}
+#rdControlToolbar .range-btn:active {
+  transform: scale(0.96);
+}
+#rdControlToolbar .range-btn.active-range {
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Leverage Tier Badges */
+.tier-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+}
+.tier-safe {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.12);
+  border: 1px solid rgba(63, 185, 80, 0.28);
+}
+.tier-moderate {
+  color: #d29922;
+  background: rgba(210, 153, 34, 0.12);
+  border: 1px solid rgba(210, 153, 34, 0.28);
+}
+.tier-danger {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.14);
+  border: 1px solid rgba(248, 81, 73, 0.32);
+}
+
+/* Overview Tail Risk Pill Glow & Pulse */
+@keyframes tailRiskPulse {
+  0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.45); }
+  70% { box-shadow: 0 0 0 6px rgba(248, 81, 73, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+}
+@keyframes tailDotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
+#overviewTailRiskPill {
+  transition: all 0.2s ease;
+}
+#overviewTailRiskPill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.tail-risk-elevated {
+  animation: tailRiskPulse 2.4s infinite ease-in-out;
+}
+.tail-risk-dot-pulse {
+  animation: tailDotPulse 1.8s infinite ease-in-out;
+}
 </style>
 </head>
 <body>
@@ -1400,19 +1498,28 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
   <div id="tab-overview" class="tab-content active">
     <!-- Section: Current Snapshot Table -->
     <div class="card mb-4">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div class="card-title has-tooltip" data-tooltip-key="Current Margin Snapshot" style="margin-bottom:0;">
           Current Margin Snapshot — <span id="snapshotSymbolLabel">NaturalGas</span>
         </div>
-        <div style="display:flex;gap:6px;">
-          <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
-            style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
-            NATURALGAS
-          </button>
-          <button class="snap-toggle" data-sym="NATGASMINI" title="Show NATGASMINI margin snapshot"
-            style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">
-            NATGASMINI
-          </button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <!-- Live Tail Risk Pill Bridge -->
+          <div id="overviewTailRiskPill" class="has-tooltip tail-risk-elevated" data-tooltip-key="Overview Tail Risk Pill"
+               style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.45);color:#f85149;padding:3px 10px;border-radius:12px;font-size:11px;font-family:Inter,sans-serif;font-weight:600;transition:all 0.2s ease;"
+               title="Click to inspect empirical return distribution and survival leverage">
+            <span id="overviewTailRiskDot" class="tail-risk-dot-pulse" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f85149;"></span>
+            <span>Tail Risk: <strong id="overviewTailRiskVal" style="font-family:'JetBrains Mono',monospace;">4.38×</strong> (3σ)</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
+              style="background:var(--accent);color:white;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">
+              NATURALGAS
+            </button>
+            <button class="snap-toggle" data-sym="NATGASMINI" title="Show NATGASMINI margin snapshot"
+              style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">
+              NATGASMINI
+            </button>
+          </div>
         </div>
       </div>
       <div style="overflow-x:auto;">
@@ -2435,19 +2542,162 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
       </div>
     </div>
 
-    <!-- Item 4: Delta Distribution Histogram -->
-    <div class="card" style="margin-top:16px;" id="deltaDistCard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-        <div class="card-title has-tooltip" data-tooltip-key="Delta Distribution" style="margin-bottom:0;">Margin Change Distribution (Gaussian & Empirical)</div>
-        <div style="display:flex;gap:6px;" id="deltaBucketBtns">
-          <button class="range-btn active-range" data-bucket="0-30">0–30d DTE</button>
-          <button class="range-btn" data-bucket="31-90">31–90d DTE</button>
-          <button class="range-btn" data-bucket="91+" title="Distribution of day-over-day margin changes for contracts with over 90 days to expiry.">91+d DTE</button>
+    <!-- Empirical Return Distribution & Margin Fragility Profiler -->
+    <div class="card" style="margin-top:16px;" id="returnDistCard">
+      <!-- Card Header & Subtitle -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+        <div>
+          <div class="card-title has-tooltip" data-tooltip-key="Return Distribution Engine" style="margin-bottom:2px;">
+            Empirical Return Distribution & Margin Fragility Profiler
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">
+            Continuous front-month roll-consistent empirical returns, leptokurtosis quantification & clearinghouse survival stress testing
+          </div>
+        </div>
+        <!-- Control Toolbar -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;" id="rdControlToolbar">
+          <!-- Symbol Selector -->
+          <div style="display:flex;gap:4px;" id="rdSymbolBtns" class="has-tooltip" data-tooltip-key="Market Symbol Selector">
+            <button class="range-btn active-range" data-rd-sym="NATURALGAS">NATURALGAS</button>
+            <button class="range-btn" data-rd-sym="NATGASMINI">NATGASMINI</button>
+          </div>
+          <!-- Horizon Selector -->
+          <div style="display:flex;gap:4px;" id="rdHorizonBtns">
+            <button class="range-btn active-range" data-rd-horizon="1D">1D Session</button>
+            <button class="range-btn" data-rd-horizon="5D">5D Rolling</button>
+          </div>
+          <!-- Return Metric Selector -->
+          <div style="display:flex;gap:4px;" id="rdMetricBtns" class="has-tooltip" data-tooltip-key="Return Metric Selector">
+            <button class="range-btn active-range" data-rd-metric="simple">Simple Return</button>
+            <button class="range-btn" data-rd-metric="log">Log Return</button>
+          </div>
+          <!-- Binning Selector -->
+          <div style="display:flex;gap:4px;" id="rdBinBtns" class="has-tooltip" data-tooltip-key="Adaptive Binning FD">
+            <button class="range-btn active-range" data-rd-bin="fd">Freedman-Diaconis</button>
+            <button class="range-btn" data-rd-bin="fixed">0.50% Fixed</button>
+          </div>
+          <!-- Lookback Selector -->
+          <div style="display:flex;gap:4px;" id="rdLookbackBtns">
+            <button class="range-btn active-range" data-rd-lookback="max">Max</button>
+            <button class="range-btn" data-rd-lookback="5Y">5Y</button>
+            <button class="range-btn" data-rd-lookback="3Y">3Y</button>
+            <button class="range-btn" data-rd-lookback="1Y">1Y</button>
+          </div>
         </div>
       </div>
-      <div class="chart-container" style="height:280px;"><canvas id="chartDeltaDist"></canvas></div>
-      <div id="deltaCondSummary" style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text-muted);"></div>
+
+      <!-- Live Session Contextualizer Ribbon -->
+      <div id="rdLiveRibbon" class="has-tooltip" data-tooltip-key="Live Session Contextualizer"
+           style="margin-bottom:14px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#58a6ff;"></span>
+          <span id="rdRibbonText">Contextualizing active session...</span>
+        </div>
+        <div id="rdRibbonTags" style="display:flex;gap:6px;align-items:center;"></div>
+      </div>
+
+      <!-- 6-KPI Top Deck -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;" id="rdKpiDeck">
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="Sample Mean Return">Sample Mean (μ)</div>
+          <div class="stat-value" id="rdKpiMean" style="font-family:'JetBrains Mono',monospace;">--</div>
+          <div class="stat-sub" id="rdKpiMeanSub" style="color:var(--text-muted);">--</div>
+        </div>
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="Annualized Volatility">Annualized Vol (σ)</div>
+          <div class="stat-value" id="rdKpiVol" style="font-family:'JetBrains Mono',monospace;">--</div>
+          <div class="stat-sub" id="rdKpiVolSub" style="color:var(--text-muted);">--</div>
+        </div>
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="Fisher-Pearson Skewness">Skewness (g₁)</div>
+          <div class="stat-value" id="rdKpiSkew" style="font-family:'JetBrains Mono',monospace;">--</div>
+          <div class="stat-sub" id="rdKpiSkewSub" style="color:var(--text-muted);">--</div>
+        </div>
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="Excess Kurtosis">Excess Kurtosis (g₂)</div>
+          <div class="stat-value" id="rdKpiKurt" style="font-family:'JetBrains Mono',monospace;">--</div>
+          <div class="stat-sub" id="rdKpiKurtSub" style="color:var(--accent-red);">--</div>
+        </div>
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="1% Tail VaR">1% Tail VaR (P₁)</div>
+          <div class="stat-value" id="rdKpiVaR" style="font-family:'JetBrains Mono',monospace;color:#f85149;">--</div>
+          <div class="stat-sub" id="rdKpiVaRSub" style="color:var(--text-muted);">--</div>
+        </div>
+        <div class="stat-card" style="background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:10px 14px;">
+          <div class="stat-label has-tooltip" data-tooltip-key="Tail Risk Multiplier">Tail Multiplier (3σ)</div>
+          <div class="stat-value" id="rdKpiTRM" style="font-family:'JetBrains Mono',monospace;color:#f85149;">--</div>
+          <div class="stat-sub" id="rdKpiTRMSub" style="color:var(--accent-red);">--</div>
+        </div>
+      </div>
+
+      <!-- Canvas Chart Shell -->
+      <div class="chart-container has-tooltip" data-tooltip-key="Scaled Gaussian PDF Overlay" style="height:320px;position:relative;">
+        <canvas id="chartReturnDist"></canvas>
+      </div>
+
+      <!-- Institutional Metrics & Survival Leverage Matrix -->
+      <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px;">
+        <!-- Panel A: Empirical vs Gaussian Tail Frequencies -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span>Empirical Tail Frequency vs Gaussian Baseline</span>
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);">Sample Size: <span id="rdSampleSizeVal" style="font-family:'JetBrains Mono',monospace;">--</span> sessions</span>
+          </div>
+          <div class="rd-scroll-container">
+            <table class="data-table" style="font-size:11.5px;">
+              <thead>
+                <tr>
+                  <th style="padding:6px 10px;">Deviation Threshold</th>
+                  <th style="padding:6px 10px;">Empirical Observed</th>
+                  <th style="padding:6px 10px;">Gaussian Baseline</th>
+                  <th style="padding:6px 10px;">Tail Multiplier (TRM)</th>
+                  <th style="padding:6px 10px;">Risk Profile & Interpretation</th>
+                </tr>
+              </thead>
+              <tbody id="rdTailFreqBody">
+                <!-- Dynamically Populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel B: Clearinghouse Volatility Shock & Breakeven Survival Leverage Table -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span class="has-tooltip" data-tooltip-key="Clearinghouse Volatility Multiplier">
+              Clearinghouse Volatility Shock & Breakeven Position Survival Matrix
+            </span>
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);">
+              SEBI SPAN EWMA Persistence: <span style="font-family:'JetBrains Mono',monospace;">λ = 0.94</span> | Floor: <span style="font-family:'JetBrains Mono',monospace;">13.00%</span>
+            </span>
+          </div>
+          <div class="rd-scroll-container" style="max-height:360px;">
+            <table class="data-table" style="font-size:11.5px;">
+              <thead>
+                <tr>
+                  <th style="padding:6px 10px;" class="has-tooltip" data-tooltip-key="Clearinghouse Volatility Multiplier">Shock (z)</th>
+                  <th style="padding:6px 10px;">Price Shock (δ)</th>
+                  <th style="padding:6px 10px;" class="has-tooltip" data-tooltip-key="Clearinghouse Volatility Multiplier">Multiplier γ(z)</th>
+                  <th style="padding:6px 10px;">Projected Daily Vol</th>
+                  <th style="padding:6px 10px;" class="has-tooltip" data-tooltip-key="Projected Initial Margin">Next Margin (M<sub>Pred</sub>)</th>
+                  <th style="padding:6px 10px;" id="rdRupeeMarginHeader">Rupee Margin / Lot</th>
+                  <th style="padding:6px 10px;" class="has-tooltip" data-tooltip-key="Breakeven Survival Leverage">Breakeven Long L<sub>Survive</sub></th>
+                  <th style="padding:6px 10px;" class="has-tooltip" data-tooltip-key="Breakeven Survival Leverage">Breakeven Short L<sub>Survive</sub></th>
+                  <th style="padding:6px 10px;">Historical Count</th>
+                </tr>
+              </thead>
+              <tbody id="rdStressMatrixBody">
+                <!-- Dynamically Populated -->
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:8px;font-size:10.5px;color:var(--text-muted);line-height:1.4;">
+            <strong>Structural Asymmetry Note:</strong> Short survival leverage is strictly lower than Long survival leverage across all adverse shocks. An upward rally expands gross short contract liabilities while depleting equity, compounding clearinghouse margin call fragility.
+          </div>
+        </div>
+      </div>
     </div>
+
     <div class="card" style="margin-top:16px;display:flex;flex-direction:column;">
       <div class="card-title has-tooltip" data-tooltip-key="Historical Percentile Rank">Historical Percentile Rank Over Time <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(All-time vs Trailing 5Y)</span></div>
       <div class="chart-container" style="height:300px;"><canvas id="chartPercentile"></canvas></div>
@@ -3793,6 +4043,51 @@ async function loadJSON(name) {
   return promise;
 }
 
+function updateOverviewTailRiskPill(sym) {
+  const pill = document.getElementById('overviewTailRiskPill');
+  const pillVal = document.getElementById('overviewTailRiskVal');
+  const pillDot = document.getElementById('overviewTailRiskDot');
+  if (!pillVal) return;
+  loadJSON('return_distribution').then(rd => {
+    if (!rd || !rd.symbols || !rd.symbols[sym]) return;
+    const s = rd.symbols[sym];
+    const trm = s.simple_returns?.tail_frequencies?.beyond_3s?.trm || 4.38;
+    pillVal.textContent = trm.toFixed(2) + '×';
+
+    if (pill) {
+      if (trm >= 3.0) {
+        pill.classList.add('tail-risk-elevated');
+        pill.style.background = 'rgba(248, 81, 73, 0.12)';
+        pill.style.borderColor = 'rgba(248, 81, 73, 0.45)';
+        pill.style.color = '#f85149';
+        if (pillDot) {
+          pillDot.classList.add('tail-risk-dot-pulse');
+          pillDot.style.background = '#f85149';
+        }
+      } else if (trm >= 2.0) {
+        pill.classList.remove('tail-risk-elevated');
+        pill.style.background = 'rgba(210, 153, 34, 0.12)';
+        pill.style.borderColor = 'rgba(210, 153, 34, 0.45)';
+        pill.style.color = '#d29922';
+        if (pillDot) {
+          pillDot.classList.remove('tail-risk-dot-pulse');
+          pillDot.style.background = '#d29922';
+        }
+      } else {
+        pill.classList.remove('tail-risk-elevated');
+        pill.style.background = 'rgba(63, 185, 80, 0.12)';
+        pill.style.borderColor = 'rgba(63, 185, 80, 0.45)';
+        pill.style.color = '#3fb950';
+        if (pillDot) {
+          pillDot.classList.remove('tail-risk-dot-pulse');
+          pillDot.style.background = '#3fb950';
+        }
+      }
+    }
+  }).catch(() => {});
+}
+window.updateOverviewTailRiskPill = updateOverviewTailRiskPill;
+
 async function loadMarketJSON(name) {
   if (!ENABLE_MARKET_INTEL) throw new Error('Market intelligence disabled');
   return loadJSON('market/' + name);
@@ -4609,7 +4904,33 @@ async function renderOverview() {
     const coneLookup = {};
     if (coneData && coneData.cone) coneData.cone.forEach(c => { coneLookup[c.expiry] = c; });
 
+    function updateOverviewTailRiskPill(sym) {
+      window.updateOverviewTailRiskPill(sym);
+    }
+
+    const ovPill = document.getElementById('overviewTailRiskPill');
+    if (ovPill) {
+      ovPill.addEventListener('click', () => {
+        const tabBtn = document.querySelector('[data-tab="analytics"]');
+        if (tabBtn) tabBtn.click();
+        setTimeout(() => {
+          const card = document.getElementById('returnDistCard');
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            card.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+            card.style.borderColor = 'rgba(248, 81, 73, 0.6)';
+            card.style.boxShadow = '0 0 16px rgba(248, 81, 73, 0.25)';
+            setTimeout(() => {
+              card.style.borderColor = '';
+              card.style.boxShadow = '';
+            }, 1500);
+          }
+        }, 150);
+      });
+    }
+
     function renderSnapshotTable(sym) {
+      updateOverviewTailRiskPill(sym);
       const rows = (current[sym] || []);
       document.getElementById('snapshotSymbolLabel').textContent =
         sym === 'NATURALGAS' ? 'NaturalGas' : 'NatGasMini';
@@ -8008,77 +8329,234 @@ async function renderAnalytics() {
         }
       }
     });
-    // Item 4: Delta Distribution Histogram
+    // Empirical Return Distribution & Margin Fragility Profiler Engine
     try {
-      const dd = await loadJSON('delta_distribution');
-      if (dd && dd.histograms) {
-        let deltaChart = null;
-        function renderDeltaHist(bucket) {
-          const h = dd.histograms[bucket];
-          if (!h || !h.bins) return;
-          if (deltaChart) { deltaChart.destroy(); deltaChart = null; }
+      const rdData = await loadJSON('return_distribution');
+      if (rdData && rdData.symbols) {
+        let rdChart = null;
+        const rdState = {
+          symbol: 'NATURALGAS',
+          horizon: '1D',
+          metric: 'simple',
+          binning: 'fd',
+          lookback: 'max'
+        };
 
-          const totalCount = h.counts.reduce((s, v) => s + v, 0);
-          const binMidVals = h.bins.map((b, i) => {
-            if (b.startsWith('<')) return -5.25;
-            if (b.startsWith('>')) return 5.25;
-            return parseFloat(b);
-          });
+        function renderReturnDist() {
+          const symData = rdData.symbols[rdState.symbol];
+          if (!symData) return;
 
-          // Calculate empirical mean and standard deviation
-          let sum = 0;
-          h.counts.forEach((c, i) => {
-            sum += c * binMidVals[i];
-          });
-          const mean = totalCount > 0 ? sum / totalCount : 0;
+          // Resolve active dataset based on horizon, lookback, and metric
+          let activeDist = null;
+          if (symData.horizons && symData.horizons[rdState.horizon] && symData.horizons[rdState.horizon][rdState.lookback]) {
+            activeDist = symData.horizons[rdState.horizon][rdState.lookback][rdState.metric];
+          }
+          if (!activeDist) {
+            activeDist = rdState.metric === 'simple' ? symData.simple_returns : symData.log_returns;
+          }
+          if (!activeDist || !activeDist.moments) return;
 
-          let varSum = 0;
-          h.counts.forEach((c, i) => {
-            varSum += c * Math.pow(binMidVals[i] - mean, 2);
-          });
-          const variance = totalCount > 1 ? varSum / (totalCount - 1) : 1;
-          const stdDev = Math.max(1e-6, Math.sqrt(variance));
+          const moments = activeDist.moments;
+          const quantiles = activeDist.quantiles;
+          const tailFreqs = activeDist.tail_frequencies;
+          const activeBins = rdState.binning === 'fd' ? activeDist.bins_fd : activeDist.bins_fixed;
+          const live = symData.live_session;
 
-          // Cumulative counts for percentiles
-          const cumCounts = [];
-          let runningCount = 0;
-          h.counts.forEach(c => {
-            runningCount += c;
-            cumCounts.push(runningCount);
-          });
+          // 1. Update 6-KPI Top Deck (tabular-nums with crisp labels)
+          const meanPct = moments.mean * 100;
+          const volAnnPct = moments.annualized_vol * 100;
+          const stdDevPct = moments.std_dev * 100;
+          const skewVal = moments.skewness_adjusted != null ? moments.skewness_adjusted : moments.skewness;
+          const kurtVal = moments.excess_kurtosis_adjusted != null ? moments.excess_kurtosis_adjusted : moments.excess_kurtosis;
+          const var1Pct = quantiles.p1 * 100;
+          const trm3s = tailFreqs.beyond_3s.trm;
 
-          // Generate theoretical Gaussian (Normal) bell curve data scaled to bin counts
-          const gaussianFitData = binMidVals.map(x => {
-            const z = (x - mean) / stdDev;
-            const pdf = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
-            return +(totalCount * 0.25 * pdf).toFixed(1);
-          });
+          const kpiMean = document.getElementById('rdKpiMean');
+          kpiMean.textContent = (meanPct >= 0 ? '+' : '') + meanPct.toFixed(2) + '%';
+          kpiMean.style.color = meanPct >= 0 ? '#3fb950' : '#f85149';
+          document.getElementById('rdKpiMeanSub').textContent = 'Annualized: ' + (meanPct * 252).toFixed(1) + '%';
 
-          const colors = h.bins.map((_, i) => {
-            const midVal = binMidVals[i];
-            return midVal < -0.05 ? 'rgba(63,185,80,0.65)' : midVal > 0.05 ? 'rgba(248,81,73,0.65)' : 'rgba(210,153,34,0.65)';
-          });
+          document.getElementById('rdKpiVol').textContent = volAnnPct.toFixed(2) + '%';
+          document.getElementById('rdKpiVolSub').textContent = 'Daily s = ' + stdDevPct.toFixed(2) + '%';
 
-          const maxCount = Math.max(...h.counts);
-          const zeroIdx = h.bins.reduce((best, b, i) =>
-            Math.abs(parseFloat(b) || 0) < Math.abs(parseFloat(h.bins[best]) || 0) ? i : best, 0);
+          const kpiSkew = document.getElementById('rdKpiSkew');
+          kpiSkew.textContent = (skewVal >= 0 ? '+' : '') + skewVal.toFixed(2);
+          kpiSkew.style.color = skewVal > 0 ? '#3fb950' : '#f85149';
+          document.getElementById('rdKpiSkewSub').textContent = skewVal > 0 ? 'Upside Spike Skew' : 'Downside Left Skew';
 
-          let predDelta = null;
-          let predDeltaIdx = null;
-          try {
-            const fb = forecastBands;
-            if (fb && fb.bands && fb.bands.length > 0) {
-              predDelta = +(fb.bands[0].predicted - fb.bands[0].current).toFixed(2);
-              predDeltaIdx = h.bins.reduce((best, b, i) =>
-                Math.abs((parseFloat(b) || 0) - predDelta) < Math.abs((parseFloat(h.bins[best]) || 0) - predDelta) ? i : best, 0);
+          const kpiKurt = document.getElementById('rdKpiKurt');
+          kpiKurt.textContent = (kurtVal >= 0 ? '+' : '') + kurtVal.toFixed(2);
+          kpiKurt.style.color = kurtVal > 1.0 ? '#f85149' : 'var(--text)';
+          document.getElementById('rdKpiKurtSub').textContent = kurtVal > 1.0 ? 'Extreme Leptokurtosis' : 'Mild Fat Tails';
+
+          document.getElementById('rdKpiVaR').textContent = var1Pct.toFixed(2) + '%';
+          document.getElementById('rdKpiVaRSub').textContent = '99% Daily Loss Boundary';
+
+          const kpiTRM = document.getElementById('rdKpiTRM');
+          const kpiTRMSub = document.getElementById('rdKpiTRMSub');
+          kpiTRM.textContent = trm3s.toFixed(2) + '×';
+          kpiTRM.style.color = trm3s >= 3.0 ? '#f85149' : trm3s >= 2.0 ? '#d29922' : '#3fb950';
+          kpiTRMSub.textContent = 'Obs ' + tailFreqs.beyond_3s.observed_pct.toFixed(2) + '% vs Gauss 0.27%';
+          kpiTRMSub.style.color = trm3s >= 3.0 ? '#f85149' : trm3s >= 2.0 ? '#d29922' : 'var(--text-muted)';
+
+          // Sample size label
+          document.getElementById('rdSampleSizeVal').textContent = activeDist.sample_size.toLocaleString();
+
+          // 2. Update Live Session Contextualizer Ribbon
+          if (live) {
+            const zScore = live.z_score;
+            const zAbs = Math.abs(zScore);
+            const zZone = zAbs <= 1.0 ? 'Core Band' : zAbs <= 2.0 ? 'Elevated Volatility' : zAbs <= 3.0 ? 'Severe Tail Shock' : 'Crisis Tail Shock';
+            const zColor = zAbs <= 1.0 ? '#3fb950' : zAbs <= 2.0 ? '#d29922' : '#f85149';
+            const retDisplay = (live.simple_return_pct >= 0 ? '+' : '') + live.simple_return_pct.toFixed(2) + '%';
+            const retColor = live.simple_return_pct >= 0 ? '#3fb950' : '#f85149';
+
+            document.getElementById('rdRibbonText').innerHTML =
+              `<strong>${live.date} Front Session (${live.expiry}):</strong> Settle ₹${live.close.toFixed(2)} · ` +
+              `Return: <strong style="color:${retColor};font-family:'JetBrains Mono',monospace;">${retDisplay}</strong> (${zScore >= 0 ? '+' : ''}${zScore.toFixed(2)}σ) · ` +
+              `Percentile: <strong style="font-family:'JetBrains Mono',monospace;">P${live.percentile_rank}</strong> · ` +
+              `Historical: <strong style="font-family:'JetBrains Mono',monospace;">${live.historical_count.toLocaleString()}</strong> sessions ≤ shock · ` +
+              `Gaussian Model: <strong style="font-family:'JetBrains Mono',monospace;">${live.gaussian_expected_count.toLocaleString()}</strong> expected`;
+
+            document.getElementById('rdRibbonTags').innerHTML =
+              `<span style="background:${zColor}22;color:${zColor};border:1px solid ${zColor}55;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600;">${zZone}</span>` +
+              `<span style="background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">TRM ${trm3s.toFixed(2)}×</span>`;
+          }
+
+          // 3. Update Empirical vs Gaussian Tail Frequency Table with Tiers
+          const tf = tailFreqs;
+          const tfRows = [
+            {
+              threshold: 'Beyond ±1.0σ (Core Divergence)',
+              obs: tf.beyond_1s.observed_pct,
+              gauss: tf.beyond_1s.gaussian_pct,
+              trm: (tf.beyond_1s.observed_pct / tf.beyond_1s.gaussian_pct).toFixed(2) + '×',
+              profile: 'Routine Fluctuations: Central peak concentration',
+              color: 'var(--text)',
+              badgeClass: 'tier-safe'
+            },
+            {
+              threshold: 'Beyond ±2.0σ (Active Volatility)',
+              obs: tf.beyond_2s.observed_pct,
+              gauss: tf.beyond_2s.gaussian_pct,
+              trm: (tf.beyond_2s.observed_pct / tf.beyond_2s.gaussian_pct).toFixed(2) + '×',
+              profile: 'Elevated Volatility: Clearinghouse monitoring threshold',
+              color: '#d29922',
+              badgeClass: 'tier-moderate'
+            },
+            {
+              threshold: 'Beyond ±3.0σ (Extreme Tail Shock)',
+              obs: tf.beyond_3s.observed_pct,
+              gauss: tf.beyond_3s.gaussian_pct,
+              trm: tf.beyond_3s.trm.toFixed(2) + '×',
+              profile: 'Severe Leptokurtosis: High-probability clearinghouse margin hike trigger',
+              color: '#f85149',
+              badgeClass: 'tier-danger'
             }
-          } catch(e) {}
+          ];
 
-          const zeroLineData = h.bins.map((_, i) => i === zeroIdx ? maxCount : null);
+          const tfBody = document.getElementById('rdTailFreqBody');
+          if (tfBody) {
+            tfBody.innerHTML = tfRows.map(r => `
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 10px;font-weight:600;color:${r.color};">${r.threshold}</td>
+                <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;">${r.obs.toFixed(2)}%</td>
+                <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);">${r.gauss.toFixed(2)}%</td>
+                <td style="padding:6px 10px;"><span class="tier-pill ${r.badgeClass}">${r.trm}</span></td>
+                <td style="padding:6px 10px;color:var(--text-muted);">${r.profile}</td>
+              </tr>
+            `).join('');
+          }
+
+          // 4. Update Clearinghouse Stress & Breakeven Leverage Table (Color-Coded Safety Tiers & Dynamic Lot Size)
+          const smBody = document.getElementById('rdStressMatrixBody');
+          if (smBody && symData.stress_matrix) {
+            const rupeeHdr = document.getElementById('rdRupeeMarginHeader');
+            if (rupeeHdr) {
+              rupeeHdr.textContent = `Rupee Margin / Lot (${symData.lot_size.toLocaleString()} MMBtu)`;
+            }
+
+            const getLeverageTierHtml = (val) => {
+              const cls = val >= 4.5 ? 'tier-safe' : val >= 3.0 ? 'tier-moderate' : 'tier-danger';
+              return `<span class="tier-pill ${cls}">${val.toFixed(2)}×</span>`;
+            };
+
+            smBody.innerHTML = symData.stress_matrix.map(row => {
+              const zVal = row.z_score;
+              const zStr = (zVal >= 0 ? '+' : '') + zVal.toFixed(1) + 'σ';
+              const pShockStr = (row.price_shock_pct >= 0 ? '+' : '') + row.price_shock_pct.toFixed(2) + '%';
+              const pShockColor = row.price_shock_pct > 0 ? '#3fb950' : row.price_shock_pct < 0 ? '#f85149' : 'var(--text-muted)';
+              const isBase = zVal === 0.0;
+              const rowStyle = isBase
+                ? 'background:rgba(88,166,255,0.08);border-top:1px dashed rgba(88,166,255,0.4);border-bottom:1px dashed rgba(88,166,255,0.4);'
+                : 'border-bottom:1px solid var(--border);';
+
+              return `
+                <tr style="${rowStyle}">
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;">
+                    ${zStr}${isBase ? '<span style="background:rgba(88,166,255,0.18);color:#58a6ff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600;">Baseline</span>' : ''}
+                  </td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;color:${pShockColor};">${pShockStr}</td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;">${row.vol_multiplier.toFixed(4)}×</td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;">${(row.projected_vol_daily * 100).toFixed(2)}%</td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;color:${row.projected_margin_pct > symData.latest_margin_pct ? '#f85149' : 'var(--text)'};">${row.projected_margin_pct.toFixed(2)}%</td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;">₹${row.rupee_margin_lot.toLocaleString()}</td>
+                  <td style="padding:6px 10px;">${getLeverageTierHtml(row.survival_leverage_long)}</td>
+                  <td style="padding:6px 10px;">${getLeverageTierHtml(row.survival_leverage_short)}</td>
+                  <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);">${row.historical_count.toLocaleString()}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+
+          // 5. Render Mixed Chart.js Canvas with Needle Glow & Zero-Boundary Styling
+          if (rdChart) { rdChart.destroy(); rdChart = null; }
+
+          const binLabels = activeBins.bins;
+          const counts = activeBins.counts;
+          const binCenters = activeBins.bin_centers || [];
+          const binWidth = activeBins.bin_width || 0.005;
+
+          // Histogram bar styling with subtle zero boundary highlight
+          const barColors = [];
+          const barBorders = [];
+          const barBorderWidths = [];
+
+          binLabels.forEach((lbl, idx) => {
+            const mid = binCenters[idx] != null ? binCenters[idx] : parseFloat(lbl) / 100;
+            const isZeroBin = Math.abs(mid) < (binWidth / 2 + 0.0001);
+
+            if (isZeroBin) {
+              barColors.push('rgba(210, 153, 34, 0.75)');
+              barBorders.push('#e3b341');
+              barBorderWidths.push(2);
+            } else if (mid < 0) {
+              barColors.push('rgba(248, 81, 73, 0.70)');
+              barBorders.push('rgba(248, 81, 73, 0.85)');
+              barBorderWidths.push(1);
+            } else {
+              barColors.push('rgba(63, 185, 80, 0.70)');
+              barBorders.push('rgba(63, 185, 80, 0.85)');
+              barBorderWidths.push(1);
+            }
+          });
+
+          // Find index closest to Mean
+          const meanIdx = binCenters.reduce((best, c, idx) =>
+            Math.abs(c - moments.mean) < Math.abs(binCenters[best] - moments.mean) ? idx : best, 0);
+
+          // Find index closest to Live Session return
+          let liveIdx = null;
+          if (live && binCenters.length > 0) {
+            const liveRetDec = (live.simple_return_pct / 100.0);
+            liveIdx = binCenters.reduce((best, c, idx) =>
+              Math.abs(c - liveRetDec) < Math.abs(binCenters[best] - liveRetDec) ? idx : best, 0);
+          }
+
           const extraDatasets = [
             {
-              label: `Gaussian Fit (μ=${mean >= 0 ? '+' : ''}${mean.toFixed(2)}%, σ=${stdDev.toFixed(2)}%)`,
-              data: gaussianFitData,
+              label: `Scaled Gaussian PDF (μ=${meanPct.toFixed(2)}%, s=${stdDevPct.toFixed(2)}%)`,
+              data: activeBins.gaussian_fit,
               type: 'line',
               borderColor: '#58a6ff',
               borderWidth: 2,
@@ -8086,46 +8564,147 @@ async function renderAnalytics() {
               tension: 0.35,
               fill: false,
               order: 0
-            },
-            {
-              label: 'Δ=0 (neutral)',
-              data: zeroLineData,
-              type: 'line',
-              borderColor: 'rgba(255,255,255,0.45)',
-              borderWidth: 1.5,
-              borderDash: [4,4],
-              pointRadius: 0,
-              fill: false,
-              order: 0,
-              spanGaps: false
             }
           ];
-          if (predDeltaIdx !== null) {
-            const predLineData = h.bins.map((_, i) => i === predDeltaIdx ? maxCount : null);
+
+          if (liveIdx !== null) {
             extraDatasets.push({
-              label: `Model: ${predDelta > 0 ? '+' : ''}${predDelta}%`,
-              data: predLineData,
+              label: `Live Session (${live.simple_return_pct > 0 ? '+' : ''}${live.simple_return_pct}% | ${live.z_score}σ)`,
+              data: [],
               type: 'line',
-              borderColor: '#f97316',
+              borderColor: '#f0883e',
+              backgroundColor: '#f0883e',
               borderWidth: 2,
-              borderDash: [6,3],
+              borderDash: [6, 3],
               pointRadius: 0,
               fill: false,
-              order: 0,
-              spanGaps: false
+              order: 0
             });
           }
 
-          if (deltaChart) deltaChart.destroy();
-          deltaChart = new Chart(document.getElementById('chartDeltaDist'), {
+          const ctxCanvas = document.getElementById('chartReturnDist');
+          if (!ctxCanvas) return;
+
+          // Dedicated Needle Glow & High-Contrast Live Today Badge Plugin
+          const liveNeedlePlugin = {
+            id: 'rdLiveNeedlePlugin',
+            afterDatasetsDraw(chart) {
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return;
+
+              // 1. Sample Mean Reference Line
+              if (meanIdx != null && meanIdx >= 0) {
+                const meanMeta = chart.getDatasetMeta(0);
+                const meanPoint = meanMeta && meanMeta.data ? meanMeta.data[meanIdx] : null;
+                if (meanPoint) {
+                  const mx = meanPoint.x;
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.setLineDash([4, 4]);
+                  ctx.lineWidth = 1.5;
+                  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+                  ctx.moveTo(mx, chartArea.top + 22);
+                  ctx.lineTo(mx, chartArea.bottom);
+                  ctx.stroke();
+
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                  ctx.font = '10px "JetBrains Mono", monospace';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(`μ ${(meanPct >= 0 ? '+' : '') + meanPct.toFixed(2)}%`, mx, chartArea.top + 16);
+                  ctx.restore();
+                }
+              }
+
+              // 2. Live Today Glowing Needle & High-Contrast Tag
+              if (liveIdx != null && liveIdx >= 0 && live) {
+                const meta = chart.getDatasetMeta(0);
+                const livePoint = meta && meta.data ? meta.data[liveIdx] : null;
+                if (livePoint) {
+                  const lx = livePoint.x;
+                  ctx.save();
+
+                  // Glowing vertical needle
+                  ctx.shadowColor = 'rgba(240, 136, 62, 0.85)';
+                  ctx.shadowBlur = 10;
+                  ctx.beginPath();
+                  ctx.setLineDash([6, 3]);
+                  ctx.lineWidth = 2.5;
+                  ctx.strokeStyle = '#f0883e';
+                  ctx.moveTo(lx, chartArea.top + 24);
+                  ctx.lineTo(lx, chartArea.bottom);
+                  ctx.stroke();
+
+                  // Reset shadow for crisp text
+                  ctx.shadowColor = 'transparent';
+                  ctx.shadowBlur = 0;
+
+                  // High-contrast Badge at top of chartArea
+                  const liveText = `Live Today: ${(live.simple_return_pct >= 0 ? '+' : '') + live.simple_return_pct.toFixed(2)}% (${(live.z_score >= 0 ? '+' : '') + live.z_score.toFixed(2)}σ)`;
+                  ctx.font = 'bold 10.5px Inter, sans-serif';
+                  const textW = ctx.measureText(liveText).width;
+                  const badgeW = textW + 16;
+                  const badgeH = 20;
+                  let badgeX = lx - badgeW / 2;
+
+                  // Clamp inside chart area
+                  if (badgeX < chartArea.left + 4) badgeX = chartArea.left + 4;
+                  if (badgeX + badgeW > chartArea.right - 4) badgeX = chartArea.right - 4 - badgeW;
+                  const badgeY = chartArea.top + 3;
+
+                  // Rounded badge background
+                  ctx.fillStyle = '#f0883e';
+                  ctx.beginPath();
+                  if (typeof ctx.roundRect === 'function') {
+                    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+                  } else {
+                    ctx.rect(badgeX, badgeY, badgeW, badgeH);
+                  }
+                  ctx.fill();
+
+                  // Badge border
+                  ctx.lineWidth = 1;
+                  ctx.strokeStyle = '#ffffff';
+                  ctx.stroke();
+
+                  // Text label
+                  ctx.fillStyle = '#ffffff';
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText(liveText, badgeX + badgeW / 2, badgeY + badgeH / 2);
+
+                  // Pointer notch
+                  ctx.beginPath();
+                  ctx.moveTo(lx - 4, badgeY + badgeH);
+                  ctx.lineTo(lx + 4, badgeY + badgeH);
+                  ctx.lineTo(lx, badgeY + badgeH + 4);
+                  ctx.closePath();
+                  ctx.fillStyle = '#f0883e';
+                  ctx.fill();
+
+                  ctx.restore();
+                }
+              }
+            }
+          };
+
+          rdChart = new Chart(ctxCanvas, {
             type: 'bar',
             data: {
-              labels: h.bins,
+              labels: binLabels,
               datasets: [
-                { label: 'Observed Frequency', data: h.counts, backgroundColor: colors, borderRadius: 2, order: 1 },
+                {
+                  label: 'Observed Sessions',
+                  data: counts,
+                  backgroundColor: barColors,
+                  borderColor: barBorders,
+                  borderWidth: barBorderWidths,
+                  borderRadius: 2,
+                  order: 1
+                },
                 ...extraDatasets
               ]
             },
+            plugins: [liveNeedlePlugin],
             options: {
               responsive: true,
               maintainAspectRatio: false,
@@ -8134,7 +8713,7 @@ async function renderAnalytics() {
                 legend: {
                   display: true,
                   position: 'top',
-                  labels: { font: { size: 10 }, color: '#8b949e', boxWidth: 12, padding: 10 }
+                  labels: { font: { size: 10, family: 'Inter' }, color: '#8b949e', boxWidth: 12, padding: 10 }
                 },
                 tooltip: {
                   backgroundColor: 'rgba(22, 27, 34, 0.96)',
@@ -8151,88 +8730,94 @@ async function renderAnalytics() {
                   callbacks: {
                     title: ctx => {
                       const idx = ctx[0].dataIndex;
-                      const val = binMidVals[idx];
-                      const binLabel = h.bins[idx];
-                      const type = val > 0.05 ? 'Margin Hike' : val < -0.05 ? 'Margin Cut' : 'Neutral Hold';
-                      return `Daily Margin Delta: ${binLabel}% [${type}]`;
+                      const binLabel = binLabels[idx];
+                      return `Return Bin: ${binLabel}`;
                     },
                     label: ctx => {
                       const idx = ctx.dataIndex;
-                      if (ctx.dataset.label === 'Observed Frequency') {
-                        const cnt = h.counts[idx];
-                        const pct = totalCount > 0 ? ((cnt / totalCount) * 100).toFixed(2) : 0;
-                        return `Empirical Frequency: ${cnt.toLocaleString()} days (${pct}% of observations)`;
+                      if (ctx.dataset.label === 'Observed Sessions') {
+                        const cnt = counts[idx];
+                        const pct = ((cnt / activeDist.sample_size) * 100).toFixed(2);
+                        return `Observed Frequency: ${cnt.toLocaleString()} sessions (${pct}%)`;
                       }
-                      if (ctx.dataset.label?.startsWith('Gaussian Fit')) {
-                        const expected = gaussianFitData[idx];
-                        const expPct = totalCount > 0 ? ((expected / totalCount) * 100).toFixed(2) : 0;
-                        const diff = (h.counts[idx] - expected).toFixed(0);
-                        return `Gaussian Expectation: ${expected} days (${expPct}%) · Empirical Divergence: ${diff > 0 ? '+' : ''}${diff}`;
+                      if (ctx.dataset.label?.startsWith('Scaled Gaussian')) {
+                        const exp = activeBins.gaussian_fit[idx];
+                        const expPct = ((exp / activeDist.sample_size) * 100).toFixed(2);
+                        const diff = (counts[idx] - exp).toFixed(1);
+                        return `Gaussian Expectation: ${exp} sessions (${expPct}%) · Empirical Excess: ${diff > 0 ? '+' : ''}${diff}`;
                       }
-                      if (ctx.dataset.label?.startsWith('Model:')) {
-                        return `Model Forecast: Today's model predicts ${predDelta > 0 ? '+' : ''}${predDelta}% change for front-month.`;
-                      }
-                      if (ctx.dataset.label?.startsWith('Δ=0')) {
-                        return 'Exchange Neutral Axis: Zero change baseline (left = margin cut, right = margin hike).';
+                      if (ctx.dataset.label?.startsWith('Live Session')) {
+                        return `Live Today: ${live.simple_return_pct}% (${live.z_score}σ)`;
                       }
                       return '';
                     },
                     afterBody: items => {
                       const idx = items[0].dataIndex;
-                      const val = binMidVals[idx];
-                      const z = stdDev > 0 ? (val - mean) / stdDev : 0;
-                      const cumPct = totalCount > 0 ? ((cumCounts[idx] / totalCount) * 100).toFixed(1) : 50;
-                      const sigmaZone = Math.abs(z) <= 1.0 ? '1.0σ Core Range (Routine)' : Math.abs(z) <= 2.0 ? '2.0σ Elevated Range (Active)' : '3.0σ Extreme Shock Tail';
-                      const interpretation = val > 1.0
-                        ? 'Actionable Risk: Significant margin increase. Requires capital buffer to prevent broker margin call.'
-                        : val < -1.0
-                        ? 'Capital Easing: Substantial margin cut. Releases capital buffer back to usable ledger.'
+                      const mid = binCenters[idx] != null ? binCenters[idx] : 0;
+                      const z = moments.std_dev > 0 ? (mid - moments.mean) / moments.std_dev : 0;
+                      const zAbs = Math.abs(z);
+                      const sigmaTier = zAbs <= 1.0 ? '1.0σ Core Gaussian Band' : zAbs <= 2.0 ? '2.0σ Elevated Tail Regime' : zAbs <= 3.0 ? '3.0σ Severe Shock Tail' : '4.0σ+ Extreme Crisis Tail';
+                      const marginFragility = zAbs >= 3.0
+                        ? 'Clearinghouse Fragility: Severe tail innovation triggers SPAN scanning range expansion & margin call.'
+                        : zAbs >= 2.0
+                        ? 'Active Monitoring: Elevated volatility initiates clearinghouse EWMA parameter escalation.'
                         : 'Routine Fluctuation: Regular daily variation within normal exchange clearing parameters.';
-                      const tailRisk = Math.abs(val) >= 2.0
-                        ? 'Kurtosis Alert: Fat-tail shock regime — natural gas exhibits leptokurtic jump risks exceeding Gaussian curves.'
-                        : 'Density Profile: High empirical concentration clustered around zero delta baseline.';
 
                       return [
-                        `Statistical Deviation: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ [${sigmaZone}]`,
-                        `Cumulative Percentile: P${cumPct} (Percentage of historical days at or below this delta)`,
-                        tailRisk,
-                        interpretation
+                        `Standardized Innovation: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ [${sigmaTier}]`,
+                        marginFragility
                       ];
                     }
                   }
                 }
               },
               scales: {
-                x: { ticks: { maxTicksLimit: 15, font: { size: 9 }, maxRotation: 45 }, title: { display: true, text: 'Daily Margin Change (%)' } },
-                y: { title: { display: true, text: 'Frequency (Days)' } }
+                x: {
+                  ticks: { maxTicksLimit: 16, font: { size: 9.5, family: 'JetBrains Mono' }, color: '#8b949e', maxRotation: 45 },
+                  title: { display: true, text: `${rdState.metric === 'simple' ? 'Simple Return' : 'Log Return'} (%)`, color: '#8b949e', font: { size: 11, family: 'Inter' } },
+                  grid: { color: 'rgba(48, 54, 61, 0.4)' }
+                },
+                y: {
+                  title: { display: true, text: 'Frequency (Trading Sessions)', color: '#8b949e', font: { size: 11, family: 'Inter' } },
+                  ticks: { color: '#8b949e', font: { size: 10, family: 'JetBrains Mono' } },
+                  grid: { color: 'rgba(48, 54, 61, 0.4)' }
+                }
               }
             }
           });
         }
-        renderDeltaHist('0-30');
 
-        document.querySelectorAll('#deltaBucketBtns .range-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('#deltaBucketBtns .range-btn').forEach(b => b.classList.remove('active-range'));
-            btn.classList.add('active-range');
-            renderDeltaHist(btn.dataset.bucket);
+        // Attach segmented control events with explicit data attribute mapping
+        function setupSegmentedGroup(selector, stateKey, dataAttr) {
+          document.querySelectorAll(selector).forEach(btn => {
+            btn.addEventListener('click', () => {
+              document.querySelectorAll(selector).forEach(b => b.classList.remove('active-range'));
+              btn.classList.add('active-range');
+              const val = btn.getAttribute(dataAttr);
+              if (val) {
+                rdState[stateKey] = val;
+                renderReturnDist();
+                if (stateKey === 'symbol') {
+                  updateOverviewTailRiskPill(rdState.symbol);
+                }
+              }
+            });
           });
-        });
-
-        // Conditional summary
-        const cq = dd.current_quartile;
-        const cond = dd.conditional[cq];
-        if (cond) {
-          document.getElementById('deltaCondSummary').innerHTML =
-            `Based on current margin (<strong>${dd.current_margin}%, ${cq}</strong>), historical next-day range: ` +
-            `<span style="color:var(--accent-green);">Relief P10: ${cond.P10 > 0 ? '+' : ''}${cond.P10}%</span> | ` +
-            `<span>Median P50: ${cond.P50 > 0 ? '+' : ''}${cond.P50}%</span> | ` +
-            `<span style="color:var(--accent-red);">Hike P90: ${cond.P90 > 0 ? '+' : ''}${cond.P90}%</span> ` +
-            `<span style="font-size:11px;color:var(--text-muted);">(n=${cond.n})</span>`;
-          attachTooltips();
         }
+
+        setupSegmentedGroup('#rdSymbolBtns button', 'symbol', 'data-rd-sym');
+        setupSegmentedGroup('#rdHorizonBtns button', 'horizon', 'data-rd-horizon');
+        setupSegmentedGroup('#rdMetricBtns button', 'metric', 'data-rd-metric');
+        setupSegmentedGroup('#rdBinBtns button', 'binning', 'data-rd-bin');
+        setupSegmentedGroup('#rdLookbackBtns button', 'lookback', 'data-rd-lookback');
+
+        // Initial render
+        renderReturnDist();
+        updateOverviewTailRiskPill(rdState.symbol);
       }
-    } catch(e) { console.warn('Delta distribution skipped:', e); }
+    } catch (e) {
+      console.warn('Return distribution engine skipped:', e);
+    }
 
     analyticsRendered = true;
   } catch(e) {
@@ -11718,6 +12303,66 @@ Scores above 75 historically preceded margin hikes within 5 days in a majority o
   "turnover-tenor-decomp": {
     title: "Tenor & Contract Decomposition",
     body: `Inspect liquidity distribution across product structures. Switch between <strong>Tenor Share %</strong> (M1 vs M2 vs Far vs Mini), <strong>Big vs Mini</strong> absolute rupee turnover, and <strong>Monthly Seasonality</strong> across the 20-year history.`
+  },
+  "Overview Tail Risk Pill": {
+    title: "Clearinghouse Fat-Tail Leptokurtosis Gauge",
+    body: `<strong>Empirical Tail Multiple (TRM<sub>3σ</sub>):</strong> Ratio of observed 3σ return frequency to the Gaussian baseline (0.27%). A multiplier above 1.0 indicates fat tails (leptokurtosis), where price shocks occur with significantly higher frequency than normal distribution assumptions predict. Click to inspect the full distribution and breakeven survival leverage.`
+  },
+  "Return Distribution Engine": {
+    title: "Empirical Return Distribution & Margin Fragility Profiler",
+    body: `<strong>Microstructure Return Engine:</strong> Analyzes roll-consistent daily continuous front-month futures returns across 5,000+ historical sessions. Evaluates empirical higher central moments, tail probabilities, clearinghouse volatility shock multipliers, and position survival leverage boundaries.`
+  },
+  "Return Metric Selector": {
+    title: "Simple Returns vs Logarithmic Continuously Compounded Returns",
+    body: `<strong>Mathematical Return Formulation:</strong><br><br>• <strong>Simple Return (R<sub>t</sub>):</strong> (P<sub>t</sub> − P<sub>t−1</sub>) ÷ P<sub>t−1</sub>. Directly reflects percentage capital gain/loss on physical futures contracts and margin cash flows.<br>• <strong>Log Return (r<sub>t</sub>):</strong> ln(P<sub>t</sub> ÷ P<sub>t−1</sub>). Additive across time intervals; normalizes asymmetric price shocks.`
+  },
+  "Adaptive Binning FD": {
+    title: "Freedman-Diaconis Optimal Histogram Binning",
+    body: `<strong>Optimal Density Estimation:</strong> Sets bin width w = 2 · IQR · N<sup>−1/3</sup>, where IQR is the interquartile range (P<sub>75</sub> − P<sub>25</sub>). Unlike Scott's or Sturges' rules, this adaptive formulation is robust to heavy-tailed kurtotic outliers, minimizing integrated mean squared error without smoothing out tail risk.`
+  },
+  "Live Session Contextualizer": {
+    title: "Live Session Return & Clearinghouse Stress Context",
+    body: `<strong>Real-Time Shock Positioning:</strong> Contextualizes the current front-month session return against the long-term empirical distribution. Displays the current daily return %, standardized deviation (z-score), historical percentile rank, and the expected vs observed tail frequency.`
+  },
+  "Sample Mean Return": {
+    title: "Sample Mean Return (μ)",
+    body: `<strong>First Central Moment (Expected Value):</strong> The arithmetic mean of front-month returns: μ = (1/N) ∑ R<sub>t</sub>. Reflects long-run drift. For natural gas futures, long-run daily drift is slightly negative due to roll drag and carry friction during contango regimes.`
+  },
+  "Annualized Volatility": {
+    title: "Annualized Sample Volatility (σ<sub>ann</sub>)",
+    body: `<strong>Second Central Moment (Dispersion):</strong> Sample standard deviation s scaled to annual terms via square-root-of-time: σ<sub>ann</sub> = s · √252. Measures the baseline dispersion of daily price movements under standard trading year conventions.`
+  },
+  "Fisher-Pearson Skewness": {
+    title: "Fisher-Pearson Standardized Skewness (g₁)",
+    body: `<strong>Third Standardized Moment (Asymmetry):</strong> g₁ = m₃ ÷ (m₂)<sup>3/2</sup>. Measures distributional asymmetry around the mean. Positive skewness (> 0) in natural gas futures signifies a propensity for violent upside supply squeezes and extreme right-tail price spikes.`
+  },
+  "Excess Kurtosis": {
+    title: "Sample Excess Kurtosis (g₂)",
+    body: `<strong>Fourth Standardized Moment (Tail Weight):</strong> g₂ = [m₄ ÷ (m₂)²] − 3.0. Excess over Gaussian kurtosis (normal distribution = 0). Values exceeding 4.0 confirm extreme leptokurtosis, proving that market crashes and spikes occur far more frequently than Gaussian models forecast.`
+  },
+  "1% Tail VaR": {
+    title: "1% Empirical Value at Risk (Daily Tail VaR)",
+    body: `<strong>Parametric Tail Threshold (P₁):</strong> The 1st empirical percentile of daily returns. Reflects the maximum expected single-day adverse price shock at a 99% confidence level. An essential benchmark for capital adequacy and portfolio stress testing.`
+  },
+  "Tail Risk Multiplier": {
+    title: "Tail Risk Multiplier (TRM<sub>3σ</sub>)",
+    body: `<strong>Empirical Tail Multiple:</strong> Defined as TRM<sub>3σ</sub> = Empirical Frequency(|z| > 3.0) ÷ 0.27%. Quantifies how many times more frequently extreme 3-sigma shocks occur in reality compared to theoretical Gaussian expectations.`
+  },
+  "Scaled Gaussian PDF Overlay": {
+    title: "Scaled Continuous Gaussian PDF Overlay Curve",
+    body: `<strong>Theoretical Benchmark Density:</strong> Evaluates C(x) = [N · w ÷ (s · √(2π))] · exp(−(x − μ)² ÷ (2s²)). Scaled to identical observation count units so the total area under the curve matches total histogram bar area (N · w), highlighting empirical peak leptokurtosis and fat-tail divergences.`
+  },
+  "Clearinghouse Volatility Multiplier": {
+    title: "Clearinghouse Volatility Shock Multiplier (γ(z))",
+    body: `<strong>MCXCCL SPAN Volatility Innovation:</strong> Under the standard clearinghouse EWMA parameterization (λ = 0.94), the projected daily volatility after a standardized shock z is scaled by γ(z) = √(0.94 + 0.06 · z²). Shocks beyond 2σ significantly elevate exchange margin parameters.`
+  },
+  "Projected Initial Margin": {
+    title: "Tomorrow's Projected Initial Margin Floor (M<sub>Pred</sub>)",
+    body: `<strong>Next-Day Initial Margin Projection:</strong> Evaluates M<sub>Pred</sub> = max(13.00%, 6.45 · σ<sub>t</sub> · γ(z)). Enforces SEBI/MCX statutory minimum floors (13.00%) while expanding dynamically when extreme volatility shocks trigger SPAN scanning range hikes.`
+  },
+  "Breakeven Survival Leverage": {
+    title: "Breakeven Position Survival Leverage (L<sub>Survive</sub>)",
+    body: `<strong>Margin Call Depletion Boundary:</strong> Maximum permissible portfolio leverage to withstand an adverse price shock δ followed by a clearinghouse margin hike M<sub>Pred</sub> without triggering a margin deficit:<br><br>• <strong>Long:</strong> L<sub>Survive</sub><sup>Long</sup> = 1 ÷ [δ + (1 − δ) · M<sub>Pred</sub>]<br>• <strong>Short:</strong> L<sub>Survive</sub><sup>Short</sup> = 1 ÷ [δ + (1 + δ) · M<sub>Pred</sub>]<br><br>Short leverage is strictly lower because rising prices expand gross short liability while eroding equity.`
   }
 };
 
