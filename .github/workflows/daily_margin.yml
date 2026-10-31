@@ -57,8 +57,10 @@ jobs:
         id: lookback
         shell: bash
         run: |
+          set +e
           python scripts/lookback.py --days 5
           exit_code=$?
+          set -e
           if [ $exit_code -eq 0 ]; then
             echo "fresh_data=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -77,8 +79,10 @@ jobs:
         id: fetch_today
         shell: bash
         run: |
+          set +e
           python scripts/fetch_today.py --retries 1 --wait 0
           exit_code=$?
+          set -e
           if [ $exit_code -eq 0 ]; then
             echo "fresh_data=true" >> "$GITHUB_OUTPUT"
             exit 0
