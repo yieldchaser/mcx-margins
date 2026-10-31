@@ -1520,7 +1520,7 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
                style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.45);color:#f85149;padding:3px 10px;border-radius:12px;font-size:11px;font-family:Inter,sans-serif;font-weight:600;transition:all 0.2s ease;"
                title="Click to inspect empirical return distribution and survival leverage">
             <span id="overviewTailRiskDot" class="tail-risk-dot-pulse" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f85149;"></span>
-            <span>Tail Risk: <strong id="overviewTailRiskVal" style="font-family:'JetBrains Mono',monospace;">4.38×</strong> (3σ)</span>
+            <span>Tail Risk: <strong id="overviewTailRiskVal" style="font-family:'JetBrains Mono',monospace;">--</strong> (3σ)</span>
           </div>
           <div style="display:flex;gap:6px;">
             <button class="snap-toggle active-snap" data-sym="NATURALGAS" title="Show NATURALGAS margin snapshot"
@@ -4095,7 +4095,11 @@ function updateOverviewTailRiskPill(sym) {
   loadJSON('return_distribution').then(rd => {
     if (!rd || !rd.symbols || !rd.symbols[sym]) return;
     const s = rd.symbols[sym];
-    const trm = s.simple_returns?.tail_frequencies?.beyond_3s?.trm || 4.38;
+    const trm = s?.simple_returns?.tail_frequencies?.beyond_3s?.trm;
+    if (typeof trm !== 'number' || isNaN(trm)) {
+      pillVal.textContent = '--';
+      return;
+    }
     pillVal.textContent = trm.toFixed(2) + '×';
 
     if (pill) {
