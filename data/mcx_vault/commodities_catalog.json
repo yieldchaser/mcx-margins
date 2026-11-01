@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-31 15:52:28 IST",
+  "generated_at": "2026-11-01 16:41:12 IST",
   "total_contracts": 64,
   "total_commodities": 18,
-  "total_bars": 2421736,
+  "total_bars": 2434842,
   "commodities": {
     "ALUMINI": {
       "commodity": "ALUMINI",
@@ -65,8 +65,8 @@
       "contracts_count": 6,
       "active_contracts": 5,
       "expired_contracts": 1,
-      "total_bars": 358408,
-      "latest_price": 147870.0
+      "total_bars": 371514,
+      "latest_price": 145160.0
     },
     "LEAD": {
       "commodity": "LEAD",
@@ -491,11 +491,11 @@
       "commodity": "GOLDTEN",
       "expiry": "27FEB",
       "status": "active",
-      "total_bars": 31993,
+      "total_bars": 36365,
       "start_time": "2026-09-01 09:06",
-      "end_time": "2026-10-23 23:29",
-      "latest_close": 147018.0,
-      "latest_oi": 1497,
+      "end_time": "2026-10-30 23:54",
+      "latest_close": 143348.0,
+      "latest_oi": 1909,
       "file": "data/mcx_vault/contract_wise/MCX_GOLDTEN27FEBFUT_1m_contract_wise.parquet"
     },
     {
@@ -503,11 +503,11 @@
       "commodity": "GOLDTEN",
       "expiry": "27JAN",
       "status": "active",
-      "total_bars": 49071,
+      "total_bars": 53446,
       "start_time": "2026-08-03 18:16",
-      "end_time": "2026-10-23 23:29",
-      "latest_close": 145496.0,
-      "latest_oi": 5076,
+      "end_time": "2026-10-30 23:54",
+      "latest_close": 141930.0,
+      "latest_oi": 5969,
       "file": "data/mcx_vault/contract_wise/MCX_GOLDTEN27JANFUT_1m_contract_wise.parquet"
     },
     {
@@ -515,11 +515,11 @@
       "commodity": "GOLDTEN",
       "expiry": "27MAR",
       "status": "active",
-      "total_bars": 12862,
+      "total_bars": 17221,
       "start_time": "2026-10-01 09:31",
-      "end_time": "2026-10-23 23:29",
-      "latest_close": 147870.0,
-      "latest_oi": 297,
+      "end_time": "2026-10-30 23:54",
+      "latest_close": 145160.0,
+      "latest_oi": 594,
       "file": "data/mcx_vault/contract_wise/MCX_GOLDTEN27MARFUT_1m_contract_wise.parquet"
     },
     {
