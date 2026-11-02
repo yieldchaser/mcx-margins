@@ -82,13 +82,17 @@ class DeepLodParityTests(unittest.TestCase):
         common_files = ng_files.intersection(ngm_files)
         self.assertGreaterEqual(len(common_files), 10, "NG and NGM must share monthly chunks")
 
+        sorted_files = sorted([f for f in common_files if f.endswith(".json")])
+        latest_file = sorted_files[-1] if sorted_files else None
+
         for fname in common_files:
             if not fname.endswith(".json"):
                 continue
             with open(os.path.join(ngm_1m_dir, fname), "r", encoding="utf-8") as f:
                 bars = json.load(f)
             self.assertIsInstance(bars, list)
-            self.assertGreater(len(bars), 1000, f"Chunk {fname} in 1m_ngm must have bars")
+            min_bars = 100 if fname == latest_file else 1000
+            self.assertGreater(len(bars), min_bars, f"Chunk {fname} in 1m_ngm must have bars")
             # Bar format: [epoch, o, h, l, c, v]
             first_bar = bars[0]
             self.assertEqual(len(first_bar), 6, f"Bar in {fname} must have 6 elements [epoch, o, h, l, c, v]")

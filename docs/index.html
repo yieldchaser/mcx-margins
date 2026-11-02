@@ -513,23 +513,35 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   position: relative;
   transition: border-color 0.18s ease;
 }
+/* ── Unified 12-View Chart Matrix Bezel (Eliminates Disconnected Bubbles) ── */
 .calc-chart-matrix {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   margin: 0 auto 10px auto;
   width: 100%;
   box-sizing: border-box;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 .calc-chart-matrix__row {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 3px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   box-sizing: border-box;
+}
+/* Hairline divider between Performance Tier and Solvency Tier */
+.calc-chart-matrix__row:first-child {
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(139, 148, 158, 0.15);
 }
 .calc-chart-matrix .calc-chart-tab {
   display: flex;
@@ -547,15 +559,17 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   color: var(--text-muted);
   border-radius: 4px;
   font-family: inherit;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
 }
 .calc-chart-matrix .calc-chart-tab:hover {
+  background: rgba(177, 186, 196, 0.12);
   color: var(--text);
 }
 .calc-chart-matrix .calc-chart-tab[aria-pressed="true"] {
   background: var(--accent);
   color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .calc-chart-matrix .calc-chart-tab:focus-visible {
   outline: 2px solid var(--accent);
@@ -840,10 +854,20 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
   #calcRangeSlider .range-inputs input::-webkit-slider-thumb { width: 22px; height: 22px; }
 }
 @media (max-width: 480px) {
+  .calc-chart-matrix {
+    padding: 3px;
+  }
   .calc-chart-matrix__row {
     grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    padding: 3px;
+    gap: 2px;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+  .calc-chart-matrix__row:first-child {
+    padding-bottom: 3px;
+    margin-bottom: 3px;
+    border-bottom: 1px solid rgba(139, 148, 158, 0.15);
   }
   .calc-chart-matrix .calc-chart-tab {
     font-size: 9px;
@@ -1211,6 +1235,44 @@ tr.has-tooltip::after, td.has-tooltip::after, th.has-tooltip::after, div.card.ha
 #tooltipOverlay .tt-body { font-size: 13px; color: var(--text); line-height: 1.65; }
 #tooltipOverlay .tt-body strong { color: var(--accent); }
 #tooltipOverlay .tt-body em { color: var(--accent-yellow); font-style: normal; }
+#tooltipOverlay code {
+  display: block;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 6px 0 10px 0;
+  color: #79c0ff;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#tooltipOverlay .calc-tt-live {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(88, 166, 255, 0.25);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+#tooltipOverlay .calc-tt-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+#tooltipOverlay .calc-tt-live-val {
+  color: #ffffff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Mobile ── */
 .stats-bar { display:flex; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:1px; scrollbar-width:none; }
@@ -9261,6 +9323,154 @@ async function initCalculator() {
   });
 }
 
+/**
+ * Injects dynamic live simulation context into all 12 chart tab tooltips
+ */
+function updateCalcTabDynamicTooltips(ctx) {
+  const {
+    totalPL, roiOnCapital, maxDD, ddPctOfPortfolio, bestDay, worstDay, bestDate, worstDate,
+    capital, lots, lotSize, entryPrice, entryMarginPct, marginReqPerLot, peakMargin, roiOnMargin,
+    capitalPath, freeCashPath, reqMarginPath, marginUtilPath, marginPctPath, shieldPath, labels,
+    entryShield, minShield, minShieldDate, exitShield, isM2M, marginCallDate
+  } = ctx;
+
+  const fmtNum = (v, dec = 0) => {
+    if (v == null || !Number.isFinite(v)) return '—';
+    return v.toLocaleString('en-IN', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+  };
+  const fmtPct = (v, dec = 1) => {
+    if (v == null || !Number.isFinite(v)) return '—';
+    return v.toFixed(dec) + '%';
+  };
+
+  const endEquity = capitalPath.length ? capitalPath[capitalPath.length - 1] : capital;
+  const maxEquity = capitalPath.length ? Math.max(...capitalPath) : capital;
+  const minEquity = capitalPath.length ? Math.min(...capitalPath) : capital;
+
+  const endFreeCash = freeCashPath.length ? freeCashPath[freeCashPath.length - 1] : 0;
+  const minFreeCash = freeCashPath.length ? Math.min(...freeCashPath.filter(Number.isFinite)) : 0;
+
+  const endMarginReq = reqMarginPath.length ? reqMarginPath[reqMarginPath.length - 1] : 0;
+  const entryMarginReq = (entryPrice * lots * lotSize * entryMarginPct) / 100;
+
+  const peakUtil = capital > 0 && peakMargin > 0 ? (peakMargin / capital) * 100 : 0;
+  const endUtil = marginUtilPath.length ? marginUtilPath[marginUtilPath.length - 1] : 0;
+
+  const minMarginRate = marginPctPath.length ? Math.min(...marginPctPath.filter(Number.isFinite)) : entryMarginPct;
+  const maxMarginRate = marginPctPath.length ? Math.max(...marginPctPath.filter(Number.isFinite)) : entryMarginPct;
+  const endMarginRate = marginPctPath.length ? marginPctPath[marginPctPath.length - 1] : entryMarginPct;
+
+  const liveContextMap = {
+    equity: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Terminal P/L:</strong> <span class="calc-tt-live-val">${totalPL >= 0 ? '+₹' : '−₹'}${fmtNum(Math.abs(totalPL))} (${fmtPct(roiOnCapital, 2)} ROI)</span><br>
+        • <strong>Peak Equity:</strong> <span class="calc-tt-live-val">₹${fmtNum(maxEquity)}</span> · <strong>Trough:</strong> <span class="calc-tt-live-val">₹${fmtNum(minEquity)}</span><br>
+        • <strong>Ending Balance:</strong> <span class="calc-tt-live-val">₹${fmtNum(endEquity)}</span> (Initial: ₹${fmtNum(capital)})
+      </div>`,
+
+    daily: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Best Session:</strong> <span class="calc-tt-live-val" style="color:#3fb950;">+₹${fmtNum(bestDay)}</span> (${bestDate || 'N/A'})<br>
+        • <strong>Worst Session:</strong> <span class="calc-tt-live-val" style="color:#f85149;">−₹${fmtNum(Math.abs(worstDay))}</span> (${worstDate || 'N/A'})<br>
+        • <strong>Horizon:</strong> <span class="calc-tt-live-val">${labels.length} trading days</span> evaluated
+      </div>`,
+
+    drawdown: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Max Cash Drawdown:</strong> <span class="calc-tt-live-val" style="color:#f85149;">−₹${fmtNum(maxDD)}</span><br>
+        • <strong>Drawdown % of Peak:</strong> <span class="calc-tt-live-val">${fmtPct(ddPctOfPortfolio, 2)}</span> of peak capital<br>
+        • <strong>High-Water Mark:</strong> <span class="calc-tt-live-val">₹${fmtNum(maxEquity)}</span>
+      </div>`,
+
+    drawdownPct: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Worst Drawdown %:</strong> <span class="calc-tt-live-val" style="color:#f85149;">−${fmtPct(ddPctOfPortfolio, 2)}</span><br>
+        • <strong>Peak Portfolio Apex:</strong> <span class="calc-tt-live-val">₹${fmtNum(maxEquity)}</span><br>
+        • <strong>Breakeven Hurdle:</strong> <span class="calc-tt-live-val">+${ddPctOfPortfolio > 0 ? fmtPct((ddPctOfPortfolio / (100 - ddPctOfPortfolio)) * 100, 2) : '0.0%'} gain needed</span>
+      </div>`,
+
+    dailyRetPct: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Best Day Return:</strong> <span class="calc-tt-live-val" style="color:#3fb950;">+${fmtPct(capital > 0 ? (bestDay / capital) * 100 : 0, 2)}</span><br>
+        • <strong>Worst Day Return:</strong> <span class="calc-tt-live-val" style="color:#f85149;">−${fmtPct(capital > 0 ? (Math.abs(worstDay) / capital) * 100 : 0, 2)}</span><br>
+        • <strong>Capital Base:</strong> <span class="calc-tt-live-val">₹${fmtNum(capital)}</span>
+      </div>`,
+
+    cumROI: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Total Strategy ROI:</strong> <span class="calc-tt-live-val" style="color:${roiOnCapital >= 0 ? '#3fb950' : '#f85149'};">${roiOnCapital >= 0 ? '+' : ''}${fmtPct(roiOnCapital, 2)}</span><br>
+        • <strong>ROI on Peak Margin:</strong> <span class="calc-tt-live-val">${roiOnMargin >= 0 ? '+' : ''}${fmtPct(roiOnMargin, 2)}</span><br>
+        • <strong>Net P/L Result:</strong> <span class="calc-tt-live-val">${totalPL >= 0 ? '+₹' : '−₹'}${fmtNum(Math.abs(totalPL))}</span>
+      </div>`,
+
+    ledger: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Ending Ledger:</strong> <span class="calc-tt-live-val">₹${fmtNum(endEquity)}</span> (${endEquity >= capital ? '+' : '−'}₹${fmtNum(Math.abs(endEquity - capital))})<br>
+        • <strong>Trough Ledger:</strong> <span class="calc-tt-live-val">₹${fmtNum(minEquity)}</span> · <strong>Peak:</strong> <span class="calc-tt-live-val">₹${fmtNum(maxEquity)}</span><br>
+        • <strong>Accounting Mode:</strong> <span class="calc-tt-live-val">${isM2M ? 'Dynamic M2M' : 'Static Capital'}</span>
+      </div>`,
+
+    freeCash: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Ending Free Cash:</strong> <span class="calc-tt-live-val">₹${fmtNum(endFreeCash)}</span><br>
+        • <strong>Lowest Cash Buffer:</strong> <span class="calc-tt-live-val" style="color:${minFreeCash < 0 ? '#f85149' : '#3fb950'};">₹${fmtNum(minFreeCash)}</span><br>
+        • <strong>Solvency Status:</strong> <span class="calc-tt-live-val">${marginCallDate ? 'BREACHED on ' + marginCallDate : 'HEALTHY (No Margin Call)'}</span>
+      </div>`,
+
+    marginReq: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Peak Required Margin:</strong> <span class="calc-tt-live-val">₹${fmtNum(peakMargin)}</span><br>
+        • <strong>Entry Margin:</strong> <span class="calc-tt-live-val">₹${fmtNum(entryMarginReq)}</span> (₹${fmtNum(marginReqPerLot)}/lot)<br>
+        • <strong>Exit Margin:</strong> <span class="calc-tt-live-val">₹${fmtNum(endMarginReq)}</span>
+      </div>`,
+
+    margin: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Peak Utilization:</strong> <span class="calc-tt-live-val" style="color:${peakUtil >= 100 ? '#f85149' : peakUtil >= 80 ? '#d29922' : '#3fb950'};">${fmtPct(peakUtil, 1)}</span><br>
+        • <strong>Entry Utilization:</strong> <span class="calc-tt-live-val">${fmtPct(capital > 0 ? (entryMarginReq / capital) * 100 : 0, 1)}</span><br>
+        • <strong>RMS Severity:</strong> <span class="calc-tt-live-val">${peakUtil >= 100 ? 'AUTO-SQUAREOFF BREACH' : peakUtil >= 80 ? 'HIGH RISK' : 'CONSERVATIVE'}</span>
+      </div>`,
+
+    marginPct: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Margin Rate Range:</strong> <span class="calc-tt-live-val">${fmtPct(minMarginRate, 2)} to ${fmtPct(maxMarginRate, 2)}</span><br>
+        • <strong>Entry Rate:</strong> <span class="calc-tt-live-val">${fmtPct(entryMarginPct, 2)}</span><br>
+        • <strong>Exit Rate:</strong> <span class="calc-tt-live-val">${fmtPct(endMarginRate, 2)}</span>
+      </div>`,
+
+    shield: `
+      <div class="calc-tt-live">
+        <div class="calc-tt-live-badge"><span class="calc-pulse-dot" style="width:5px;height:5px;"></span> LIVE SIMULATION CONTEXT</div>
+        • <strong>Entry Shield:</strong> <span class="calc-tt-live-val">${fmtPct(entryShield, 1)}</span> (Adverse move buffer)<br>
+        • <strong>Worst-Case Cushion:</strong> <span class="calc-tt-live-val" style="color:${minShield <= 0 ? '#f85149' : minShield < 15 ? '#d29922' : '#3fb950'};">${fmtPct(minShield, 1)}</span> (${minShieldDate || 'N/A'})<br>
+        • <strong>Exit Shield:</strong> <span class="calc-tt-live-val">${fmtPct(exitShield, 1)}</span>
+      </div>`
+  };
+
+  const tabs = document.querySelectorAll('#calcChartTabs .calc-chart-tab');
+  tabs.forEach(tab => {
+    const view = tab.dataset.view;
+    const key = tab.dataset.tooltipKey;
+    const base = TOOLTIPS[key];
+    if (!base) return;
+
+    const liveHtml = liveContextMap[view] || '';
+    tab.setAttribute('data-dyn-title', base.title);
+    tab.setAttribute('data-dyn-body', base.body + liveHtml);
+  });
+}
+
 window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const sym = document.getElementById('calcSymbol').value;
   const expiry = document.getElementById('calcExpiry').value;
@@ -10035,7 +10245,14 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     infoEl.innerHTML = `<span>Backtest only · entry/exit at exchange close · gross figures unless costs are applied. <em>${modeNote}</em>${liveNote}</span>`;
   }
 
-  // Calculate dynamic exit shield
+  // Calculate dynamic entry and exit shield
+  let entryShield = 0;
+  if (lots > 0 && entryPrice && entryMarginPct) {
+    const positionSize = lots * lotSize * entryPrice;
+    const internalMarginPct = positionSize > 0 ? (capital / positionSize) * 100 : 0;
+    entryShield = internalMarginPct - entryMarginPct;
+  }
+
   let exitShield = 0;
   if (lots > 0 && windowDays.length > 0) {
     const lastDate = windowDays[windowDays.length - 1];
@@ -10057,7 +10274,6 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       const positionSize = lots * lotSize * entryPrice;
       const internalMarginPct = (capital / positionSize) * 100;
       const exchangeMarginPct = entryMarginPct;
-      const entryShield = internalMarginPct - exchangeMarginPct;
 
       liqPanel.style.display = 'flex';
       const badge = document.getElementById('calcLiqValue');
@@ -10314,6 +10530,13 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     plugins: mcPlugin ? [mcPlugin] : []
   });
 
+  // Dynamically update tooltips on all 12 chart tabs with live simulation figures
+  updateCalcTabDynamicTooltips({
+    totalPL, roiOnCapital, maxDD, ddPctOfPortfolio, bestDay, worstDay, bestDate, worstDate,
+    capital, lots, lotSize, entryPrice, entryMarginPct, marginReqPerLot, peakMargin, roiOnMargin,
+    capitalPath, freeCashPath, reqMarginPath, marginUtilPath, marginPctPath, shieldPath, labels,
+    entryShield, minShield, minShieldDate, exitShield, isM2M, marginCallDate
+  });
 }
 
 // Wire the calculator init to the history tab + IntersectionObserver for direct deep-link
@@ -11889,53 +12112,54 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
 • <strong>Worst-Case:</strong> The lowest safety cushion reached during this trade.<br>
 • <strong>At Exit:</strong> The remaining cushion when the position closed.`
   },
+  // ── 12-View Backtest Simulator Chart Matrix Tooltips (Institutional Standard) ──
   "calc-tab-equity": {
-    title: "M2M Cumulative Equity Curve (₹)",
-    body: `Shows your net cumulative Mark-to-Market (M2M) trading profit or loss over time settled at official MCX daily closing prices.`
+    title: "M2M CUMULATIVE EQUITY CURVE (₹)",
+    body: `<code>Equity(t) = Capital(0) + ∑[k=1..t] ΔPL(k) − Frictions</code><br>• <strong>Core Mechanism:</strong> Tracks cumulative net Mark-to-Market (MTM) trading equity accrued across daily MCX closing settlements. Under Dynamic M2M mode, profits expand deployable risk capital while paper losses actively deplete available liquidity.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>Equity > Capital(0):</em> Net profitable regime with accumulated capital surplus.<br>  - <em>Equity < Capital(0):</em> Drawdown regime; initial capital buffer is impaired.<br>  - <em>Equity ≤ Required Margin:</em> Zero free cash boundary; trips instant clearinghouse margin deficit.<br><br>• <strong>Risk & Clearinghouse Action:</strong> If equity drops below exchange required margin, broker Risk Management Systems (RMS) immediately restrict new orders and initiate mandatory liquidation of open contracts to safeguard clearinghouse collateral.`
   },
   "calc-tab-daily": {
-    title: "Daily Mark-to-Market P/L (₹)",
-    body: `Shows the discrete single-session rupee profit or loss credited to or debited from your ledger at the end of each MCX trading session.`
+    title: "DAILY MARK-TO-MARKET P/L (₹)",
+    body: `<code>Daily PL(t) = (Close(t) − Close(t−1)) × Lots × Multiplier × Direction</code><br>• <strong>Core Mechanism:</strong> Reflects the discrete single-session cash flow debited from or credited to your ledger during the evening MCX multi-lateral netting cycle. Captures pure daily session volatility independent of cumulative history.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>Daily PL > 0:</em> Realized cash credit posted to broker ledger overnight.<br>  - <em>Daily PL < 0:</em> Realized cash debit subtracted from ledger overnight.<br>  - <em>|Daily PL| > 3 × σ(daily):</em> Extreme 3-sigma shock session (>99% tail event).<br><br>• <strong>Risk & Clearinghouse Action:</strong> MCXCCL settles M2M obligations daily in T+0 cash. Inability to fund an overnight debit from unencumbered cash triggers an instant RMS ledger deficit freeze and statutory penalty interest.`
   },
   "calc-tab-drawdown": {
-    title: "Peak-to-Trough Cash Drawdown (₹)",
-    body: `Shows the rupee retracement from your portfolio's highest historical high-water mark. Highlights the worst interim equity dip endured during the position's lifecycle.`
+    title: "PEAK-TO-TROUGH CASH DRAWDOWN (₹)",
+    body: `<code>Drawdown(t) = min(0, Equity(t) − max[0..t](Equity(s)))</code><br>• <strong>Core Mechanism:</strong> Measures the absolute rupee cash retracement from the trade's all-time High-Water Mark (HWM). Quantifies the deepest cumulative paper loss endured from the peak valuation apex across the trade lifecycle.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>DD = ₹0:</em> Trade is operating at a fresh all-time high-water mark.<br>  - <em>DD < −₹(0.10 × Capital):</em> Moderate retracement; first-line capital buffer consumed.<br>  - <em>DD = −MaxDD:</em> Deepest historical equity trough; represents peak emotional and capital stress.<br><br>• <strong>Risk & Clearinghouse Action:</strong> Severe cash drawdowns deplete available free cash. As drawdowns deepen, capital adequacy contracts, accelerating proximity to broker RMS auto-squareoff even without clearinghouse margin hikes.`
   },
   "calc-tab-drawdownpct": {
-    title: "Portfolio Drawdown Percentage (%)",
-    body: `Measures the percentage paper loss from the trade's peak portfolio capital: <code>−(Peak Rupee − Current Rupee) ÷ Peak Rupee × 100%</code>. Crucial for assessing tail-risk and recovery hurdles.`
+    title: "PORTFOLIO DRAWDOWN PERCENTAGE (%)",
+    body: `<code>DD%(t) = −[(PeakPortfolio(t) − CurrentPortfolio(t)) ÷ PeakPortfolio(t)] × 100%</code><br>• <strong>Core Mechanism:</strong> Normalizes peak-to-trough paper losses against total peak portfolio value (Starting Capital + Peak MTM). Provides an unskewed, scale-independent metric of capital degradation and structural recovery hurdle.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>0.0% to −5.0%:</em> Normal commodity market noise; routine holding friction.<br>  - <em>−5.0% to −15.0%:</em> Significant drawdown stress; triggers RSAE continuous brake de-leveraging.<br>  - <em>≤ −20.0%:</em> Severe tail-risk drawdown; requires a +25.0% gross return merely to recover breakeven.<br><br>• <strong>Risk & Clearinghouse Action:</strong> Institutional risk mandates enforce systematic lot de-risking when portfolio drawdowns cross predefined tiers (−10%, −15%), preventing account ruin during adverse multi-day runs.`
   },
   "calc-tab-dailyretpct": {
-    title: "Daily Return on Capital (%)",
-    body: `Calculates each day's percentage return relative to the prior session's ending ledger capital: <code>Daily P/L ÷ Previous Day's Capital × 100%</code>. Reveals volatility clustering and outlier session returns.`
+    title: "DAILY RETURN ON CAPITAL (%)",
+    body: `<code>Daily Return%(t) = [Daily PL(t) ÷ Ledger(t−1)] × 100%</code><br>• <strong>Core Mechanism:</strong> Measures the single-session rate of return relative to the capital entering that session. Reveals volatility clustering, session return kurtosis, and daily capital velocity under dynamic leverage.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>|Daily %| ≤ 1.5%:</em> Routine low-volatility session.<br>  - <em>|Daily %| ≥ 4.0%:</em> High-impact shock day; potential clearinghouse circuit breaker event.<br>  - <em>|Daily %| ≥ 8.0%:</em> Extreme tail dislocation; trips immediate exchange SPAN margin recalculation.<br><br>• <strong>Risk & Clearinghouse Action:</strong> A violent single-session drop (>4%) instantly impairs ledger capital, sharply elevating Margin Utilization and potentially triggering an intraday RMS margin call before regular market close.`
   },
   "calc-tab-cumroi": {
-    title: "Cumulative Return on Initial Capital (%)",
-    body: `Shows the total percentage growth or contraction of your initial cash outlay over the backtest horizon: <code>Cumulative P/L ÷ Starting Capital × 100%</code>.`
+    title: "CUMULATIVE RETURN ON INITIAL CAPITAL (%)",
+    body: `<code>Cumulative ROI%(t) = [(Total Net PL(t)) ÷ Starting Capital] × 100%</code><br>• <strong>Core Mechanism:</strong> Measures total net economic growth or contraction of the initial cash outlay over the backtest window. Serves as the primary benchmark of strategy capital efficiency and compounding power.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>ROI > 0%:</em> Net capital expansion (positive alpha on allocated cash).<br>  - <em>ROI < 0%:</em> Net capital contraction; portfolio is under water.<br>  - <em>ROI ≤ −50%:</em> Critical capital impairment requiring a subsequent +100% return to restore original parity.<br><br>• <strong>Risk & Clearinghouse Action:</strong> Sustained negative ROI exhausts initial cash buffers. Once starting capital drops below required margin thresholds, external cash infusions are required to prevent forced closure.`
   },
   "calc-tab-ledger": {
-    title: "Account Ledger Capital Balance (₹)",
-    body: `Tracks your live broker cash ledger balance after absorbing daily M2M cash flows. Clamped at ₹0 in M2M mode to reflect realistic broker liquidation prior to balance deficit.`
+    title: "ACCOUNT LEDGER CAPITAL BALANCE (₹)",
+    body: `<code>Ledger(t) = max(0, Capital(0) + ∑[k=1..t] Daily PL(k))</code><br>• <strong>Core Mechanism:</strong> Tracks your live broker cash balance after accounting for all daily settled M2M cash flows and transaction frictions. Clamped at ₹0 in M2M mode to emulate real-world broker liquidation prior to negative balance deficit.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>Ledger > MarginReq:</em> Full solvency; unencumbered cash buffer intact.<br>  - <em>Ledger = MarginReq:</em> Zero-shield boundary; exact breakeven solvency point.<br>  - <em>Ledger < MarginReq:</em> Deficit state; immediate clearinghouse margin violation.<br><br>• <strong>Risk & Clearinghouse Action:</strong> Broker RMS engines audit ledger balances in real time. If your ledger balance falls below 100% of required overnight margin, trading privileges are suspended and auto-liquidation commences.`
   },
   "calc-tab-freecash": {
-    title: "Unencumbered Free Cash Cushion (₹)",
-    body: `Your liquid cash reserve remaining after meeting exchange margin requirements: <code>Ledger Capital − Required Margin</code>. Negative values indicate an immediate margin shortfall requiring capital infusion.`
+    title: "UNENCUMBERED FREE CASH CUSHION (₹)",
+    body: `<code>Free Cash(t) = Ledger(t) − Required Margin(t)</code><br>• <strong>Core Mechanism:</strong> The liquid cash reserve remaining in your trading account above what MCXCCL has locked as overnight collateral. Represents the immediate cash buffer available to absorb adverse price moves or margin hikes.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>Free Cash > ₹0:</em> Fully solvent; surplus capital absorbs daily market swings.<br>  - <em>Free Cash = ₹0:</em> Liquidation boundary; zero safety margin remaining.<br>  - <em>Free Cash < ₹0:</em> Active margin deficit; triggers statutory broker margin call notice.<br><br>• <strong>Risk & Clearinghouse Action:</strong> When Free Cash turns negative, the broker faces SEBI short-margin penalty exposure. Broker algorithms automatically square off contracts without prior notice to restore a non-negative cash balance.`
   },
   "calc-tab-marginreq": {
-    title: "Exchange Required Overnight Margin (₹)",
-    body: `Total rupee collateral mandated by MCX Clearing Corporation (MCXCCL) to hold open lots overnight: <code>Contract Notional × Total Margin % × Spread Factor</code>.`
+    title: "EXCHANGE REQUIRED OVERNIGHT MARGIN (₹)",
+    body: `<code>MarginReq(t) = [Close(t) × Lots × LotSize × Margin%(t) ÷ 100] × SpreadFactor</code><br>• <strong>Core Mechanism:</strong> Mandatory rupee collateral blocked by MCX Clearing Corporation (MCXCCL) to carry open futures positions overnight. Dynamically recalculated each session based on closing price, EWMA volatility, and expiry proximity.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>MarginReq ≤ 0.50 × Capital:</em> Conservative sizing; 50% cash buffer intact.<br>  - <em>MarginReq > 0.80 × Capital:</em> High utilization; vulnerable to modest margin rate hikes.<br>  - <em>MarginReq > Ledger:</em> Insolvent state; triggers immediate clearinghouse margin call.<br><br>• <strong>Risk & Clearinghouse Action:</strong> MCXCCL collects initial SPAN margin before next market open. If required margin surges due to price expansion or volatility hikes, supplemental cash must be wired before 23:30/23:55 IST.`
   },
   "calc-tab-margin": {
-    title: "Margin Utilization Ratio (%)",
-    body: `The percentage of your ledger capital tied up in required margin: <code>Required Margin ÷ Ledger Capital × 100%</code>. Ratios exceeding 80% indicate severe capital strain; 100% triggers RMS auto-squareoff.`
+    title: "MARGIN UTILIZATION RATIO (%)",
+    body: `<code>Util%(t) = [Required Margin(t) ÷ Ledger(t)] × 100%</code><br>• <strong>Core Mechanism:</strong> Expresses required exchange collateral as an exact percentage of available live capital. Directly measures portfolio leverage strain and remaining borrowing capacity.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>< 50.0%:</em> Conservative institutional sizing; robust buffer against volatility shocks.<br>  - <em>50.0% – 80.0%:</em> Moderate capital deployment; requires active surveillance.<br>  - <em>> 80.0%:</em> Severe capital strain; entering the margin call hazard zone.<br>  - <em>≥ 100.0%:</em> Collateral exhaustion; immediate broker RMS squareoff.<br><br>• <strong>Risk & Clearinghouse Action:</strong> Brokers issue automated RMS warning notifications at 70% and 80% utilization. At 100% utilization (or broker-specific 85–90% cutoffs), liquidation algorithms fire at market prices.`
   },
   "calc-tab-marginpct": {
-    title: "MCX Contract Total Margin Rate (%)",
-    body: `The exchange-stipulated minimum margin percentage applicable on each session, combining Initial SPAN Margin, Extreme Loss Margin (ELM), and dynamic Volatility/Pre-Expiry margins.`
+    title: "MCX CONTRACT TOTAL MARGIN RATE (%)",
+    body: `<code>Total Margin%(t) = Initial(SPAN)% + ELM(1.25%) + Tender% + Addl%</code><br>• <strong>Core Mechanism:</strong> The regulatory minimum margin percentage mandated by MCXCCL for carrying 1 lot. Driven by 3-sigma EWMA price volatility (subject to the 13.00% statutory floor) plus pre-expiry tender escalations (+5%/day inside 5 DTE).<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>13.00% – 18.00%:</em> Baseline calm volatility regime (Statutory floor active).<br>  - <em>18.00% – 30.00%:</em> Elevated commodity volatility regime.<br>  - <em>> 30.00%:</em> Crisis volatility or Tender Zone (DTE ≤ 5 days).<br><br>• <strong>Risk & Clearinghouse Action:</strong> MCX circulars update margin rates end-of-day. Sudden rate hikes instantly inflate Rupee Margin per lot, turning previously solvent accounts into sudden margin deficits.`
   },
   "calc-tab-shield": {
-    title: "Risk & Liquidation Shield Cushion (%)",
-    body: `Dynamic percentage safety cushion on each day: <code>Internal Margin % − Exchange Required Margin %</code>.<br><br>• <strong>0% Shield:</strong> Unencumbered free cash is exhausted; ledger balance equals required margin (not account wipeout).<br>• <strong>Liquidation:</strong> At ≤ 0%, broker RMS auto-squares off positions to protect remaining margin collateral.<br>• <strong>Buffer:</strong> Indicates the adverse percentage price swing the position can endure before forced liquidation.`
+    title: "RISK & LIQUIDATION SHIELD CUSHION (%)",
+    body: `<code>Shield%(t) = Internal Margin%(t) − Exchange Margin%(t) = [Ledger(t) ÷ Notional(t)] × 100% − TotalMargin%(t)</code><br>• <strong>Core Mechanism:</strong> Quantifies the exact percentage safety buffer separating your current portfolio state from broker auto-squareoff (RMS liquidation). Directly reflects the maximum adverse percentage price move your trade can absorb before forced closure.<br><br>• <strong>Critical Thresholds / Boundaries:</strong><br>  - <em>> 20.0%:</em> Robust safety cushion; can comfortably absorb multi-day adverse gap moves.<br>  - <em>5.0% – 20.0%:</em> Moderate safety buffer; sensitive to high-volatility spikes.<br>  - <em>0.0% – 5.0%:</em> Critical warning zone; broker liquidation imminent.<br>  - <em>≤ 0.0%:</em> Breached; Free Cash is zero, broker RMS forcefully liquidates open contracts.<br><br>• <strong>Risk & Clearinghouse Action:</strong> A 0% Shield does not mean account wipeout (your account still holds the exchange margin), but your broker forcefully squares off the position to protect that collateral from debit balance deficit.`
   },
   "snap-chg": {
     title: "Chg %",
