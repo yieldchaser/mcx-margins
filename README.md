@@ -19,13 +19,18 @@ The frontend features a premium, glassmorphic UI spanning 7 specialized tabs:
 - **Market Context:** At-a-glance KPIs (Front Close, Return, Volume Shock, OI Change, Liquidity Score) with semantic color-coding.
 - **Price vs Margin Confluence:** A trailing 60-day interactive chart overlaying front-month price action against margin requirements to spot immediate divergences.
 - **Stress & Regime Scoring:** Real-time composite indicators determining if the market is in a structural calm or high-stress, pre-hike regime.
-- **Trade Intelligence & Capital Calculator:** Interactive backtester supporting NG and NGM futures with multiple chart views (Equity, Daily, Drawdown, Util, Margin, Shield) featuring descriptive hover tooltips, fee modeling (STT, exchange, GST, brokerage), margin call detection, and shareable state via URL hash. Features preset horizons (Full/30D/10D/5D/≤30 DTE), custom lot sizing, and detailed performance metrics (ROI on margin, max drawdown, best/worst days).
-- **Risk & Liquidation Shield:** Dynamic card displaying real-time safety metrics—Entry Shield (adverse percentage to liquidation), Worst-case Shield (minimum cushion hit during trade window), and Exit Shield—with dedicated tooltip explanations for RMS square-off thresholds.
+- **Current Margin Snapshot & Intraday Panic Corridor:** Multi-contract table showing settlement prices, intraday flow state, DTE, initial/ELM/tender margin breakdowns, and dynamic panic trigger corridors.
 
 ### 2. Term Structure
 - **Historical Forward Curves:** Visualizes the evolution of the margin and price curves. Overlays today's curve against the 1-week, 1-month, and 1-year historical curves to measure structural shifts in maturity expectations.
 
 ### 3. History
+- **Trade Intelligence & Capital Calculator:** Institutional backtester supporting NG and NGM futures with a 12-chart visual analytics console arranged in a 2-row matrix:
+  - *Row 1 (Performance & Returns):* **Equity** (M2M cumulative trading P/L), **Daily ₹** (single-day fluctuations), **DD ₹** (peak-to-trough cash drawdown), **DD %** (percentage drawdown from peak NAV), **Daily %** (session return on available ledger capital), **ROI %** (cumulative return on initial deposit).
+  - *Row 2 (Capital, Margin & Solvency Risk):* **Ledger ₹** (total account capital balance $C_t$), **Free Cash** (unencumbered cushion $F_t = C_t - M_t$), **Margin ₹** (exchange required overnight margin $M_t$), **Util %** (margin utilization ratio $M_t / C_t \times 100\%$), **Rate %** (MCX contract total margin rate), **Shield %** (risk & liquidation safety cushion).
+  - *Dynamic Margin Call Shading:* Automatic visual red gradient highlighting sessions where required margin exceeds available capital.
+  - *Solvency Cushion Mechanics:* Explains exact distance to broker RMS auto-squareoff; clarifies that **0% Shield does not mean account wipeout** ($C_t = M_t > 0$), but rather the total exhaustion of unencumbered buffer above exchange margin.
+  - *Institutional Modeling:* M2M live ledger compounding vs conservative stress-testing, custom lot sizing, horizon filters (Full/30D/10D/5D/≤30 DTE), all-in Indian statutory fee modeling (STT, Exchange, SEBI, Brokerage, GST), and shareable URL state.
 - **Deep Time-Series Analysis:** A dedicated historical engine with an interactive range slider (1M, 3M, 6M, 1Y, 3Y, ALL) plotting absolute Margins, Realized Volatility over time, Margin Component Decomposition, and Market Flow dynamics.
 - **10-Year Multi-Regime Macro Simulator:** An institutional-grade compounding engine that models long-term portfolio growth under multi-regime risk conditions:
   - *Cushion Sizing Firewall:* Dynamically calculates max safe leverage ($L_{max}$) and liquid cash shields based on base margin and catastrophic gap-risk buffers to prevent ruin.
