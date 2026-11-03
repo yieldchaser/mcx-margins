@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
-  "as_of": "2026-10-30",
-  "short_latency_risk_score": "HIGH",
+  "as_of": "2026-11-02",
+  "short_latency_risk_score": "NORMAL",
   "signals": [
     {
       "id": "price_momentum",
@@ -12,67 +12,67 @@
       "direction": "UP",
       "lookback": "5 trading days",
       "features": {
-        "return_1d_pct": -1.668,
-        "return_5d_pct": 9.786
+        "return_1d_pct": -1.588,
+        "return_5d_pct": 9.783
       },
-      "reason": "NATURALGAS front-month price is up over 5 sessions with 9.79% return."
+      "reason": "NATURALGAS front-month price is up over 5 sessions with 9.78% return."
     },
     {
       "id": "volume_shock",
       "symbol": "NATURALGAS",
       "label": "Volume Normal",
-      "score": 4,
+      "score": 24,
       "severity": "LOW",
       "direction": "UP",
       "lookback": "20 trading days",
       "features": {
-        "volume_lots": 125581,
-        "volume_z_20d": 0.146
+        "volume_lots": 152110,
+        "volume_z_20d": 0.816
       },
-      "reason": "Latest volume is 0.15 standard deviations from its 20-day baseline."
+      "reason": "Latest volume is 0.82 standard deviations from its 20-day baseline."
     },
     {
       "id": "open_interest_shift",
       "symbol": "NATURALGAS",
       "label": "Open Interest Shift",
-      "score": 24,
+      "score": 15,
       "severity": "LOW",
-      "direction": "CONTRACTING",
+      "direction": "EXPANDING",
       "lookback": "1 trading day",
       "features": {
-        "open_interest": 56538,
-        "oi_change_pct": -4.041
+        "open_interest": 57905,
+        "oi_change_pct": 2.418
       },
-      "reason": "Open interest is contracting by -4.04% versus the prior front-month observation."
+      "reason": "Open interest is expanding by 2.42% versus the prior front-month observation."
     },
     {
       "id": "liquidity_stress",
       "symbol": "NATURALGAS",
       "label": "Liquidity Stress",
-      "score": 17,
+      "score": 7,
       "severity": "LOW",
       "direction": "NORMAL",
       "lookback": "Trailing 252 observations",
       "features": {
-        "liquidity_score": 82.9,
-        "volume_lots": 125581,
-        "open_interest": 56538
+        "liquidity_score": 93.1,
+        "volume_lots": 152110,
+        "open_interest": 57905
       },
-      "reason": "Underlying liquidity score is 82.9/100 (Stress score: 17.099999999999994/100); lower liquidity indicates weaker volume and open-interest support."
+      "reason": "Underlying liquidity score is 93.1/100 (Stress score: 6.900000000000006/100); lower liquidity indicates weaker volume and open-interest support."
     },
     {
       "id": "margin_market_divergence",
       "symbol": "NATURALGAS",
       "label": "Margin-Market Divergence",
-      "score": 65,
-      "severity": "MEDIUM",
-      "direction": "DIVERGING",
+      "score": 44,
+      "severity": "LOW",
+      "direction": "CONFIRMED",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": 9.786,
-        "margin_change_5d_pct": -4.33
+        "price_return_5d_pct": 9.783,
+        "margin_change_5d_pct": -6.13
       },
-      "reason": "Price has moved materially more than initial margin over the same window."
+      "reason": "Margin and market movement are broadly aligned."
     },
     {
       "id": "price_momentum",
@@ -83,8 +83,8 @@
       "direction": "UP",
       "lookback": "5 trading days",
       "features": {
-        "return_1d_pct": -1.667,
-        "return_5d_pct": 9.782
+        "return_1d_pct": -1.587,
+        "return_5d_pct": 9.779
       },
       "reason": "NATGASMINI front-month price is up over 5 sessions with 9.78% return."
     },
@@ -92,58 +92,58 @@
       "id": "volume_shock",
       "symbol": "NATGASMINI",
       "label": "Volume Normal",
-      "score": 20,
+      "score": 24,
       "severity": "LOW",
       "direction": "UP",
       "lookback": "20 trading days",
       "features": {
-        "volume_lots": 233574,
-        "volume_z_20d": 0.663
+        "volume_lots": 246959,
+        "volume_z_20d": 0.81
       },
-      "reason": "Latest volume is 0.66 standard deviations from its 20-day baseline."
+      "reason": "Latest volume is 0.81 standard deviations from its 20-day baseline."
     },
     {
       "id": "open_interest_shift",
       "symbol": "NATGASMINI",
       "label": "Open Interest Shift",
-      "score": 33,
+      "score": 37,
       "severity": "LOW",
-      "direction": "CONTRACTING",
+      "direction": "EXPANDING",
       "lookback": "1 trading day",
       "features": {
-        "open_interest": 73160,
-        "oi_change_pct": -5.491
+        "open_interest": 77685,
+        "oi_change_pct": 6.185
       },
-      "reason": "Open interest is contracting by -5.49% versus the prior front-month observation."
+      "reason": "Open interest is expanding by 6.18% versus the prior front-month observation."
     },
     {
       "id": "liquidity_stress",
       "symbol": "NATGASMINI",
       "label": "Liquidity Stress",
-      "score": 6,
+      "score": 3,
       "severity": "LOW",
       "direction": "NORMAL",
       "lookback": "Trailing 252 observations",
       "features": {
-        "liquidity_score": 94.2,
-        "volume_lots": 233574,
-        "open_interest": 73160
+        "liquidity_score": 97.2,
+        "volume_lots": 246959,
+        "open_interest": 77685
       },
-      "reason": "Underlying liquidity score is 94.2/100 (Stress score: 5.799999999999997/100); lower liquidity indicates weaker volume and open-interest support."
+      "reason": "Underlying liquidity score is 97.2/100 (Stress score: 2.799999999999997/100); lower liquidity indicates weaker volume and open-interest support."
     },
     {
       "id": "margin_market_divergence",
       "symbol": "NATGASMINI",
       "label": "Margin-Market Divergence",
-      "score": 65,
-      "severity": "MEDIUM",
-      "direction": "DIVERGING",
+      "score": 43,
+      "severity": "LOW",
+      "direction": "CONFIRMED",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": 9.782,
-        "margin_change_5d_pct": -4.4
+        "price_return_5d_pct": 9.779,
+        "margin_change_5d_pct": -6.18
       },
-      "reason": "Price has moved materially more than initial margin over the same window."
+      "reason": "Margin and market movement are broadly aligned."
     }
   ]
 }

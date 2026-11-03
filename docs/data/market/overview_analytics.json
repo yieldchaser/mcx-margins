@@ -1,24 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-11-03T00:54:35Z",
+  "generated_at": "2026-11-03T01:19:05Z",
   "symbols": {
     "NATURALGAS": {
       "flow_recent": [
-        {
-          "date": "2025-05-30",
-          "expiry": "25JUN2025",
-          "close": 296.4,
-          "dte": 26,
-          "volume_lots": 85394,
-          "open_interest": 14214,
-          "volume_z_20d": -0.25,
-          "oi_flow_state": "short_build",
-          "return_pct": -1.0,
-          "return_1d_pct": -1.0,
-          "return_5d_pct": 5.37,
-          "rolling_realized_vol_20d": 55.82,
-          "oi_change_pct": 3.52
-        },
         {
           "date": "2025-06-02",
           "expiry": "25JUN2025",
@@ -5478,15 +5463,24 @@
           "return_5d_pct": 9.79,
           "rolling_realized_vol_20d": 49.54,
           "oi_change_pct": -4.04
+        },
+        {
+          "date": "2026-11-02",
+          "expiry": "24NOV2026",
+          "close": 272.7,
+          "dte": 22,
+          "volume_lots": 152110,
+          "open_interest": 57905,
+          "volume_z_20d": 0.82,
+          "oi_flow_state": "short_build",
+          "return_pct": -1.59,
+          "return_1d_pct": -1.59,
+          "return_5d_pct": 9.78,
+          "rolling_realized_vol_20d": 47.98,
+          "oi_change_pct": 2.42
         }
       ],
       "curve_recent": [
-        {
-          "date": "2026-02-19",
-          "front_second_spread": -4.8,
-          "roll_yield_pct": 1.74,
-          "liquidity_concentration": 63.5
-        },
         {
           "date": "2026-02-20",
           "front_second_spread": -5.0,
@@ -6560,19 +6554,15 @@
           "front_second_spread": 46.1,
           "roll_yield_pct": -16.64,
           "liquidity_concentration": 86.2
+        },
+        {
+          "date": "2026-11-02",
+          "front_second_spread": 47.9,
+          "roll_yield_pct": -17.57,
+          "liquidity_concentration": 85.8
         }
       ],
       "joined_recent": [
-        {
-          "date": "2026-02-19",
-          "matched_expiry": "24FEB2026",
-          "initial_margin_pct": 46.1,
-          "rolling_realized_vol_20d": 151.9,
-          "funding_friction_score": 94.5,
-          "margin_change_1d": -1.39,
-          "return_1d_pct": 2.71,
-          "oi_change_pct": -18.82
-        },
         {
           "date": "2026-02-20",
           "matched_expiry": "24FEB2026",
@@ -8362,16 +8352,19 @@
           "margin_change_1d": 0.96,
           "return_1d_pct": -1.67,
           "oi_change_pct": -4.04
+        },
+        {
+          "date": "2026-11-02",
+          "matched_expiry": "24NOV2026",
+          "initial_margin_pct": 14.26,
+          "rolling_realized_vol_20d": 47.98,
+          "funding_friction_score": 44.7,
+          "margin_change_1d": -0.22,
+          "return_1d_pct": -1.59,
+          "oi_change_pct": 2.42
         }
       ],
       "regime_recent": [
-        {
-          "date": "2025-05-30",
-          "expiry": "25JUN2025",
-          "rolling_realized_vol_20d": 55.82,
-          "funding_friction_score": 76.9,
-          "vol_regime": "ELEVATED"
-        },
         {
           "date": "2025-06-02",
           "expiry": "25JUN2025",
@@ -10919,6 +10912,13 @@
           "rolling_realized_vol_20d": 49.54,
           "funding_friction_score": 48.7,
           "vol_regime": "ELEVATED"
+        },
+        {
+          "date": "2026-11-02",
+          "expiry": "24NOV2026",
+          "rolling_realized_vol_20d": 47.98,
+          "funding_friction_score": 44.7,
+          "vol_regime": "ELEVATED"
         }
       ],
       "event_windows": [
@@ -11402,7 +11402,7 @@
         },
         "ELEVATED": {
           "CALM": 1,
-          "ELEVATED": 1046,
+          "ELEVATED": 1047,
           "STRESS": 58,
           "CRISIS": 0
         },
@@ -11419,14 +11419,14 @@
           "CRISIS": 0
         }
       },
-      "regime_total_obs": 4280,
+      "regime_total_obs": 4281,
       "summary": {
-        "aligned_obs": 4280,
+        "aligned_obs": 4281,
         "lag_correlations": {
           "lag_0": {
             "price_return": 0.0478,
             "realized_vol_20d": 0.0122,
-            "volume_z_20d": 0.1104,
+            "volume_z_20d": 0.1103,
             "oi_change_pct": -0.1886
           },
           "lag_1": {
@@ -11446,21 +11446,6 @@
     },
     "NATGASMINI": {
       "flow_recent": [
-        {
-          "date": "2025-05-30",
-          "expiry": "25JUN2025",
-          "close": 296.6,
-          "dte": 26,
-          "volume_lots": 83019,
-          "open_interest": 15689,
-          "volume_z_20d": -0.08,
-          "oi_flow_state": "short_build",
-          "return_pct": -0.9,
-          "return_1d_pct": -0.9,
-          "return_5d_pct": 5.44,
-          "rolling_realized_vol_20d": 55.5,
-          "oi_change_pct": 2.45
-        },
         {
           "date": "2025-06-02",
           "expiry": "25JUN2025",
@@ -16920,15 +16905,24 @@
           "return_5d_pct": 9.78,
           "rolling_realized_vol_20d": 49.39,
           "oi_change_pct": -5.49
+        },
+        {
+          "date": "2026-11-02",
+          "expiry": "24NOV2026",
+          "close": 272.8,
+          "dte": 22,
+          "volume_lots": 246959,
+          "open_interest": 77685,
+          "volume_z_20d": 0.81,
+          "oi_flow_state": "short_build",
+          "return_pct": -1.59,
+          "return_1d_pct": -1.59,
+          "return_5d_pct": 9.78,
+          "rolling_realized_vol_20d": 47.76,
+          "oi_change_pct": 6.18
         }
       ],
       "curve_recent": [
-        {
-          "date": "2026-02-19",
-          "front_second_spread": -4.9,
-          "roll_yield_pct": 1.77,
-          "liquidity_concentration": 58.9
-        },
         {
           "date": "2026-02-20",
           "front_second_spread": -5.5,
@@ -18002,19 +17996,15 @@
           "front_second_spread": 46.1,
           "roll_yield_pct": -16.63,
           "liquidity_concentration": 83.8
+        },
+        {
+          "date": "2026-11-02",
+          "front_second_spread": 47.7,
+          "roll_yield_pct": -17.48,
+          "liquidity_concentration": 84.0
         }
       ],
       "joined_recent": [
-        {
-          "date": "2026-02-19",
-          "matched_expiry": "24FEB2026",
-          "initial_margin_pct": 45.99,
-          "rolling_realized_vol_20d": 151.9,
-          "funding_friction_score": 90.3,
-          "margin_change_1d": -1.39,
-          "return_1d_pct": 2.6,
-          "oi_change_pct": -18.87
-        },
         {
           "date": "2026-02-20",
           "matched_expiry": "24FEB2026",
@@ -19804,16 +19794,19 @@
           "margin_change_1d": 0.98,
           "return_1d_pct": -1.67,
           "oi_change_pct": -5.49
+        },
+        {
+          "date": "2026-11-02",
+          "matched_expiry": "24NOV2026",
+          "initial_margin_pct": 14.1,
+          "rolling_realized_vol_20d": 47.76,
+          "funding_friction_score": 13.0,
+          "margin_change_1d": -0.2,
+          "return_1d_pct": -1.59,
+          "oi_change_pct": 6.18
         }
       ],
       "regime_recent": [
-        {
-          "date": "2025-05-30",
-          "expiry": "25JUN2025",
-          "rolling_realized_vol_20d": 55.5,
-          "funding_friction_score": 56.8,
-          "vol_regime": "NORMAL"
-        },
         {
           "date": "2025-06-02",
           "expiry": "25JUN2025",
@@ -22361,6 +22354,13 @@
           "rolling_realized_vol_20d": 49.39,
           "funding_friction_score": 15.1,
           "vol_regime": "NORMAL"
+        },
+        {
+          "date": "2026-11-02",
+          "expiry": "24NOV2026",
+          "rolling_realized_vol_20d": 47.76,
+          "funding_friction_score": 13.0,
+          "vol_regime": "NORMAL"
         }
       ],
       "event_windows": [
@@ -22852,14 +22852,14 @@
           "CRISIS": 0
         }
       },
-      "regime_total_obs": 933,
+      "regime_total_obs": 934,
       "summary": {
-        "aligned_obs": 933,
+        "aligned_obs": 934,
         "lag_correlations": {
           "lag_0": {
             "price_return": 0.1295,
             "realized_vol_20d": 0.0155,
-            "volume_z_20d": 0.0176,
+            "volume_z_20d": 0.0175,
             "oi_change_pct": -0.2505
           },
           "lag_1": {
