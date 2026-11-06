@@ -2,10 +2,10 @@
   "slope": 7.5893,
   "intercept": -4.8445,
   "today": {
-    "actual": 13.46,
-    "fair_margin": 11.38,
-    "policy_buffer": 2.08,
-    "buffer_percentile": 89
+    "actual": 13.12,
+    "fair_margin": 10.985,
+    "policy_buffer": 2.135,
+    "buffer_percentile": 91
   },
   "timeseries": [
     {
@@ -25771,6 +25771,12 @@
       "actual": 13.46,
       "fair_margin": 11.38,
       "policy_buffer": 2.08
+    },
+    {
+      "date": "2026-11-06",
+      "actual": 13.12,
+      "fair_margin": 10.985,
+      "policy_buffer": 2.135
     }
   ]
 }
