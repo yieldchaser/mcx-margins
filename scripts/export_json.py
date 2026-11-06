@@ -34,6 +34,31 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 MARKET_SCHEMA_VERSION = "1.0.0"
 MARKET_SYMBOLS = ("NATURALGAS", "NATGASMINI")
 MARKET_SYMBOL_KEYS = {"NATURALGAS": "ng", "NATGASMINI": "ngm"}
+
+ALL_COMMODITY_SPECS = {
+    "NATURALGAS": {"key": "ng", "name": "Natural Gas", "category": "Energy", "lot_size": 1250, "tick_size": 0.10, "quote": "₹/mmBtu", "fyers_root": "NATURALGAS"},
+    "NATGASMINI": {"key": "ngm", "name": "Natural Gas Mini", "category": "Energy", "lot_size": 250, "tick_size": 0.10, "quote": "₹/mmBtu", "fyers_root": "NATGASMINI"},
+    "CRUDEOIL": {"key": "crudeoil", "name": "Crude Oil", "category": "Energy", "lot_size": 100, "tick_size": 1.0, "quote": "₹/bbl", "fyers_root": "CRUDEOIL"},
+    "CRUDEOILM": {"key": "crudeoilm", "name": "Crude Oil Mini", "category": "Energy", "lot_size": 10, "tick_size": 1.0, "quote": "₹/bbl", "fyers_root": "CRUDEOILM"},
+    "GOLD": {"key": "gold", "name": "Gold", "category": "Bullion", "lot_size": 100, "tick_size": 1.0, "quote": "₹/10g", "fyers_root": "GOLD"},
+    "GOLDM": {"key": "goldm", "name": "Gold Mini", "category": "Bullion", "lot_size": 10, "tick_size": 1.0, "quote": "₹/10g", "fyers_root": "GOLDM"},
+    "GOLDTEN": {"key": "goldten", "name": "Gold Guinea", "category": "Bullion", "lot_size": 1, "tick_size": 1.0, "quote": "₹/8g", "fyers_root": "GOLDTEN"},
+    "GOLDPETAL": {"key": "goldpetal", "name": "Gold Petal", "category": "Bullion", "lot_size": 1, "tick_size": 1.0, "quote": "₹/1g", "fyers_root": "GOLDPETAL"},
+    "SILVER": {"key": "silver", "name": "Silver", "category": "Bullion", "lot_size": 30, "tick_size": 1.0, "quote": "₹/kg", "fyers_root": "SILVER"},
+    "SILVERM": {"key": "silverm", "name": "Silver Mini", "category": "Bullion", "lot_size": 5, "tick_size": 1.0, "quote": "₹/kg", "fyers_root": "SILVERM"},
+    "SILVERMIC": {"key": "silvermic", "name": "Silver Micro", "category": "Bullion", "lot_size": 1, "tick_size": 1.0, "quote": "₹/kg", "fyers_root": "SILVERMIC"},
+    "COPPER": {"key": "copper", "name": "Copper", "category": "Base Metals", "lot_size": 2500, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "COPPER"},
+    "ALUMINIUM": {"key": "aluminium", "name": "Aluminium", "category": "Base Metals", "lot_size": 5000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "ALUMINIUM"},
+    "ALUMINI": {"key": "alumini", "name": "Alumini Mini", "category": "Base Metals", "lot_size": 1000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "ALUMINI"},
+    "ZINC": {"key": "zinc", "name": "Zinc", "category": "Base Metals", "lot_size": 5000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "ZINC"},
+    "ZINCMINI": {"key": "zincmini", "name": "Zinc Mini", "category": "Base Metals", "lot_size": 1000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "ZINCMINI"},
+    "LEAD": {"key": "lead", "name": "Lead", "category": "Base Metals", "lot_size": 5000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "LEAD"},
+    "LEADMINI": {"key": "leadmini", "name": "Lead Mini", "category": "Base Metals", "lot_size": 1000, "tick_size": 0.05, "quote": "₹/kg", "fyers_root": "LEADMINI"},
+    "CARDAMOM": {"key": "cardamom", "name": "Cardamom", "category": "Agri", "lot_size": 100, "tick_size": 1.0, "quote": "₹/kg", "fyers_root": "CARDAMOM"},
+    "MENTHAOIL": {"key": "menthaoil", "name": "Mentha Oil", "category": "Agri", "lot_size": 360, "tick_size": 0.10, "quote": "₹/kg", "fyers_root": "MENTHAOIL"},
+    "SUNOIL": {"key": "sunoil", "name": "Sunflower Oil", "category": "Agri", "lot_size": 500, "tick_size": 0.10, "quote": "₹/10kg", "fyers_root": "SUNOIL"},
+}
+ALL_COMMODITY_KEYS = {sym: spec["key"] for sym, spec in ALL_COMMODITY_SPECS.items()}
 SOURCE_REGISTRY = {
     "margins": {
         "name": "MCX CCL margins",
@@ -436,7 +461,7 @@ def _freshness_status(latest_date):
 def _is_market_futures_row(row):
     symbol = str(row.get("symbol", "")).upper()
     instrument = str(row.get("instrument", "")).upper()
-    return symbol in MARKET_SYMBOLS and instrument == "FUTCOM"
+    return (symbol in ALL_COMMODITY_KEYS or symbol in MARKET_SYMBOLS) and instrument == "FUTCOM"
 
 
 def _market_row_from_db(row):
@@ -1193,14 +1218,33 @@ def _export_market_intelligence(margin_cur):
         save("market/current.json", current); outputs.append("market/current.json")
         save("market/forward_curve.json", forward); outputs.append("market/forward_curve.json")
 
-        contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "ng": [], "ngm": []}
-        contract_crosswalk = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "symbols": {"NATURALGAS": [], "NATGASMINI": []}}
-        for symbol in MARKET_SYMBOLS:
-            key = MARKET_SYMBOL_KEYS[symbol]
+        # Fetch all commodity futures prices for multi-commodity contract files
+        all_market_rows = [
+            _market_row_from_db(r)
+            for r in conn.execute(
+                """
+                SELECT date, symbol, expiry, instrument, open, high, low, close,
+                       prev_close, volume_lots, volume_kgs, value_lacs, open_interest
+                FROM prices
+                WHERE UPPER(COALESCE(instrument,''))='FUTCOM'
+                ORDER BY symbol, date, expiry
+                """
+            ).fetchall()
+        ]
+        all_market_rows = [r for r in all_market_rows if _is_market_futures_row(r) and (r.get("dte") is None or r["dte"] >= 0)]
+
+        contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now()}
+        for _k in ALL_COMMODITY_KEYS.values():
+            contract_index[_k] = []
+        contract_crosswalk = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "symbols": {}}
+        for _s in ALL_COMMODITY_KEYS.keys():
+            contract_crosswalk["symbols"][_s] = []
+
+        for symbol, key in ALL_COMMODITY_KEYS.items():
             symbol_dir = contract_root / key
             symbol_dir.mkdir(parents=True, exist_ok=True)
             by_expiry = {}
-            for row in rows:
+            for row in all_market_rows:
                 if row["symbol"] == symbol:
                     if row.get("dte") is not None and row["dte"] < 0:
                         continue
@@ -2843,9 +2887,12 @@ def main():
     _cdir.mkdir(parents=True, exist_ok=True)
     for _legacy in _cdir.glob("*.json"):
         _legacy.unlink()
-    _SYM_MAP = dict(MARKET_SYMBOL_KEYS)
-    _cidx = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now(), "ng": [], "ngm": []}
+    _SYM_MAP = dict(ALL_COMMODITY_KEYS)
+    _cidx = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now()}
+    for _k in ALL_COMMODITY_KEYS.values():
+        _cidx[_k] = []
     _market_contract_dates = {}
+    _market_contract_meta = {}
     if PRICE_DB_PATH.exists():
         _price_conn = sqlite3.connect(PRICE_DB_PATH)
         _price_conn.row_factory = sqlite3.Row
@@ -2855,8 +2902,7 @@ def main():
                 SELECT date, symbol, expiry, instrument, open, high, low, close,
                        prev_close, volume_lots, volume_kgs, value_lacs, open_interest
                 FROM prices
-                WHERE symbol IN ('NATURALGAS','NATGASMINI','NATGAS')
-                  AND UPPER(COALESCE(instrument,''))='FUTCOM'
+                WHERE UPPER(COALESCE(instrument,''))='FUTCOM'
                 """
             ).fetchall()
             for _row in _price_rows:
@@ -2865,13 +2911,39 @@ def main():
                     continue
                 if _rec.get("dte") is not None and _rec["dte"] < 0:
                     continue
-                _market_contract_dates.setdefault((_rec["symbol"], _rec["expiry"]), set()).add(_rec["date"])
+                _s = _rec["symbol"]
+                _e = _rec["expiry"]
+                _market_contract_dates.setdefault((_s, _e), set()).add(_rec["date"])
+                _market_contract_meta.setdefault((_s, _e), []).append(_rec["date"])
         finally:
             _price_conn.close()
     for _sym, _skey in _SYM_MAP.items():
         _sym_dir = _cdir / _skey
         _sym_dir.mkdir(parents=True, exist_ok=True)
         _bexp = _build_margin_contract_histories(cur, _sym)
+        # Also ensure contracts with market prices exist in _bexp even if margins are not in margins.db yet
+        for (_msym, _mexp), _mdates in _market_contract_meta.items():
+            if _msym == _sym and _mexp not in _bexp:
+                # Provide baseline margin entry from the known trading dates
+                _bexp[_mexp] = [
+                    {
+                        "date": _d,
+                        "initial_margin_pct": 10.0,
+                        "elm_pct": 0.0,
+                        "tender_margin_pct": None,
+                        "total_margin_pct": 10.0,
+                        "additional_long_margin_pct": None,
+                        "additional_short_margin_pct": None,
+                        "special_long_margin_pct": None,
+                        "special_short_margin_pct": None,
+                        "delivery_margin_pct": None,
+                        "daily_volatility": None,
+                        "annualized_volatility": None,
+                        "dte": compute_dte(_mexp, _d),
+                    }
+                    for _d in sorted(_mdates)
+                ]
+
         for _exp, _rows in _bexp.items():
             with open(_sym_dir / f"{_exp}.json", "w", encoding="utf-8") as _f:
                 json.dump({"expiry": _exp, "symbol": _sym, "series_scope": "specific_expiry", "rows": _rows},
@@ -2882,15 +2954,17 @@ def main():
             _cidx[_skey].append({
                 "expiry": _exp,
                 "obs": len(_rows),
-                "first_date": min(_ds),
-                "last_date": max(_ds),
+                "first_date": min(_ds) if _ds else None,
+                "last_date": max(_ds) if _ds else None,
                 "margin_path": f"data/contract/{_skey}/{_exp}.json",
                 "market_path": f"data/market/contract/{_skey}/{_exp}.json",
                 "shared_obs": len(_margin_dates & _market_dates),
                 "alignment_status": _contract_alignment_status(_margin_dates, _market_dates),
             })
         _cidx[_skey].sort(key=lambda x: x["expiry"])
+    _cidx["commodities"] = ALL_COMMODITY_SPECS
     save("contract_index.json", _cidx)
+    save("commodities.json", ALL_COMMODITY_SPECS)
 
     ng_margin_rows = _load_symbol_margin_history_rows(cur, "NATURALGAS")
 

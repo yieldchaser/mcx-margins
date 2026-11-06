@@ -1,27 +1,27 @@
 {
-  "rolling_sigma": 1.7321,
+  "rolling_sigma": 1.7575,
   "window_days": 30,
   "sigma_by_dte_bucket": {
-    "0-30": 1.1088,
+    "0-30": 1.1211,
     "31-90": 4.0785,
-    "91+": 1.7321
+    "91+": 1.7575
   },
   "bands": [
     {
       "expiry": "24NOV2026",
-      "dte": 18,
+      "dte": 19,
       "current": 13.46,
       "predicted": 13.46,
-      "sigma_1": 1.1088,
-      "sigma_2": 2.2176,
-      "upper_1": 14.569,
+      "sigma_1": 1.1211,
+      "sigma_2": 2.2422,
+      "upper_1": 14.581,
       "lower_1": 13.0,
-      "upper_2": 15.678,
+      "upper_2": 15.702,
       "lower_2": 13.0
     },
     {
       "expiry": "28DEC2026",
-      "dte": 52,
+      "dte": 53,
       "current": 13.0,
       "predicted": 13.0,
       "sigma_1": 4.0785,
@@ -33,7 +33,7 @@
     },
     {
       "expiry": "25JAN2027",
-      "dte": 80,
+      "dte": 81,
       "current": 13.0,
       "predicted": 13.0,
       "sigma_1": 4.0785,
@@ -45,39 +45,39 @@
     },
     {
       "expiry": "23FEB2027",
-      "dte": 109,
+      "dte": 110,
       "current": 14.49,
       "predicted": 14.043,
-      "sigma_1": 1.7321,
-      "sigma_2": 3.4642,
-      "upper_1": 15.775,
+      "sigma_1": 1.7575,
+      "sigma_2": 3.515,
+      "upper_1": 15.8,
       "lower_1": 13.0,
-      "upper_2": 17.507,
+      "upper_2": 17.558,
       "lower_2": 13.0
     },
     {
       "expiry": "25MAR2027",
-      "dte": 139,
+      "dte": 140,
       "current": 17.57,
       "predicted": 17.007,
-      "sigma_1": 1.7321,
-      "sigma_2": 3.4642,
-      "upper_1": 18.739,
-      "lower_1": 15.275,
-      "upper_2": 20.471,
-      "lower_2": 13.543
+      "sigma_1": 1.7575,
+      "sigma_2": 3.515,
+      "upper_1": 18.764,
+      "lower_1": 15.25,
+      "upper_2": 20.522,
+      "lower_2": 13.492
     },
     {
       "expiry": "27APR2027",
-      "dte": 172,
+      "dte": 173,
       "current": 18.22,
       "predicted": 17.61,
-      "sigma_1": 1.7321,
-      "sigma_2": 3.4642,
-      "upper_1": 19.342,
-      "lower_1": 15.878,
-      "upper_2": 21.074,
-      "lower_2": 14.146
+      "sigma_1": 1.7575,
+      "sigma_2": 3.515,
+      "upper_1": 19.367,
+      "lower_1": 15.853,
+      "upper_2": 21.125,
+      "lower_2": 14.095
     }
   ]
 }

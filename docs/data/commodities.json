@@ -1,0 +1,191 @@
+{
+  "NATURALGAS": {
+    "key": "ng",
+    "name": "Natural Gas",
+    "category": "Energy",
+    "lot_size": 1250,
+    "tick_size": 0.1,
+    "quote": "\u20b9/mmBtu",
+    "fyers_root": "NATURALGAS"
+  },
+  "NATGASMINI": {
+    "key": "ngm",
+    "name": "Natural Gas Mini",
+    "category": "Energy",
+    "lot_size": 250,
+    "tick_size": 0.1,
+    "quote": "\u20b9/mmBtu",
+    "fyers_root": "NATGASMINI"
+  },
+  "CRUDEOIL": {
+    "key": "crudeoil",
+    "name": "Crude Oil",
+    "category": "Energy",
+    "lot_size": 100,
+    "tick_size": 1.0,
+    "quote": "\u20b9/bbl",
+    "fyers_root": "CRUDEOIL"
+  },
+  "CRUDEOILM": {
+    "key": "crudeoilm",
+    "name": "Crude Oil Mini",
+    "category": "Energy",
+    "lot_size": 10,
+    "tick_size": 1.0,
+    "quote": "\u20b9/bbl",
+    "fyers_root": "CRUDEOILM"
+  },
+  "GOLD": {
+    "key": "gold",
+    "name": "Gold",
+    "category": "Bullion",
+    "lot_size": 100,
+    "tick_size": 1.0,
+    "quote": "\u20b9/10g",
+    "fyers_root": "GOLD"
+  },
+  "GOLDM": {
+    "key": "goldm",
+    "name": "Gold Mini",
+    "category": "Bullion",
+    "lot_size": 10,
+    "tick_size": 1.0,
+    "quote": "\u20b9/10g",
+    "fyers_root": "GOLDM"
+  },
+  "GOLDTEN": {
+    "key": "goldten",
+    "name": "Gold Guinea",
+    "category": "Bullion",
+    "lot_size": 1,
+    "tick_size": 1.0,
+    "quote": "\u20b9/8g",
+    "fyers_root": "GOLDTEN"
+  },
+  "GOLDPETAL": {
+    "key": "goldpetal",
+    "name": "Gold Petal",
+    "category": "Bullion",
+    "lot_size": 1,
+    "tick_size": 1.0,
+    "quote": "\u20b9/1g",
+    "fyers_root": "GOLDPETAL"
+  },
+  "SILVER": {
+    "key": "silver",
+    "name": "Silver",
+    "category": "Bullion",
+    "lot_size": 30,
+    "tick_size": 1.0,
+    "quote": "\u20b9/kg",
+    "fyers_root": "SILVER"
+  },
+  "SILVERM": {
+    "key": "silverm",
+    "name": "Silver Mini",
+    "category": "Bullion",
+    "lot_size": 5,
+    "tick_size": 1.0,
+    "quote": "\u20b9/kg",
+    "fyers_root": "SILVERM"
+  },
+  "SILVERMIC": {
+    "key": "silvermic",
+    "name": "Silver Micro",
+    "category": "Bullion",
+    "lot_size": 1,
+    "tick_size": 1.0,
+    "quote": "\u20b9/kg",
+    "fyers_root": "SILVERMIC"
+  },
+  "COPPER": {
+    "key": "copper",
+    "name": "Copper",
+    "category": "Base Metals",
+    "lot_size": 2500,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "COPPER"
+  },
+  "ALUMINIUM": {
+    "key": "aluminium",
+    "name": "Aluminium",
+    "category": "Base Metals",
+    "lot_size": 5000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "ALUMINIUM"
+  },
+  "ALUMINI": {
+    "key": "alumini",
+    "name": "Alumini Mini",
+    "category": "Base Metals",
+    "lot_size": 1000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "ALUMINI"
+  },
+  "ZINC": {
+    "key": "zinc",
+    "name": "Zinc",
+    "category": "Base Metals",
+    "lot_size": 5000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "ZINC"
+  },
+  "ZINCMINI": {
+    "key": "zincmini",
+    "name": "Zinc Mini",
+    "category": "Base Metals",
+    "lot_size": 1000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "ZINCMINI"
+  },
+  "LEAD": {
+    "key": "lead",
+    "name": "Lead",
+    "category": "Base Metals",
+    "lot_size": 5000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "LEAD"
+  },
+  "LEADMINI": {
+    "key": "leadmini",
+    "name": "Lead Mini",
+    "category": "Base Metals",
+    "lot_size": 1000,
+    "tick_size": 0.05,
+    "quote": "\u20b9/kg",
+    "fyers_root": "LEADMINI"
+  },
+  "CARDAMOM": {
+    "key": "cardamom",
+    "name": "Cardamom",
+    "category": "Agri",
+    "lot_size": 100,
+    "tick_size": 1.0,
+    "quote": "\u20b9/kg",
+    "fyers_root": "CARDAMOM"
+  },
+  "MENTHAOIL": {
+    "key": "menthaoil",
+    "name": "Mentha Oil",
+    "category": "Agri",
+    "lot_size": 360,
+    "tick_size": 0.1,
+    "quote": "\u20b9/kg",
+    "fyers_root": "MENTHAOIL"
+  },
+  "SUNOIL": {
+    "key": "sunoil",
+    "name": "Sunflower Oil",
+    "category": "Agri",
+    "lot_size": 500,
+    "tick_size": 0.1,
+    "quote": "\u20b9/10kg",
+    "fyers_root": "SUNOIL"
+  }
+}

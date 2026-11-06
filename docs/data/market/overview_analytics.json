@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-11-06T03:55:06Z",
+  "generated_at": "2026-11-06T07:12:53Z",
   "symbols": {
     "NATURALGAS": {
       "flow_recent": [
@@ -8266,100 +8266,100 @@
         {
           "date": "2026-10-23",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 18.81,
+          "initial_margin_pct": 20.39,
           "rolling_realized_vol_20d": 46.65,
-          "funding_friction_score": 58.7,
-          "margin_change_1d": -0.21,
+          "funding_friction_score": 60.6,
+          "margin_change_1d": 1.37,
           "return_1d_pct": -5.86,
           "oi_change_pct": -18.27
         },
         {
           "date": "2026-10-26",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 20.39,
+          "initial_margin_pct": 19.89,
           "rolling_realized_vol_20d": 46.1,
-          "funding_friction_score": 75.1,
-          "margin_change_1d": 1.58,
+          "funding_friction_score": 74.4,
+          "margin_change_1d": -0.5,
           "return_1d_pct": -1.58,
           "oi_change_pct": -43.65
         },
         {
           "date": "2026-10-27",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 19.89,
+          "initial_margin_pct": 19.97,
           "rolling_realized_vol_20d": 47.62,
-          "funding_friction_score": 76.8,
-          "margin_change_1d": -0.5,
+          "funding_friction_score": 76.9,
+          "margin_change_1d": 0.08,
           "return_1d_pct": 3.22,
           "oi_change_pct": -63.03
         },
         {
           "date": "2026-10-28",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.7,
+          "initial_margin_pct": 13.52,
           "rolling_realized_vol_20d": 48.04,
-          "funding_friction_score": 47.0,
-          "margin_change_1d": -6.19,
+          "funding_friction_score": 46.8,
+          "margin_change_1d": -6.45,
           "return_1d_pct": 1.63,
           "oi_change_pct": 933.28
         },
         {
           "date": "2026-10-29",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.52,
+          "initial_margin_pct": 14.48,
           "rolling_realized_vol_20d": 49.43,
-          "funding_friction_score": 44.1,
-          "margin_change_1d": -0.18,
+          "funding_friction_score": 45.1,
+          "margin_change_1d": 0.96,
           "return_1d_pct": -3.86,
           "oi_change_pct": 18.84
         },
         {
           "date": "2026-10-30",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 14.48,
+          "initial_margin_pct": 14.26,
           "rolling_realized_vol_20d": 49.54,
-          "funding_friction_score": 48.7,
-          "margin_change_1d": 0.96,
+          "funding_friction_score": 48.5,
+          "margin_change_1d": -0.22,
           "return_1d_pct": -1.67,
           "oi_change_pct": -4.04
         },
         {
           "date": "2026-11-02",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 14.26,
+          "initial_margin_pct": 14.03,
           "rolling_realized_vol_20d": 47.98,
-          "funding_friction_score": 44.7,
-          "margin_change_1d": -0.22,
+          "funding_friction_score": 44.4,
+          "margin_change_1d": -0.23,
           "return_1d_pct": -1.59,
           "oi_change_pct": 2.42
         },
         {
           "date": "2026-11-03",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 14.03,
+          "initial_margin_pct": 13.62,
           "rolling_realized_vol_20d": 47.08,
-          "funding_friction_score": 46.0,
-          "margin_change_1d": -0.23,
+          "funding_friction_score": 45.5,
+          "margin_change_1d": -0.41,
           "return_1d_pct": 0.7,
           "oi_change_pct": -6.11
         },
         {
           "date": "2026-11-04",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.62,
+          "initial_margin_pct": 13.89,
           "rolling_realized_vol_20d": 46.99,
-          "funding_friction_score": 43.2,
-          "margin_change_1d": -0.41,
+          "funding_friction_score": 43.6,
+          "margin_change_1d": 0.27,
           "return_1d_pct": 2.8,
           "oi_change_pct": -4.51
         },
         {
           "date": "2026-11-05",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.89,
+          "initial_margin_pct": 13.46,
           "rolling_realized_vol_20d": 47.09,
-          "funding_friction_score": 45.7,
-          "margin_change_1d": 0.27,
+          "funding_friction_score": 45.2,
+          "margin_change_1d": -0.43,
           "return_1d_pct": -0.07,
           "oi_change_pct": 2.8
         }
@@ -10854,74 +10854,85 @@
           "date": "2026-10-23",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 46.65,
-          "funding_friction_score": 58.7,
+          "funding_friction_score": 60.6,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-26",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 46.1,
-          "funding_friction_score": 75.1,
+          "funding_friction_score": 74.4,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-27",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 47.62,
-          "funding_friction_score": 76.8,
+          "funding_friction_score": 76.9,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-28",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 48.04,
-          "funding_friction_score": 47.0,
+          "funding_friction_score": 46.8,
           "vol_regime": "ELEVATED"
         },
         {
           "date": "2026-10-29",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 49.43,
-          "funding_friction_score": 44.1,
+          "funding_friction_score": 45.1,
           "vol_regime": "ELEVATED"
         },
         {
           "date": "2026-10-30",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 49.54,
-          "funding_friction_score": 48.7,
+          "funding_friction_score": 48.5,
           "vol_regime": "ELEVATED"
         },
         {
           "date": "2026-11-02",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 47.98,
-          "funding_friction_score": 44.7,
+          "funding_friction_score": 44.4,
           "vol_regime": "ELEVATED"
         },
         {
           "date": "2026-11-03",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 47.08,
-          "funding_friction_score": 46.0,
+          "funding_friction_score": 45.5,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-04",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 46.99,
-          "funding_friction_score": 43.2,
+          "funding_friction_score": 43.6,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-05",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 47.09,
-          "funding_friction_score": 45.7,
+          "funding_friction_score": 45.2,
           "vol_regime": "NORMAL"
         }
       ],
       "event_windows": [
+        {
+          "date": "2026-08-27",
+          "matched_expiry": "25SEP2026",
+          "events": [
+            "oi_shift"
+          ],
+          "return_1d_pct": 1.9,
+          "margin_change_1d": 0,
+          "oi_change_pct": 513.34,
+          "funding_friction_score": 39.7
+        },
         {
           "date": "2026-08-28",
           "matched_expiry": "25SEP2026",
@@ -11285,26 +11296,26 @@
           "date": "2026-10-23",
           "matched_expiry": "27OCT2026",
           "events": [
+            "margin_hike",
             "oi_shift",
             "vol_regime_flip"
           ],
           "return_1d_pct": -5.86,
-          "margin_change_1d": -0.21,
+          "margin_change_1d": 1.37,
           "oi_change_pct": -18.27,
-          "funding_friction_score": 58.7
+          "funding_friction_score": 60.6
         },
         {
           "date": "2026-10-26",
           "matched_expiry": "27OCT2026",
           "events": [
-            "margin_hike",
             "volume_shock",
             "oi_shift"
           ],
           "return_1d_pct": -1.58,
-          "margin_change_1d": 1.58,
+          "margin_change_1d": -0.5,
           "oi_change_pct": -43.65,
-          "funding_friction_score": 75.1
+          "funding_friction_score": 74.4
         },
         {
           "date": "2026-10-27",
@@ -11314,9 +11325,9 @@
             "oi_shift"
           ],
           "return_1d_pct": 3.22,
-          "margin_change_1d": -0.5,
+          "margin_change_1d": 0.08,
           "oi_change_pct": -63.03,
-          "funding_friction_score": 76.8
+          "funding_friction_score": 76.9
         },
         {
           "date": "2026-10-28",
@@ -11328,42 +11339,33 @@
             "margin_regime_flip"
           ],
           "return_1d_pct": 1.63,
-          "margin_change_1d": -6.19,
+          "margin_change_1d": -6.45,
           "oi_change_pct": 933.28,
-          "funding_friction_score": 47.0
+          "funding_friction_score": 46.8
         },
         {
           "date": "2026-10-29",
           "matched_expiry": "24NOV2026",
           "events": [
-            "oi_shift"
-          ],
-          "return_1d_pct": -3.86,
-          "margin_change_1d": -0.18,
-          "oi_change_pct": 18.84,
-          "funding_friction_score": 44.1
-        },
-        {
-          "date": "2026-10-30",
-          "matched_expiry": "24NOV2026",
-          "events": [
+            "oi_shift",
             "margin_regime_flip"
           ],
-          "return_1d_pct": -1.67,
+          "return_1d_pct": -3.86,
           "margin_change_1d": 0.96,
-          "oi_change_pct": -4.04,
-          "funding_friction_score": 48.7
+          "oi_change_pct": 18.84,
+          "funding_friction_score": 45.1
         },
         {
           "date": "2026-11-03",
           "matched_expiry": "24NOV2026",
           "events": [
-            "vol_regime_flip"
+            "vol_regime_flip",
+            "margin_regime_flip"
           ],
           "return_1d_pct": 0.7,
-          "margin_change_1d": -0.23,
+          "margin_change_1d": -0.41,
           "oi_change_pct": -6.11,
-          "funding_friction_score": 46.0
+          "funding_friction_score": 45.5
         },
         {
           "date": "2026-11-04",
@@ -11372,9 +11374,9 @@
             "margin_regime_flip"
           ],
           "return_1d_pct": 2.8,
-          "margin_change_1d": -0.41,
+          "margin_change_1d": 0.27,
           "oi_change_pct": -4.51,
-          "funding_friction_score": 43.2
+          "funding_friction_score": 43.6
         },
         {
           "date": "2026-11-05",
@@ -11383,9 +11385,9 @@
             "margin_regime_flip"
           ],
           "return_1d_pct": -0.07,
-          "margin_change_1d": 0.27,
+          "margin_change_1d": -0.43,
           "oi_change_pct": 2.8,
-          "funding_friction_score": 45.7
+          "funding_friction_score": 45.2
         }
       ],
       "transition_matrix": {
@@ -11419,22 +11421,22 @@
         "aligned_obs": 4284,
         "lag_correlations": {
           "lag_0": {
-            "price_return": 0.0478,
-            "realized_vol_20d": 0.0122,
-            "volume_z_20d": 0.1103,
+            "price_return": 0.0475,
+            "realized_vol_20d": 0.0123,
+            "volume_z_20d": 0.1108,
             "oi_change_pct": -0.1886
           },
           "lag_1": {
-            "price_return": 0.0269,
-            "realized_vol_20d": -0.0655,
-            "volume_z_20d": 0.1295,
-            "oi_change_pct": 0.0265
+            "price_return": 0.0277,
+            "realized_vol_20d": -0.0654,
+            "volume_z_20d": 0.1291,
+            "oi_change_pct": 0.0269
           },
           "lag_5": {
-            "price_return": 0.0033,
+            "price_return": 0.0038,
             "realized_vol_20d": -0.0664,
             "volume_z_20d": -0.0053,
-            "oi_change_pct": 0.0034
+            "oi_change_pct": 0.0037
           }
         }
       }
@@ -19703,100 +19705,100 @@
         {
           "date": "2026-10-23",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 18.7,
+          "initial_margin_pct": 20.28,
           "rolling_realized_vol_20d": 46.51,
-          "funding_friction_score": 41.4,
-          "margin_change_1d": -0.24,
+          "funding_friction_score": 47.4,
+          "margin_change_1d": 1.34,
           "return_1d_pct": -5.82,
           "oi_change_pct": -22.18
         },
         {
           "date": "2026-10-26",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 20.28,
+          "initial_margin_pct": 19.8,
           "rolling_realized_vol_20d": 45.94,
-          "funding_friction_score": 56.1,
-          "margin_change_1d": 1.58,
+          "funding_friction_score": 54.4,
+          "margin_change_1d": -0.48,
           "return_1d_pct": -1.58,
           "oi_change_pct": -28.31
         },
         {
           "date": "2026-10-27",
           "matched_expiry": "27OCT2026",
-          "initial_margin_pct": 19.8,
+          "initial_margin_pct": 19.86,
           "rolling_realized_vol_20d": 47.46,
-          "funding_friction_score": 56.6,
-          "margin_change_1d": -0.48,
+          "funding_friction_score": 56.8,
+          "margin_change_1d": 0.06,
           "return_1d_pct": 3.22,
           "oi_change_pct": -15.55
         },
         {
           "date": "2026-10-28",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.5,
+          "initial_margin_pct": 13.32,
           "rolling_realized_vol_20d": 47.89,
-          "funding_friction_score": 12.6,
-          "margin_change_1d": -6.3,
+          "funding_friction_score": 12.4,
+          "margin_change_1d": -6.54,
           "return_1d_pct": 1.63,
           "oi_change_pct": 263.82
         },
         {
           "date": "2026-10-29",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.32,
+          "initial_margin_pct": 14.3,
           "rolling_realized_vol_20d": 49.27,
-          "funding_friction_score": 12.6,
-          "margin_change_1d": -0.18,
+          "funding_friction_score": 13.7,
+          "margin_change_1d": 0.98,
           "return_1d_pct": -3.85,
           "oi_change_pct": 13.81
         },
         {
           "date": "2026-10-30",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 14.3,
+          "initial_margin_pct": 14.1,
           "rolling_realized_vol_20d": 49.39,
-          "funding_friction_score": 15.1,
-          "margin_change_1d": 0.98,
+          "funding_friction_score": 14.9,
+          "margin_change_1d": -0.2,
           "return_1d_pct": -1.67,
           "oi_change_pct": -5.49
         },
         {
           "date": "2026-11-02",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 14.1,
+          "initial_margin_pct": 13.88,
           "rolling_realized_vol_20d": 47.76,
-          "funding_friction_score": 13.0,
-          "margin_change_1d": -0.2,
+          "funding_friction_score": 12.6,
+          "margin_change_1d": -0.22,
           "return_1d_pct": -1.59,
           "oi_change_pct": 6.18
         },
         {
           "date": "2026-11-03",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.88,
+          "initial_margin_pct": 13.49,
           "rolling_realized_vol_20d": 46.94,
-          "funding_friction_score": 13.7,
-          "margin_change_1d": -0.22,
+          "funding_friction_score": 13.2,
+          "margin_change_1d": -0.39,
           "return_1d_pct": 0.7,
           "oi_change_pct": -3.05
         },
         {
           "date": "2026-11-04",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.49,
+          "initial_margin_pct": 13.74,
           "rolling_realized_vol_20d": 46.73,
-          "funding_friction_score": 11.6,
-          "margin_change_1d": -0.39,
+          "funding_friction_score": 11.9,
+          "margin_change_1d": 0.25,
           "return_1d_pct": 2.77,
           "oi_change_pct": -10.41
         },
         {
           "date": "2026-11-05",
           "matched_expiry": "24NOV2026",
-          "initial_margin_pct": 13.74,
+          "initial_margin_pct": 13.3,
           "rolling_realized_vol_20d": 46.84,
-          "funding_friction_score": 13.5,
-          "margin_change_1d": 0.25,
+          "funding_friction_score": 12.9,
+          "margin_change_1d": -0.44,
           "return_1d_pct": -0.04,
           "oi_change_pct": 0.89
         }
@@ -22291,70 +22293,70 @@
           "date": "2026-10-23",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 46.51,
-          "funding_friction_score": 41.4,
+          "funding_friction_score": 47.4,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-26",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 45.94,
-          "funding_friction_score": 56.1,
+          "funding_friction_score": 54.4,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-27",
           "expiry": "27OCT2026",
           "rolling_realized_vol_20d": 47.46,
-          "funding_friction_score": 56.6,
+          "funding_friction_score": 56.8,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-28",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 47.89,
-          "funding_friction_score": 12.6,
+          "funding_friction_score": 12.4,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-29",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 49.27,
-          "funding_friction_score": 12.6,
+          "funding_friction_score": 13.7,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-10-30",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 49.39,
-          "funding_friction_score": 15.1,
+          "funding_friction_score": 14.9,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-02",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 47.76,
-          "funding_friction_score": 13.0,
+          "funding_friction_score": 12.6,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-03",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 46.94,
-          "funding_friction_score": 13.7,
+          "funding_friction_score": 13.2,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-04",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 46.73,
-          "funding_friction_score": 11.6,
+          "funding_friction_score": 11.9,
           "vol_regime": "NORMAL"
         },
         {
           "date": "2026-11-05",
           "expiry": "24NOV2026",
           "rolling_realized_vol_20d": 46.84,
-          "funding_friction_score": 13.5,
+          "funding_friction_score": 12.9,
           "vol_regime": "NORMAL"
         }
       ],
@@ -22752,26 +22754,26 @@
           "date": "2026-10-23",
           "matched_expiry": "27OCT2026",
           "events": [
+            "margin_hike",
             "oi_shift",
             "vol_regime_flip"
           ],
           "return_1d_pct": -5.82,
-          "margin_change_1d": -0.24,
+          "margin_change_1d": 1.34,
           "oi_change_pct": -22.18,
-          "funding_friction_score": 41.4
+          "funding_friction_score": 47.4
         },
         {
           "date": "2026-10-26",
           "matched_expiry": "27OCT2026",
           "events": [
-            "margin_hike",
             "volume_shock",
             "oi_shift"
           ],
           "return_1d_pct": -1.58,
-          "margin_change_1d": 1.58,
+          "margin_change_1d": -0.48,
           "oi_change_pct": -28.31,
-          "funding_friction_score": 56.1
+          "funding_friction_score": 54.4
         },
         {
           "date": "2026-10-27",
@@ -22781,9 +22783,9 @@
             "oi_shift"
           ],
           "return_1d_pct": 3.22,
-          "margin_change_1d": -0.48,
+          "margin_change_1d": 0.06,
           "oi_change_pct": -15.55,
-          "funding_friction_score": 56.6
+          "funding_friction_score": 56.8
         },
         {
           "date": "2026-10-28",
@@ -22794,9 +22796,9 @@
             "margin_regime_flip"
           ],
           "return_1d_pct": 1.63,
-          "margin_change_1d": -6.3,
+          "margin_change_1d": -6.54,
           "oi_change_pct": 263.82,
-          "funding_friction_score": 12.6
+          "funding_friction_score": 12.4
         },
         {
           "date": "2026-10-29",
@@ -22805,9 +22807,9 @@
             "oi_shift"
           ],
           "return_1d_pct": -3.85,
-          "margin_change_1d": -0.18,
+          "margin_change_1d": 0.98,
           "oi_change_pct": 13.81,
-          "funding_friction_score": 12.6
+          "funding_friction_score": 13.7
         },
         {
           "date": "2026-11-04",
@@ -22816,9 +22818,9 @@
             "oi_shift"
           ],
           "return_1d_pct": 2.77,
-          "margin_change_1d": -0.39,
+          "margin_change_1d": 0.25,
           "oi_change_pct": -10.41,
-          "funding_friction_score": 11.6
+          "funding_friction_score": 11.9
         }
       ],
       "transition_matrix": {
@@ -22852,22 +22854,22 @@
         "aligned_obs": 937,
         "lag_correlations": {
           "lag_0": {
-            "price_return": 0.1293,
-            "realized_vol_20d": 0.0156,
-            "volume_z_20d": 0.0174,
+            "price_return": 0.1287,
+            "realized_vol_20d": 0.0157,
+            "volume_z_20d": 0.0183,
             "oi_change_pct": -0.2504
           },
           "lag_1": {
-            "price_return": -0.0368,
-            "realized_vol_20d": -0.0708,
-            "volume_z_20d": 0.1808,
-            "oi_change_pct": 0.0391
+            "price_return": -0.0348,
+            "realized_vol_20d": -0.0704,
+            "volume_z_20d": 0.1805,
+            "oi_change_pct": 0.0399
           },
           "lag_5": {
-            "price_return": 0.0281,
-            "realized_vol_20d": -0.0689,
-            "volume_z_20d": 0.0519,
-            "oi_change_pct": 0.0101
+            "price_return": 0.0294,
+            "realized_vol_20d": -0.0686,
+            "volume_z_20d": 0.0521,
+            "oi_change_pct": 0.0106
           }
         }
       }

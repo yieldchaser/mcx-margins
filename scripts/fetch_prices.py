@@ -74,7 +74,7 @@ DATE_DISPLAY_FMT = "%d/%m/%Y"   # → visible input
 DATE_HIDDEN_FMT  = "%Y%m%d"     # → hidden field + POST Date key
 
 # Symbols we care about — new expiries appear automatically
-TARGET_SYMBOLS = {"NATURALGAS", "NATGASMINI", "NATGAS"}
+TARGET_SYMBOLS = None  # None = capture all MCX commodity futures (FUTCOM)
 
 # Look-back for daily mode (how many trading days back to try if today has no data)
 MAX_LOOKBACK = 3
@@ -185,8 +185,9 @@ def db_connect(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     conn.commit()
     return conn
 
-def dates_already_in_db(conn: sqlite3.Connection) -> set[str]:
-    return {r[0] for r in conn.execute("SELECT DISTINCT date FROM prices").fetchall()}
+def dates_already_in_db(conn: sqlite3.Connection, min_rows: int = 10) -> set[str]:
+    # Require at least min_rows to consider a date complete with all commodities
+    return {r[0] for r in conn.execute("SELECT date FROM prices GROUP BY date HAVING count(distinct symbol) >= ?", (min_rows,)).fetchall()}
 
 def save_records(conn: sqlite3.Connection, records: list[dict]) -> int:
     """Upsert all records; return count of rows inserted or updated."""
@@ -309,7 +310,7 @@ def normalize(raw: dict, date_str: str) -> dict | None:
     # Normalize symbol name variations
     if symbol == "NATGAS":
         symbol = "NATURALGAS"
-    if symbol not in TARGET_SYMBOLS:
+    if TARGET_SYMBOLS is not None and symbol not in TARGET_SYMBOLS:
         return None
 
     # Strictly futures only: options on futures (OPTFUT) have separate strikes and option types

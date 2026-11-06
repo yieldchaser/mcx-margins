@@ -149,7 +149,7 @@ def upsert_margin(row: dict) -> bool:
             "delivery_margin_pct": row.get("delivery_margin_pct"),
             "daily_volatility": row.get("daily_volatility"),
             "annualized_volatility": row.get("annualized_volatility"),
-            "raw_data": json.dumps(row),
+            "raw_data": None,
         })
         conn.commit()
         return True

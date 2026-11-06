@@ -1,8 +1,9 @@
 """
 Smart fetch: scrapes today's margin data with retry logic.
 
-Checks the DB first — if today's data already exists, skips immediately.
+Checks the DB first — if today's multi-commodity data already exists, skips immediately.
 Otherwise fetches from mcxccl.com and retries if the site hasn't published yet.
+Stores all MCX commodity futures, de-duplicated and normalized.
 
 Exit codes:
   0 — new data saved (pipeline should proceed)
@@ -21,12 +22,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import src.db as db
 from src.scraper import scrape_margin, normalize_row, parse_pct
 
-SYMBOLS_TO_STORE = {"NATURALGAS", "NATGASMINI"}
+# Exclude index futures so only physical commodity futures are stored
+EXCLUDED_SYMBOLS = {"MCXBULLDEX", "MCXMETLDEX"}
 
 
 def has_todays_data(date_str: str) -> bool:
+    """Check if multi-commodity margin data already exists for the date."""
     records = db.get_margins(date=date_str)
-    return len(records) > 0
+    # Require at least 10 records to confirm full multi-commodity coverage
+    return len(records) >= 10
 
 
 def fetch_and_store(date_str: str) -> int:
@@ -40,7 +44,10 @@ def fetch_and_store(date_str: str) -> int:
         normalized = normalize_row(raw_row, date_str)
         if normalized is None:
             continue
-        if normalized.get("symbol") not in SYMBOLS_TO_STORE:
+
+        sym = (normalized.get("symbol") or "").strip().upper()
+        inst = (normalized.get("instrument_id") or "").strip().upper()
+        if not sym or sym in EXCLUDED_SYMBOLS or inst == "FUTIDX":
             continue
 
         normalized["initial_margin_pct"] = parse_pct(normalized.get("initial_margin_pct"))
@@ -61,14 +68,19 @@ def fetch_and_store(date_str: str) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description="Fetch today's MCX margin data with retry logic")
+    parser.add_argument("--date", type=str, default=None, help="Specific date YYYY-MM-DD (default: today)")
     parser.add_argument("--retries", type=int, default=5, help="Max fetch attempts (default: 5)")
     parser.add_argument("--wait", type=int, default=15, help="Minutes between retries (default: 15)")
-    parser.add_argument("--force", action="store_true", help="Ignore weekend check and force fetch")
+    parser.add_argument("--force", action="store_true", help="Ignore weekend check / existing check and force fetch")
     args = parser.parse_args()
 
     db.init_db()
-    today_dt = date.today()
-    today = today_dt.strftime("%Y-%m-%d")
+    if args.date:
+        today_dt = date.fromisoformat(args.date)
+        today = args.date
+    else:
+        today_dt = date.today()
+        today = today_dt.strftime("%Y-%m-%d")
 
     print(f"[fetch_today] Target date: {today}")
 
@@ -77,8 +89,8 @@ def main():
         print(f"[fetch_today] Skipping weekend fetch for {today} (Sat/Sun). Use --force to override.")
         sys.exit(2)
 
-    if has_todays_data(today):
-        print(f"[fetch_today] Data already exists for {today}, nothing to do.")
+    if not args.force and has_todays_data(today):
+        print(f"[fetch_today] Multi-commodity data already exists for {today}, nothing to do.")
         sys.exit(0)
 
     for attempt in range(1, args.retries + 1):

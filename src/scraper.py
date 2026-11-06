@@ -54,9 +54,7 @@ async def scrape_margin(date_str: str) -> list[dict]:
     Returns list of raw dicts from the API.
     """
     dt = datetime.strptime(date_str, "%Y-%m-%d")
-    # Hidden field format: YYYYMMDD
     date_yyyymmdd = dt.strftime("%Y%m%d")
-    # Display format: DD/MM/YYYY
     date_display = dt.strftime("%d/%m/%Y")
 
     print(f"[scraper] Fetching data for {date_str} (hidden: {date_yyyymmdd}, display: {date_display})")
@@ -143,6 +141,101 @@ async def scrape_margin(date_str: str) -> list[dict]:
             return []
         finally:
             await browser.close()
+
+
+async def scrape_margins_bulk(date_strs: list[str]) -> dict[str, list[dict]]:
+    """
+    Scrape margin data for multiple dates within a single Playwright browser session.
+    Bypasses Akamai once and fetches each date sequentially via the established session.
+    Returns mapping of {date_str: [raw_records]}.
+    """
+    if not date_strs:
+        return {}
+
+    results: dict[str, list[dict]] = {}
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=BROWSER_ARGS,
+        )
+
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1920, "height": 1080},
+            locale="en-US",
+            timezone_id="Asia/Kolkata",
+            extra_http_headers=CONTEXT_HEADERS,
+        )
+
+        await context.add_init_script(STEALTH_SCRIPT)
+        page = await context.new_page()
+
+        try:
+            print("[scraper-bulk] Visiting homepage to establish stealth session...")
+            await page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
+            home_title = await page.title()
+            if "Access Denied" in home_title:
+                print("[scraper-bulk] Homepage blocked - cannot proceed")
+                return {}
+
+            await asyncio.sleep(1)
+
+            print("[scraper-bulk] Navigating to daily margin page...")
+            await page.goto(URL, wait_until="domcontentloaded", timeout=30000)
+            page_title = await page.title()
+            if "Access Denied" in page_title:
+                print("[scraper-bulk] Daily margin page blocked")
+                return {}
+
+            await page.wait_for_selector("#fromDate", timeout=15000)
+            print(f"[scraper-bulk] Session established. Fetching {len(date_strs)} dates...")
+
+            for i, date_str in enumerate(date_strs, 1):
+                try:
+                    dt = datetime.strptime(date_str, "%Y-%m-%d")
+                    date_display = dt.strftime("%d/%m/%Y")
+                    api_result = await page.evaluate(f"""
+                        async () => {{
+                            try {{
+                                const resp = await fetch('/DailyMargin/GetDailyMargin?fromDate=' + encodeURIComponent('{date_display}'), {{
+                                    headers: {{
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/json',
+                                        'Referer': 'https://www.mcxccl.com/risk-management/daily-margin'
+                                    }}
+                                }});
+                                return await resp.text();
+                            }} catch (e) {{
+                                return null;
+                            }}
+                        }}
+                    """)
+                    if api_result:
+                        records = parse_api_response(api_result)
+                        results[date_str] = records
+                        print(f"[{i}/{len(date_strs)}] {date_str} ({date_display}): {len(records)} records")
+                    else:
+                        results[date_str] = []
+                        print(f"[{i}/{len(date_strs)}] {date_str} ({date_display}): 0 records (empty response)")
+                except Exception as inner_e:
+                    print(f"[{i}/{len(date_strs)}] Error fetching {date_str}: {inner_e}")
+                    results[date_str] = []
+
+                await asyncio.sleep(0.3)
+
+        except Exception as e:
+            print(f"[scraper-bulk] Session error: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            await browser.close()
+
+    return results
 
 
 def parse_api_response(response_text: str) -> list[dict]:
@@ -248,7 +341,6 @@ def normalize_row(raw_row: dict, date_str: str) -> dict | None:
         "daily_volatility": daily_vol,
         "annualized_volatility": ann_vol,
     }
-
 
 
 def parse_pct(val) -> float | None:

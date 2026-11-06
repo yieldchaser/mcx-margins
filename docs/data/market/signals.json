@@ -70,7 +70,7 @@
       "lookback": "5 trading days",
       "features": {
         "price_return_5d_pct": 0.106,
-        "margin_change_5d_pct": 0.37
+        "margin_change_5d_pct": -1.02
       },
       "reason": "Margin and market movement are broadly aligned."
     },
@@ -141,7 +141,7 @@
       "lookback": "5 trading days",
       "features": {
         "price_return_5d_pct": 0.106,
-        "margin_change_5d_pct": 0.42
+        "margin_change_5d_pct": -1.0
       },
       "reason": "Margin and market movement are broadly aligned."
     }
