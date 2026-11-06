@@ -261,6 +261,39 @@ def harvest_single_contract(fyers, contract, lookback_days=0):
 
         df_combined.to_parquet(parquet_path, compression="zstd", index=False)
         total_bars = len(df_combined)
+
+        # Automatically generate 15-minute rollup with zero-shrink integrity
+        try:
+            parquet_15m_path = os.path.join(CONTRACT_DIR, f"{clean_name}_15m_contract_wise.parquet")
+            df_for_resample = df_combined.copy()
+            if not pd.api.types.is_datetime64_any_dtype(df_for_resample["ts_ist"]):
+                df_for_resample["ts_ist"] = pd.to_datetime(df_for_resample["ts_ist"])
+            df_15m = (
+                df_for_resample.set_index("ts_ist")
+                .resample("15min")
+                .agg({
+                    "epoch": "first",
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                    "oi": "last" if "oi" in df_for_resample.columns else "first",
+                    "symbol": "first",
+                    "commodity": "first",
+                    "expiry": "first",
+                })
+                .dropna(subset=["close"])
+                .reset_index()
+            )
+            df_15m["epoch"] = df_15m["epoch"].astype("int64")
+            if "oi" in df_15m.columns:
+                df_15m["oi"] = df_15m["oi"].fillna(0).astype("int64")
+            df_15m["ts_ist"] = df_15m["ts_ist"].astype(str)
+            df_15m.to_parquet(parquet_15m_path, compression="zstd", index=False)
+        except Exception as e_15m:
+            log(f"Notice generating 15m rollup for {sym}: {e_15m}")
+
         latest_c = float(df_combined["close"].iloc[-1])
         latest_oi = int(df_combined["oi"].iloc[-1]) if "oi" in df_combined.columns else 0
         min_ts = df_combined["ts_ist"].iloc[0].strftime("%Y-%m-%d %H:%M")
@@ -299,9 +332,12 @@ def update_duckdb_views(contract_stats):
     log(f"Registering all commodity contract views into DuckDB ({DUCKDB_PATH})...")
     con = duckdb.connect(DUCKDB_PATH)
 
-    # Master view across all contracts in contract_wise/
+    # Master views across all contracts in contract_wise/ (1m and 15m)
     all_parquet_pattern = os.path.join(CONTRACT_DIR, "MCX_*_1m_contract_wise.parquet").replace("\\", "/")
     con.execute(f"CREATE OR REPLACE VIEW mcx_all_futures_1m AS SELECT * FROM read_parquet('{all_parquet_pattern}')")
+
+    all_15m_pattern = os.path.join(CONTRACT_DIR, "MCX_*_15m_contract_wise.parquet").replace("\\", "/")
+    con.execute(f"CREATE OR REPLACE VIEW mcx_all_futures_15m AS SELECT * FROM read_parquet('{all_15m_pattern}')")
 
     # Group contracts by commodity and create commodity-specific views
     commodities = set(c["commodity"] for c in contract_stats if c["total_bars"] > 0)

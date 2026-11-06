@@ -82,8 +82,15 @@ SOURCE_REGISTRY = {
 def save(filename, data):
     path = OUT_DIR / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, default=str)
+    for attempt in range(5):
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, default=str)
+            break
+        except OSError:
+            if attempt == 4:
+                raise
+            time.sleep(0.1)
     print(f"  [OK] {filename}")
 
 
@@ -322,6 +329,65 @@ def _load_symbol_margin_history_rows(cur, symbol):
     ]
 
 
+_HISTORICAL_MARGINS_CACHE: dict[str, list[dict]] | None = None
+
+def _load_historical_parquet_margins(symbol: str) -> list[dict]:
+    global _HISTORICAL_MARGINS_CACHE
+    p_dir = REPO_ROOT / "data" / "mcx_vault" / "historical" / "margins"
+    if not p_dir.exists() or not list(p_dir.glob("*.parquet")):
+        return []
+    if _HISTORICAL_MARGINS_CACHE is None:
+        try:
+            import duckdb
+            con = duckdb.connect()
+            path_pattern = str(p_dir / "*.parquet").replace("\\", "/")
+            query = f"""
+                SELECT date, symbol, expiry, initial_margin_pct, elm_pct, tender_margin_pct,
+                       total_margin_pct, additional_long_margin_pct, additional_short_margin_pct,
+                       special_long_margin_pct, special_short_margin_pct, delivery_margin_pct,
+                       daily_volatility, annualized_volatility
+                FROM read_parquet('{path_pattern}')
+                WHERE initial_margin_pct IS NOT NULL
+                ORDER BY expiry ASC, date ASC
+            """
+            df = con.execute(query).fetchdf()
+            con.close()
+            cache: dict[str, list[dict]] = {}
+            for row in df.to_dict(orient="records"):
+                s = str(row.get("symbol") or "")
+                cache.setdefault(s, []).append(row)
+            _HISTORICAL_MARGINS_CACHE = cache
+        except Exception:
+            _HISTORICAL_MARGINS_CACHE = {}
+    return _HISTORICAL_MARGINS_CACHE.get(symbol, [])
+
+
+def _load_historical_parquet_prices(symbols: list[str] = None) -> list[dict]:
+    p_dir = REPO_ROOT / "data" / "mcx_vault" / "historical" / "prices"
+    if not p_dir.exists() or not list(p_dir.glob("*.parquet")):
+        return []
+    try:
+        import duckdb
+        con = duckdb.connect()
+        path_pattern = str(p_dir / "*.parquet").replace("\\", "/")
+        where_sym = ""
+        if symbols:
+            sym_list_str = ", ".join(f"'{s}'" for s in symbols)
+            where_sym = f"AND symbol IN ({sym_list_str})"
+        query = f"""
+            SELECT date, symbol, expiry, instrument, open, high, low, close,
+                   prev_close, volume_lots, volume_kgs, value_lacs, open_interest
+            FROM read_parquet('{path_pattern}')
+            WHERE UPPER(COALESCE(instrument,''))='FUTCOM' {where_sym}
+            ORDER BY symbol ASC, date ASC, expiry ASC
+        """
+        df = con.execute(query).fetchdf()
+        con.close()
+        return df.to_dict(orient="records")
+    except Exception as e:
+        return []
+
+
 def _build_margin_contract_histories(cur, symbol):
     rows = _load_margin_rows(
         cur,
@@ -329,6 +395,16 @@ def _build_margin_contract_histories(cur, symbol):
         (symbol,),
         "expiry ASC, date ASC",
     )
+    prows = _load_historical_parquet_margins(symbol)
+    if prows:
+        seen = {(r.get("expiry"), r.get("date")) for r in rows}
+        for pr in prows:
+            key = (pr.get("expiry"), pr.get("date"))
+            if key not in seen:
+                seen.add(key)
+                rows.append(pr)
+        rows.sort(key=lambda r: (r.get("expiry") or "", r.get("date") or ""))
+
     by_expiry = {}
     for row in rows:
         expiry = row.get("expiry")
@@ -1232,6 +1308,15 @@ def _export_market_intelligence(margin_cur):
                 """
             ).fetchall()
         ]
+        p_market_rows = _load_historical_parquet_prices()
+        if p_market_rows:
+            seen_market = {(r.get("symbol"), r.get("expiry"), r.get("date")) for r in all_market_rows}
+            for pmr in p_market_rows:
+                key = (pmr.get("symbol"), pmr.get("expiry"), pmr.get("date"))
+                if key not in seen_market:
+                    seen_market.add(key)
+                    all_market_rows.append(_market_row_from_db(pmr))
+            all_market_rows.sort(key=lambda r: (r.get("symbol") or "", r.get("date") or "", r.get("expiry") or ""))
         all_market_rows = [r for r in all_market_rows if _is_market_futures_row(r) and (r.get("dte") is None or r["dte"] >= 0)]
 
         contract_index = {"schema_version": MARKET_SCHEMA_VERSION, "generated_at": _utc_now()}

@@ -7,7 +7,7 @@ Generates the comprehensive, end-to-end institutional master plan across both:
 
 import os
 
-plan_content = """# Master Institutional Blueprint: The 5-Level Pure Futures Progression (₹60 Lakhs to ₹700+ Crores)
+plan_content = r"""# Master Institutional Blueprint: The 5-Level Pure Futures Progression (₹60 Lakhs to ₹700+ Crores)
 
 ---
 

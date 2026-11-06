@@ -27,10 +27,28 @@ EXCLUDED_SYMBOLS = {"MCXBULLDEX", "MCXMETLDEX"}
 
 
 def has_todays_data(date_str: str) -> bool:
-    """Check if multi-commodity margin data already exists for the date."""
+    """Check if multi-commodity margin data already exists for the date in SQLite or Parquet vault."""
     records = db.get_margins(date=date_str)
     # Require at least 10 records to confirm full multi-commodity coverage
-    return len(records) >= 10
+    if len(records) >= 10:
+        return True
+
+    # Check historical parquet vault for dates <= 2025
+    yr = date_str[:4]
+    p_file = Path("data/mcx_vault/historical/margins") / f"margins_{yr}.parquet"
+    if p_file.exists():
+        try:
+            import duckdb
+            c = duckdb.connect()
+            r = c.execute(
+                f"SELECT count(distinct symbol) FROM read_parquet('{p_file.as_posix()}') WHERE date = ?",
+                (date_str,)
+            ).fetchone()
+            if r and r[0] >= 10:
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def fetch_and_store(date_str: str) -> int:

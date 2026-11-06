@@ -39,13 +39,32 @@ def past_weekdays(n: int) -> list[str]:
 
 
 def has_data(date_str: str) -> bool:
-    """Check if multi-commodity margin data already exists for the date."""
+    """Check if multi-commodity margin data already exists in SQLite or historical Parquet vault."""
     conn = db.get_connection()
     try:
         row = conn.execute("SELECT count(distinct symbol) FROM margins WHERE date = ?", (date_str,)).fetchone()
-        return row[0] >= 10 if row else False
+        if row and row[0] >= 10:
+            return True
     finally:
         conn.close()
+
+    # Check historical parquet vault for dates <= 2025
+    yr = date_str[:4]
+    p_file = Path("data/mcx_vault/historical/margins") / f"margins_{yr}.parquet"
+    if p_file.exists():
+        try:
+            import duckdb
+            c = duckdb.connect()
+            r = c.execute(
+                f"SELECT count(distinct symbol) FROM read_parquet('{p_file.as_posix()}') WHERE date = ?",
+                (date_str,)
+            ).fetchone()
+            c.close()
+            if r and r[0] >= 10:
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def process_and_store_records(raw_rows: list[dict], date_str: str) -> int:

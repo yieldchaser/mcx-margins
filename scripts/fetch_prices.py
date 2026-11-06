@@ -185,9 +185,36 @@ def db_connect(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     conn.commit()
     return conn
 
+_PARQUET_PRICE_DATES_CACHE: set[str] | None = None
+
 def dates_already_in_db(conn: sqlite3.Connection, min_rows: int = 10) -> set[str]:
-    # Require at least min_rows to consider a date complete with all commodities
-    return {r[0] for r in conn.execute("SELECT date FROM prices GROUP BY date HAVING count(distinct symbol) >= ?", (min_rows,)).fetchall()}
+    """Returns all dates that have complete multi-commodity prices across SQLite and historical Parquets."""
+    global _PARQUET_PRICE_DATES_CACHE
+    dates = {
+        r[0] for r in conn.execute(
+            "SELECT date FROM prices GROUP BY date HAVING count(distinct symbol) >= ?",
+            (min_rows,)
+        ).fetchall()
+    }
+    if _PARQUET_PRICE_DATES_CACHE is None:
+        try:
+            import duckdb
+            p_dir = Path("data/mcx_vault/historical/prices")
+            if p_dir.exists() and list(p_dir.glob("*.parquet")):
+                c = duckdb.connect()
+                pattern = str(p_dir / "*.parquet").replace("\\", "/")
+                res = c.execute(
+                    f"SELECT date FROM read_parquet('{pattern}') GROUP BY date HAVING count(distinct symbol) >= ?",
+                    (min_rows,)
+                ).fetchall()
+                c.close()
+                _PARQUET_PRICE_DATES_CACHE = {r[0] for r in res}
+            else:
+                _PARQUET_PRICE_DATES_CACHE = set()
+        except Exception:
+            _PARQUET_PRICE_DATES_CACHE = set()
+    dates.update(_PARQUET_PRICE_DATES_CACHE)
+    return dates
 
 def save_records(conn: sqlite3.Connection, records: list[dict]) -> int:
     """Upsert all records; return count of rows inserted or updated."""
@@ -473,6 +500,13 @@ async def run_daily(start_date: str | None = None, db_path: str = DEFAULT_DB_PAT
     conn = db_connect(db_path)
     try:
         current = datetime.strptime(start_date, "%Y-%m-%d") if start_date else ist_today()
+        target_date_str = current.strftime("%Y-%m-%d")
+
+        # Fast exit if target date already has complete data across SQLite or Parquet vault
+        existing = dates_already_in_db(conn)
+        if target_date_str in existing:
+            print(f"[daily] Multi-commodity prices already exist for {target_date_str}. Skipping fetch.")
+            return []
 
         async with async_playwright() as p:
             session = BhavSession(p)

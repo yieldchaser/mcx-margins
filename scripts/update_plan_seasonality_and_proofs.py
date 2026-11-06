@@ -4,7 +4,7 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-section7_text = '''## 7. Natural Gas Quantitative Swing Dynamics, Margin Traps & The Optimal Buffer Engine
+section7_text = r'''## 7. Natural Gas Quantitative Swing Dynamics, Margin Traps & The Optimal Buffer Engine
 
 Based on empirical data across **142 completed contracts (2015–2026)**, **5,067 daily contango roll spreads**, and **123 contract legs** from [`models/Master_Commodity_Treasury_Model.xlsx`](file:///c:/Users/Dell/Github/mcx-margins/models/Master_Commodity_Treasury_Model.xlsx) (`Seasonality & Asymmetry` & `NG Data` tabs):
 

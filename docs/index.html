@@ -9084,7 +9084,9 @@ async function initCalculator() {
 
     const updateYears = () => {
       const entries = [...entriesList].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
-      const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))].sort((a,b) => b-a);
+      const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))]
+        .filter(y => { const n = parseInt(y, 10); return !isNaN(n) && n >= 2000; })
+        .sort((a,b) => b-a);
       yrSel.innerHTML = '<option value="all">All</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
       if (frontExp) yrSel.value = _contractDeliveryYear(frontExp).toString();
       updateExpiries();
