@@ -490,10 +490,10 @@ def run_snapshot_cycle():
                         # Synchronize Tier 0: {sym_prefix}_daily.json today's bar
                         daily_file = os.path.join(REPO_DIR, "docs", "data", "deep", f"{sym_prefix}_daily.json")
                         if os.path.exists(daily_file):
-                            today_str = now_ist.strftime("%Y-%m-%d")
-                            today_bars = df_front_bars[df_front_bars["ts_ist"].dt.strftime("%Y-%m-%d") == today_str]
+                            session_date_str = df_front_bars["ts_ist"].iloc[-1].strftime("%Y-%m-%d")
+                            today_bars = df_front_bars[df_front_bars["ts_ist"].dt.strftime("%Y-%m-%d") == session_date_str]
                             if len(today_bars) > 0:
-                                today_epoch = int(pd.Timestamp(f"{today_str} 09:00:00", tz="Asia/Kolkata").timestamp())
+                                today_epoch = int(pd.Timestamp(f"{session_date_str} 09:00:00", tz="Asia/Kolkata").timestamp())
                                 latest_bar_epoch = int(today_bars["epoch"].iloc[-1])
                                 today_daily = {
                                     "time": today_epoch,
@@ -511,7 +511,7 @@ def run_snapshot_cycle():
                                 for b in daily_bars:
                                     b_date = datetime.fromtimestamp(b["time"], ist_tz).strftime("%Y-%m-%d")
                                     existing_daily_map[b_date] = b
-                                existing_daily_map[today_str] = today_daily
+                                existing_daily_map[session_date_str] = today_daily
                                 merged_daily = sorted(existing_daily_map.values(), key=lambda x: x["time"])
                                 with open(daily_file, "w", encoding="utf-8") as f:
                                     json.dump(merged_daily, f, separators=(',', ':'))
