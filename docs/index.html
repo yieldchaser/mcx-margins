@@ -9769,13 +9769,19 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     }
 
     let lotsLiquidity = Infinity;
-    const advLots = Number(entryMarketRow?.volume_lots ?? NaN);
-    const oiLots = Number(entryMarketRow?.open_interest ?? NaN);
-    if (Number.isFinite(advLots) && advLots > 0) {
-      lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * advLots)));
-    }
-    if (Number.isFinite(oiLots) && oiLots > 0) {
-      lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * oiLots)));
+    // Liquidity Participation Cap (Firewall 4): Retained strictly for Natural Gas (ng, ngm).
+    // For other commodities with diverse unit scales (grams, kg, MT) and far-dated tenors,
+    // position sizing is governed by Volatility Shock Survival (lotsRaw) and Dynamic Leverage Ceiling (lotsCeil).
+    const isGasCommodity = (sym === 'ng' || sym === 'ngm');
+    if (isGasCommodity) {
+      const advLots = Number(entryMarketRow?.volume_lots ?? NaN);
+      const oiLots = Number(entryMarketRow?.open_interest ?? NaN);
+      if (Number.isFinite(advLots) && advLots > 0) {
+        lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * advLots)));
+      }
+      if (Number.isFinite(oiLots) && oiLots > 0) {
+        lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * oiLots)));
+      }
     }
 
     // Step 7: Final Multi-Firewall Synthesis Clamp & Accurate Utilization Telemetry
@@ -9947,7 +9953,8 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   const levDisp = document.getElementById('calcLeverageDisplay');
   if (levDisp) {
     const levColor = effLev > maxStatLev * 0.85 ? 'var(--accent-red)' : 'var(--text)';
-    levDisp.innerHTML = `<strong style="color:${levColor};font-size:12.5px;">${effLev.toFixed(1)}x</strong> <span class="calc-display-sub">(Max ${maxStatLev.toFixed(1)}x${isSpread ? ' · Spread' : ''})</span>`;
+    const effLevStr = (effLev > 0 && effLev < 0.1) ? effLev.toFixed(2) : effLev.toFixed(1);
+    levDisp.innerHTML = `<strong style="color:${levColor};font-size:12.5px;">${effLevStr}x</strong> <span class="calc-display-sub">(Max ${maxStatLev.toFixed(1)}x${isSpread ? ' · Spread' : ''})</span>`;
   }
 
   // ── Walk window: cumulative P/L, daily P/L, drawdown, margin path, margin call detection ──
