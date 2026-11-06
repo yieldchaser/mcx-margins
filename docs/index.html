@@ -9624,17 +9624,17 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       const spanToVolRatio = (spanPctDecimal * 100) / num;
       return spanToVolRatio < 7.5 ? (num / 100) : num;
     }
-    return num > 10.0 ? (num / 100) : num;
+    return num >= 1.0 ? (num / 100) : num;
   };
 
   const vSigmaSpan = (
     entryMarginRow?.annualized_volatility_decimal != null
       ? Number(entryMarginRow.annualized_volatility_decimal)
-      : (entryMarginRow?.daily_volatility != null &&
-         Number(entryMarginRow.daily_volatility) > 0 &&
-         Number(entryMarginRow.daily_volatility) < 1.0)
-        ? (Number(entryMarginRow.daily_volatility) * Math.sqrt(250))
-        : parseVolDecimalSafe(entryMarginRow?.annualized_volatility, vSpanPct)
+      : (entryMarginRow?.annualized_volatility != null)
+        ? parseVolDecimalSafe(entryMarginRow.annualized_volatility, vSpanPct)
+        : (entryMarginRow?.daily_volatility != null && Number(entryMarginRow.daily_volatility) > 0)
+          ? parseVolDecimalSafe(Number(entryMarginRow.daily_volatility) * Math.sqrt(250), vSpanPct)
+          : 0
   );
 
   const vSigmaRV20 = parseVolDecimalSafe(
