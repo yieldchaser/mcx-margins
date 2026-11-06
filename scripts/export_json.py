@@ -9,6 +9,7 @@ import sys
 import sqlite3
 import time
 import json
+import re
 import math
 import statistics
 import shutil
@@ -348,6 +349,7 @@ def _load_historical_parquet_margins(symbol: str) -> list[dict]:
                        daily_volatility, annualized_volatility
                 FROM read_parquet('{path_pattern}')
                 WHERE initial_margin_pct IS NOT NULL
+                  AND regexp_matches(expiry, '^[0-9]{1,2}[A-Za-z]{3}[0-9]{2,4}$')
                 ORDER BY expiry ASC, date ASC
             """
             df = con.execute(query).fetchdf()
@@ -408,7 +410,7 @@ def _build_margin_contract_histories(cur, symbol):
     by_expiry = {}
     for row in rows:
         expiry = row.get("expiry")
-        if not expiry:
+        if not expiry or not re.match(r'^\d{1,2}[A-Za-z]{3}\d{2,4}$', str(expiry)):
             continue
         dte = compute_dte(expiry, row.get("date"))
         if dte < 0:

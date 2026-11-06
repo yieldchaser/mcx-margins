@@ -6668,7 +6668,18 @@ document.querySelector('[data-tab="history"]').addEventListener('click', () => {
 const _MON = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
 // Parse MCX expiry "27APR2026" → JS Date
 function _expiryDate(exp) {
-  return new Date(+exp.slice(5), _MON[exp.slice(2,5)], +exp.slice(0,2));
+  if (!exp || typeof exp !== 'string') return new Date(0);
+  const m = exp.trim().match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+  if (m) {
+    const yr = parseInt(m[3].length === 2 ? '20' + m[3] : m[3], 10);
+    const mon = _MON[m[2].toUpperCase()];
+    const day = parseInt(m[1], 10);
+    if (!isNaN(yr) && mon !== undefined && !isNaN(day)) {
+      return new Date(yr, mon, day);
+    }
+  }
+  const d = new Date(exp);
+  return isNaN(d.getTime()) ? new Date(0) : d;
 }
 // Pearson r (returns null if insufficient data)
 function _pearsonR(xs, ys) {
@@ -6715,10 +6726,15 @@ function _contractDeliveryYear(expiry) {
   const m = clean.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
   if (m) {
     const yr = parseInt(m[3].length === 2 ? '20' + m[3] : m[3], 10);
-    return yr || 0;
+    if (!isNaN(yr) && yr >= 2000 && yr <= 2035) return yr;
+    return 0;
   }
-  const yr = parseInt(clean.slice(5), 10) || 0;
-  return yr < 100 && yr > 0 ? 2000 + yr : yr;
+  const iso = clean.match(/^(\d{4})-\d{2}-\d{2}$/);
+  if (iso) {
+    const yr = parseInt(iso[1], 10);
+    if (!isNaN(yr) && yr >= 2000 && yr <= 2035) return yr;
+  }
+  return 0;
 }
 
 // Compact chart-axis label: "27OCT2026" → "Oct '26"
@@ -6866,6 +6882,7 @@ async function buildLCDropdown() {
 
   // Populate Year selector (delivery years, newest first, with "All" option)
   const years = [...new Set(_lcAllEntries.map(e => _contractDeliveryYear(e.expiry).toString()))]
+    .filter(y => { const n = parseInt(y, 10); return !isNaN(n) && n >= 2000 && n <= 2035; })
     .sort((a, b) => +b - +a);
   const yrSel = document.getElementById('lcYearSelect');
   yrSel.innerHTML = '<option value="all">All</option>';
@@ -9085,7 +9102,7 @@ async function initCalculator() {
     const updateYears = () => {
       const entries = [...entriesList].sort((a,b) => _expiryDate(b.expiry) - _expiryDate(a.expiry));
       const years = [...new Set(entries.map(e => _contractDeliveryYear(e.expiry).toString()))]
-        .filter(y => { const n = parseInt(y, 10); return !isNaN(n) && n >= 2000; })
+        .filter(y => { const n = parseInt(y, 10); return !isNaN(n) && n >= 2000 && n <= 2035; })
         .sort((a,b) => b-a);
       yrSel.innerHTML = '<option value="all">All</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
       if (frontExp) yrSel.value = _contractDeliveryYear(frontExp).toString();
