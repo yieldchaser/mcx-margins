@@ -7,6 +7,7 @@ Output: docs/data/*.json
 
 import sys
 import sqlite3
+import time
 import json
 import math
 import statistics
@@ -949,11 +950,11 @@ def _export_market_intelligence(margin_cur):
         # Pre-build margin contract histories and lookup so they are available for enrichment
         margin_contract_histories = {
             symbol: _build_margin_contract_histories(margin_cur, symbol)
-            for symbol in MARKET_SYMBOLS
+            for symbol in ALL_COMMODITY_KEYS.keys()
         }
         margin_lookup = {}
-        for sym in MARKET_SYMBOLS:
-            for exp, hist in margin_contract_histories[sym].items():
+        for sym in ALL_COMMODITY_KEYS.keys():
+            for exp, hist in margin_contract_histories.get(sym, {}).items():
                 for m_row in hist:
                     margin_lookup[(sym, exp, m_row["date"])] = m_row
 
@@ -2945,9 +2946,17 @@ def main():
                 ]
 
         for _exp, _rows in _bexp.items():
-            with open(_sym_dir / f"{_exp}.json", "w", encoding="utf-8") as _f:
-                json.dump({"expiry": _exp, "symbol": _sym, "series_scope": "specific_expiry", "rows": _rows},
-                          _f, separators=(",", ":"))
+            _p = _sym_dir / f"{_exp}.json"
+            for _attempt in range(5):
+                try:
+                    with open(_p, "w", encoding="utf-8") as _f:
+                        json.dump({"expiry": _exp, "symbol": _sym, "series_scope": "specific_expiry", "rows": _rows},
+                                  _f, separators=(",", ":"))
+                    break
+                except OSError:
+                    if _attempt == 4:
+                        raise
+                    time.sleep(0.05)
             _ds = [rr["date"] for rr in _rows]
             _margin_dates = set(_ds)
             _market_dates = _market_contract_dates.get((_sym, _exp), set())

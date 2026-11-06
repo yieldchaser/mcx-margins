@@ -287,7 +287,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-input[type="date"] { color-scheme: dark; }
 .calc-input::-webkit-calendar-picker-indicator { filter: invert(0.65); cursor: pointer; }
 .calc-grid--triple {
-  display: grid; grid-template-columns: 74px 84px 1fr; gap: 8px;
+  display: grid; grid-template-columns: 84px 1fr; gap: 8px 10px;
+}
+.calc-grid--triple > div:first-child {
+  grid-column: 1 / -1;
 }
 .calc-grid--duo {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -845,8 +848,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 @media (max-width: 720px) {
   .calc-grid { grid-template-columns: 1fr; gap: 18px; }
   .calc-stat-grid { grid-template-columns: 1fr 1fr; }
-  .calc-grid--triple { grid-template-columns: 1fr 1fr; }
-  .calc-grid--triple > div:nth-child(3) { grid-column: 1 / -1; }
+  .calc-grid--triple { grid-template-columns: 84px 1fr; }
+  .calc-grid--triple > div:first-child { grid-column: 1 / -1; }
   .calc-capital-row { flex-wrap: wrap; }
   .calc-quick-btns { width: 100%; }
   .calc-quick-btn { flex: 1; min-width: 44px; height: 36px; }
@@ -9981,7 +9984,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     if (lots > 0 && p != null && mPct != null) {
       const positionSize_t = lots * lotSize * p;
       const internalMarginPct_t = positionSize_t > 0 ? (capVal / positionSize_t) * 100 : 0;
-      dailyShield = internalMarginPct_t - mPct;
+      dailyShield = internalMarginPct_t - (mPct * spreadMarginFactor);
       if (dailyShield < minShield) {
         minShield = dailyShield;
         minShieldDate = date;
@@ -10004,10 +10007,10 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
         marginCallAvail = capVal; // snapshot live ledger balance at breach
       }
     } else {
-      marginPath.push(null);
+      marginPath.push(0);
       reqMarginPath.push(0);
       freeCashPath.push(capVal);
-      marginUtilPath.push(null);
+      marginUtilPath.push(0);
     }
   });
 
@@ -10036,7 +10039,8 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const sellTurn = isShort ? (entryPrice * lotSize * lots) : (exitPrice * lotSize * lots);
     const buyTurn = isShort ? (exitPrice * lotSize * lots) : (entryPrice * lotSize * lots);
     const totalTurn = buyTurn + sellTurn;
-    const stt = sellTurn * 0.000125;
+    const isAgri = spec.category === 'Agri';
+  const stt = isAgri ? 0 : (sellTurn * 0.000125);
     const exch = totalTurn * 0.000026;
     const sebi = totalTurn * 0.000001;
     const broker = (parseFloat(document.getElementById('calcFeeBrokerage')?.value) || 0) * lots * 2;
@@ -10101,7 +10105,8 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   setStat('resNetSub', costDetail);
   setStat('resBest', '₹' + fmtNum(bestDay, 0), { color: bestDay >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
   setStat('resBestDate', bestDate || '—');
-  setStat('resWorst', '₹' + fmtNum(worstDay, 0), { color: worstDay >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' });
+  const worstColor = worstDay < 0 ? 'var(--accent-red)' : (worstDay > 0 ? 'var(--accent-green)' : 'var(--text-muted)');
+  setStat('resWorst', '₹' + fmtNum(worstDay, 0), { color: worstColor });
   setStat('resWorstDate', worstDate || '—');
 
   const mcNotice = document.getElementById('calcMarginCallNotice');
@@ -10146,7 +10151,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
   if (lots > 0 && entryPrice && entryMarginPct) {
     const positionSize = lots * lotSize * entryPrice;
     const internalMarginPct = positionSize > 0 ? (capital / positionSize) * 100 : 0;
-    entryShield = internalMarginPct - entryMarginPct;
+    entryShield = internalMarginPct - (entryMarginPct * spreadMarginFactor);
   }
 
   let exitShield = 0;
@@ -10160,7 +10165,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const lastEquity = isM2M ? Math.max(0, capital + lastPL) : capital;
     const lastPositionSize = lots * lotSize * lastP;
     const lastInternalMarginPct = lastPositionSize > 0 ? (lastEquity / lastPositionSize) * 100 : 0;
-    exitShield = lastInternalMarginPct - lastM;
+    exitShield = lastInternalMarginPct - (lastM * spreadMarginFactor);
   }
 
   // Dynamic Risk & Liquidation Shield Calculations
@@ -10363,7 +10368,8 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
         backgroundColor: grad,
         fill: true,
         tension: 0.3,
-        pointRadius: 0,
+        pointRadius: series.length <= 5 ? 3.5 : 0,
+        pointHoverRadius: 5,
         borderWidth: 2,
         spanGaps: true
       }]
@@ -11914,7 +11920,7 @@ P90+ indicates extreme clearinghouse capital strain; P10- indicates historically
   },
   "calc-direction": {
     title: "Trade Direction",
-    body: `<strong>LONG</strong> — buy at entry, sell at exit. Profits when price rises.<br><strong>SHORT</strong> — sell at entry, cover at exit. Profits when price falls.<br><br>Margin requirement is identical for both sides on NATURALGAS unless MCX has imposed an asymmetric Additional Margin (rare).`
+    body: `<strong>LONG</strong> — buy at entry, sell at exit. Profits when price rises.<br><strong>SHORT</strong> — sell at entry, cover at exit. Profits when price falls.<br><br>Margin requirement is identical for both sides on MCX commodities unless MCX has imposed an asymmetric Additional Margin (rare).`
   },
   "calc-lotmode": {
     title: "Lot Sizing Mode",

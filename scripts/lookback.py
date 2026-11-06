@@ -53,7 +53,7 @@ def process_and_store_records(raw_rows: list[dict], date_str: str) -> int:
     if not raw_rows:
         return 0
 
-    saved = 0
+    normalized_rows = []
     for raw_row in raw_rows:
         normalized = normalize_row(raw_row, date_str)
         if normalized is None:
@@ -74,10 +74,11 @@ def process_and_store_records(raw_rows: list[dict], date_str: str) -> int:
         normalized["special_short_margin_pct"] = parse_pct(normalized.get("special_short_margin_pct"))
         normalized["delivery_margin_pct"] = parse_pct(normalized.get("delivery_margin_pct"))
 
-        if db.upsert_margin(normalized):
-            saved += 1
+        normalized_rows.append(normalized)
 
-    return saved
+    if normalized_rows:
+        return db.upsert_margins_batch(normalized_rows)
+    return 0
 
 
 def fetch_and_store(date_str: str) -> int:

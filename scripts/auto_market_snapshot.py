@@ -280,6 +280,61 @@ def resolve_active_contracts(fyers_client, now_dt):
         
     return contracts
 
+def resolve_multi_commodity_active_contracts(now_dt):
+    """Resolves active front and near month contracts for other MCX commodities."""
+    vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    contracts = []
+    if os.path.exists(CONTRACT_INDEX_FILE):
+        try:
+            with open(CONTRACT_INDEX_FILE, "r", encoding="utf-8") as f:
+                ci = json.load(f)
+            CORE_COMMODITIES = [
+                ("CRUDEOIL", "crudeoil"),
+                ("CRUDEOILM", "crudeoilm"),
+                ("GOLD", "gold"),
+                ("GOLDM", "goldm"),
+                ("GOLDTEN", "goldten"),
+                ("GOLDPETAL", "goldpetal"),
+                ("SILVER", "silver"),
+                ("SILVERM", "silverm"),
+                ("SILVERMIC", "silvermic"),
+                ("COPPER", "copper"),
+                ("ALUMINIUM", "aluminium"),
+                ("ALUMINI", "alumini"),
+                ("ZINC", "zinc"),
+                ("ZINCMINI", "zincmini"),
+                ("LEAD", "lead"),
+                ("LEADMINI", "leadmini"),
+                ("CARDAMOM", "cardamom"),
+                ("MENTHAOIL", "menthaoil"),
+                ("SUNOIL", "sunoil"),
+            ]
+            for comm_name, comm_key in CORE_COMMODITIES:
+                c_list = ci.get(comm_key, [])
+                active_entries = []
+                for entry in c_list:
+                    exp_raw = entry.get("expiry", "")
+                    if len(exp_raw) >= 9:
+                        try:
+                            d = int(exp_raw[:2])
+                            m = MONTH_CODES.index(exp_raw[2:5].upper()) + 1
+                            y = int(exp_raw[5:])
+                            exp_dt = datetime(y, m, d, 23, 30, tzinfo=ist_tz)
+                            if exp_dt >= now_dt:
+                                exp_code = str(y)[-2:] + exp_raw[2:5].upper()
+                                fyers_sym = f"MCX:{comm_name}{exp_code}FUT"
+                                active_entries.append((exp_dt, exp_code, fyers_sym, y, m))
+                        except Exception:
+                            continue
+                active_entries.sort(key=lambda x: x[0])
+                for j, (exp_dt, exp_code, fyers_sym, y, m) in enumerate(active_entries[:2]):
+                    pfile = os.path.join(vault_dir, f"{fyers_sym.replace(':', '_')}_1m_contract_wise.parquet")
+                    contracts.append((comm_name, exp_code, fyers_sym, pfile, False, y, m, int(exp_dt.timestamp() - 30*86400), int(exp_dt.timestamp())))
+        except Exception as e:
+            log(f"Notice resolving multi-commodity active contracts: {e}")
+    return contracts
+
 def run_snapshot_cycle():
     clear_stale_git_locks()
     fyers, user_name = get_authenticated_fyers()
@@ -288,7 +343,9 @@ def run_snapshot_cycle():
     ist_tz = timezone(timedelta(hours=5, minutes=30))
     now = datetime.now(timezone.utc)
     now_ist = now.astimezone(ist_tz)
-    active_contracts = resolve_active_contracts(fyers, now_ist)
+    ng_contracts = resolve_active_contracts(fyers, now_ist)
+    other_contracts = resolve_multi_commodity_active_contracts(now_ist)
+    active_contracts = ng_contracts + other_contracts
     start_dt = now - timedelta(days=5)
 
     for base, exp, sym, pfile, is_front, front_yr, front_mo, tenure_start_epoch, expiry_epoch in active_contracts:

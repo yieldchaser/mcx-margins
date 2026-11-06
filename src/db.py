@@ -160,6 +160,90 @@ def upsert_margin(row: dict) -> bool:
         conn.close()
 
 
+def upsert_margins_batch(rows: list[dict]) -> int:
+    """
+    High-speed batch upsert for margin records in a single SQLite transaction.
+    Returns count of processed records.
+    """
+    if not rows:
+        return 0
+
+    valid_rows = []
+    for r in rows:
+        exp = r.get("expiry")
+        d_str = r.get("date")
+        if exp and d_str:
+            dte = compute_dte(exp, d_str)
+            if dte is not None and dte < 0:
+                continue
+        valid_rows.append({
+            "date": r.get("date"),
+            "symbol": r.get("symbol"),
+            "expiry": r.get("expiry", ""),
+            "instrument_id": r.get("instrument_id"),
+            "file_id": r.get("file_id"),
+            "initial_margin_pct": r.get("initial_margin_pct"),
+            "elm_pct": r.get("elm_pct"),
+            "tender_margin_pct": r.get("tender_margin_pct"),
+            "total_margin_pct": r.get("total_margin_pct"),
+            "additional_long_margin_pct": r.get("additional_long_margin_pct"),
+            "additional_short_margin_pct": r.get("additional_short_margin_pct"),
+            "special_long_margin_pct": r.get("special_long_margin_pct"),
+            "special_short_margin_pct": r.get("special_short_margin_pct"),
+            "delivery_margin_pct": r.get("delivery_margin_pct"),
+            "daily_volatility": r.get("daily_volatility"),
+            "annualized_volatility": r.get("annualized_volatility"),
+            "raw_data": None,
+        })
+
+    if not valid_rows:
+        return 0
+
+    conn = get_connection()
+    try:
+        conn.execute("PRAGMA synchronous = NORMAL")
+        with conn:
+            conn.executemany("""
+                INSERT INTO margins (
+                    date, symbol, expiry, instrument_id, file_id,
+                    initial_margin_pct, elm_pct,
+                    tender_margin_pct, total_margin_pct,
+                    additional_long_margin_pct, additional_short_margin_pct,
+                    special_long_margin_pct, special_short_margin_pct,
+                    delivery_margin_pct, daily_volatility, annualized_volatility,
+                    raw_data
+                ) VALUES (
+                    :date, :symbol, :expiry, :instrument_id, :file_id,
+                    :initial_margin_pct, :elm_pct,
+                    :tender_margin_pct, :total_margin_pct,
+                    :additional_long_margin_pct, :additional_short_margin_pct,
+                    :special_long_margin_pct, :special_short_margin_pct,
+                    :delivery_margin_pct, :daily_volatility, :annualized_volatility,
+                    :raw_data
+                )
+                ON CONFLICT(date, symbol, expiry, file_id) DO UPDATE SET
+                    instrument_id = excluded.instrument_id,
+                    initial_margin_pct = excluded.initial_margin_pct,
+                    elm_pct = excluded.elm_pct,
+                    tender_margin_pct = excluded.tender_margin_pct,
+                    total_margin_pct = excluded.total_margin_pct,
+                    additional_long_margin_pct = excluded.additional_long_margin_pct,
+                    additional_short_margin_pct = excluded.additional_short_margin_pct,
+                    special_long_margin_pct = excluded.special_long_margin_pct,
+                    special_short_margin_pct = excluded.special_short_margin_pct,
+                    delivery_margin_pct = excluded.delivery_margin_pct,
+                    daily_volatility = excluded.daily_volatility,
+                    annualized_volatility = excluded.annualized_volatility,
+                    raw_data = excluded.raw_data
+            """, valid_rows)
+        return len(valid_rows)
+    except Exception as e:
+        print(f"[db] Error in upsert_margins_batch: {e}")
+        return 0
+    finally:
+        conn.close()
+
+
 def get_margins(symbol: str = None, date: str = None) -> list[dict]:
     """Query margins from the database."""
     conn = get_connection()

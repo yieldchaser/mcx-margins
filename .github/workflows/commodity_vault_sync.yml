@@ -76,7 +76,14 @@ jobs:
           COMMODITY="${{ github.event.inputs.commodity || 'ALL' }}"
           DAYS="${{ github.event.inputs.days || '0' }}"
           echo "Starting MCX Commodity Harvester (Commodity: $COMMODITY, Dynamic Lifetime: $DAYS days)..."
-          python scripts/harvest_all_mcx_commodities.py --commodity "$COMMODITY" --days "$DAYS" --push
+          python scripts/harvest_all_mcx_commodities.py --commodity "$COMMODITY" --days "$DAYS"
+          python scripts/export_intraday_rollups.py
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/mcx_vault/ docs/data/market/
+          git diff --quiet && git diff --staged --quiet || git commit -m "data(vault): sync multi-commodity vault and 15m rollups"
+          git pull --rebase origin main || true
+          git push origin main || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
