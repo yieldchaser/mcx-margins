@@ -341,7 +341,7 @@ def _load_historical_parquet_margins(symbol: str) -> list[dict]:
         try:
             import duckdb
             con = duckdb.connect()
-            path_pattern = str(p_dir / "*.parquet").replace("\\", "/")
+            path_pattern = str(p_dir / "*.parquet").replace(chr(92), "/")
             query = f"""
                 SELECT date, symbol, expiry, initial_margin_pct, elm_pct, tender_margin_pct,
                        total_margin_pct, additional_long_margin_pct, additional_short_margin_pct,
@@ -349,7 +349,7 @@ def _load_historical_parquet_margins(symbol: str) -> list[dict]:
                        daily_volatility, annualized_volatility
                 FROM read_parquet('{path_pattern}')
                 WHERE initial_margin_pct IS NOT NULL
-                  AND regexp_matches(expiry, '^[0-9]{1,2}[A-Za-z]{3}[0-9]{2,4}$')
+                  AND regexp_matches(expiry, '^[0-9]{{1,2}}[A-Za-z]{{3}}[0-9]{{2,4}}$')
                 ORDER BY expiry ASC, date ASC
             """
             df = con.execute(query).fetchdf()
@@ -359,7 +359,8 @@ def _load_historical_parquet_margins(symbol: str) -> list[dict]:
                 s = str(row.get("symbol") or "")
                 cache.setdefault(s, []).append(row)
             _HISTORICAL_MARGINS_CACHE = cache
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Failed to load historical parquet margins: {e}")
             _HISTORICAL_MARGINS_CACHE = {}
     return _HISTORICAL_MARGINS_CACHE.get(symbol, [])
 
