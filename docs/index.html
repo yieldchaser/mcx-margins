@@ -9758,7 +9758,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const leff = lBase * kappaConv * phiSkew * psiDTE * portfolioBrake;
     const lotsCeil = Math.floor((vFreeCapital * leff) / notionalPerLot);
 
-    // Step 6: Optional Stop-Distance Risk Firewall (Firewall 3) & Liquidity Participation Cap (Firewall 4)
+    // Step 6: Optional Stop-Distance Risk Firewall (Firewall 3)
     let lotsStop = Infinity;
     const stopPriceVal = Number(document.getElementById('stopPriceInput')?.value ?? entryMarketRow?.stop_price ?? NaN);
     if (Number.isFinite(stopPriceVal) && stopPriceVal > 0 && stopPriceVal !== vPrice) {
@@ -9768,24 +9768,12 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       lotsStop = Math.floor((vFreeCapital * riskFraction) / (stopDist * vLotSize));
     }
 
-    let lotsLiquidity = Infinity;
-    // Liquidity Participation Cap (Firewall 4): Retained strictly for Natural Gas (ng, ngm).
-    // For other commodities with diverse unit scales (grams, kg, MT) and far-dated tenors,
-    // position sizing is governed by Volatility Shock Survival (lotsRaw) and Dynamic Leverage Ceiling (lotsCeil).
-    const isGasCommodity = (sym === 'ng' || sym === 'ngm');
-    if (isGasCommodity) {
-      const advLots = Number(entryMarketRow?.volume_lots ?? NaN);
-      const oiLots = Number(entryMarketRow?.open_interest ?? NaN);
-      if (Number.isFinite(advLots) && advLots > 0) {
-        lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * advLots)));
-      }
-      if (Number.isFinite(oiLots) && oiLots > 0) {
-        lotsLiquidity = Math.min(lotsLiquidity, Math.max(1, Math.floor(0.02 * oiLots)));
-      }
-    }
-
     // Step 7: Final Multi-Firewall Synthesis Clamp & Accurate Utilization Telemetry
-    const rawVambLots = Math.max(0, Math.min(lotsRaw, lotsCeil, lotsStop, lotsLiquidity));
+    // Position sizing is governed strictly by Volatility Shock Survival (lotsRaw), Dynamic Leverage Ceiling (lotsCeil),
+    // and Optional Stop-Distance Risk Budget (lotsStop).
+    // Single-day entry volume/OI participation caps are eliminated across all commodities (including NG & NGM),
+    // as far-dated contracts at lifecycle inception exhibit low listing-day volume that artificially collapsed sizing to 1 lot.
+    const rawVambLots = Math.max(0, Math.min(lotsRaw, lotsCeil, lotsStop));
     let isFloorAllocated = false;
     // Discrete Unit Minimum Allocation: If account capital covers exchange entry margin
     // (maxPossibleLots >= 1), but high-notional / volatility shock math rounds fractional lots down to 0,
@@ -9816,7 +9804,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       lotsRaw,
       isFloorAllocated,
       lotsStop: Number.isFinite(lotsStop) ? lotsStop : null,
-      lotsLiquidity: Number.isFinite(lotsLiquidity) ? lotsLiquidity : null,
+      lotsLiquidity: null,
       mReq,
       mExchCurrent,
       vSigmaEff,
@@ -9830,8 +9818,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       bindingConstraint: isFloorAllocated ? 'DISCRETE_MIN_LOT_FLOOR'
         : vambLots === lotsRaw ? 'MARGIN_SURVIVAL_FIREWALL'
         : vambLots === lotsCeil ? 'DYNAMIC_LEVERAGE_CEILING'
-        : vambLots === lotsStop ? 'STOP_RISK_BUDGET'
-        : 'LIQUIDITY_PARTICIPATION_CAP',
+        : 'STOP_RISK_BUDGET',
       validationErrors: []
     };
   } else {
