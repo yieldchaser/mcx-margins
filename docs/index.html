@@ -9785,7 +9785,17 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     }
 
     // Step 7: Final Multi-Firewall Synthesis Clamp & Accurate Utilization Telemetry
-    vambLots = Math.max(0, Math.min(lotsRaw, lotsCeil, lotsStop, lotsLiquidity));
+    const rawVambLots = Math.max(0, Math.min(lotsRaw, lotsCeil, lotsStop, lotsLiquidity));
+    let isFloorAllocated = false;
+    // Discrete Unit Minimum Allocation: If account capital covers exchange entry margin
+    // (maxPossibleLots >= 1), but high-notional / volatility shock math rounds fractional lots down to 0,
+    // allocate 1 lot floor with compressed buffer telemetry rather than completely zeroing out the trade lifecycle.
+    if (rawVambLots === 0 && maxPossibleLots >= 1) {
+      vambLots = 1;
+      isFloorAllocated = true;
+    } else {
+      vambLots = rawVambLots;
+    }
 
     const maxLotsSpanOnly = Math.floor(vFreeCapital / (notionalPerLot * vSpanPct));
     const maxLotsTotalExch = Math.floor(vFreeCapital / (notionalPerLot * mExchCurrent));
@@ -9804,6 +9814,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       shield,
       lotsCeil,
       lotsRaw,
+      isFloorAllocated,
       lotsStop: Number.isFinite(lotsStop) ? lotsStop : null,
       lotsLiquidity: Number.isFinite(lotsLiquidity) ? lotsLiquidity : null,
       mReq,
@@ -9816,7 +9827,8 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
       kappaConv,
       spanCapacityUtilPct,
       totalExchCapacityUtilPct,
-      bindingConstraint: vambLots === lotsRaw ? 'MARGIN_SURVIVAL_FIREWALL'
+      bindingConstraint: isFloorAllocated ? 'DISCRETE_MIN_LOT_FLOOR'
+        : vambLots === lotsRaw ? 'MARGIN_SURVIVAL_FIREWALL'
         : vambLots === lotsCeil ? 'DYNAMIC_LEVERAGE_CEILING'
         : vambLots === lotsStop ? 'STOP_RISK_BUDGET'
         : 'LIQUIDITY_PARTICIPATION_CAP',
@@ -9917,7 +9929,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     const rsae = window._rsaeLastCalc;
     if (rsae) {
       ribbon.innerHTML = `
-        <span class="calc-status__title">Volatility-Adjusted (VAMB / RSAE v3.1) Active</span>
+        <span class="calc-status__title">Volatility-Adjusted (VAMB / RSAE v3.1) Active${rsae && rsae.isFloorAllocated ? ' · 1 Lot Min Allocation' : ''}</span>
         <div class="calc-status__detail" style="margin-top:4px;">
           Ceiling: <strong id="rsaeCeilingDisplay">—</strong> · 
           Vol & Shock: <strong id="rsaeVolShockDisplay">—</strong> · 
@@ -10085,7 +10097,7 @@ window.updateCalc = async function(forceSnap = false, fromSlider = false) {
     fill('direction', _calcDir === 'long' ? 'Long' : 'Short');
     fill('lots', `${lots}`);
     fill('horizon', `${windowDays.length}d`);
-    const modeLbl = { max: 'Max', safe: 'Risk Safe 50%', custom: 'Custom' }[lotMode] || 'Max';
+    const modeLbl = { max: 'Max', safe: 'Risk Safe 50%', vamb: 'VAMB', custom: 'Custom' }[lotMode] || 'VAMB';
     fill('lotmode', modeLbl);
   }
 
