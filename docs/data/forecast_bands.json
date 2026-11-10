@@ -1,27 +1,27 @@
 {
-  "rolling_sigma": 1.4356,
+  "rolling_sigma": 1.4169,
   "window_days": 30,
   "sigma_by_dte_bucket": {
-    "0-30": 1.1253,
+    "0-30": 1.1357,
     "31-90": 4.0871,
-    "91+": 1.4356
+    "91+": 1.4169
   },
   "bands": [
     {
       "expiry": "24NOV2026",
-      "dte": 15,
-      "current": 13.0,
-      "predicted": 13.0,
-      "sigma_1": 1.1253,
-      "sigma_2": 2.2506,
-      "upper_1": 14.125,
-      "lower_1": 13.0,
-      "upper_2": 15.251,
+      "dte": 14,
+      "current": 14.83,
+      "predicted": 14.281,
+      "sigma_1": 1.1357,
+      "sigma_2": 2.2714,
+      "upper_1": 15.417,
+      "lower_1": 13.145,
+      "upper_2": 16.552,
       "lower_2": 13.0
     },
     {
       "expiry": "28DEC2026",
-      "dte": 49,
+      "dte": 48,
       "current": 13.0,
       "predicted": 13.0,
       "sigma_1": 4.0871,
@@ -33,7 +33,7 @@
     },
     {
       "expiry": "25JAN2027",
-      "dte": 77,
+      "dte": 76,
       "current": 13.0,
       "predicted": 13.0,
       "sigma_1": 4.0871,
@@ -45,39 +45,39 @@
     },
     {
       "expiry": "23FEB2027",
-      "dte": 106,
-      "current": 13.62,
-      "predicted": 13.434,
-      "sigma_1": 1.4356,
-      "sigma_2": 2.8713,
-      "upper_1": 14.87,
+      "dte": 105,
+      "current": 14.22,
+      "predicted": 13.854,
+      "sigma_1": 1.4169,
+      "sigma_2": 2.8338,
+      "upper_1": 15.271,
       "lower_1": 13.0,
-      "upper_2": 16.305,
+      "upper_2": 16.688,
       "lower_2": 13.0
     },
     {
       "expiry": "25MAR2027",
-      "dte": 136,
-      "current": 16.53,
-      "predicted": 15.887,
-      "sigma_1": 1.4356,
-      "sigma_2": 2.8713,
-      "upper_1": 17.323,
-      "lower_1": 14.451,
-      "upper_2": 18.758,
-      "lower_2": 13.016
+      "dte": 135,
+      "current": 16.58,
+      "predicted": 15.939,
+      "sigma_1": 1.4169,
+      "sigma_2": 2.8338,
+      "upper_1": 17.356,
+      "lower_1": 14.522,
+      "upper_2": 18.773,
+      "lower_2": 13.105
     },
     {
       "expiry": "27APR2027",
-      "dte": 169,
-      "current": 17.1,
-      "predicted": 16.456,
-      "sigma_1": 1.4356,
-      "sigma_2": 2.8713,
-      "upper_1": 17.892,
-      "lower_1": 15.02,
-      "upper_2": 19.327,
-      "lower_2": 13.585
+      "dte": 168,
+      "current": 17.48,
+      "predicted": 16.848,
+      "sigma_1": 1.4169,
+      "sigma_2": 2.8338,
+      "upper_1": 18.265,
+      "lower_1": 15.431,
+      "upper_2": 19.682,
+      "lower_2": 14.014
     }
   ]
 }
