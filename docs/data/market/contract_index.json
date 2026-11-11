@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-11-11T02:54:59Z",
+  "generated_at": "2026-11-11T03:32:47Z",
   "ng": [
     {
       "expiry": "18APR2008",
@@ -520,7 +520,7 @@
       "margin_path": "data/contract/ng/24NOV2026.json",
       "market_path": "data/market/contract/ng/24NOV2026.json",
       "shared_obs": 119,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "25APR2012",
@@ -2220,7 +2220,7 @@
       "margin_path": "data/contract/ng/28DEC2026.json",
       "market_path": "data/market/contract/ng/28DEC2026.json",
       "shared_obs": 97,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "28JAN2013",
@@ -2482,7 +2482,7 @@
       "margin_path": "data/contract/ngm/24NOV2026.json",
       "market_path": "data/market/contract/ngm/24NOV2026.json",
       "shared_obs": 119,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "25APR2023",
@@ -2872,7 +2872,7 @@
       "margin_path": "data/contract/ngm/28DEC2026.json",
       "market_path": "data/market/contract/ngm/28DEC2026.json",
       "shared_obs": 97,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "28JAN2025",
@@ -3254,7 +3254,7 @@
       "margin_path": "data/contract/crudeoil/18DEC2026.json",
       "market_path": "data/market/contract/crudeoil/18DEC2026.json",
       "shared_obs": 102,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "18FEB2022",
@@ -3504,7 +3504,7 @@
       "margin_path": "data/contract/crudeoil/19APR2027.json",
       "market_path": "data/market/contract/crudeoil/19APR2027.json",
       "shared_obs": 16,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "19AUG2010",
@@ -3774,7 +3774,7 @@
       "margin_path": "data/contract/crudeoil/19FEB2027.json",
       "market_path": "data/market/contract/crudeoil/19FEB2027.json",
       "shared_obs": 58,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "19JAN2010",
@@ -5256,7 +5256,7 @@
       "margin_path": "data/contract/crudeoilm/18DEC2026.json",
       "market_path": "data/market/contract/crudeoilm/18DEC2026.json",
       "shared_obs": 102,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "18JAN2019",
@@ -5406,7 +5406,7 @@
       "margin_path": "data/contract/crudeoilm/19APR2027.json",
       "market_path": "data/market/contract/crudeoilm/19APR2027.json",
       "shared_obs": 16,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "19AUG2015",
@@ -5536,7 +5536,7 @@
       "margin_path": "data/contract/crudeoilm/19FEB2027.json",
       "market_path": "data/market/contract/crudeoilm/19FEB2027.json",
       "shared_obs": 58,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "19JAN2016",
@@ -6378,7 +6378,7 @@
       "margin_path": "data/contract/gold/04DEC2026.json",
       "market_path": "data/market/contract/gold/04DEC2026.json",
       "shared_obs": 232,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "04FEB2012",
@@ -6728,7 +6728,7 @@
       "margin_path": "data/contract/gold/05AUG2027.json",
       "market_path": "data/market/contract/gold/05AUG2027.json",
       "shared_obs": 61,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "05DEC2011",
@@ -7258,7 +7258,7 @@
       "margin_path": "data/contract/gold/05OCT2027.json",
       "market_path": "data/market/contract/gold/05OCT2027.json",
       "shared_obs": 18,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     }
   ],
   "goldm": [
@@ -11666,7 +11666,7 @@
       "margin_path": "data/contract/silver/04DEC2026.json",
       "market_path": "data/market/contract/silver/04DEC2026.json",
       "shared_obs": 232,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "04JUL2025",
@@ -12016,7 +12016,7 @@
       "margin_path": "data/contract/silver/05JUL2027.json",
       "market_path": "data/market/contract/silver/05JUL2027.json",
       "shared_obs": 83,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "05MAR2010",
@@ -13028,7 +13028,7 @@
       "margin_path": "data/contract/silverm/30JUN2027.json",
       "market_path": "data/market/contract/silverm/30JUN2027.json",
       "shared_obs": 83,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "30NOV2010",
@@ -13168,7 +13168,7 @@
       "margin_path": "data/contract/silverm/30NOV2027.json",
       "market_path": "data/market/contract/silverm/30NOV2027.json",
       "shared_obs": 18,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "31AUG2010",
@@ -30420,7 +30420,7 @@
       "margin_path": "data/contract/sunoil/29JAN2027.json",
       "market_path": "data/market/contract/sunoil/29JAN2027.json",
       "shared_obs": 22,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "30NOV2026",
@@ -30430,7 +30430,7 @@
       "margin_path": "data/contract/sunoil/30NOV2026.json",
       "market_path": "data/market/contract/sunoil/30NOV2026.json",
       "shared_obs": 22,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     },
     {
       "expiry": "31DEC2026",
@@ -30440,7 +30440,7 @@
       "margin_path": "data/contract/sunoil/31DEC2026.json",
       "market_path": "data/market/contract/sunoil/31DEC2026.json",
       "shared_obs": 22,
-      "alignment_status": "aligned"
+      "alignment_status": "partial"
     }
   ]
 }
