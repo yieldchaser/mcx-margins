@@ -72,7 +72,7 @@ jobs:
       - name: Run Intraday Market Snapshot & LOD Sync
         if: steps.check_token.outputs.token_present == 'true'
         run: |
-          python scripts/auto_market_snapshot.py --loop 600 --iterations 2
+          python scripts/auto_market_snapshot.py --iterations 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

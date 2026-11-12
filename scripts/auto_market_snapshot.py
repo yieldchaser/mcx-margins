@@ -519,7 +519,16 @@ def run_snapshot_cycle():
                     except Exception as e:
                         log(f"Notice updating deep LOD tiers for {base}: {e}")
             else:
-                log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
+                err_code = r.get("code") if isinstance(r, dict) else None
+                err_msg = r.get("message") if isinstance(r, dict) else (r.get("error") if isinstance(r, dict) else str(r))
+                if err_code == -360 or "limit" in str(err_msg).lower():
+                    log(f"ALERT: FYERS API Rate Limit Exceeded (code {err_code}): {err_msg}")
+                    log("Aborting current snapshot cycle to preserve API quota. Resets at 00:00 IST.")
+                    break
+                elif r.get("s") == "error":
+                    log(f"Notice on {sym}: FYERS API returned error (code {err_code}): {err_msg}")
+                else:
+                    log(f"Notice on {sym}: No new candles returned (Market holiday or circuit halt).")
             time.sleep(0.35)
         except Exception as e:
             log(f"Error updating {sym}: {e}")
