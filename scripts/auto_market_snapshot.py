@@ -65,6 +65,106 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # 1. Check & Ensure Authentication Token
 clear_stale_git_locks()
 
+def get_mcx_session_info(dt_ist=None):
+    """
+    Dynamically resolves MCX trading session state, season (Summer vs Winter),
+    and exchange closing time based on US Daylight Saving Time (DST).
+
+    MCX Trading Session Rules:
+    - Pre-Market Standby: 08:50 AM to 09:00 AM IST
+    - Morning Open: 09:00:00 AM IST
+    - Summer Closing (US DST EDT active): 23:30 PM IST (11:30 PM IST)
+    - Winter Closing (US Standard EST active): 23:55 PM IST (11:55 PM IST)
+    - Weekends (Saturday & Sunday): Market is CLOSED all day.
+    """
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    if dt_ist is None:
+        dt_ist = datetime.now(ist_tz)
+    elif dt_ist.tzinfo is None:
+        dt_ist = dt_ist.replace(tzinfo=ist_tz)
+    else:
+        dt_ist = dt_ist.astimezone(ist_tz)
+
+    # 1. Determine Summer (US EDT) vs Winter (US EST)
+    is_dst = False
+    try:
+        import zoneinfo
+        ny_tz = zoneinfo.ZoneInfo("America/New_York")
+        dt_ny = dt_ist.astimezone(timezone.utc).astimezone(ny_tz)
+        is_dst = bool(dt_ny.dst() and dt_ny.dst().total_seconds() != 0)
+    except Exception:
+        # Fallback standard calendar calculation (starts 2nd Sun March, ends 1st Sun Nov)
+        year = dt_ist.year
+        mar1 = datetime(year, 3, 1, tzinfo=ist_tz)
+        mar_second_sun = 1 + (6 - mar1.weekday()) % 7 + 7
+        dst_start = datetime(year, 3, mar_second_sun, 2, 0, tzinfo=ist_tz)
+        nov1 = datetime(year, 11, 1, tzinfo=ist_tz)
+        dst_end = datetime(year, 11, 1 + (6 - nov1.weekday()) % 7, 2, 0, tzinfo=ist_tz)
+        is_dst = dst_start <= dt_ist < dst_end
+
+    season_name = "Summer (US DST)" if is_dst else "Winter (US Standard)"
+    close_hour, close_min = (23, 30) if is_dst else (23, 55)
+    close_total_mins = close_hour * 60 + close_min
+    open_standby_mins = 8 * 60 + 50 # 08:50 AM IST
+
+    # 2. Check Weekends
+    if dt_ist.weekday() >= 5: # 5 = Saturday, 6 = Sunday
+        day_name = "Saturday" if dt_ist.weekday() == 5 else "Sunday"
+        return False, f"Weekend ({day_name})", season_name, (close_hour, close_min)
+
+    # 3. Check Known Full-Day MCX Trading Holidays
+    date_str = dt_ist.strftime("%Y-%m-%d")
+    MCX_FULL_HOLIDAYS = {
+        # 2026
+        "2026-01-26": "Republic Day",
+        "2026-03-03": "Holi",
+        "2026-03-21": "Id-Ul-Fitr (Ramzan Id)",
+        "2026-04-03": "Good Friday",
+        "2026-04-14": "Dr. Baba Saheb Ambedkar Jayanti",
+        "2026-05-01": "Maharashtra Day",
+        "2026-05-27": "Bakri Id",
+        "2026-06-26": "Muharram",
+        "2026-08-15": "Independence Day",
+        "2026-10-02": "Mahatma Gandhi Jayanti",
+        "2026-10-20": "Dussehra",
+        "2026-11-10": "Diwali Balipratipada",
+        "2026-11-24": "Gurunanak Jayanti",
+        "2026-12-25": "Christmas",
+        # 2027
+        "2027-01-26": "Republic Day",
+        "2027-03-22": "Holi",
+        "2027-03-26": "Good Friday",
+        "2027-04-14": "Dr. Ambedkar Jayanti",
+        "2027-05-01": "Maharashtra Day",
+        "2027-08-15": "Independence Day",
+        "2027-10-02": "Mahatma Gandhi Jayanti",
+        "2027-12-25": "Christmas",
+    }
+    if date_str in MCX_FULL_HOLIDAYS:
+        return False, f"MCX Full Holiday ({MCX_FULL_HOLIDAYS[date_str]})", season_name, (close_hour, close_min)
+
+    # 4. Check Holidays where Morning session is closed but Evening opens at 17:00 IST
+    MCX_EVENING_ONLY_HOLIDAYS = {
+        # 2026
+        "2026-02-15": "Mahashivratri",
+        "2026-03-27": "Ram Navami",
+        "2026-03-31": "Mahavir Jayanti",
+        # 2027
+        "2027-03-06": "Mahashivratri",
+        "2027-04-16": "Ram Navami",
+    }
+    cur_mins = dt_ist.hour * 60 + dt_ist.minute
+    if date_str in MCX_EVENING_ONLY_HOLIDAYS and cur_mins < 17 * 60:
+        return False, f"MCX Holiday Morning Session ({MCX_EVENING_ONLY_HOLIDAYS[date_str]} - opens at 17:00 IST)", season_name, (close_hour, close_min)
+
+    # 5. Check Time Windows
+    if cur_mins < open_standby_mins:
+        return False, f"Overnight / Pre-market (opens at 09:00 IST, standby 08:50 IST)", season_name, (close_hour, close_min)
+    if cur_mins > close_total_mins:
+        return False, f"Post-close night session (closed at {close_hour}:{close_min:02d} IST)", season_name, (close_hour, close_min)
+
+    return True, f"Market OPEN ({season_name}, 09:00 - {close_hour}:{close_min:02d} IST)", season_name, (close_hour, close_min)
+
 def get_authenticated_fyers():
     """Retrieves or autonomously generates an active FYERS model instance via TOTP."""
     token = ""
@@ -715,25 +815,34 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Automated Market Snapshot & Synchronizer")
     parser.add_argument("--loop", type=int, default=0, help="Loop interval in seconds (e.g. 600 for every 10 mins). If 0, runs once.")
     parser.add_argument("--iterations", type=int, default=1, help="Number of loop iterations. Default 1. If 0, runs forever.")
+    parser.add_argument("--force", action="store_true", help="Bypass market hours check and force run.")
     args, _ = parser.parse_known_args()
 
-    # Pre-market stand-by:
-    # If starting on a weekday between 08:45 AM and 09:00 AM IST, wait until 09:00:05 AM IST so iteration 1 pulls live market open candles!
     ist_tz = timezone(timedelta(hours=5, minutes=30))
     now_ist = datetime.now(ist_tz)
-    if now_ist.weekday() < 5:
-        total_mins = now_ist.hour * 60 + now_ist.minute
-        if 525 <= total_mins < 540:  # 08:45 to 08:59 IST
-            market_open_time = now_ist.replace(hour=9, minute=0, second=5, microsecond=0)
-            wait_sec = (market_open_time - now_ist).total_seconds()
-            if 0 < wait_sec <= 900:
-                log(f"Pre-market stand-by: current time is {now_ist.strftime('%H:%M:%S IST')}. Waiting {int(wait_sec)}s until 09:00:05 IST market open...")
-                time.sleep(wait_sec)
+    is_open, status_reason, season_name, (close_hour, close_min) = get_mcx_session_info(now_ist)
+
+    # 1. Market Hours Gating:
+    # If the exchange is closed (overnight, early morning, post-close summer/winter, weekend, or holiday),
+    # immediately exit cleanly without issuing any API requests, preserving the FYERS quota.
+    if not is_open and not args.force:
+        log(f"MCX Market is CLOSED ({status_reason}). FYERS API quota fully preserved (0 requests made). Exiting cleanly.")
+        sys.exit(0)
+
+    # 2. Pre-market stand-by:
+    # If starting on a weekday between 08:45 AM and 09:00 AM IST, wait until 09:00:05 AM IST so iteration 1 pulls live market open candles!
+    total_mins = now_ist.hour * 60 + now_ist.minute
+    if 525 <= total_mins < 540:  # 08:45 to 08:59 IST
+        market_open_time = now_ist.replace(hour=9, minute=0, second=5, microsecond=0)
+        wait_sec = (market_open_time - now_ist).total_seconds()
+        if 0 < wait_sec <= 900:
+            log(f"Pre-market stand-by ({season_name}): current time is {now_ist.strftime('%H:%M:%S IST')}. Waiting {int(wait_sec)}s until 09:00:05 IST market open...")
+            time.sleep(wait_sec)
 
     run_snapshot_cycle()
 
     if args.loop > 0:
-        log(f"Continuous daemon active. Polling every {args.loop}s during MCX trading hours...")
+        log(f"Continuous daemon active ({season_name}). Polling every {args.loop}s during MCX trading hours...")
         count = 1
         while True:
             if args.iterations > 0 and count >= args.iterations:
@@ -742,15 +851,10 @@ if __name__ == "__main__":
             time.sleep(args.loop)
             count += 1
             try:
-                now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
-                # Weekend check: Saturday=5, Sunday=6
-                if now_ist.weekday() >= 5:
-                    log("Market closed (Weekend). Skipping poll.")
-                    continue
-                cur_min = now_ist.hour * 60 + now_ist.minute
-                # MCX trading hours: 08:50 to 23:58 IST (covers 08:50 pre-market standby + Summer 23:30 and Winter 23:55)
-                if cur_min < 8 * 60 + 50 or cur_min > 23 * 60 + 58:
-                    log(f"Market closed (Outside 08:50 - 23:58 IST, current: {now_ist.strftime('%H:%M')} IST). Waiting...")
+                now_ist = datetime.now(ist_tz)
+                is_open_loop, reason_loop, season_loop, _ = get_mcx_session_info(now_ist)
+                if not is_open_loop and not args.force:
+                    log(f"Market closed ({reason_loop}). Skipping poll to preserve API quota.")
                     continue
                 run_snapshot_cycle()
             except KeyboardInterrupt:

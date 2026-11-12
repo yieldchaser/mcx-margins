@@ -55,15 +55,20 @@ jobs:
           from datetime import datetime, timezone, timedelta
           import subprocess
 
+          sys.path.insert(0, '.')
+          from scripts.auto_market_snapshot import get_mcx_session_info
+
           now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+          is_market_open, session_status, season_name, (close_hour, close_min) = get_mcx_session_info(now_ist)
           is_weekday = now_ist.weekday() < 5
           total_mins = now_ist.hour * 60 + now_ist.minute
+          close_total_mins = close_hour * 60 + close_min
 
-          print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Sentinel audit started.')
+          print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Sentinel audit started ({session_status}).')
 
-          # Market hours: Weekdays 08:50 AM to 23:55 PM IST (530 to 1435 mins)
-          if is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 55):
-              print('Market is OPEN (or within 10 min pre-open). Checking intraday runner status...')
+          # Active Watchdog during market hours
+          if is_market_open:
+              print('Market is OPEN (or within standby window). Checking intraday runner status...')
               in_prog = False
               queued = False
               try:
@@ -89,12 +94,12 @@ jobs:
 
           # When is the next market open window (08:55 AM IST)?
           # 1. Mon-Fri morning before 08:50 IST: opens today at 08:55 IST.
-          # 2. Mon-Thu night after 23:25 IST: opens tomorrow at 08:55 IST.
+          # 2. Mon-Thu night after close: opens tomorrow at 08:55 IST.
           # 3. Sunday evening/night: opens tomorrow (Monday) at 08:55 IST.
           target_open = None
           if is_weekday and total_mins < 8 * 60 + 50:
               target_open = now_ist.replace(hour=8, minute=55, second=0, microsecond=0)
-          elif now_ist.weekday() in (0, 1, 2, 3) and total_mins >= 23 * 60 + 25:
+          elif now_ist.weekday() in (0, 1, 2, 3) and total_mins >= close_total_mins - 10:
               target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
           elif now_ist.weekday() == 6 and total_mins >= 12 * 60:
               target_open = (now_ist + timedelta(days=1)).replace(hour=8, minute=55, second=0, microsecond=0)
