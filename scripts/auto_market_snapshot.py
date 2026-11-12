@@ -280,8 +280,74 @@ def resolve_active_contracts(fyers_client, now_dt):
         
     return contracts
 
-def resolve_multi_commodity_active_contracts(now_dt):
-    """Resolves active front and near month contracts for other MCX commodities."""
+QUOTA_TRACKER_FILE = os.path.join(REPO_DIR, "data", "fyers_auth", "daily_quota_tracker.json")
+
+def track_and_check_quota(cost=1, max_daily=5000):
+    """
+    Tracks cumulative FYERS API requests made today and enforces proactive safety cushions.
+    Returns (current_total_today, can_proceed_bool, is_conserve_mode_bool).
+    """
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    today_str = datetime.now(ist_tz).strftime("%Y-%m-%d")
+    tracker = {"date": today_str, "calls": 0}
+    if os.path.exists(QUOTA_TRACKER_FILE):
+        try:
+            with open(QUOTA_TRACKER_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if data.get("date") == today_str:
+                tracker = data
+        except Exception:
+            pass
+
+    tracker["calls"] = tracker.get("calls", 0) + cost
+    tracker["last_call"] = datetime.now(ist_tz).strftime("%H:%M:%S IST")
+
+    try:
+        os.makedirs(os.path.dirname(QUOTA_TRACKER_FILE), exist_ok=True)
+        with open(QUOTA_TRACKER_FILE, "w", encoding="utf-8") as f:
+            json.dump(tracker, f, indent=2)
+    except Exception:
+        pass
+
+    calls = tracker["calls"]
+    # Circuit breakers:
+    # 1. Stop completely if >= 4,850 calls (within 150 of the 5,000 hard wall).
+    # 2. Engage Conserve Mode if >= 4,200 calls (prioritizing Natural Gas & NatGasMini exclusively).
+    can_proceed = (calls < 4850)
+    is_conserve = (calls >= 4200)
+    return calls, can_proceed, is_conserve
+
+MAJOR_COMMODITIES = [
+    ("CRUDEOIL", "crudeoil"),
+    ("CRUDEOILM", "crudeoilm"),
+    ("GOLD", "gold"),
+    ("GOLDM", "goldm"),
+    ("SILVER", "silver"),
+    ("SILVERM", "silverm"),
+    ("COPPER", "copper"),
+    ("ZINC", "zinc"),
+]
+
+SECONDARY_COMMODITIES = [
+    ("ALUMINIUM", "aluminium"),
+    ("ALUMINI", "alumini"),
+    ("ZINCMINI", "zincmini"),
+    ("LEAD", "lead"),
+    ("LEADMINI", "leadmini"),
+    ("GOLDTEN", "goldten"),
+    ("GOLDPETAL", "goldpetal"),
+    ("SILVERMIC", "silvermic"),
+    ("CARDAMOM", "cardamom"),
+    ("MENTHAOIL", "menthaoil"),
+    ("SUNOIL", "sunoil"),
+]
+
+def resolve_multi_commodity_active_contracts(now_dt, include_secondary=True):
+    """
+    Resolves active front and near month contracts for other MCX commodities.
+    Majors are polled on every run. Secondary/illiquid commodities alternate (every ~16-20m)
+    to optimize FYERS API quota while ensuring 100% 1-minute candle continuity (zero data loss).
+    """
     vault_dir = os.path.join(REPO_DIR, "data", "mcx_vault", "contract_wise")
     ist_tz = timezone(timedelta(hours=5, minutes=30))
     contracts = []
@@ -289,28 +355,11 @@ def resolve_multi_commodity_active_contracts(now_dt):
         try:
             with open(CONTRACT_INDEX_FILE, "r", encoding="utf-8") as f:
                 ci = json.load(f)
-            CORE_COMMODITIES = [
-                ("CRUDEOIL", "crudeoil"),
-                ("CRUDEOILM", "crudeoilm"),
-                ("GOLD", "gold"),
-                ("GOLDM", "goldm"),
-                ("GOLDTEN", "goldten"),
-                ("GOLDPETAL", "goldpetal"),
-                ("SILVER", "silver"),
-                ("SILVERM", "silverm"),
-                ("SILVERMIC", "silvermic"),
-                ("COPPER", "copper"),
-                ("ALUMINIUM", "aluminium"),
-                ("ALUMINI", "alumini"),
-                ("ZINC", "zinc"),
-                ("ZINCMINI", "zincmini"),
-                ("LEAD", "lead"),
-                ("LEADMINI", "leadmini"),
-                ("CARDAMOM", "cardamom"),
-                ("MENTHAOIL", "menthaoil"),
-                ("SUNOIL", "sunoil"),
-            ]
-            for comm_name, comm_key in CORE_COMMODITIES:
+            commodities_to_poll = list(MAJOR_COMMODITIES)
+            if include_secondary:
+                commodities_to_poll.extend(SECONDARY_COMMODITIES)
+
+            for comm_name, comm_key in commodities_to_poll:
                 c_list = ci.get(comm_key, [])
                 active_entries = []
                 for entry in c_list:
@@ -343,12 +392,36 @@ def run_snapshot_cycle():
     ist_tz = timezone(timedelta(hours=5, minutes=30))
     now = datetime.now(timezone.utc)
     now_ist = now.astimezone(ist_tz)
+
+    calls_today, can_proceed, is_conserve = track_and_check_quota(cost=0)
+    if not can_proceed:
+        log(f"ALERT: FYERS Daily API Quota nearly exhausted ({calls_today}/5,000 calls). Halting snapshot pass.")
+        return
+
+    # Tiered Polling Cadence:
+    # - Tier 1: Natural Gas & NatGasMini (12 contracts): Polled 100% of runs.
+    # - Tier 2: MCX Liquid Majors (16 contracts): Polled 100% of runs.
+    # - Tier 3: Secondary / Agri Commodities (22 contracts): Staggered every ~16-20 mins (e.g. minute % 20 < 10).
+    # If in Conserve Mode (>4,200 calls), secondary commodities are skipped to shield Natural Gas feed until close.
+    include_secondary = (now_ist.minute % 20 < 10) and not is_conserve
+
     ng_contracts = resolve_active_contracts(fyers, now_ist)
-    other_contracts = resolve_multi_commodity_active_contracts(now_ist)
+    other_contracts = resolve_multi_commodity_active_contracts(now_ist, include_secondary=include_secondary)
     active_contracts = ng_contracts + other_contracts
     start_dt = now - timedelta(days=5)
 
+    mode_str = "Conserve (NG Only)" if is_conserve else ("Full (21 Commodities)" if include_secondary else "Core (NG/NGM + Majors)")
+    log(f"Starting snapshot cycle: {len(active_contracts)} active contracts [Mode: {mode_str}] · FYERS calls today: {calls_today}/5,000")
+
     for base, exp, sym, pfile, is_front, front_yr, front_mo, tenure_start_epoch, expiry_epoch in active_contracts:
+        # Check quota tracking before each call
+        calls_today, can_proceed, is_conserve = track_and_check_quota(cost=1)
+        if not can_proceed:
+            log(f"ALERT: Quota cap reached ({calls_today}/5,000 calls). Halting contract loop.")
+            break
+        if is_conserve and not is_front and base not in ["NATURALGAS", "NATGASMINI"]:
+            continue
+
         payload = {
             "symbol": sym,
             "resolution": "1",

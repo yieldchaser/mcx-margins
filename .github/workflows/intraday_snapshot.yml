@@ -106,11 +106,19 @@ jobs:
               if has_pending:
                   print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Successor run already queued. Clean handoff.')
               else:
-                  print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is OPEN. Dispatching continuous chain runner...')
-                  res = subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
-                  print(res.stdout)
-                  if res.returncode != 0:
-                      print('Notice dispatching next chain:', res.stderr)
+                  import time
+                  print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Pacing active market session: sleeping 420s (7 min) for high-cadence ~8-minute heartbeat...')
+                  time.sleep(420)
+                  now_after_sleep = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+                  total_mins_after = now_after_sleep.hour * 60 + now_after_sleep.minute
+                  if is_weekday and (8 * 60 + 50 <= total_mins_after <= 23 * 60 + 55):
+                      print(f'[{now_after_sleep.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is OPEN. Dispatching continuous chain runner...')
+                      res = subprocess.run(['gh', 'workflow', 'run', 'intraday_snapshot.yml'], capture_output=True, text=True)
+                      print(res.stdout)
+                      if res.returncode != 0:
+                          print('Notice dispatching next chain:', res.stderr)
+                  else:
+                      print(f'[{now_after_sleep.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market closed after sleep. Handoff complete.')
           else:
               print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Market is CLOSED.')
               # Determine if an upcoming trading session needs the Overnight Sentinel bridge:
