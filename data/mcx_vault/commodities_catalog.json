@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-11-14 16:58:36 IST",
-  "total_contracts": 109,
+  "generated_at": "2026-11-15 17:27:03 IST",
+  "total_contracts": 110,
   "total_commodities": 24,
-  "total_bars": 4549651,
+  "total_bars": 4629296,
   "commodities": {
     "ALUMINI": {
       "commodity": "ALUMINI",
@@ -113,7 +113,7 @@
       "contracts_count": 3,
       "active_contracts": 2,
       "expired_contracts": 1,
-      "total_bars": 90010,
+      "total_bars": 90036,
       "latest_price": 1241.0
     },
     "NATGASMINI": {
@@ -121,24 +121,24 @@
       "contracts_count": 7,
       "active_contracts": 6,
       "expired_contracts": 1,
-      "total_bars": 386869,
-      "latest_price": 239.2
+      "total_bars": 386893,
+      "latest_price": 239.8
     },
     "NATURALGAS": {
       "commodity": "NATURALGAS",
       "contracts_count": 7,
       "active_contracts": 6,
       "expired_contracts": 1,
-      "total_bars": 316828,
-      "latest_price": 238.2
+      "total_bars": 316848,
+      "latest_price": 238.1
     },
     "NICKEL": {
       "commodity": "NICKEL",
-      "contracts_count": 2,
-      "active_contracts": 2,
+      "contracts_count": 3,
+      "active_contracts": 3,
       "expired_contracts": 0,
-      "total_bars": 38392,
-      "latest_price": 1534.8
+      "total_bars": 48326,
+      "latest_price": 1541.0
     },
     "SILVER100": {
       "commodity": "SILVER100",
@@ -153,7 +153,7 @@
       "contracts_count": 4,
       "active_contracts": 4,
       "expired_contracts": 0,
-      "total_bars": 123369,
+      "total_bars": 193010,
       "latest_price": 196000.0
     },
     "SILVERM": {
@@ -935,9 +935,9 @@
       "commodity": "MENTHAOIL",
       "expiry": "26DEC",
       "status": "active",
-      "total_bars": 19374,
+      "total_bars": 19387,
       "start_time": "2026-10-06 16:05",
-      "end_time": "2026-11-13 23:41",
+      "end_time": "2026-11-13 23:54",
       "latest_close": 1362.0,
       "latest_oi": 265,
       "file": "data/mcx_vault/contract_wise/MCX_MENTHAOIL26DECFUT_1m_contract_wise.parquet"
@@ -947,9 +947,9 @@
       "commodity": "MENTHAOIL",
       "expiry": "26NOV",
       "status": "active",
-      "total_bars": 34077,
+      "total_bars": 34090,
       "start_time": "2026-08-31 16:40",
-      "end_time": "2026-11-13 23:41",
+      "end_time": "2026-11-13 23:54",
       "latest_close": 1342.4,
       "latest_oi": 444,
       "file": "data/mcx_vault/contract_wise/MCX_MENTHAOIL26NOVFUT_1m_contract_wise.parquet"
@@ -971,11 +971,11 @@
       "commodity": "NATGASMINI",
       "expiry": "26DEC",
       "status": "active",
-      "total_bars": 84798,
+      "total_bars": 84802,
       "start_time": "2026-06-26 21:01",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 344.2,
-      "latest_oi": 19709,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 344.8,
+      "latest_oi": 19694,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI26DECFUT_1m_contract_wise.parquet"
     },
     {
@@ -983,11 +983,11 @@
       "commodity": "NATGASMINI",
       "expiry": "26NOV",
       "status": "active",
-      "total_bars": 102441,
+      "total_bars": 102445,
       "start_time": "2026-05-27 21:02",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 307.6,
-      "latest_oi": 45055,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 308.0,
+      "latest_oi": 44580,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI26NOVFUT_1m_contract_wise.parquet"
     },
     {
@@ -1007,9 +1007,9 @@
       "commodity": "NATGASMINI",
       "expiry": "27APR",
       "status": "active",
-      "total_bars": 3055,
+      "total_bars": 3059,
       "start_time": "2026-10-28 13:55",
-      "end_time": "2026-11-13 23:50",
+      "end_time": "2026-11-13 23:54",
       "latest_close": 241.9,
       "latest_oi": 8,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI27APRFUT_1m_contract_wise.parquet"
@@ -1019,11 +1019,11 @@
       "commodity": "NATGASMINI",
       "expiry": "27FEB",
       "status": "active",
-      "total_bars": 46556,
+      "total_bars": 46560,
       "start_time": "2026-08-27 18:50",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 241.3,
-      "latest_oi": 7652,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 240.3,
+      "latest_oi": 7651,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI27FEBFUT_1m_contract_wise.parquet"
     },
     {
@@ -1031,11 +1031,11 @@
       "commodity": "NATGASMINI",
       "expiry": "27JAN",
       "status": "active",
-      "total_bars": 62526,
+      "total_bars": 62530,
       "start_time": "2026-07-30 21:39",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 306.8,
-      "latest_oi": 9263,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 307.0,
+      "latest_oi": 9248,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI27JANFUT_1m_contract_wise.parquet"
     },
     {
@@ -1043,11 +1043,11 @@
       "commodity": "NATGASMINI",
       "expiry": "27MAR",
       "status": "active",
-      "total_bars": 25817,
+      "total_bars": 25821,
       "start_time": "2026-09-29 11:39",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 239.2,
-      "latest_oi": 1336,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 239.8,
+      "latest_oi": 1342,
       "file": "data/mcx_vault/contract_wise/MCX_NATGASMINI27MARFUT_1m_contract_wise.parquet"
     },
     {
@@ -1055,11 +1055,11 @@
       "commodity": "NATURALGAS",
       "expiry": "26DEC",
       "status": "active",
-      "total_bars": 74819,
+      "total_bars": 74823,
       "start_time": "2026-06-29 18:19",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 344.4,
-      "latest_oi": 8865,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 344.8,
+      "latest_oi": 8845,
       "file": "data/mcx_vault/contract_wise/MCX_NATURALGAS26DECFUT_1m_contract_wise.parquet"
     },
     {
@@ -1067,11 +1067,11 @@
       "commodity": "NATURALGAS",
       "expiry": "26NOV",
       "status": "active",
-      "total_bars": 74708,
+      "total_bars": 74712,
       "start_time": "2026-05-29 22:41",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 307.6,
-      "latest_oi": 34836,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 307.9,
+      "latest_oi": 34472,
       "file": "data/mcx_vault/contract_wise/MCX_NATURALGAS26NOVFUT_1m_contract_wise.parquet"
     },
     {
@@ -1103,11 +1103,11 @@
       "commodity": "NATURALGAS",
       "expiry": "27FEB",
       "status": "active",
-      "total_bars": 44725,
+      "total_bars": 44729,
       "start_time": "2026-08-27 10:47",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 240.2,
-      "latest_oi": 6621,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 240.5,
+      "latest_oi": 6616,
       "file": "data/mcx_vault/contract_wise/MCX_NATURALGAS27FEBFUT_1m_contract_wise.parquet"
     },
     {
@@ -1115,11 +1115,11 @@
       "commodity": "NATURALGAS",
       "expiry": "27JAN",
       "status": "active",
-      "total_bars": 46573,
+      "total_bars": 46577,
       "start_time": "2026-08-24 14:20",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 306.8,
-      "latest_oi": 5613,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 306.9,
+      "latest_oi": 5612,
       "file": "data/mcx_vault/contract_wise/MCX_NATURALGAS27JANFUT_1m_contract_wise.parquet"
     },
     {
@@ -1127,11 +1127,11 @@
       "commodity": "NATURALGAS",
       "expiry": "27MAR",
       "status": "active",
-      "total_bars": 14332,
+      "total_bars": 14336,
       "start_time": "2026-09-29 23:22",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 238.2,
-      "latest_oi": 241,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 238.1,
+      "latest_oi": 243,
       "file": "data/mcx_vault/contract_wise/MCX_NATURALGAS27MARFUT_1m_contract_wise.parquet"
     },
     {
@@ -1139,11 +1139,11 @@
       "commodity": "NICKEL",
       "expiry": "26DEC",
       "status": "active",
-      "total_bars": 10408,
+      "total_bars": 14130,
       "start_time": "2026-09-29 18:13",
-      "end_time": "2026-11-06 18:46",
-      "latest_close": 1545.5,
-      "latest_oi": 44,
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 1524.0,
+      "latest_oi": 189,
       "file": "data/mcx_vault/contract_wise/MCX_NICKEL26DECFUT_1m_contract_wise.parquet"
     },
     {
@@ -1151,12 +1151,24 @@
       "commodity": "NICKEL",
       "expiry": "26NOV",
       "status": "active",
-      "total_bars": 27984,
-      "start_time": "2026-09-07 21:05",
-      "end_time": "2026-11-06 18:46",
-      "latest_close": 1534.8,
-      "latest_oi": 287,
+      "total_bars": 33060,
+      "start_time": "2026-08-28 22:12",
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 1496.6,
+      "latest_oi": 83,
       "file": "data/mcx_vault/contract_wise/MCX_NICKEL26NOVFUT_1m_contract_wise.parquet"
+    },
+    {
+      "symbol": "MCX:NICKEL27JANFUT",
+      "commodity": "NICKEL",
+      "expiry": "27JAN",
+      "status": "active",
+      "total_bars": 1136,
+      "start_time": "2026-11-12 16:33",
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 1541.0,
+      "latest_oi": 2,
+      "file": "data/mcx_vault/contract_wise/MCX_NICKEL27JANFUT_1m_contract_wise.parquet"
     },
     {
       "symbol": "MCX:SILVER10026DECFUT",
@@ -1235,11 +1247,11 @@
       "commodity": "SILVER",
       "expiry": "26DEC",
       "status": "active",
-      "total_bars": 41531,
-      "start_time": "2026-09-07 09:00",
-      "end_time": "2026-11-13 23:50",
-      "latest_close": 176416.0,
-      "latest_oi": 17039,
+      "total_bars": 111172,
+      "start_time": "2026-05-08 18:52",
+      "end_time": "2026-11-13 23:54",
+      "latest_close": 176543.0,
+      "latest_oi": 17030,
       "file": "data/mcx_vault/contract_wise/MCX_SILVER26DECFUT_1m_contract_wise.parquet"
     },
     {
