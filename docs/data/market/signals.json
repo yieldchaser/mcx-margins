@@ -64,13 +64,13 @@
       "id": "margin_market_divergence",
       "symbol": "NATURALGAS",
       "label": "Margin-Market Divergence",
-      "score": 100,
+      "score": 88,
       "severity": "HIGH",
       "direction": "DIVERGING",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": 10.989,
-        "margin_change_5d_pct": 1.13
+        "price_return_5d_pct": 8.604,
+        "margin_change_5d_pct": 1.24
       },
       "reason": "Price has moved materially more than initial margin over the same window."
     },
@@ -135,13 +135,13 @@
       "id": "margin_market_divergence",
       "symbol": "NATGASMINI",
       "label": "Margin-Market Divergence",
-      "score": 100,
+      "score": 87,
       "severity": "HIGH",
       "direction": "DIVERGING",
       "lookback": "5 trading days",
       "features": {
-        "price_return_5d_pct": 10.914,
-        "margin_change_5d_pct": 1.19
+        "price_return_5d_pct": 8.53,
+        "margin_change_5d_pct": 1.25
       },
       "reason": "Price has moved materially more than initial margin over the same window."
     }
