@@ -55,13 +55,21 @@ jobs:
           from datetime import datetime, timezone, timedelta
           import subprocess
 
-          sys.path.insert(0, '.')
-          from scripts.auto_market_snapshot import get_mcx_session_info
-
           now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
-          is_market_open, session_status, season_name, (close_hour, close_min) = get_mcx_session_info(now_ist)
           is_weekday = now_ist.weekday() < 5
           total_mins = now_ist.hour * 60 + now_ist.minute
+
+          sys.path.insert(0, '.')
+          try:
+              from scripts.mcx_session import get_mcx_session_info
+              is_market_open, session_status, season_name, (close_hour, close_min) = get_mcx_session_info(now_ist)
+          except Exception as e_sess:
+              print('Warning loading mcx_session:', e_sess)
+              is_market_open = is_weekday and (8 * 60 + 50 <= total_mins <= 23 * 60 + 30)
+              session_status = 'Market Open (Fallback)' if is_market_open else 'Market Closed (Fallback)'
+              season_name = 'Standard'
+              close_hour, close_min = 23, 55
+
           close_total_mins = close_hour * 60 + close_min
 
           print(f'[{now_ist.strftime(\"%Y-%m-%d %H:%M:%S IST\")}] Sentinel audit started ({session_status}).')

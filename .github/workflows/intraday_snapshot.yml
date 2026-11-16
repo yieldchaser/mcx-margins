@@ -89,7 +89,7 @@ jobs:
           import subprocess
 
           sys.path.insert(0, '.')
-          from scripts.auto_market_snapshot import get_mcx_session_info
+          from scripts.mcx_session import get_mcx_session_info
 
           now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
           is_market_open, session_status, season_name, (close_hour, close_min) = get_mcx_session_info(now_ist)
