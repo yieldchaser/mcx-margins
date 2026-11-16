@@ -2,31 +2,31 @@
   "schema_version": "1.0.0",
   "source": "market_futures",
   "status": "warn",
-  "generated_at": "2026-11-16T07:24:29Z",
-  "latest_date": "2026-11-11",
+  "generated_at": "2026-11-16T08:00:19Z",
+  "latest_date": "2026-11-13",
   "date_range": {
     "from": "2007-01-01",
-    "to": "2026-11-11"
+    "to": "2026-11-13"
   },
   "freshness": {
     "label": "DELAYED",
-    "age_days": 5
+    "age_days": 3
   },
-  "row_count": 22322,
+  "row_count": 22346,
   "symbols": {
     "NATURALGAS": {
-      "rows": 17389,
-      "dates": 5088,
+      "rows": 17401,
+      "dates": 5090,
       "expiries": 244,
       "first_date": "2007-01-01",
-      "latest_date": "2026-11-11"
+      "latest_date": "2026-11-13"
     },
     "NATGASMINI": {
-      "rows": 4933,
-      "dates": 941,
+      "rows": 4945,
+      "dates": 943,
       "expiries": 49,
       "first_date": "2023-03-14",
-      "latest_date": "2026-11-11"
+      "latest_date": "2026-11-13"
     }
   },
   "validation": {
@@ -54,7 +54,7 @@
         "name": "stale_source",
         "status": "ok",
         "message": "Market data freshness: DELAYED.",
-        "count": 5
+        "count": 3
       },
       {
         "name": "weekday_gaps_naturalgas",
