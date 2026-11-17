@@ -8,8 +8,8 @@
       "p_flat": 0.59,
       "days_since_change": 0,
       "vol_cushion_pct": 1.0,
-      "hike_trigger_up_price": 325.8,
-      "hike_trigger_dn_price": 291.17,
+      "hike_trigger_up_price": 311.42,
+      "hike_trigger_dn_price": 278.31,
       "hike_trigger_pct": 5.62,
       "hike_locked": false
     },
@@ -21,8 +21,8 @@
       "p_flat": 0.98,
       "days_since_change": 60,
       "vol_cushion_pct": -21.5,
-      "hike_trigger_up_price": 368.8,
-      "hike_trigger_dn_price": 322.92,
+      "hike_trigger_up_price": 354.7,
+      "hike_trigger_dn_price": 310.57,
       "hike_trigger_pct": 6.64,
       "hike_locked": false
     },
@@ -34,8 +34,8 @@
       "p_flat": 0.98,
       "days_since_change": 46,
       "vol_cushion_pct": -24.0,
-      "hike_trigger_up_price": 328.78,
-      "hike_trigger_dn_price": 286.48,
+      "hike_trigger_up_price": 319.24,
+      "hike_trigger_dn_price": 278.17,
       "hike_trigger_pct": 6.89,
       "hike_locked": false
     },
@@ -47,8 +47,8 @@
       "p_flat": 0.98,
       "days_since_change": 3,
       "vol_cushion_pct": -8.4,
-      "hike_trigger_up_price": 253.9,
-      "hike_trigger_dn_price": 227.24,
+      "hike_trigger_up_price": 249.25,
+      "hike_trigger_dn_price": 223.07,
       "hike_trigger_pct": 5.55,
       "hike_locked": false
     },
@@ -60,8 +60,8 @@
       "p_flat": 0.187,
       "days_since_change": 0,
       "vol_cushion_pct": 1.2,
-      "hike_trigger_up_price": 251.55,
-      "hike_trigger_dn_price": 224.81,
+      "hike_trigger_up_price": 247.1,
+      "hike_trigger_dn_price": 220.83,
       "hike_trigger_pct": 5.62,
       "hike_locked": false
     },
@@ -73,8 +73,8 @@
       "p_flat": 0.097,
       "days_since_change": 0,
       "vol_cushion_pct": 5.5,
-      "hike_trigger_up_price": 246.12,
-      "hike_trigger_dn_price": 219.82,
+      "hike_trigger_up_price": 238.61,
+      "hike_trigger_dn_price": 213.11,
       "hike_trigger_pct": 5.65,
       "hike_locked": false
     }
@@ -85,14 +85,14 @@
   "coefficients": {
     "hike": {
       "coef": [
-        -0.023970366827489507,
-        0.00018945745124844944,
-        0.023781711840886937,
-        0.013170960896679214,
-        -3.3906397274999223,
-        -0.02224251607478764
+        -0.0239703962630459,
+        0.00018965682154858065,
+        0.023781710706676527,
+        0.01317096132294265,
+        -3.3906398539434193,
+        -0.022242490201725043
       ],
-      "intercept": -2.0434405812355787,
+      "intercept": -2.0434406483858387,
       "features": [
         "margin_pct",
         "vol_pct",
@@ -104,14 +104,14 @@
     },
     "cut": {
       "coef": [
-        0.028428619937734587,
-        0.004166389358445128,
-        -0.04675342968202266,
-        0.052316466583240476,
-        -3.3316747231702,
-        -0.006069228145459648
+        0.028428618027741732,
+        0.004166405076241363,
+        -0.04675342951587568,
+        0.05231646648300222,
+        -3.331674725301034,
+        -0.0060692259626468955
       ],
-      "intercept": -4.619486846370609,
+      "intercept": -4.619486855278079,
       "features": [
         "margin_pct",
         "vol_pct",
