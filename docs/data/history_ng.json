@@ -86058,5 +86058,25 @@
     "annualized_volatility": 0.390193,
     "vamb_safety_shield_pct": 0.1,
     "vamb_leverage_ceiling": 2.5
+  },
+  {
+    "date": "2026-11-18",
+    "symbol": "NATURALGAS",
+    "expiry": "24NOV2026",
+    "dte": 6,
+    "initial_margin_pct": 15.18,
+    "max_intraday_margin_pct": 15.18,
+    "total_margin_pct": 20.18,
+    "elm_pct": 1.25,
+    "tender_margin_pct": 5.0,
+    "delivery_margin_pct": 0.0,
+    "additional_long_margin_pct": 0.0,
+    "additional_short_margin_pct": 0.0,
+    "special_long_margin_pct": 0.0,
+    "special_short_margin_pct": 0.0,
+    "daily_volatility": 0.024,
+    "annualized_volatility": 0.379473,
+    "vamb_safety_shield_pct": 0.1,
+    "vamb_leverage_ceiling": 2.5
   }
 ]
