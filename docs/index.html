@@ -203,6 +203,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .calc-body__inner {
   overflow: hidden;
   min-height: 0;
+  /* Containing block for absolutely positioned descendants (e.g. the
+     screen-reader live region .calc-sr). Without it they escape the
+     collapsed clip and stretch the page with blank scroll space. */
+  position: relative;
 }
 .calc-body.is-open .calc-body__inner {
   padding-top: 16px;
