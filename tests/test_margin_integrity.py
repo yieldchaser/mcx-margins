@@ -85,6 +85,10 @@ class MarginIntegrityTests(unittest.TestCase):
                 daily_volatility REAL, annualized_volatility REAL
             );
         ''')
+        # Seasoning history: 5 earlier publications for both expiries
+        for d in ("2026-10-14", "2026-10-15", "2026-10-16", "2026-10-19", "2026-10-20"):
+            for exp, im in (("27OCT2026", 15.5), ("25MAR2027", 17.8)):
+                conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct) VALUES (?, 'NATURALGAS', ?, 1, ?, 1.25, 0.0, ?)", (d, exp, im, im))
         # Insert prev date (2026-10-21)
         conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-21', 'NATURALGAS', '27OCT2026', 1, 15.77, 1.25, 5.0, 20.77, 0.025, 0.40)")
         conn.execute("INSERT INTO margins (date, symbol, expiry, file_id, initial_margin_pct, elm_pct, tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility) VALUES ('2026-10-21', 'NATURALGAS', '25MAR2027', 1, 18.00, 1.25, 0.0, 18.00, 0.028, 0.44)")
@@ -123,6 +127,141 @@ class MarginIntegrityTests(unittest.TestCase):
                 db_path.unlink()
             except Exception:
                 pass
+
+
+class AlertNoiseAndDedupTests(unittest.TestCase):
+    """End-to-end behaviour of scripts/alert.py against a temp DB + temp ledger."""
+
+    COLS = ("date, symbol, expiry, file_id, initial_margin_pct, elm_pct, "
+            "tender_margin_pct, total_margin_pct, daily_volatility, annualized_volatility")
+
+    def setUp(self):
+        import tempfile
+        self.tmp = Path(tempfile.mkdtemp())
+        self.db_path = self.tmp / "margins.db"
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(f"CREATE TABLE margins ({self.COLS})")
+        conn.commit()
+        conn.close()
+        self.orig = (alert.DB_PATH, alert.PRICE_DB_PATH, alert.STATE_PATH, alert.send_email)
+        alert.DB_PATH = self.db_path
+        alert.PRICE_DB_PATH = self.tmp / "no_prices.db"
+        alert.STATE_PATH = self.tmp / "alert_state.json"
+        self.sent = []
+
+        def fake_send(subject, body):
+            self.sent.append(subject)
+            return True
+        alert.send_email = fake_send
+
+    def tearDown(self):
+        alert.DB_PATH, alert.PRICE_DB_PATH, alert.STATE_PATH, alert.send_email = self.orig
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def add(self, date, expiry, im, tender=0.0, file_id=1):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(f"INSERT INTO margins ({self.COLS}) VALUES (?, 'NATURALGAS', ?, ?, ?, 1.25, ?, ?, 0.03, 0.5)",
+                     (date, expiry, file_id, im, tender, im + tender))
+        conn.commit()
+        conn.close()
+
+    def seed_history(self, expiry, im, dates=("2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20")):
+        for d in dates:
+            self.add(d, expiry, im)
+
+    def test_same_event_emailed_exactly_once_across_repeated_runs(self):
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 16.0)  # +3pp real shock on front month
+        for _ in range(8):  # 8 scheduled runs in a day
+            alert.main([])
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn("28DEC2026", self.sent[0])
+
+    def test_intraday_revision_with_new_numbers_sends_update(self):
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 16.0, file_id=1)
+        alert.main([])
+        self.add("2026-11-24", "28DEC2026", 18.0, file_id=2)  # MCX revises later same day
+        alert.main([])
+        alert.main([])
+        self.assertEqual(len(self.sent), 2)
+
+    def test_new_listing_placeholder_zero_does_not_alert(self):
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 13.1)
+        self.add("2026-11-23", "25MAY2027", 0.0)     # listing-day placeholder
+        self.add("2026-11-24", "25MAY2027", 21.0)    # first real SPAN print
+        alert.main([])
+        self.assertEqual(self.sent, [])
+
+    def test_unseasoned_far_month_does_not_alert(self):
+        # Mirrors 2026-11-26: 25MAY2027 listed 1 day ago, 13.62 -> 16.32
+        self.seed_history("28DEC2026", 16.0)
+        self.add("2026-11-25", "28DEC2026", 16.15)
+        self.add("2026-11-26", "28DEC2026", 15.67)
+        self.add("2026-11-25", "25MAY2027", 13.62)
+        self.add("2026-11-26", "25MAY2027", 16.32)
+        alert.main([])
+        self.assertEqual(self.sent, [])
+        res = alert.get_margin_transitions("NATURALGAS")
+        far = next(c for c in res[3] if c["expiry"] == "25MAY2027")
+        self.assertEqual(far["suppressed_reason"], "unseasoned-listing")
+
+    def test_seasoned_far_month_shock_still_alerts(self):
+        self.seed_history("25MAR2027", 14.0)
+        self.add("2026-11-23", "25MAR2027", 14.0)
+        self.add("2026-11-24", "25MAR2027", 16.5)
+        alert.main([])
+        self.assertEqual(len(self.sent), 1)
+
+    def test_tender_entry_alerts_once(self):
+        self.seed_history("24NOV2026", 15.0, dates=("2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"))
+        self.add("2026-11-17", "24NOV2026", 15.6, tender=0.0)
+        self.add("2026-11-18", "24NOV2026", 15.2, tender=5.0)
+        alert.main([])
+        alert.main([])
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn("Tender", self.sent[0])
+
+    def test_routine_tender_step_does_not_alert(self):
+        self.seed_history("24NOV2026", 15.0, dates=("2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"))
+        self.add("2026-11-18", "24NOV2026", 15.2, tender=5.0)
+        self.add("2026-11-19", "24NOV2026", 15.9, tender=10.0)
+        alert.main([])
+        self.assertEqual(self.sent, [])
+
+    def test_failed_or_skipped_send_is_not_recorded(self):
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 16.0)
+        alert.send_email = lambda s, b: False  # e.g. no password configured
+        alert.main([])
+        self.assertFalse(alert.STATE_PATH.exists())
+
+    def test_dry_run_and_record_only(self):
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 16.0)
+        alert.main(["--dry-run"])
+        self.assertEqual(self.sent, [])
+        self.assertFalse(alert.STATE_PATH.exists())
+        alert.main(["--record-only"])
+        self.assertEqual(self.sent, [])
+        alert.main([])
+        self.assertEqual(self.sent, [])  # already recorded
+
+    def test_corrupt_state_file_recovers(self):
+        alert.STATE_PATH.write_text("{not json")
+        self.seed_history("28DEC2026", 13.0)
+        self.add("2026-11-23", "28DEC2026", 13.0)
+        self.add("2026-11-24", "28DEC2026", 16.0)
+        alert.main([])
+        self.assertEqual(len(self.sent), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

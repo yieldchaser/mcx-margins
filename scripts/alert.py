@@ -11,23 +11,46 @@ Evaluates:
 Routine tender steps (+5% on days 2, 3, 4, 5) without SPAN shocks are suppressed
 to eliminate false panic alarms, while compound events (volatility shock + tender ramp)
 are fully attributed.
+
+Noise guards:
+  * A SPAN shock needs a valid baseline (previous IM > 0). MCX lists new expiries
+    with a 0.00 placeholder on day one, so 0 -> 20% is a listing, not a hike.
+  * A SPAN shock needs MIN_SEASONING_PUBS prior publications for that expiry.
+    Freshly listed far months get their first real SPAN print over a few days;
+    those swings are calibration, not risk events.
+
+Dedup:
+  The workflow runs many times per day and is also dispatched by other jobs.
+  Every alert is fingerprinted (publication date + triggered contracts + their
+  margins) and recorded in data/alert_state.json after a successful send, so
+  each distinct event is emailed exactly once. A later intraday revision that
+  changes the triggering numbers produces a new fingerprint and a new email.
+
+CLI:
+  --dry-run      evaluate and print, never send, never record
+  --record-only  record the current fingerprint as sent without emailing
 """
 
+import argparse
+import json
 import os
 import smtplib
 import sqlite3
 import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-from datetime import date
+from datetime import date, datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
 THRESHOLD = 2.0  # percentage points for unscheduled SPAN IM shock
+MIN_SEASONING_PUBS = 5  # prior publications required before a SPAN move counts as a shock
+STATE_MAX_ENTRIES = 500
 REPO_ROOT = Path(__file__).resolve().parent.parent if Path(__file__).parent.name == "scripts" else Path(__file__).resolve().parent
 DB_PATH = REPO_ROOT / "data" / "margins.db" if (REPO_ROOT / "data" / "margins.db").exists() else Path("data/margins.db")
 PRICE_DB_PATH = REPO_ROOT / "data" / "prices.db" if (REPO_ROOT / "data" / "prices.db").exists() else Path("data/prices.db")
+STATE_PATH = REPO_ROOT / "data" / "alert_state.json"
 ALERT_TO = "upadhyayprateek574@gmail.com"
 ALERT_FROM = "upadhyayprateek574@gmail.com"
 SYMBOL = "NATURALGAS"
@@ -152,6 +175,14 @@ def get_margin_transitions(symbol: str = SYMBOL):
         if r[0] not in prev_rows:
             prev_rows[r[0]] = r
 
+    # Valid publication history per expiry (dates strictly before today, IM > 0;
+    # listing-day 0.00 placeholders don't count as calibrated SPAN prints)
+    cur.execute("""
+        SELECT expiry, COUNT(DISTINCT date) FROM margins
+        WHERE symbol=? AND date<? AND initial_margin_pct > 0 GROUP BY expiry
+    """, (symbol, today_date))
+    prior_pubs = {r[0]: r[1] for r in cur.fetchall()}
+
     conn.close()
 
     all_active = []
@@ -175,7 +206,9 @@ def get_margin_transitions(symbol: str = SYMBOL):
         t_total, p_total = t_row[4], p_row[4]
         delta_total = t_total - p_total
 
-        is_vol_shock = abs(delta_im) >= THRESHOLD
+        has_baseline = (p_im or 0) > 0 and (t_im or 0) > 0
+        seasoned = prior_pubs.get(exp, 0) >= MIN_SEASONING_PUBS
+        is_vol_shock = has_baseline and seasoned and abs(delta_im) >= THRESHOLD
         is_tender_entry = (p_tender == 0.0 and t_tender > 0.0)
 
         lot_size = 250 if "MINI" in symbol.upper() else 1250
@@ -188,6 +221,10 @@ def get_margin_transitions(symbol: str = SYMBOL):
             "dte": dte,
             "price": price,
             "is_vol_shock": is_vol_shock,
+            "suppressed_reason": (
+                None if abs(delta_im) < THRESHOLD or is_vol_shock
+                else ("no-baseline" if not has_baseline else "unseasoned-listing")
+            ),
             "is_tender_entry": is_tender_entry,
             "qualifies": is_vol_shock or is_tender_entry,
             "delta_im": delta_im,
@@ -213,11 +250,50 @@ def get_margin_transitions(symbol: str = SYMBOL):
     return today_date, prev_date, triggered, all_active
 
 
-def send_email(subject, body_html):
+def alert_fingerprint(symbol, today_date, triggered) -> str:
+    """Stable identity of an alert event. Same publication + same numbers => same id."""
+    parts = []
+    for t in sorted(triggered, key=lambda x: x["expiry"]):
+        kinds = "+".join(k for k, on in (("vol", t["is_vol_shock"]), ("tender", t["is_tender_entry"])) if on)
+        parts.append(f"{t['expiry']}:{kinds}:{t['today_im']:.2f}:{t['today_tender']:.2f}")
+    return f"{symbol}|{today_date}|" + ";".join(parts)
+
+
+def load_state() -> dict:
+    try:
+        with open(STATE_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and isinstance(data.get("sent"), dict):
+            return data
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"Warning: unreadable alert state ({e}); starting fresh.")
+    return {"sent": {}}
+
+
+def record_sent(state: dict, fingerprint: str, subject: str) -> None:
+    state["sent"][fingerprint] = {
+        "sent_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "subject": subject,
+    }
+    if len(state["sent"]) > STATE_MAX_ENTRIES:
+        keep = sorted(state["sent"].items(), key=lambda kv: kv[1].get("sent_at", ""))[-STATE_MAX_ENTRIES:]
+        state["sent"] = dict(keep)
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = STATE_PATH.with_suffix(".json.tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, sort_keys=True, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, STATE_PATH)
+
+
+def send_email(subject, body_html) -> bool:
+    """Returns True only when the message was actually handed to SMTP."""
     password = os.environ.get("ALERT_EMAIL_PASSWORD")
     if not password:
         print("No ALERT_EMAIL_PASSWORD set -- skipping email.")
-        return
+        return False
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -231,12 +307,19 @@ def send_email(subject, body_html):
             server.sendmail(ALERT_FROM, ALERT_TO, msg.as_string())
         safe_subject = subject.encode('ascii', 'replace').decode('ascii')
         print(f"Alert email sent: {safe_subject}")
+        return True
     except Exception as e:
         print(f"Email failed: {e}")
         sys.exit(1)
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="MCX NATURALGAS margin alert engine")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true", help="Evaluate only; never send or record")
+    mode.add_argument("--record-only", action="store_true", help="Mark current event as sent without emailing")
+    args = parser.parse_args(argv)
+
     transitions = get_margin_transitions(SYMBOL)
     if not transitions:
         print("Not enough margin history to evaluate transitions.")
@@ -247,10 +330,18 @@ def main():
     print(f"--- Margin Surveillance Run: {prev_date} -> {today_date} ---")
     print(f"Active liquid contracts surveyed: {len(all_active)}")
     for c in all_active:
-        print(f"  {c['expiry']} ({c['dte']:>3}d DTE): IM={c['today_im']:>5.2f}% (d={c['delta_im']:>+5.2f}pp) | Tdr={c['today_tender']:>4.1f}% | Total={c['today_total']:>5.2f}% (d={c['delta_total']:>+5.2f}pp) | Rs/Lot=Rs.{format_inr(c['rupee_margin_today'])}")
+        note = f"  [suppressed: {c['suppressed_reason']}]" if c.get("suppressed_reason") else ""
+        print(f"  {c['expiry']} ({c['dte']:>3}d DTE): IM={c['today_im']:>5.2f}% (d={c['delta_im']:>+5.2f}pp) | Tdr={c['today_tender']:>4.1f}% | Total={c['today_total']:>5.2f}% (d={c['delta_total']:>+5.2f}pp) | Rs/Lot=Rs.{format_inr(c['rupee_margin_today'])}{note}")
 
     if not triggered:
         print(f"No qualifying margin shocks (SPAN IM >= {THRESHOLD}pp or tender entry) — no alert sent.")
+        return
+
+    fingerprint = alert_fingerprint(SYMBOL, today_date, triggered)
+    state = load_state()
+    if fingerprint in state["sent"]:
+        prev = state["sent"][fingerprint]
+        print(f"Alert already sent at {prev.get('sent_at')} for this event ({fingerprint}) — not resending.")
         return
 
     # Identify primary triggered contract
@@ -664,7 +755,16 @@ def main():
 </body>
 </html>"""
 
-    send_email(subject, body_html)
+    if args.dry_run:
+        print(f"[dry-run] Would send: {subject}")
+        print(f"[dry-run] Fingerprint: {fingerprint}")
+        return
+    if args.record_only:
+        record_sent(state, fingerprint, subject)
+        print(f"[record-only] Marked as sent: {fingerprint}")
+        return
+    if send_email(subject, body_html):
+        record_sent(state, fingerprint, subject)
 
 
 if __name__ == "__main__":

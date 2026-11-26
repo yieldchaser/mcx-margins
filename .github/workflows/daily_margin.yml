@@ -112,9 +112,13 @@ jobs:
         continue-on-error: true
 
       # ── Step 4: alert ───────────────────────────────────────────────────
-      # Only alert if genuinely fresh today's data or backfill was found.
+      # Only evaluate when fresh data landed (or on manual dispatch).
+      # alert.py also de-duplicates via data/alert_state.json, so a repeated
+      # evaluation of the same publication never re-sends the same email.
+      # continue-on-error: an SMTP outage must not block the data commit below.
       - name: Check margin change and send alert
         if: steps.fetch_today.outputs.fresh_data == 'true' || steps.lookback.outputs.fresh_data == 'true' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
         run: python scripts/alert.py
@@ -127,9 +131,20 @@ jobs:
           git add data/ docs/data/
           git diff --staged --quiet || git commit -m "data: margin update $(date +%Y-%m-%d)"
           git stash --include-untracked
-          git pull --rebase origin main
+          # Other workflows push to main concurrently; retry the rebase+push
+          # instead of failing on "cannot lock ref" / non-fast-forward.
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push; then
+              pushed=true
+              break
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "Push attempt $attempt failed; retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
           git stash pop || true
-          git push
+          [ "$pushed" = true ]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

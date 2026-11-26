@@ -109,8 +109,10 @@ def main():
         sys.exit(2)
 
     if not args.force and has_todays_data(today):
+        # Exit 2, not 0: nothing new was saved. Exiting 0 here made the workflow
+        # treat every later run of the day as "fresh data" and re-send alerts.
         print(f"[fetch_today] Multi-commodity data already exists for {today}, nothing to do.")
-        sys.exit(0)
+        sys.exit(2)
 
     for attempt in range(1, args.retries + 1):
         print(f"[fetch_today] Attempt {attempt}/{args.retries} for {today}")
